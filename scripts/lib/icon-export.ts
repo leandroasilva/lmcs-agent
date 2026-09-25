@@ -1,3 +1,14 @@
+import sharp from "sharp";
+
+/** Frames the rendered icon in the classic macOS 824px safe area. */
+export async function frameMacOsIcon(contents: Buffer): Promise<Buffer> {
+  return sharp(contents)
+    .resize(824, 824)
+    .extend({ top: 100, bottom: 100, left: 100, right: 100, background: "#00000000" })
+    .png()
+    .toBuffer();
+}
+
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 export const WINDOWS_ICON_SIZES = [16, 24, 32, 48, 64, 128, 256] as const;

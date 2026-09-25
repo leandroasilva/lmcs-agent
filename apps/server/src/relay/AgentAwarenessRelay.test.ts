@@ -359,7 +359,7 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
         projects: [
           {
             id: projectId,
-            title: "T3 Code",
+            title: "LMCS Code",
           },
         ],
         threads: [
@@ -503,7 +503,7 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
 
         const project = {
           id: projectId,
-          title: "T3 Code",
+          title: "LMCS Code",
           workspaceRoot: "/workspace",
           repositoryIdentity: null,
           defaultModelSelection: null,
@@ -695,7 +695,7 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
 
         const project = {
           id: projectId,
-          title: "T3 Code",
+          title: "LMCS Code",
           workspaceRoot: "/workspace",
           repositoryIdentity: null,
           defaultModelSelection: null,
@@ -852,7 +852,7 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
         const environmentId = "env-1" as EnvironmentId;
         const project = {
           id: projectId,
-          title: "T3 Code",
+          title: "LMCS Code",
           workspaceRoot: "/workspace",
           repositoryIdentity: null,
           defaultModelSelection: null,
