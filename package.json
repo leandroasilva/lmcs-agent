@@ -1,7 +1,7 @@
 {
   "name": "lmcs-agent",
   "private": true,
-  "description": "LMCS Agent, a faithful T3 Code baseline for local coding agents.",
+  "description": "LMCS Code, a desktop application for local coding agents based on T3 Code.",
   "license": "MIT",
   "type": "module",
   "scripts": {

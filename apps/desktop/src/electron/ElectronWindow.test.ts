@@ -166,7 +166,10 @@ describe("ElectronWindow", () => {
       assert.isFalse("icon" in error.options);
       assert.isFalse("spellcheck" in error.options.webPreferences);
       assert.strictEqual(error.cause, cause);
-      assert.equal(error.message, 'Failed to create Electron BrowserWindow "LMCS Code" (1100x780).');
+      assert.equal(
+        error.message,
+        'Failed to create Electron BrowserWindow "LMCS Code" (1100x780).',
+      );
       assert.notInclude(error.message, cause.message);
       assert.deepEqual(browserWindowMock.mock.calls, [[options]]);
     }).pipe(Effect.provide(TestLayer)),

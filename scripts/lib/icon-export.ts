@@ -15,9 +15,7 @@ export async function frameMacOsIcon(contents: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-const PNG_SIGNATURE = Buffer.from([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-]);
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 export const WINDOWS_ICON_SIZES = [16, 24, 32, 48, 64, 128, 256] as const;
 
@@ -53,14 +51,10 @@ export function encodePngIco(images: ReadonlyArray<PngIconImage>): Buffer {
   const seenSizes = new Set<number>();
   for (const image of images) {
     if (!Number.isInteger(image.size) || image.size < 1 || image.size > 256) {
-      throw new Error(
-        `ICO rendition size must be an integer from 1 to 256, got ${image.size}.`,
-      );
+      throw new Error(`ICO rendition size must be an integer from 1 to 256, got ${image.size}.`);
     }
     if (seenSizes.has(image.size)) {
-      throw new Error(
-        `ICO rendition size ${image.size} was provided more than once.`,
-      );
+      throw new Error(`ICO rendition size ${image.size} was provided more than once.`);
     }
     if (image.contents.length === 0) {
       throw new Error(`ICO rendition ${image.size}x${image.size} is empty.`);

@@ -1,5 +1,7 @@
 {
   "id": "/",
+  "name": "LMCS Code",
+  "short_name": "LMCS Code",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

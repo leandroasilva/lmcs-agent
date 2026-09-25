@@ -44,7 +44,8 @@ export function getProviderSummary(provider: ServerProvider | undefined) {
     return {
       headline: "Disabled",
       detail:
-        provider.message ?? "This provider is installed but disabled for new sessions in LMCS Code.",
+        provider.message ??
+        "This provider is installed but disabled for new sessions in LMCS Code.",
     };
   }
   if (!provider.installed) {

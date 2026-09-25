@@ -1,6 +1,6 @@
-# LMCS Agent
+# LMCS Code
 
-A faithful baseline of [T3 Code](https://github.com/pingdotgg/t3code), imported from commit `7a12aff471ffe2b22b9fee495b04b32c43f45a37`. The upstream interface, providers, internal package names, and MIT license are preserved; product customization comes later.
+A coding-agent desktop app based on [T3 Code](https://github.com/pingdotgg/t3code), imported from commit `7a12aff471ffe2b22b9fee495b04b32c43f45a37`. LMCS Code has its own product name and icons while preserving the upstream functionality, provider integrations, internal package names, connection protocols, and MIT attribution.
 
 ## Run this checkout
 
@@ -21,11 +21,13 @@ The launcher selects Node 24.18.0 and pnpm 11.10.0 without changing the global t
 2. Open the complete private pairing URL printed by the server in your browser. Opening the bare web address in a new browser does not authenticate it. Treat pairing URLs as credentials: do not commit, publish, or share them unintentionally.
 3. Add a project using a local repository directory, select an available provider, and start a thread. The server uses the provider credentials on the machine where it runs. For example, authenticate an installed Claude CLI with `claude auth login` before using Claude.
 
-The original T3 Code interface and branding are intentional at this stage. Subscriptions and third-party hosted services are not bundled with this checkout.
+The application is branded **LMCS Code** across desktop, web, and mobile. Internal `t3code` identifiers and existing data paths remain compatible. Subscriptions and third-party hosted services are not bundled with this checkout.
 
 Local databases, settings, and authentication state live in the ignored `.lmcs-agent/` directory, separate from an existing T3 Code installation. Do not point the development server at `~/.t3/userdata`. Development uses Vite's same-origin proxy; do not set `VITE_HTTP_URL` or `VITE_WS_URL`.
 
 ### Desktop and production
+
+Electron connects to its local server automatically; no manual pairing token is required. The browser's pairing token is a local access credential, not a provider API key.
 
 ```sh
 # Electron development
@@ -58,7 +60,7 @@ cargo test --locked --manifest-path native/hyprland-snap-shot/Cargo.toml
 
 ### Verified baseline
 
-Local verification on September 25, 2026:
+Before the LMCS Code branding changes, local verification on September 25, 2026:
 
 - Full workspace suite: 17,826 passed, 56 skipped; no failures.
 - Launcher and updated desktop preload verifier: 18 focused tests passed.
@@ -71,7 +73,7 @@ Interactive browser flows and a live provider conversation have not been verifie
 
 ## Upstream project reference
 
-The original project instructions below describe T3 Code's published distribution, not an LMCS release. Use the source-checkout commands above for LMCS Agent. The imported source remains covered by the [MIT license](./LICENSE) and its original attribution.
+The original project instructions below describe T3 Code's published distribution, not an LMCS release. Use the source-checkout commands above for LMCS Code. The imported source remains covered by the [MIT license](./LICENSE) and its original attribution.
 
 # T3 Code
 

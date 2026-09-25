@@ -141,8 +141,8 @@ function HostedStaticOnboardingState() {
               </div>
               <EmptyTitle>Connect to a computer running LMCS Code</EmptyTitle>
               <EmptyDescription>
-                This app connects to LMCS Code running on your computer or a server. Start the LMCS Code
-                desktop app or command-line server on that machine and keep it running.
+                This app connects to LMCS Code running on your computer or a server. Start the LMCS
+                Code desktop app or command-line server on that machine and keep it running.
               </EmptyDescription>
               <EmptyDescription>{description}</EmptyDescription>
               <div className="mt-6 flex justify-center">

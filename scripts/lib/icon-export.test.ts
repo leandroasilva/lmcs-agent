@@ -1,11 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import sharp from "sharp";
-import {
-  encodePngIco,
-  frameMacOsIcon,
-  readPngDimensions,
-} from "./icon-export.ts";
+import { encodePngIco, frameMacOsIcon, readPngDimensions } from "./icon-export.ts";
 
 const pngHeader = (width: number, height: number) => {
   const contents = Buffer.alloc(24);
@@ -29,8 +25,7 @@ describe("icon export", () => {
       .ensureAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
-    const alpha = (x: number, y: number) =>
-      data[(y * info.width + x) * info.channels + 3];
+    const alpha = (x: number, y: number) => data[(y * info.width + x) * info.channels + 3];
     assert.equal(alpha(99, 512), 0);
     assert.equal(alpha(100, 512), 255);
     assert.equal(alpha(923, 512), 255);
