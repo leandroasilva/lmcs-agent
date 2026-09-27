@@ -61,7 +61,7 @@ const XAiSessionsChangedNotification = jsonRpcNotification(
   }),
 );
 const mockPeerPath = Effect.map(Effect.service(Path.Path), (path) =>
-  path.join(import.meta.dirname, "../test/fixtures/acp-mock-peer.ts"),
+  path.join(import.meta.dirname, "../../test/acp/fixtures/acp-mock-peer.ts"),
 );
 const mockPeerArgs = (path: string) => [path];
 const mockStartupNotice = "Mock ACP startup notice";
