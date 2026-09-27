@@ -74,7 +74,7 @@ export default defineConfig({
     testTimeout: 60_000,
     setupFiles: [
       NodeURL.fileURLToPath(
-        new URL("./packages/shared/src/testing/longTempDir.ts", import.meta.url),
+        new URL("./packages/core/src/shared/testing/longTempDir.ts", import.meta.url),
       ),
     ],
   },
@@ -179,7 +179,7 @@ export default defineConfig({
     overrides: [
       {
         // The one place that reads the host platform to seed the injected references.
-        files: ["packages/shared/src/hostProcess.ts"],
+        files: ["packages/core/src/shared/hostProcess.ts"],
         rules: { "t3code/no-global-process-runtime": "off" },
       },
       {
@@ -296,12 +296,7 @@ export default defineConfig({
         // Shared client code must not call APIs missing from Hermes. Our ESNext
         // TypeScript target accepts them even when they would crash mobile at launch.
         // Tests run on Node and are exempt.
-        files: [
-          "apps/mobile/src/**",
-          "packages/client-runtime/src/**",
-          "packages/contracts/src/**",
-          "packages/shared/src/**",
-        ],
+        files: ["apps/mobile/src/**", "packages/client/src/**", "packages/core/src/**"],
         excludeFiles: ["**/*.test.ts", "**/*.test.tsx"],
         rules: { "t3code/no-hermes-unsupported-apis": "error" },
       },
