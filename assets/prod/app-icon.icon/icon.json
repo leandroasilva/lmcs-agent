@@ -1,0 +1,32 @@
+{
+  "fill": {
+    "solid": "srgb:0.06275,0.10196,0.18039,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "text.svg",
+          "name": "LMCS Mark",
+          "glass": false,
+          "position": {
+            "scale": 8,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.3
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "circles": ["watchOS"],
+    "squares": "shared"
+  }
+}
