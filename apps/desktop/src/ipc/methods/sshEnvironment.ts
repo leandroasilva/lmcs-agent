@@ -26,8 +26,8 @@ import {
   AuthSessionState,
   AuthWebSocketTicketResult,
 } from "@lmcstools/core";
-import { SshHttpBridgeError } from "@lmcstools/ssh/errors";
-import { resolveLoopbackSshHttpBaseUrl } from "@lmcstools/ssh/tunnel";
+import { SshHttpBridgeError } from "@lmcstools/network/ssh/errors";
+import { resolveLoopbackSshHttpBaseUrl } from "@lmcstools/network/ssh/tunnel";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";

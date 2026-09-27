@@ -9,7 +9,7 @@ import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { buildRemoteNodeEnvScript } from "@lmcstools/ssh/tunnel";
+import { buildRemoteNodeEnvScript } from "@lmcstools/network/ssh/tunnel";
 import { satisfiesSemverRange } from "@lmcstools/core/semver";
 
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";

@@ -17,7 +17,7 @@ import * as Electron from "electron";
 
 import * as NetService from "@lmcstools/core/Net";
 import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
-import type { RemoteT3RunnerOptions } from "@lmcstools/ssh/tunnel";
+import type { RemoteT3RunnerOptions } from "@lmcstools/network/ssh/tunnel";
 import serverPackageJson from "../../server/package.json" with { type: "json" };
 
 import * as DesktopIpc from "./ipc/DesktopIpc.ts";

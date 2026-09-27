@@ -49,7 +49,7 @@ const decodeMetaJson = Schema.decodeEffect(Schema.fromJsonString(MetaJsonSchema)
 
 const getGeneratedPaths = Effect.fn("getGeneratedPaths")(function* () {
   const path = yield* Path.Path;
-  const generatedDir = path.join(import.meta.dirname, "..", "src", "_generated");
+  const generatedDir = path.join(import.meta.dirname, "..", "..", "src", "acp", "_generated");
   return {
     generatedDir,
     upstreamSchemaPath: path.join(generatedDir, "upstream-schema.json"),

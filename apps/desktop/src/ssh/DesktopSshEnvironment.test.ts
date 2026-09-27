@@ -2,7 +2,7 @@ import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
 import * as NetService from "@lmcstools/core/Net";
-import { SshPasswordPromptError } from "@lmcstools/ssh/errors";
+import { SshPasswordPromptError } from "@lmcstools/network/ssh/errors";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";

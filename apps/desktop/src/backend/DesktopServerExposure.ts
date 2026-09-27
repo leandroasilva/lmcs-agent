@@ -9,7 +9,7 @@ import {
   type DesktopServerExposureMode,
   type DesktopServerExposureState,
 } from "@lmcstools/core";
-import { isTailscaleIpv4Address, readTailscaleStatus } from "@lmcstools/tailscale";
+import { isTailscaleIpv4Address, readTailscaleStatus } from "@lmcstools/network/tailscale";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

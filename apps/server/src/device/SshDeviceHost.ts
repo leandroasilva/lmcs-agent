@@ -6,7 +6,7 @@ import {
   deviceToolInstallMessage,
   type SshDeviceHostConfig,
 } from "@lmcstools/core";
-import { runSshCommand, baseSshArgs, resolveSshCommand } from "@lmcstools/ssh/command";
+import { runSshCommand, baseSshArgs, resolveSshCommand } from "@lmcstools/network/ssh/command";
 import * as NetService from "@lmcstools/core/Net";
 import { waitForHttpReady } from "@lmcstools/core/httpReadiness";
 import * as Exit from "effect/Exit";

@@ -11,7 +11,7 @@
 import { type RemoteOpenTarget } from "@lmcstools/core";
 import { HostProcessHostname } from "@lmcstools/core/hostProcess";
 import * as NetService from "@lmcstools/core/Net";
-import { readTailscaleStatus } from "@lmcstools/tailscale";
+import { readTailscaleStatus } from "@lmcstools/network/tailscale";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

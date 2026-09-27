@@ -147,7 +147,7 @@ const ManualSchemas: Record<string, Schema.Json> = {
 
 const getGeneratedPaths = Effect.fn("getGeneratedPaths")(function* () {
   const path = yield* Path.Path;
-  const generatedDir = path.join(import.meta.dirname, "..", "src", "_generated");
+  const generatedDir = path.join(import.meta.dirname, "..", "..", "src", "codex", "_generated");
   return {
     generatedDir,
     schemaOutputPath: path.join(generatedDir, "schema.gen.ts"),

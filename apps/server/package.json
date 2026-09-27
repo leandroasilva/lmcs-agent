@@ -40,8 +40,7 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@lmcstools/core": "workspace:*",
-    "@lmcstools/ssh": "workspace:*",
-    "@lmcstools/tailscale": "workspace:*",
+    "@lmcstools/network": "workspace:*",
     "@types/node": "catalog:",
     "@types/yauzl": "^3.4.0",
     "effect-acp": "workspace:*",

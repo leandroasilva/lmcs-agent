@@ -163,7 +163,7 @@ import {
 import { orchestrationHttpApiLayer } from "./orchestration/http.ts";
 import * as NetService from "@lmcstools/core/Net";
 import * as RelayClient from "@lmcstools/core/relayClient";
-import { disableTailscaleServe, ensureTailscaleServe } from "@lmcstools/tailscale";
+import { disableTailscaleServe, ensureTailscaleServe } from "@lmcstools/network/tailscale";
 import { forkParked, ServerActivation } from "./serverActivation.ts";
 
 // MCP handoff thread IDs include escaped provenance and can exceed find-my-way's

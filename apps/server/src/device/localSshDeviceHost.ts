@@ -3,7 +3,7 @@ import * as NodeNet from "node:net";
 import type { SshDeviceHostConfig } from "@lmcstools/core";
 import * as NodeOS from "node:os";
 import * as Context from "effect/Context";
-import { runSshCommand } from "@lmcstools/ssh/command";
+import { runSshCommand } from "@lmcstools/network/ssh/command";
 import * as Effect from "effect/Effect";
 
 export const LocalDeviceHostAddresses = Context.Reference<ReadonlySet<string>>(
