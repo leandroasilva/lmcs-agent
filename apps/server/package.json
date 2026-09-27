@@ -43,7 +43,6 @@
     "@lmcstools/shared": "workspace:*",
     "@lmcstools/ssh": "workspace:*",
     "@lmcstools/tailscale": "workspace:*",
-    "@lmcstools/web": "workspace:*",
     "@types/node": "catalog:",
     "@types/yauzl": "^3.4.0",
     "effect-acp": "workspace:*",
