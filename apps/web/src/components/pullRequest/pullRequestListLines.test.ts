@@ -1,5 +1,5 @@
-import type { ThreadPullRequestLink } from "@t3tools/contracts";
-import { resolveThreadPullRequestChains } from "@t3tools/shared/threadPullRequests";
+import type { ThreadPullRequestLink } from "@lmcstools/contracts";
+import { resolveThreadPullRequestChains } from "@lmcstools/shared/threadPullRequests";
 import { describe, expect, it } from "vite-plus/test";
 
 import { pullRequestListLines } from "./pullRequestListLines";

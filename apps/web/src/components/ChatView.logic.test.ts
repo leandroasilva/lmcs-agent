@@ -11,7 +11,7 @@ import {
   ThreadId,
   TurnId,
   type WorktreeSetupSnapshot,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Atom, AsyncResult } from "effect/unstable/reactivity";
 import { appAtomRegistry } from "../rpc/atomRegistry";
@@ -22,8 +22,8 @@ import {
   deriveProviderInstanceEntries,
   NO_PROVIDER_MODEL_SELECTION,
 } from "../providerInstances";
-import type { CodexArtifactTemplate } from "@t3tools/client-runtime/codex-artifact-templates";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import type { CodexArtifactTemplate } from "@lmcstools/client-runtime/codex-artifact-templates";
+import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
 import {
   type RightPanelSurface,
   pullRequestSurface,

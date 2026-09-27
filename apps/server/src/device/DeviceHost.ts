@@ -14,11 +14,11 @@ import type {
   DeviceHostSummary,
   DevicePlatform,
   DevicePlatformAvailability,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import type { NodeRuntimeUnavailableError } from "@t3tools/shared/nodeRuntime";
+import type { NodeRuntimeUnavailableError } from "@lmcstools/shared/nodeRuntime";
 
 export class DeviceHostError extends Schema.TaggedError<DeviceHostError>()("DeviceHostError", {
   hostId: Schema.String,

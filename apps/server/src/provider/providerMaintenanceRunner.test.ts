@@ -4,8 +4,8 @@ import {
   ProviderInstanceId,
   type ServerProvider,
   type ServerProviderUpdateState,
-} from "@t3tools/contracts";
-import { ServerProviderUpdateError } from "@t3tools/contracts";
+} from "@lmcstools/contracts";
+import { ServerProviderUpdateError } from "@lmcstools/contracts";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -20,8 +20,8 @@ import { ChildProcessSpawner } from "effect/unstable/process";
 import {
   HostProcessEnvironment,
   HostProcessPlatform,
-} from "@t3tools/shared/hostProcess";
-import { SpawnExecutableResolution } from "@t3tools/shared/shell";
+} from "@lmcstools/shared/hostProcess";
+import { SpawnExecutableResolution } from "@lmcstools/shared/shell";
 
 import {
   ProviderRegistry,

@@ -3,12 +3,12 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import * as NetService from "@t3tools/shared/Net";
+import * as NetService from "@lmcstools/shared/Net";
 import {
   HostProcessEnvironment,
   HostProcessPlatform,
   HostProcessWorkingDirectory,
-} from "@t3tools/shared/hostProcess";
+} from "@lmcstools/shared/hostProcess";
 import { assert, describe, it } from "@effect/vitest";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
@@ -93,8 +93,8 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       Effect.sync(() => {
         assert.deepStrictEqual(getDevRunnerModeArgs("dev:desktop"), [
           "run",
-          "--filter=@t3tools/desktop",
-          "--filter=@t3tools/web",
+          "--filter=@lmcstools/desktop",
+          "--filter=@lmcstools/web",
           "dev",
         ]);
       }),
@@ -104,8 +104,8 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       Effect.sync(() => {
         assert.deepStrictEqual(getDevRunnerModeArgs("dev"), [
           "run",
-          "--filter=@t3tools/contracts",
-          "--filter=@t3tools/web",
+          "--filter=@lmcstools/contracts",
+          "--filter=@lmcstools/web",
           "--filter=t3",
           "--parallel",
           "dev",

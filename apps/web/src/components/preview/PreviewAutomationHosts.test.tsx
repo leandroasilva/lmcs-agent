@@ -7,8 +7,8 @@ import {
   type PreviewAutomationStreamEvent,
   type PreviewOpenInput,
   type PreviewSessionSnapshot,
-} from "@t3tools/contracts";
-import type { AtomCommandResult } from "@t3tools/client-runtime/state/runtime";
+} from "@lmcstools/contracts";
+import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
 import * as Cause from "effect/Cause";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { act } from "react";

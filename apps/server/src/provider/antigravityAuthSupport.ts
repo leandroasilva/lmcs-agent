@@ -1,9 +1,9 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off - Effect's symlink has no type argument, and Windows needs a junction to link without elevation.
 import * as NodeFSP from "node:fs/promises";
 
-import type { AntigravityAuthMethod, ProviderInstanceId } from "@t3tools/contracts";
-import { HostProcessPlatform } from "@t3tools/shared/hostProcess";
-import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@t3tools/shared/nodeRuntime";
+import type { AntigravityAuthMethod, ProviderInstanceId } from "@lmcstools/contracts";
+import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@lmcstools/shared/nodeRuntime";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Encoding from "effect/Encoding";

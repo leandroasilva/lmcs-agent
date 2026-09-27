@@ -8,7 +8,7 @@ import type {
   SourceControlProviderKind,
   SourceControlRepositoryCloneUrls,
   SourceControlRepositoryVisibility,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 
 export interface SourceControlLinkSubject {
   readonly title: string;

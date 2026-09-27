@@ -1,9 +1,9 @@
-import type { EnvironmentShellSummary } from "@t3tools/client-runtime/state/shell";
+import type { EnvironmentShellSummary } from "@lmcstools/client-runtime/state/shell";
 import {
   BearerConnectionProfile,
   BearerConnectionTarget,
-} from "@t3tools/client-runtime/connection";
-import { EnvironmentId } from "@t3tools/contracts";
+} from "@lmcstools/client-runtime/connection";
+import { EnvironmentId } from "@lmcstools/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Option from "effect/Option";
 

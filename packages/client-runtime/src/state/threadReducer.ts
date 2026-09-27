@@ -12,10 +12,10 @@ import type {
   OrchestrationThreadActivity,
   ThreadPullRequestLink,
   TurnId,
-} from "@t3tools/contracts";
-import { threadPullRequestKeysEqual } from "@t3tools/shared/threadPullRequests";
-import { isImportedAgentSessionMessageId } from "@t3tools/contracts";
-import { compareDateTimeStrings } from "@t3tools/shared/dateTime";
+} from "@lmcstools/contracts";
+import { threadPullRequestKeysEqual } from "@lmcstools/shared/threadPullRequests";
+import { isImportedAgentSessionMessageId } from "@lmcstools/contracts";
+import { compareDateTimeStrings } from "@lmcstools/shared/dateTime";
 
 export type ThreadDetailReducerResult =
   | { readonly kind: "updated"; readonly thread: OrchestrationThread }

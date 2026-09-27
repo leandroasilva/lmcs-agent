@@ -3,8 +3,8 @@ import {
   PrimaryConnectionTarget,
   RelayConnectionTarget,
   SshConnectionTarget,
-} from "@t3tools/client-runtime/connection";
-import { EnvironmentId } from "@t3tools/contracts";
+} from "@lmcstools/client-runtime/connection";
+import { EnvironmentId } from "@lmcstools/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

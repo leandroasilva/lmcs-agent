@@ -2,4 +2,4 @@ export {
   getPairingTokenFromUrl,
   setPairingTokenOnUrl,
   stripPairingTokenFromUrl,
-} from "@t3tools/shared/remote";
+} from "@lmcstools/shared/remote";

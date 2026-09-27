@@ -4,7 +4,7 @@ import {
   WS_METHODS,
   type EnvironmentId,
   type OrchestrationShellSnapshot,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 
 import { createOptimisticThreadLifecycle } from "./threadLifecycle.ts";
 import { canSnooze } from "./threadSettled.ts";

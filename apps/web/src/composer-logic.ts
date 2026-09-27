@@ -1,9 +1,9 @@
-import type { ClientSettings } from "@t3tools/contracts/settings";
-import type { AssistantCitation } from "@t3tools/contracts";
+import type { ClientSettings } from "@lmcstools/contracts/settings";
+import type { AssistantCitation } from "@lmcstools/contracts";
 import {
   serializeAssistantCitation,
   withAssistantCitationComment,
-} from "@t3tools/shared/assistantCitations";
+} from "@lmcstools/shared/assistantCitations";
 import {
   splitPromptIntoComposerSegments,
   type ComposerPromptSegment,

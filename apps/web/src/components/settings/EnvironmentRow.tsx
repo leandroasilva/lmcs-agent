@@ -1,4 +1,4 @@
-import type { DesktopSshEnvironmentTarget, EnvironmentMachineKind } from "@t3tools/contracts";
+import type { DesktopSshEnvironmentTarget, EnvironmentMachineKind } from "@lmcstools/contracts";
 import * as Option from "effect/Option";
 import type { ReactNode } from "react";
 

@@ -1,5 +1,5 @@
-import type { ConnectionTarget } from "@t3tools/client-runtime/connection";
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { ConnectionTarget } from "@lmcstools/client-runtime/connection";
+import type { EnvironmentId } from "@lmcstools/contracts";
 
 interface OnboardingEnvironment {
   readonly environmentId: EnvironmentId;
