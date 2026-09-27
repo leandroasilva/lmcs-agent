@@ -105,7 +105,7 @@ import ChatMarkdown, { ChatMarkdownAssetImage } from "../ChatMarkdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Root, RootContent } from "mdast";
-import { T3Wordmark } from "../T3Wordmark";
+import { LMCSWordmark } from "../LMCSWordmark";
 import {
   BotIcon,
   BrainIcon,
@@ -788,7 +788,11 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         ? previous.projection
         : null,
     );
-    rowsProjectionRef.current = { threadKey: listIdentityKey, workspaceRoot, projection };
+    rowsProjectionRef.current = {
+      threadKey: listIdentityKey,
+      workspaceRoot,
+      projection,
+    };
     return projection.rows;
   }, [
     rowsProjectionRef,
@@ -834,7 +838,11 @@ export const MessagesTimeline = memo(function MessagesTimeline({
       cancelled = true;
       if (settleFrame !== null) cancelAnimationFrame(settleFrame);
       // Supersede any pending estimated-index scroll before the browser applies the gesture.
-      if (viewport) void list.scrollToOffset({ offset: viewport.scrollTop, animated: false });
+      if (viewport)
+        void list.scrollToOffset({
+          offset: viewport.scrollTop,
+          animated: false,
+        });
       setPositionedThreadKey(listIdentityKey);
     };
     const cancelForNavigation = () => {
@@ -852,8 +860,12 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         cancelForNavigation();
     };
     viewport?.addEventListener("wheel", cancelForNavigation, { passive: true });
-    viewport?.addEventListener("touchmove", cancelForNavigation, { passive: true });
-    viewport?.addEventListener("pointerdown", cancelForNavigation, { passive: true });
+    viewport?.addEventListener("touchmove", cancelForNavigation, {
+      passive: true,
+    });
+    viewport?.addEventListener("pointerdown", cancelForNavigation, {
+      passive: true,
+    });
     viewport?.ownerDocument.addEventListener("keydown", onScrollKey);
     const position = rememberedPosition;
     const index = position ? rows.findIndex((row) => row.id === position.rowId) : -1;
@@ -868,7 +880,10 @@ export const MessagesTimeline = memo(function MessagesTimeline({
               viewPosition: 0,
               viewOffset: -position.offsetWithinRow,
             })
-          : list.scrollToOffset({ offset: position.scrollOffset, animated: false })
+          : list.scrollToOffset({
+              offset: position.scrollOffset,
+              animated: false,
+            })
         : list.scrollToEnd({ animated: false });
     void Promise.resolve(scrolling).then(() => {
       if (cancelled) return;
@@ -2225,7 +2240,9 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
                 }
                 {...(contextClipboardFragment
                   ? {
-                      extraFlavors: { [COMPOSER_CONTEXT_CLIPBOARD_MIME]: contextClipboardFragment },
+                      extraFlavors: {
+                        [COMPOSER_CONTEXT_CLIPBOARD_MIME]: contextClipboardFragment,
+                      },
                     }
                   : {})}
                 variant="ghost"
@@ -2707,7 +2724,10 @@ function remarkThoughtPreview(fallback: string) {
       return node.type === "break" ? " " : "";
     };
     tree.children = [
-      { type: "text", value: plainText(tree).replace(/\s+/g, " ").trim() || fallback },
+      {
+        type: "text",
+        value: plainText(tree).replace(/\s+/g, " ").trim() || fallback,
+      },
     ];
   };
 }
@@ -2984,7 +3004,11 @@ function ExpandedWorkGroupEntries({
   );
   const [restoringPosition, setRestoringPosition] = useState(initialScrollIndex !== undefined);
   const listRef = useRef<LegendListRef>(null);
-  const [fades, setFades] = useState({ top: false, bottom: false, viewportHeight: 0 });
+  const [fades, setFades] = useState({
+    top: false,
+    bottom: false,
+    viewportHeight: 0,
+  });
   const [appendState, setAppendState] = useState({ entries, follow: false });
   // Capture the pre-change edge once per incoming array, before new layout
   // metrics arrive. Edge/viewport changes never turn a status update into a follow.
@@ -4320,7 +4344,7 @@ function WorkEntryIcon({ name, className }: { name: WorkEntryIconName; className
     case "device":
       return <SmartphoneIcon className={className} aria-hidden />;
     case "lmcs-code":
-      return <T3Wordmark className={className} aria-hidden />;
+      return <LMCSWordmark className={className} aria-hidden />;
     case "check":
       return <CheckIcon className={className} aria-hidden />;
     case "circle-alert":

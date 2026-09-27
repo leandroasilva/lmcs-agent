@@ -63,7 +63,7 @@ import { getDriverOption } from "../settings/providerDriverMeta";
 import { TerminalViewport } from "../ThreadTerminalDrawer";
 import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
 import { ClaudeAI, OpenAI } from "../Icons";
-import { T3Wordmark } from "../T3Wordmark";
+import { LMCSWordmark } from "../LMCSWordmark";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
@@ -192,7 +192,7 @@ export function WelcomeWizard({
           title="Set up LMCS Code"
           identity={
             <div className="flex items-baseline gap-1.5" role="img" aria-label="LMCS Code">
-              <T3Wordmark className="h-4 w-auto shrink-0" aria-hidden />
+              <LMCSWordmark className="h-4 w-auto shrink-0" aria-hidden />
               <span className="text-2xl font-medium tracking-tight text-muted-foreground">
                 LMCS Code
               </span>

@@ -5,10 +5,10 @@ import { withUniwind } from "uniwind";
 const ThemedPath = withUniwind(Path);
 
 /**
- * The "T3" brand mark, matching the desktop sidebar's T3Wordmark SVG
+ * The "T3" brand mark, matching the desktop sidebar's LMCSWordmark SVG
  * (apps/web Sidebar.tsx). Width derives from the viewBox aspect ratio.
  */
-export function T3Wordmark(props: {
+export function LMCSWordmark(props: {
   readonly height: number;
   readonly color?: ColorValue;
   readonly colorClassName?: string;
