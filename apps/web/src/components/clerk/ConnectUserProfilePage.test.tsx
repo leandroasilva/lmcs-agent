@@ -3,7 +3,7 @@ import type { RelayClientEnvironmentRecord } from "@lmcstools/contracts/relay";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { T3ConnectEnvironmentRow } from "./T3ConnectUserProfilePage";
+import { ConnectEnvironmentRow } from "./ConnectUserProfilePage";
 
 const environment: RelayClientEnvironmentRecord = {
   environmentId: "environment-1" as EnvironmentId,
@@ -24,7 +24,7 @@ function renderRow({
   readonly mutationPending?: boolean;
 } = {}) {
   return renderToStaticMarkup(
-    <T3ConnectEnvironmentRow
+    <ConnectEnvironmentRow
       environment={environment}
       confirmationOpen={confirmationOpen}
       mutationPending={mutationPending}

@@ -4,22 +4,22 @@ import { LogInIcon, ServerIcon, SmartphoneIcon } from "lucide-react";
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
 import { MobileClientsUserProfilePage } from "./MobileClientsUserProfilePage";
-import { T3ConnectUserProfilePage } from "./T3ConnectUserProfilePage";
-import { useT3ConnectAuthPrompt } from "./useT3ConnectAuthPrompt";
+import { ConnectUserProfilePage } from "./ConnectUserProfilePage";
+import { useConnectAuthPrompt } from "./useConnectAuthPrompt";
 
-export function T3ConnectSidebarSignIn() {
+export function ConnectSidebarSignIn() {
   if (!hasCloudPublicConfig()) return null;
 
-  return <ConfiguredT3ConnectSidebarSignIn />;
+  return <ConfiguredConnectSidebarSignIn />;
 }
 
-export function T3ConnectSidebarAvatar() {
+export function ConnectSidebarAvatar() {
   if (!hasCloudPublicConfig()) return null;
 
-  return <ConfiguredT3ConnectSidebarAvatar />;
+  return <ConfiguredConnectSidebarAvatar />;
 }
 
-function ConfiguredT3ConnectSidebarAvatar() {
+function ConfiguredConnectSidebarAvatar() {
   const { isLoaded, isSignedIn } = useAuth();
 
   if (!isLoaded || !isSignedIn) return null;
@@ -45,15 +45,15 @@ function ConfiguredT3ConnectSidebarAvatar() {
         labelIcon={<ServerIcon className="size-4" />}
         url="t3-connect"
       >
-        <T3ConnectUserProfilePage />
+        <ConnectUserProfilePage />
       </UserButton.UserProfilePage>
     </UserButton>
   );
 }
 
-function ConfiguredT3ConnectSidebarSignIn() {
+function ConfiguredConnectSidebarSignIn() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { authPrompt, openAuthPrompt } = useT3ConnectAuthPrompt();
+  const { authPrompt, openAuthPrompt } = useConnectAuthPrompt();
 
   if (!isLoaded || isSignedIn) return null;
 
