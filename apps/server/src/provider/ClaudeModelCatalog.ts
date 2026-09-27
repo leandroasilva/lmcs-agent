@@ -4,15 +4,15 @@ import {
   type ModelSelection,
   ProviderDriverKind,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Option from "effect/Option";
 import {
   getModelSelectionStringOptionValue,
   getProviderOptionCurrentValue,
   getProviderOptionDescriptors,
   readCustomModelEntries,
-} from "@lmcstools/shared/model";
-import { compareSemverVersions } from "@lmcstools/shared/semver";
+} from "@lmcstools/core/model";
+import { compareSemverVersions } from "@lmcstools/core/semver";
 
 import {
   type ClaudeCodeCompatibility,

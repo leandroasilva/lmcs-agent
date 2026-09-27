@@ -2,8 +2,8 @@ import {
   resolveDeviceModelId,
   type DeviceAccessorySource,
   type DeviceModelSource,
-} from "@lmcstools/client-runtime/device/model";
-import type { DevicePlatform } from "@lmcstools/contracts";
+} from "@lmcstools/client/device/model";
+import type { DevicePlatform } from "@lmcstools/core";
 import iphoneDuo from "./models/iphone-duo.glb?url";
 import iphone18Pro from "./models/iphone-18-pro.glb?url";
 import iphone18ProMax from "./models/iphone-18-pro-max.glb?url";

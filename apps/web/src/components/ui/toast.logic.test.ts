@@ -1,4 +1,4 @@
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import type { ScopedThreadRef } from "@lmcstools/core";
 import { assert, describe, it } from "vite-plus/test";
 import {
   buildVisibleToastLayout,

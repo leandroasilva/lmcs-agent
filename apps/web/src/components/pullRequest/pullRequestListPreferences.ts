@@ -6,7 +6,7 @@ import {
   PullRequestInvolvement,
   PullRequestListFilters,
   PullRequestListState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export const PullRequestListSort = Schema.Literals([
   "ready",

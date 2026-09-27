@@ -1,4 +1,4 @@
-import type { ClientSettingsPatch, DesktopSnapShotState, SnapShotSound } from "@lmcstools/contracts";
+import type { ClientSettingsPatch, DesktopSnapShotState, SnapShotSound } from "@lmcstools/core";
 import {
   captureSetupBackend,
   captureSetupDesktopName,

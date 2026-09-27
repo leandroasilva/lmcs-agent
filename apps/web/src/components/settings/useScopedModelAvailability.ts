@@ -1,4 +1,4 @@
-import type { ProviderInstanceId, UnifiedSettings } from "@lmcstools/contracts";
+import type { ProviderInstanceId, UnifiedSettings } from "@lmcstools/core";
 import { useCallback } from "react";
 
 import { getCustomModelOptionsByInstance } from "../../modelSelection";

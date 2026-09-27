@@ -4,7 +4,7 @@ import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 
 import { runMigrations } from "../Migrations.ts";
-import * as NodeSqliteClient from "@lmcstools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@lmcstools/core/nodeSqliteClient";
 
 const layer = it.layer(Layer.mergeAll(NodeSqliteClient.layer({ filename: ":memory:" })));
 

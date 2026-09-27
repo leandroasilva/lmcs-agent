@@ -11,8 +11,8 @@ import {
   ProviderInstanceId,
   ServerSettingsError,
   TerminalProviderInstanceNotFoundError,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Data from "effect/Data";
 import * as Clock from "effect/Clock";
 import * as Deferred from "effect/Deferred";

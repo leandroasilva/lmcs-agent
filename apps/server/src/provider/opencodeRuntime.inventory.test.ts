@@ -13,7 +13,7 @@ import {
   HostProcessEnvironment,
   HostProcessExecutablePath,
   HostProcessPlatform,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 
 import { OpenCodeRuntime, OpenCodeRuntimeLive } from "./opencodeRuntime.ts";
 

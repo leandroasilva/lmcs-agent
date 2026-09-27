@@ -10,7 +10,7 @@ import {
   type RuntimeRequestId,
   type ThreadId,
   type TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   type AcpPermissionRequest,

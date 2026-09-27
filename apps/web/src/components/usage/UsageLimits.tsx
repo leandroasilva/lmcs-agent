@@ -6,7 +6,7 @@ import {
   ServerProviderResetCredits,
   ServerProviderUsageWindow,
   UsageProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import {
   elapsedShare,
@@ -15,7 +15,7 @@ import {
   type LimitPace,
   paceOf,
   remainingPercent,
-} from "@lmcstools/shared/usageLimits";
+} from "@lmcstools/core/usageLimits";
 import { GaugeIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { Fragment, type ReactNode, useState } from "react";
 

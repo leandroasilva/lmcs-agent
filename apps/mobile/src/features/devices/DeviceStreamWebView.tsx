@@ -11,7 +11,7 @@ import {
 } from "react";
 import { ActivityIndicator, Platform, Pressable, View } from "react-native";
 import { WebView } from "react-native-webview";
-import type { DeviceStreamStatus } from "@lmcstools/client-runtime/device/stream";
+import type { DeviceStreamStatus } from "@lmcstools/client/device/stream";
 
 import { AppText } from "../../components/AppText";
 

@@ -5,14 +5,14 @@ import {
   type ProviderOptionSelection,
   type ScopedThreadRef,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   buildExplicitProviderOptionSelectionsFromDescriptors,
   getProviderOptionCurrentValue,
   getProviderOptionDescriptors,
   isClaudeUltrathinkPrompt,
   normalizeModelSlug,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import type { ReactNode } from "react";
 
 import type { DraftId } from "../../composerDraftStore";

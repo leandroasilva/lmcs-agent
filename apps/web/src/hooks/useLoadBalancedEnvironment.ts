@@ -1,6 +1,6 @@
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
-import { chooseLoadBalancedEnvironment } from "@lmcstools/client-runtime/load-balancing";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import { chooseLoadBalancedEnvironment } from "@lmcstools/client/load-balancing";
+import type { EnvironmentId } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 import { useCallback, useContext, useMemo } from "react";
 

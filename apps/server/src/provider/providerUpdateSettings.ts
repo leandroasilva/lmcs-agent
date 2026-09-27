@@ -1,4 +1,4 @@
-import type { ServerSettings, ServerSettingsError } from "@lmcstools/contracts";
+import type { ServerSettings, ServerSettingsError } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";
 import * as Stream from "effect/Stream";

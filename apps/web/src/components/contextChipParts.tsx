@@ -1,4 +1,4 @@
-import type { EnvironmentId, PullRequestContextMetadata } from "@lmcstools/contracts";
+import type { EnvironmentId, PullRequestContextMetadata } from "@lmcstools/core";
 import { CircleDashedIcon, FilmIcon, ImageIcon } from "lucide-react";
 import {
   useState,

@@ -1,4 +1,4 @@
-import type { UsageProviderKind } from "@lmcstools/contracts";
+import type { UsageProviderKind } from "@lmcstools/core";
 
 import {
   AntigravityIcon,

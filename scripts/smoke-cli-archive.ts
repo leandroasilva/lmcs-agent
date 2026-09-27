@@ -20,8 +20,8 @@ import * as Stream from "effect/Stream";
 import { Command, Flag } from "effect/unstable/cli";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import * as NetService from "@lmcstools/shared/Net";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import * as NetService from "@lmcstools/core/Net";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import { windowsSystemTar } from "./build-cli-archive.ts";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/unstable/http";
 

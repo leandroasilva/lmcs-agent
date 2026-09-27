@@ -1,4 +1,4 @@
-import type { AdvertisedEndpoint, DesktopServerExposureState } from "@lmcstools/contracts";
+import type { AdvertisedEndpoint, DesktopServerExposureState } from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { AtomRegistry } from "effect/unstable/reactivity";

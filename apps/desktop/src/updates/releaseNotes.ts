@@ -1,4 +1,4 @@
-import type { DesktopUpdateChannel, DesktopUpdateReleaseNote } from "@lmcstools/contracts";
+import type { DesktopUpdateChannel, DesktopUpdateReleaseNote } from "@lmcstools/core";
 
 import { resolveDefaultDesktopUpdateChannel } from "./updateChannels.ts";
 

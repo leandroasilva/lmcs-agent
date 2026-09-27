@@ -1,10 +1,10 @@
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
 import type {
   EnvironmentId,
   PreviewCloseInput,
   PreviewSessionSnapshot,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { beginPreviewSessionClose, cancelPreviewSessionClose } from "~/previewStateStore";
 

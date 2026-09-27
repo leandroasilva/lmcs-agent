@@ -1,6 +1,6 @@
-import type { ArchivedSnapshotEntry } from "@lmcstools/client-runtime/state/threads";
-import type { OrchestrationProjectShell, OrchestrationThreadShell } from "@lmcstools/contracts";
-import { EnvironmentId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/contracts";
+import type { ArchivedSnapshotEntry } from "@lmcstools/client/state/threads";
+import type { OrchestrationProjectShell, OrchestrationThreadShell } from "@lmcstools/core";
+import { EnvironmentId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { buildArchivedThreadGroups } from "./archivedThreadList";

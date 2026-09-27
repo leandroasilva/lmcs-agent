@@ -1,6 +1,6 @@
-import type { EnvironmentId, ServerConfig, ServerSelfUpdateCapability } from "@lmcstools/contracts";
-import type { ServerUpdateState } from "@lmcstools/client-runtime/state/server";
-import { compareSemverVersions, parseSemver } from "@lmcstools/shared/semver";
+import type { EnvironmentId, ServerConfig, ServerSelfUpdateCapability } from "@lmcstools/core";
+import type { ServerUpdateState } from "@lmcstools/client/state/server";
+import { compareSemverVersions, parseSemver } from "@lmcstools/core/semver";
 import * as Schema from "effect/Schema";
 
 import { APP_VERSION } from "./branding";

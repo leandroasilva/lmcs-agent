@@ -1,4 +1,4 @@
-import type { PullRequestRef, PullRequestStack } from "@lmcstools/contracts";
+import type { PullRequestRef, PullRequestStack } from "@lmcstools/core";
 import { CheckIcon } from "lucide-react";
 import { MenuItem, MenuGroupLabel } from "../ui/menu";
 import { PullRequestStackLayerContent } from "./PullRequestStackLayerContent";

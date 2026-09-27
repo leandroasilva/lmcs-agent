@@ -1,4 +1,4 @@
-import type { ResolvedKeybindingsConfig } from "@lmcstools/contracts";
+import type { ResolvedKeybindingsConfig } from "@lmcstools/core";
 
 import { isTerminalCloseShortcut, type ShortcutEventLike } from "../keybindings";
 

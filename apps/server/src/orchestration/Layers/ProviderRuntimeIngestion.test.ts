@@ -10,7 +10,7 @@ import {
   ProviderRuntimeEvent,
   ProviderSession,
   ProviderInstanceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   ApprovalRequestId,
   CommandId,
@@ -24,7 +24,7 @@ import {
   type ServerSettings,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Clock from "effect/Clock";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";

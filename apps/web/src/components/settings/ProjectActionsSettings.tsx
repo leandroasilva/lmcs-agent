@@ -1,9 +1,9 @@
-import { EnvironmentId, type T3ProjectFileScript } from "@lmcstools/contracts";
+import { EnvironmentId, type T3ProjectFileScript } from "@lmcstools/core";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
-import { DEFAULT_RESOLVED_KEYBINDINGS } from "@lmcstools/shared/keybindings";
+} from "@lmcstools/client/state/runtime";
+import { DEFAULT_RESOLVED_KEYBINDINGS } from "@lmcstools/core/keybindings";
 import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useT3ProjectFileState } from "../../hooks/useT3ProjectFileScripts";

@@ -1,4 +1,4 @@
-import type { DesktopPreviewTabState } from "@lmcstools/contracts";
+import type { DesktopPreviewTabState } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { projectDesktopState } from "./usePreviewBridge";

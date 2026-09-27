@@ -10,7 +10,7 @@ import {
   type OrchestrationCommand,
   OrchestrationDispatchCommandError,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   createAttachmentId,

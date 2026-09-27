@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
 import { useFocusEffect } from "@react-navigation/native";

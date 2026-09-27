@@ -1,4 +1,4 @@
-import { collectComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
+import { collectComposerContextReferences } from "@lmcstools/core/composerContextReferences";
 import { PLAN_IMPLEMENTATION_PROMPT_PREFIX } from "../../proposedPlan";
 
 /**

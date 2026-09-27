@@ -8,7 +8,7 @@ import * as Ref from "effect/Ref";
 
 import * as Electron from "electron";
 
-import { type DesktopSnapShotEvent, DEFAULT_CLIENT_SETTINGS } from "@lmcstools/contracts";
+import { type DesktopSnapShotEvent, DEFAULT_CLIENT_SETTINGS } from "@lmcstools/core";
 
 import * as DesktopAssets from "../app/DesktopAssets.ts";
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";

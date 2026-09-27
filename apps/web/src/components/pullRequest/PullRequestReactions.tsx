@@ -3,7 +3,7 @@ import type {
   PullRequestReaction,
   PullRequestReactionContent,
   PullRequestRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { SmilePlusIcon } from "lucide-react";
 import { useState } from "react";
 

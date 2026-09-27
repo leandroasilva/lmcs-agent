@@ -1,4 +1,4 @@
-import type { ContextMenuItem } from "@lmcstools/contracts";
+import type { ContextMenuItem } from "@lmcstools/core";
 
 export type ExternalLinkContextMenuAction =
   | "open-in-preview"

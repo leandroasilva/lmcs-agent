@@ -4,14 +4,14 @@ import {
   type ServerProviderModel,
   type ServerProviderSkill,
   type ServerProviderSlashCommand,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Data from "effect/Data";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 
-import { createModelCapabilities } from "@lmcstools/shared/model";
-import { compareSemverVersions } from "@lmcstools/shared/semver";
+import { createModelCapabilities } from "@lmcstools/core/model";
+import { compareSemverVersions } from "@lmcstools/core/semver";
 import {
   buildServerProvider,
   COMPACT_SLASH_COMMAND,

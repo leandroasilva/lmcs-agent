@@ -1,7 +1,7 @@
-import { createEnvironmentProjectAtoms } from "@lmcstools/client-runtime/state/projects";
-import { createProjectEnvironmentAtoms } from "@lmcstools/client-runtime/state/projects";
-import { createEnvironmentRpcQueryAtomFamily } from "@lmcstools/client-runtime/state/runtime";
-import { WS_METHODS } from "@lmcstools/contracts";
+import { createEnvironmentProjectAtoms } from "@lmcstools/client/state/projects";
+import { createProjectEnvironmentAtoms } from "@lmcstools/client/state/projects";
+import { createEnvironmentRpcQueryAtomFamily } from "@lmcstools/client/state/runtime";
+import { WS_METHODS } from "@lmcstools/core";
 
 import { environmentCatalog } from "../connection/catalog";
 import { connectionAtomRuntime } from "../connection/runtime";

@@ -40,12 +40,12 @@ import {
   type DesktopWslState,
   type EnvironmentId,
   resolveEnvironmentMachineKind,
-} from "@lmcstools/contracts";
-import { connectionStatusText } from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/core";
+import { connectionStatusText } from "@lmcstools/client/connection";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 

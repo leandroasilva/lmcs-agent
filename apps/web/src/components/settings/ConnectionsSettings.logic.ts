@@ -1,4 +1,4 @@
-import type { AdvertisedEndpoint, DesktopBridge, DesktopWslState } from "@lmcstools/contracts";
+import type { AdvertisedEndpoint, DesktopBridge, DesktopWslState } from "@lmcstools/core";
 
 type WslEnableBridge = Pick<DesktopBridge, "setWslBackendEnabled" | "setWslDistro" | "setWslOnly">;
 

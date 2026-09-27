@@ -1,17 +1,14 @@
 import { useAtomValue } from "@effect/atom-react";
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
 import {
   CommandId,
   DEFAULT_PROVIDER_INTERACTION_MODE,
   DEFAULT_RUNTIME_MODE,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   type MessageId,
-} from "@lmcstools/contracts";
-import { buildTemporaryWorktreeBranchName } from "@lmcstools/shared/git";
+} from "@lmcstools/core";
+import { buildTemporaryWorktreeBranchName } from "@lmcstools/core/git";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useCallback, useEffect, useRef, useState } from "react";

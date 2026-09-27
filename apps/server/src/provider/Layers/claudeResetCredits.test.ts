@@ -1,6 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it as effectIt } from "@effect/vitest";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

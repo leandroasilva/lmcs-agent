@@ -1,8 +1,4 @@
-import type {
-  EnvironmentId,
-  ServerSettingsPatch,
-  UsageModelPriceOverride,
-} from "@lmcstools/contracts";
+import type { EnvironmentId, ServerSettingsPatch, UsageModelPriceOverride } from "@lmcstools/core";
 
 export interface UsagePriceTarget {
   readonly environmentId: EnvironmentId;

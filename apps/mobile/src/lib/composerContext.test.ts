@@ -1,17 +1,17 @@
-import { upgradeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacy";
+import { upgradeLegacyContextMessage } from "@lmcstools/core/composerContextLegacy";
 import { buildProjectThreadStartTurnInput } from "./projectThreadStartTurn";
 import {
   ProjectId,
   ProviderInstanceId,
   ComposerContextId,
   type OrchestrationMessageContext,
-} from "@lmcstools/contracts";
-import { collectComposerInlineTokens } from "@lmcstools/shared/composerInlineTokens";
+} from "@lmcstools/core";
+import { collectComposerInlineTokens } from "@lmcstools/core/composerInlineTokens";
 import {
   collectComposerContextReferences,
   formatComposerContextReference,
   projectComposerContextForProvider,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 import { describe, expect, it } from "vite-plus/test";
 import {
   composerContextEditorTokens,

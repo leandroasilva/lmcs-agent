@@ -4,8 +4,8 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
-import { createModelCapabilities } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelCapabilities } from "@lmcstools/core/model";
 import { assert, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

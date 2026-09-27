@@ -35,11 +35,11 @@ import {
   type SourceControlProviderKind,
   type SourceControlWritingStyleSettings,
   type ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   hasProjectSettingsOverrides,
   resolveProjectSettings,
-} from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core/projectSettings";
 import * as ProjectionSnapshotQuery from "../orchestration/Services/ProjectionSnapshotQuery.ts";
 import {
   detectSourceControlProviderFromGitRemoteUrl,
@@ -48,14 +48,14 @@ import {
   resolveAutoFeatureBranchName,
   sanitizeBranchFragment,
   sanitizeFeatureBranchName,
-} from "@lmcstools/shared/git";
+} from "@lmcstools/core/git";
 import {
   getChangeRequestTerminologyForKind,
   isSshRemoteUrl,
   type ChangeRequestTerminology,
-} from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core/sourceControl";
 
-import { GitManagerError, GitPullRequestMaterializationError } from "@lmcstools/contracts";
+import { GitManagerError, GitPullRequestMaterializationError } from "@lmcstools/core";
 import * as TextGeneration from "../textGeneration/TextGeneration.ts";
 import {
   conventionalCommitsTextGenerationPolicy,
@@ -66,11 +66,11 @@ import * as ProjectSetupScriptRunner from "../project/ProjectSetupScriptRunner.t
 import * as ProviderRegistry from "../provider/Services/ProviderRegistry.ts";
 import { extractBranchNameFromRemoteRef } from "./remoteRefs.ts";
 import * as ServerSettings from "../serverSettings.ts";
-import type { GitManagerServiceError } from "@lmcstools/contracts";
+import type { GitManagerServiceError } from "@lmcstools/core";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
 import { detectPrTemplate } from "../sourceControl/PrTemplateDetection.ts";
-import type { ChangeRequest } from "@lmcstools/contracts";
+import type { ChangeRequest } from "@lmcstools/core";
 
 export interface GitActionProgressReporter {
   readonly publish: (event: GitActionProgressEvent) => Effect.Effect<void, never>;

@@ -1,5 +1,5 @@
-import { createServerEnvironmentAtoms } from "@lmcstools/client-runtime/state/server";
-import { createEnvironmentServerConfigsAtom } from "@lmcstools/client-runtime/state/shell";
+import { createServerEnvironmentAtoms } from "@lmcstools/client/state/server";
+import { createEnvironmentServerConfigsAtom } from "@lmcstools/client/state/shell";
 
 import { environmentCatalog } from "../connection/catalog";
 import { connectionAtomRuntime } from "../connection/runtime";

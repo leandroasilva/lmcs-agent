@@ -1,4 +1,4 @@
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
 
 /**
  * What the floating pill says. Connection, syncing, and working share one

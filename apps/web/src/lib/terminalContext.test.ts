@@ -1,6 +1,6 @@
-import { ThreadId } from "@lmcstools/contracts";
+import { ThreadId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
-import { collectComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
+import { collectComposerContextReferences } from "@lmcstools/core/composerContextReferences";
 import { terminalContextRecord } from "./composerContextRecords";
 
 import {

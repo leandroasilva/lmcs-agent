@@ -30,7 +30,7 @@
   },
   "peerDependencies": {
     "@lmcstools/client-runtime": "*",
-    "@lmcstools/shared": "*",
+    "@lmcstools/core": "*",
     "expo": "*",
     "expo-asset": "*",
     "expo-clipboard": "*",

@@ -4,8 +4,8 @@ import {
   EnvironmentHttpForbiddenError,
   EnvironmentHttpInternalServerError,
   EnvironmentHttpUnauthorizedError,
-} from "@lmcstools/contracts";
-import { RelayProtectedError } from "@lmcstools/contracts/relay";
+} from "@lmcstools/core";
+import { RelayProtectedError } from "@lmcstools/core/relay";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";

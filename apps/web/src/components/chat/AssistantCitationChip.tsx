@@ -1,5 +1,5 @@
-import type { AssistantCitation } from "@lmcstools/contracts";
-import { serializeAssistantCitation } from "@lmcstools/shared/assistantCitations";
+import type { AssistantCitation } from "@lmcstools/core";
+import { serializeAssistantCitation } from "@lmcstools/core/assistantCitations";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { PencilIcon, QuoteIcon } from "lucide-react";
 import {

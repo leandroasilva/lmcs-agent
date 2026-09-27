@@ -1,4 +1,4 @@
-import type { ProviderInstanceEnvironment } from "@lmcstools/contracts";
+import type { ProviderInstanceEnvironment } from "@lmcstools/core";
 
 import { expandHomePath } from "../pathExpansion.ts";
 

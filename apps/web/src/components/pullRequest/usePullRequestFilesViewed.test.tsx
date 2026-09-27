@@ -3,7 +3,7 @@ import {
   ProjectId,
   type PullRequestFilesViewedResult,
   type PullRequestRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { act, StrictMode } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";

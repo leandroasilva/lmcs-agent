@@ -28,9 +28,9 @@ import * as Schema from "effect/Schema";
 import { Command, Flag } from "effect/unstable/cli";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { fromYaml } from "@lmcstools/shared/schemaYaml";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { fromYaml } from "@lmcstools/core/schemaYaml";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import rootPackageJson from "../package.json" with { type: "json" };
 import serverPackageJson from "../apps/server/package.json" with { type: "json" };
 

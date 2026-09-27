@@ -1,19 +1,13 @@
-import { threadPullRequestSearchTerms } from "@lmcstools/shared/threadPullRequests";
+import { threadPullRequestSearchTerms } from "@lmcstools/core/threadPullRequests";
 import * as React from "react";
 import { defaultAnimateLayoutChanges, type AnimateLayoutChanges } from "@dnd-kit/sortable";
-import {
-  isAtomCommandInterrupted,
-  type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
-import { threadSearchMatchKey } from "@lmcstools/client-runtime/state/thread-search";
-import type { ContextMenuItem, EnvironmentId, ThreadId } from "@lmcstools/contracts";
-import type { SidebarProjectSortOrder, SidebarThreadSortOrder } from "@lmcstools/contracts/settings";
+import { isAtomCommandInterrupted, type AtomCommandResult } from "@lmcstools/client/state/runtime";
+import { threadSearchMatchKey } from "@lmcstools/client/state/thread-search";
+import type { ContextMenuItem, EnvironmentId, ThreadId } from "@lmcstools/core";
+import type { SidebarProjectSortOrder, SidebarThreadSortOrder } from "@lmcstools/core/settings";
 import type { AsyncResult } from "effect/unstable/reactivity";
-import { planPinnedReorder } from "@lmcstools/client-runtime/state/thread-sort";
-import {
-  effectiveSnoozed,
-  type ThreadSnoozeShell,
-} from "@lmcstools/client-runtime/state/thread-settled";
+import { planPinnedReorder } from "@lmcstools/client/state/thread-sort";
+import { effectiveSnoozed, type ThreadSnoozeShell } from "@lmcstools/client/state/thread-settled";
 import {
   getThreadSortTimestamp,
   resolveSettledThreadTimestamp,
@@ -855,12 +849,12 @@ function firstValidTimestamp(
   return null;
 }
 
-export { sortActiveThreadsByOrderKey as sortThreadsForSidebar } from "@lmcstools/client-runtime/state/thread-sort";
+export { sortActiveThreadsByOrderKey as sortThreadsForSidebar } from "@lmcstools/client/state/thread-sort";
 
 // Pinned-reorder key math and the keyed sort live in client-runtime
 // (state/thread-sort) so web and mobile compute identical pinned orders.
-export { pinOrderKeyBetween, planPinnedReorder } from "@lmcstools/client-runtime/state/thread-sort";
-export { sortPinnedThreadsByOrderKey as sortPinnedThreadsForSidebar } from "@lmcstools/client-runtime/state/thread-sort";
+export { pinOrderKeyBetween, planPinnedReorder } from "@lmcstools/client/state/thread-sort";
+export { sortPinnedThreadsByOrderKey as sortPinnedThreadsForSidebar } from "@lmcstools/client/state/thread-sort";
 
 const EMPTY_CONTENT_MATCH_KEYS: ReadonlySet<string> = new Set<string>();
 

@@ -1,4 +1,4 @@
-import { ClientSettingsSchema } from "@lmcstools/contracts";
+import { ClientSettingsSchema } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";

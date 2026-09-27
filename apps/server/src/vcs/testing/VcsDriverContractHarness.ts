@@ -8,7 +8,7 @@ import type * as Scope from "effect/Scope";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 
-import type { VcsDriverKind } from "@lmcstools/contracts";
+import type { VcsDriverKind } from "@lmcstools/core";
 import * as VcsDriver from "../VcsDriver.ts";
 
 function normalizePathForComparison(value: string): string {

@@ -3,9 +3,9 @@ import {
   AuthOrchestrationOperateScope,
   AuthOrchestrationReadScope,
   EnvironmentHttpApi,
-} from "@lmcstools/contracts";
-import { isDevProxiedPath } from "@lmcstools/shared/devProxy";
-import { decodeOtlpTraceRecords } from "@lmcstools/shared/observability";
+} from "@lmcstools/core";
+import { isDevProxiedPath } from "@lmcstools/core/devProxy";
+import { decodeOtlpTraceRecords } from "@lmcstools/core/observability";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

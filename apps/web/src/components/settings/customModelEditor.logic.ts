@@ -2,8 +2,8 @@ import {
   type ModelCapabilities,
   ProviderDriverKind,
   type ProviderOptionDescriptor,
-} from "@lmcstools/contracts";
-import { type CustomModelDefinition, createModelCapabilities } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { type CustomModelDefinition, createModelCapabilities } from "@lmcstools/core/model";
 
 /** Editable mirror of a `ProviderOptionChoice`. `key` is only a React key. */
 export interface EditorChoice {

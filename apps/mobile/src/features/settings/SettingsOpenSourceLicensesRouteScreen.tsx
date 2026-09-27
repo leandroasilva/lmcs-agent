@@ -7,7 +7,7 @@ import {
   formatLicenseBundles,
   thirdPartyLicenseEntryKey,
   type ThirdPartyLicenseEntry,
-} from "@lmcstools/shared/thirdPartyLicenses";
+} from "@lmcstools/core/thirdPartyLicenses";
 import { useCallback, useMemo, useState } from "react";
 import { Linking, Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

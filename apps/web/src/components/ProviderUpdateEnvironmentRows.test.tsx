@@ -5,7 +5,7 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import type {

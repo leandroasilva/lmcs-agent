@@ -1,8 +1,5 @@
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
-import { EnvironmentId, ProjectId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { EnvironmentId, ProjectId, ThreadId } from "@lmcstools/core";
 import { assert, it } from "@effect/vitest";
 
 import {

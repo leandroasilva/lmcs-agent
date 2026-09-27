@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 
 import { appAtomRegistry } from "./atom-registry";
 import { threadOutboxManager } from "./thread-outbox";

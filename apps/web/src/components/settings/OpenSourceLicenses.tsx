@@ -8,7 +8,7 @@ import {
   thirdPartyLicenseEntryKey,
   type ThirdPartyLicenseEntry,
   type ThirdPartyLicenseManifest,
-} from "@lmcstools/shared/thirdPartyLicenses";
+} from "@lmcstools/core/thirdPartyLicenses";
 
 import { Button } from "../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";

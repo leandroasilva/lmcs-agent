@@ -50,14 +50,14 @@ import {
   type SidebarSection,
   resolveSidebarDropVerb,
 } from "./Sidebar.logic";
-import { threadSearchMatchKey } from "@lmcstools/client-runtime/state/thread-search";
+import { threadSearchMatchKey } from "@lmcstools/client/state/thread-search";
 import {
   EnvironmentId,
   OrchestrationLatestTurn,
   ProjectId,
   ProviderInstanceId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   DEFAULT_INTERACTION_MODE,

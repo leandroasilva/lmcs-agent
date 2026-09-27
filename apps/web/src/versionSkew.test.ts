@@ -1,5 +1,5 @@
-import { EnvironmentId } from "@lmcstools/contracts";
-import type { ServerUpdateState } from "@lmcstools/client-runtime/state/server";
+import { EnvironmentId } from "@lmcstools/core";
+import type { ServerUpdateState } from "@lmcstools/client/state/server";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 // Pinned so the direction cases below read as fixed versions instead of

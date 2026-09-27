@@ -1,6 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
-import { createEnvironmentSessionAtoms } from "@lmcstools/client-runtime/state/session";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import { createEnvironmentSessionAtoms } from "@lmcstools/client/state/session";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 

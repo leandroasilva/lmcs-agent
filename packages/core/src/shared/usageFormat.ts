@@ -4,7 +4,7 @@
  *
  * @module usageFormat
  */
-import { UsageDay, type UsageResolution, type UsageSummaryInput } from "@lmcstools/contracts";
+import { UsageDay, type UsageResolution, type UsageSummaryInput } from "@lmcstools/core";
 
 const CURRENCY = new Intl.NumberFormat("en-US", {
   style: "currency",

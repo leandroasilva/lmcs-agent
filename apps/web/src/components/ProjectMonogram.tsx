@@ -1,4 +1,4 @@
-import type { ProjectIconColor } from "@lmcstools/contracts";
+import type { ProjectIconColor } from "@lmcstools/core";
 import { projectIconColorClassName } from "../projectIconColors";
 import { cn } from "~/lib/utils";
 

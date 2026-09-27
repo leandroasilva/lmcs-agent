@@ -1,10 +1,5 @@
-import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import {
-  type DesktopPendingSnapShot,
-  EnvironmentId,
-  ProjectId,
-  ThreadId,
-} from "@lmcstools/contracts";
+import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
+import { type DesktopPendingSnapShot, EnvironmentId, ProjectId, ThreadId } from "@lmcstools/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { DraftId, useComposerDraftStore } from "../../composerDraftStore";

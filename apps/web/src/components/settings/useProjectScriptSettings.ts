@@ -3,16 +3,16 @@ import {
   mapAtomCommandResult,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   type EnvironmentId,
   type ProjectId,
   type ProjectScript,
   type ResolvedKeybindingsConfig,
   type ServerSettings,
-} from "@lmcstools/contracts";
-import { resolveProjectScripts } from "@lmcstools/shared/projectScripts";
-import { clearProjectSettingsOverrides } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core";
+import { resolveProjectScripts } from "@lmcstools/core/projectScripts";
+import { clearProjectSettingsOverrides } from "@lmcstools/core/projectSettings";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useRef, useState } from "react";

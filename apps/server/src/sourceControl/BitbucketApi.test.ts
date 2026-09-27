@@ -14,7 +14,7 @@ import {
   HttpClientResponse,
 } from "effect/unstable/http";
 
-import { GitCommandError } from "@lmcstools/contracts";
+import { GitCommandError } from "@lmcstools/core";
 import * as BitbucketApi from "./BitbucketApi.ts";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as VcsDriverRegistry from "../vcs/VcsDriverRegistry.ts";

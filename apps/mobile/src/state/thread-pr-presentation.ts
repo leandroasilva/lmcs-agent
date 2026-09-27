@@ -1,15 +1,15 @@
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import type {
   ExecutionEnvironmentCapabilities,
   ThreadPullRequestLink,
   VcsStatusResult,
-} from "@lmcstools/contracts";
-import { resolveChangeRequestPresentation } from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core";
+import { resolveChangeRequestPresentation } from "@lmcstools/core/sourceControl";
 
 import {
   resolveThreadCurrentPullRequestLink,
   resolveThreadPullRequestBadge,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 
 export type ThreadPr = NonNullable<VcsStatusResult["pr"]>;
 

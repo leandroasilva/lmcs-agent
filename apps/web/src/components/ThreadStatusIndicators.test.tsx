@@ -1,4 +1,4 @@
-import { ThreadId, type ThreadPullRequestLink } from "@lmcstools/contracts";
+import { ThreadId, type ThreadPullRequestLink } from "@lmcstools/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 

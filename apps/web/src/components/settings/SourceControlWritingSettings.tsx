@@ -4,10 +4,10 @@ import type {
   ProviderInstanceId,
   ServerSettings,
   SourceControlWritingStyleMode,
-} from "@lmcstools/contracts";
-import { DEFAULT_UNIFIED_SETTINGS } from "@lmcstools/contracts/settings";
-import { createModelSelection } from "@lmcstools/shared/model";
-import { resolveSourceControlWriterModelSelection } from "@lmcstools/shared/serverSettings";
+} from "@lmcstools/core";
+import { DEFAULT_UNIFIED_SETTINGS } from "@lmcstools/core/settings";
+import { createModelSelection } from "@lmcstools/core/model";
+import { resolveSourceControlWriterModelSelection } from "@lmcstools/core/serverSettings";
 
 import {
   useScopedSettings,

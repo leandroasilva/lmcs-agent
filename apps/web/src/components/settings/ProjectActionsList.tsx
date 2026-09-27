@@ -1,4 +1,4 @@
-import type { ProjectScript, ResolvedKeybindingsConfig } from "@lmcstools/contracts";
+import type { ProjectScript, ResolvedKeybindingsConfig } from "@lmcstools/core";
 import { SettingsIcon } from "lucide-react";
 import { shortcutLabelForCommand } from "../../keybindings";
 import { commandForProjectScript } from "../../projectScripts";

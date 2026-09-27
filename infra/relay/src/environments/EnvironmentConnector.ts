@@ -4,8 +4,8 @@ import {
   EnvironmentHttpForbiddenError,
   EnvironmentHttpInternalServerError,
   EnvironmentHttpUnauthorizedError,
-} from "@lmcstools/contracts";
-import { makeEnvironmentHttpApiClient } from "@lmcstools/client-runtime/rpc";
+} from "@lmcstools/core";
+import { makeEnvironmentHttpApiClient } from "@lmcstools/client/rpc";
 import {
   RelayCloudEnvironmentHealthProofPayload,
   RelayEnvironmentHealthResponse,
@@ -16,7 +16,7 @@ import {
   RelayEnvironmentConnectNotAuthorizedReason,
   type RelayEnvironmentConnectResponse,
   type RelayEnvironmentStatusResponse,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import {
   normalizeRelayIssuer,
   RELAY_HEALTH_REQUEST_TYP,
@@ -25,8 +25,8 @@ import {
   RELAY_MINT_RESPONSE_TYP,
   signRelayJwt,
   verifyRelayJwt,
-} from "@lmcstools/shared/relayJwt";
-import { stableStringify } from "@lmcstools/shared/relaySigning";
+} from "@lmcstools/core/relayJwt";
+import { stableStringify } from "@lmcstools/core/relaySigning";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";

@@ -1,4 +1,4 @@
-import { EDITORS, type EditorId } from "@lmcstools/contracts";
+import { EDITORS, type EditorId } from "@lmcstools/core";
 
 import { getLocalFileManagerName } from "~/lib/utils";
 

@@ -15,7 +15,7 @@
  *
  * @module ProviderAdapterRegistryLive
  */
-import { ProviderInstanceId, ProviderSetupError, type ProviderSession } from "@lmcstools/contracts";
+import { ProviderInstanceId, ProviderSetupError, type ProviderSession } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Layer from "effect/Layer";

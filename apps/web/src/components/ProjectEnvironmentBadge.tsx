@@ -1,4 +1,4 @@
-import type { EnvironmentId, EnvironmentMachineKind } from "@lmcstools/contracts";
+import type { EnvironmentId, EnvironmentMachineKind } from "@lmcstools/core";
 
 import type { SidebarProjectSnapshot } from "~/sidebarProjectGrouping";
 import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";

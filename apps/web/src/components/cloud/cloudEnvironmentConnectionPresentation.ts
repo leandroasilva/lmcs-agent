@@ -1,7 +1,7 @@
 import {
   connectionStatusText,
   type EnvironmentConnectionPresentation,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 
 export interface SavedCloudEnvironmentConnectionPresentation {
   readonly buttonLabel: string;

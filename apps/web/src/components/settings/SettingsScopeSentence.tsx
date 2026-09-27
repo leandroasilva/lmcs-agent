@@ -1,4 +1,4 @@
-import { resolveEnvironmentMachineKind } from "@lmcstools/contracts";
+import { resolveEnvironmentMachineKind } from "@lmcstools/core";
 import { useLocation } from "@tanstack/react-router";
 import { ChevronDownIcon, LayersIcon } from "lucide-react";
 import type { ReactNode } from "react";

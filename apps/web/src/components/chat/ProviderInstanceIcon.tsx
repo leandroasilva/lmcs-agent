@@ -1,6 +1,6 @@
 import { type CSSProperties, memo } from "react";
-import { type ProviderDriverKind } from "@lmcstools/contracts";
-import { providerInstanceInitials } from "@lmcstools/client-runtime/state/provider-instance-display";
+import { type ProviderDriverKind } from "@lmcstools/core";
+import { providerInstanceInitials } from "@lmcstools/client/state/provider-instance-display";
 
 import { PROVIDER_ICON_BY_PROVIDER } from "./providerIconUtils";
 import { cn } from "~/lib/utils";

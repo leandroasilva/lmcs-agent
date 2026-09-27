@@ -3,10 +3,10 @@ import {
   EnvironmentId,
   ProjectId,
   type ServerSettings,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it, vi } from "vite-plus/test";
-import { applyServerSettingsPatch } from "@lmcstools/shared/serverSettings";
-import { resolveWorktreeCleanup } from "@lmcstools/shared/projectSettings";
+import { applyServerSettingsPatch } from "@lmcstools/core/serverSettings";
+import { resolveWorktreeCleanup } from "@lmcstools/core/projectSettings";
 
 import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 import {

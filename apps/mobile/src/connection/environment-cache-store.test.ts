@@ -6,7 +6,7 @@ import {
   MessageId,
   type OrchestrationThreadDetailSnapshot,
   type VcsListRefsResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

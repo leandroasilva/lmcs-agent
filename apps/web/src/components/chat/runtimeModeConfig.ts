@@ -1,4 +1,4 @@
-import type { RuntimeMode } from "@lmcstools/contracts";
+import type { RuntimeMode } from "@lmcstools/core";
 import { type LucideIcon, LockIcon, LockOpenIcon, PenLineIcon, SparklesIcon } from "lucide-react";
 
 export const runtimeModeConfig: Record<

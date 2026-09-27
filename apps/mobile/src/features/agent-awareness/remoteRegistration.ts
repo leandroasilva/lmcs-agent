@@ -8,19 +8,19 @@ import * as Notifications from "expo-notifications";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AppState, Platform } from "react-native";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import {
   type RelayDeviceRegistrationRequest,
   type RelayAgentActivitySnapshotResponse,
   type RelayLiveActivityRegistrationRequest,
-} from "@lmcstools/contracts/relay";
-import { findErrorTraceId } from "@lmcstools/client-runtime/errors";
-import { ManagedRelay } from "@lmcstools/client-runtime/relay";
+} from "@lmcstools/core/relay";
+import { findErrorTraceId } from "@lmcstools/client/errors";
+import { ManagedRelay } from "@lmcstools/client/relay";
 import {
   isAtomCommandInterrupted,
   settleAsyncResult,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 
 import type { SavedRemoteConnection } from "../../lib/connection";
 import { runtime } from "../../lib/runtime";

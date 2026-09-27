@@ -5,8 +5,8 @@ import {
   type ScopedThreadRef,
   type PullRequestDetailView,
   type ThreadPullRequestLink,
-} from "@lmcstools/contracts";
-import { DEFAULT_CLIENT_SETTINGS } from "@lmcstools/contracts/settings";
+} from "@lmcstools/core";
+import { DEFAULT_CLIENT_SETTINGS } from "@lmcstools/core/settings";
 import { act, type ReactNode, type ReactElement, type ComponentProps } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";

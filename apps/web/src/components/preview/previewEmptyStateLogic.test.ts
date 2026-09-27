@@ -1,4 +1,4 @@
-import type { PreviewSessionSnapshot, ProjectScript } from "@lmcstools/contracts";
+import type { PreviewSessionSnapshot, ProjectScript } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { getConfiguredPreviewUrls, shouldShowPreviewEmptyState } from "./previewEmptyStateLogic";

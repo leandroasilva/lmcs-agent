@@ -1,4 +1,4 @@
-import type { TurnId } from "@lmcstools/contracts";
+import type { TurnId } from "@lmcstools/core";
 
 // Match the titlebar fade inset so draft promotion preserves the first row's position.
 export const CHAT_TIMELINE_ANCHOR_OFFSET = 24;

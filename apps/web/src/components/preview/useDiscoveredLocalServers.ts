@@ -1,8 +1,8 @@
-import type { DiscoveredLocalServer } from "@lmcstools/contracts";
-import { isLoopbackHost } from "@lmcstools/shared/preview";
+import type { DiscoveredLocalServer } from "@lmcstools/core";
+import { isLoopbackHost } from "@lmcstools/core/preview";
 import { useMemo } from "react";
 
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import { resolveDiscoveredServerUrl } from "~/browser/browserTargetResolver";
 import { useDiscoveredPortsState } from "~/portDiscoveryState";
 

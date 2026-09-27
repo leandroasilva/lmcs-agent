@@ -15,12 +15,12 @@ import type {
   AgentPanelModel,
   AgentPanelWorkflowGroup,
   RuntimeSubagent,
-} from "@lmcstools/client-runtime/state/subagentRuntime";
+} from "@lmcstools/client/state/subagentRuntime";
 import {
   formatSubagentModelLabel,
   formatSubagentTokenCount,
-} from "@lmcstools/client-runtime/state/subagentRuntime";
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/subagentRuntime";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { Bot, Braces, Check, ChevronDown, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

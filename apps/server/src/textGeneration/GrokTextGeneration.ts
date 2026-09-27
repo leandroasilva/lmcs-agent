@@ -6,12 +6,12 @@ import * as Schema from "effect/Schema";
 import { ChildProcessSpawner } from "effect/unstable/process";
 import type * as EffectAcpErrors from "effect-acp/errors";
 
-import { type GrokSettings, type ModelSelection } from "@lmcstools/contracts";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/shared/git";
-import { getModelSelectionStringOptionValue } from "@lmcstools/shared/model";
-import { extractJsonObject } from "@lmcstools/shared/schemaJson";
+import { type GrokSettings, type ModelSelection } from "@lmcstools/core";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
+import { getModelSelectionStringOptionValue } from "@lmcstools/core/model";
+import { extractJsonObject } from "@lmcstools/core/schemaJson";
 
-import { TextGenerationError } from "@lmcstools/contracts";
+import { TextGenerationError } from "@lmcstools/core";
 import * as TextGeneration from "./TextGeneration.ts";
 import {
   buildBranchNamePrompt,

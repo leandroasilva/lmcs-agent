@@ -2,7 +2,7 @@ import {
   type ApprovalRequestId,
   type ProviderApprovalDecision,
   type ProviderApprovalOption,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { memo } from "react";
 import { EllipsisIcon, TriangleAlertIcon } from "lucide-react";
 import { Button } from "../ui/button";

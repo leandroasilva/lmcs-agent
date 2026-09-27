@@ -6,7 +6,7 @@ import {
   type DesktopSnapShotState,
   type DesktopSnapShotSetupAction,
   type SnapShotShortcut,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { PlayIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 

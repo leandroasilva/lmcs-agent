@@ -1,4 +1,4 @@
-import type { EnvironmentId, ProviderInstanceId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ProviderInstanceId, ThreadId } from "@lmcstools/core";
 
 export interface McpProviderSessionConfig {
   readonly environmentId: EnvironmentId;

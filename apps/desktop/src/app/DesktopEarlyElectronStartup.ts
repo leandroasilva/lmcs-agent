@@ -1,4 +1,4 @@
-import { fromLenientJson } from "@lmcstools/shared/schemaJson";
+import { fromLenientJson } from "@lmcstools/core/schemaJson";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 

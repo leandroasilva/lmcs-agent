@@ -1,4 +1,4 @@
-import type { PreviewSessionSnapshot, ProjectScript } from "@lmcstools/contracts";
+import type { PreviewSessionSnapshot, ProjectScript } from "@lmcstools/core";
 
 export function shouldShowPreviewEmptyState(snapshot: PreviewSessionSnapshot | null): boolean {
   return snapshot === null || snapshot.navStatus._tag === "Idle";

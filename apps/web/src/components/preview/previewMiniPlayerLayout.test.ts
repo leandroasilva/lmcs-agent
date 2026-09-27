@@ -1,4 +1,4 @@
-import { FILL_PREVIEW_VIEWPORT } from "@lmcstools/contracts";
+import { FILL_PREVIEW_VIEWPORT } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

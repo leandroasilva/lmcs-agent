@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import type { TerminalSummary } from "@lmcstools/contracts";
-import { DEFAULT_TERMINAL_ID } from "@lmcstools/contracts";
+import type { TerminalSummary } from "@lmcstools/core";
+import { DEFAULT_TERMINAL_ID } from "@lmcstools/core";
 
 import { getTerminalLabel, nextTerminalId, resolveTerminalSessionLabel } from "./terminalLabels.ts";
 

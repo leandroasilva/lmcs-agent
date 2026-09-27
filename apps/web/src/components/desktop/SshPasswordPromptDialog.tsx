@@ -1,4 +1,4 @@
-import type { DesktopSshPasswordPromptRequest } from "@lmcstools/contracts";
+import type { DesktopSshPasswordPromptRequest } from "@lmcstools/core";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "../ui/button";

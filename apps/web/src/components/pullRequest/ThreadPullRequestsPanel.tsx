@@ -1,8 +1,8 @@
-import type { ScopedThreadRef, ThreadPullRequestLink } from "@lmcstools/contracts";
+import type { ScopedThreadRef, ThreadPullRequestLink } from "@lmcstools/core";
 import {
   resolveThreadPullRequestChains,
   visibleThreadPullRequests,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 import { ArrowUpRightIcon, LinkIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 

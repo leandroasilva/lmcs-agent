@@ -1,4 +1,4 @@
-import { EventId, ProviderDriverKind } from "@lmcstools/contracts";
+import { EventId, ProviderDriverKind } from "@lmcstools/core";
 
 import type {
   FixtureProviderRuntimeEvent,

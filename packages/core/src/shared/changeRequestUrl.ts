@@ -1,4 +1,4 @@
-import type { RepositoryIdentity, ThreadLinkedPullRequest } from "@lmcstools/contracts";
+import type { RepositoryIdentity, ThreadLinkedPullRequest } from "@lmcstools/core";
 import { canonicalRepositoryKey } from "./sourceControl.ts";
 
 /**

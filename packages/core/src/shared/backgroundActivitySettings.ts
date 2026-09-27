@@ -5,7 +5,7 @@ import {
   DEFAULT_AUTOMATIC_GIT_FETCH_INTERVAL,
   DEFAULT_PROVIDER_HEALTH_REFRESH_INTERVAL,
   type ServerSettings,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Duration from "effect/Duration";
 
 export interface ResolvedBackgroundActivitySettings {

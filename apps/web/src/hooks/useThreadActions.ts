@@ -3,11 +3,11 @@ import {
   scopeProjectRef,
   scopeThreadRef,
   scopedThreadKey,
-} from "@lmcstools/client-runtime/environment";
-import { settlePromise, squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
-import { canSnooze, threadWokeAt } from "@lmcstools/client-runtime/state/thread-settled";
-import { EnvironmentId, type ScopedThreadRef, ThreadId } from "@lmcstools/contracts";
-import { resolveWorktreeCleanup } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/client/environment";
+import { settlePromise, squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
+import { canSnooze, threadWokeAt } from "@lmcstools/client/state/thread-settled";
+import { EnvironmentId, type ScopedThreadRef, ThreadId } from "@lmcstools/core";
+import { resolveWorktreeCleanup } from "@lmcstools/core/projectSettings";
 import * as Cause from "effect/Cause";
 import * as Schema from "effect/Schema";
 import { AsyncResult } from "effect/unstable/reactivity";

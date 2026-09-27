@@ -1,4 +1,4 @@
-import type { ScopedThreadRef, ThreadId } from "@lmcstools/contracts";
+import type { ScopedThreadRef, ThreadId } from "@lmcstools/core";
 
 /**
  * Base UI toast updates omit `undefined` fields, so callers that need to remove

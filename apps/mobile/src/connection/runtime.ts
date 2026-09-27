@@ -1,6 +1,6 @@
-import { Connection } from "@lmcstools/client-runtime/connection";
-import { shellSnapshotLoaderLayer } from "@lmcstools/client-runtime/state/shell";
-import { threadSnapshotLoaderLayer } from "@lmcstools/client-runtime/state/threads";
+import { Connection } from "@lmcstools/client/connection";
+import { shellSnapshotLoaderLayer } from "@lmcstools/client/state/shell";
+import { threadSnapshotLoaderLayer } from "@lmcstools/client/state/threads";
 import * as Layer from "effect/Layer";
 import { Atom } from "effect/unstable/reactivity";
 

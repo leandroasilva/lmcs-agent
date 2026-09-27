@@ -1,4 +1,4 @@
-import { EnvironmentId, ProjectId, ProviderInstanceId } from "@lmcstools/contracts";
+import { EnvironmentId, ProjectId, ProviderInstanceId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

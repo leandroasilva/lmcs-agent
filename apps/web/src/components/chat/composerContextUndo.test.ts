@@ -1,4 +1,4 @@
-import type { PreviewAnnotationPayload } from "@lmcstools/contracts";
+import type { PreviewAnnotationPayload } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import type { ComposerFileAttachment, ComposerImageAttachment } from "../../composerDraftStore";

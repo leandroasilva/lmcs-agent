@@ -1,4 +1,4 @@
-import type { HostPowerSnapshot } from "@lmcstools/contracts";
+import type { HostPowerSnapshot } from "@lmcstools/core";
 import { describe, expect, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";

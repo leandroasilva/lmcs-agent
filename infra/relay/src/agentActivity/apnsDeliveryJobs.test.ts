@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
-import type { RelayAgentActivityAggregateState } from "@lmcstools/contracts/relay";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
+import type { RelayAgentActivityAggregateState } from "@lmcstools/core/relay";
 import * as Redacted from "effect/Redacted";
 
 import {

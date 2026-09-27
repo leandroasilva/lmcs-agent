@@ -1,6 +1,6 @@
 import * as Option from "effect/Option";
 import { describe, expect, it } from "vite-plus/test";
-import { EnvironmentId, type DeviceHostSummary } from "@lmcstools/contracts";
+import { EnvironmentId, type DeviceHostSummary } from "@lmcstools/core";
 import {
   checkDeviceHostConnections,
   parseDeviceHostDraft,

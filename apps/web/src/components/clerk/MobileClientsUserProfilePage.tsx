@@ -1,4 +1,4 @@
-import type { RelayClientDeviceRecord } from "@lmcstools/contracts/relay";
+import type { RelayClientDeviceRecord } from "@lmcstools/core/relay";
 import { SmartphoneIcon } from "lucide-react";
 
 import { useManagedRelayDevices } from "../../cloud/managedRelayState";

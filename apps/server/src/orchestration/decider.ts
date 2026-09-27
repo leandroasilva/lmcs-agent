@@ -13,14 +13,14 @@ import {
   type ThreadPullRequestKey,
   type ThreadPullRequestLink,
   type OrchestrationThreadActivity,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   legacyLinkedPullRequestOf,
   legacyThreadPullRequestKey,
   normalizeThreadPullRequestKey,
   threadPullRequestKeysEqual,
-} from "@lmcstools/shared/threadPullRequests";
-import { compareDateTimeStrings } from "@lmcstools/shared/dateTime";
+} from "@lmcstools/core/threadPullRequests";
+import { compareDateTimeStrings } from "@lmcstools/core/dateTime";
 import * as DateTime from "effect/DateTime";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

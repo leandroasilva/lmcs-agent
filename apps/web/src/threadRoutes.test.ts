@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import { ThreadId } from "@lmcstools/contracts";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import { ThreadId } from "@lmcstools/core";
 import { DraftId } from "./composerDraftStore";
 
 import {

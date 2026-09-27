@@ -2,9 +2,9 @@ import {
   connectLoopbackRedirectUri,
   CONNECT_OAUTH_SCOPES,
   DEFAULT_HOSTED_APP_URL,
-} from "@lmcstools/shared/connectAuth";
-import { clerkFrontendApiUrlFromPublishableKey } from "@lmcstools/shared/relayAuth";
-import { normalizeSecureRelayUrl } from "@lmcstools/shared/relayUrl";
+} from "@lmcstools/core/connectAuth";
+import { clerkFrontendApiUrlFromPublishableKey } from "@lmcstools/core/relayAuth";
+import { normalizeSecureRelayUrl } from "@lmcstools/core/relayUrl";
 import * as Config from "effect/Config";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";

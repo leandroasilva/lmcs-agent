@@ -1,5 +1,5 @@
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
-import type { EnvironmentId, PullRequestRef, PullRequestStackMembership } from "@lmcstools/contracts";
+import type { EnvironmentId, PullRequestRef, PullRequestStackMembership } from "@lmcstools/core";
 import { useState } from "react";
 import { usePullRequestStack } from "~/state/usePullRequestStack";
 import { Menu, MenuTrigger, MenuPopup, MenuGroup, MenuGroupLabel, MenuItem } from "../ui/menu";

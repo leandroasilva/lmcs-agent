@@ -7,13 +7,13 @@ import type {
   ScopedProjectRef,
   ServerConfig,
   ServerProvider,
-} from "@lmcstools/contracts";
-import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/core";
+import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
-import { CommandId, ProviderDriverKind, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/runtime";
+import { CommandId, ProviderDriverKind, ThreadId } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import {
   ArrowRightIcon,

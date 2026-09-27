@@ -5,7 +5,7 @@ import type {
   VcsStatusRemoteResult,
   VcsStatusResult,
   VcsStatusStreamEvent,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
 import { detectSourceControlProviderFromRemoteUrl } from "./sourceControl.ts";

@@ -1,4 +1,4 @@
-import { ProviderDriverKind, RuntimeRequestId, TurnId } from "@lmcstools/contracts";
+import { ProviderDriverKind, RuntimeRequestId, TurnId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

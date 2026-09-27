@@ -15,13 +15,13 @@
  */
 import * as NodeOS from "node:os";
 
-import type { ClaudeSettings, ServerProviderSkill } from "@lmcstools/contracts";
+import type { ClaudeSettings, ServerProviderSkill } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { fromLenientJson } from "@lmcstools/shared/schemaJson";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { fromLenientJson } from "@lmcstools/core/schemaJson";
 import { parse as parseYamlDocument } from "yaml";
 
 import { expandHomePath } from "../../pathExpansion.ts";

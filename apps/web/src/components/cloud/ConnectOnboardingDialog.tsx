@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/react";
-import { AuthAdministrativeScopes, AuthRelayWriteScope } from "@lmcstools/contracts";
+import { AuthAdministrativeScopes, AuthRelayWriteScope } from "@lmcstools/core";
 import { useEffect, useRef, useState } from "react";
 
 import {

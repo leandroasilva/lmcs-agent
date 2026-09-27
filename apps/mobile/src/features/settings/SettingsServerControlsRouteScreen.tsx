@@ -11,7 +11,7 @@ import {
   type WorktreeSubmodules,
   PROJECT_SCOPED_SERVER_SETTING_KEYS,
   type ProjectScopedServerSettingKey,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useRef, useState, type ComponentProps } from "react";
 import { Alert, Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

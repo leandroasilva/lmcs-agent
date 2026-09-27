@@ -4,7 +4,7 @@ import type {
   DeviceServiceState,
   DeviceSummary,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { Smartphone, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 

@@ -1,8 +1,8 @@
-import type { ModelSelection, ProviderDriverKind, ProviderInstanceId } from "@lmcstools/contracts";
+import type { ModelSelection, ProviderDriverKind, ProviderInstanceId } from "@lmcstools/core";
 import {
   CLAUDE_RESUME_COMPACTION_NEVER_ANSWER,
   isClaudeResumeCompactionQuestion,
-} from "@lmcstools/shared/claudeCompaction";
+} from "@lmcstools/core/claudeCompaction";
 import {
   resolveSelectableProviderInstanceEntry,
   type ProviderInstanceEntry,

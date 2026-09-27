@@ -1,5 +1,5 @@
-import { DEFAULT_SERVER_SETTINGS, EnvironmentId, ProjectId } from "@lmcstools/contracts";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+import { DEFAULT_SERVER_SETTINGS, EnvironmentId, ProjectId } from "@lmcstools/core";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import { describe, expect, it } from "vite-plus/test";
 
 import { settingInheritanceLayers } from "./SettingInheritance";

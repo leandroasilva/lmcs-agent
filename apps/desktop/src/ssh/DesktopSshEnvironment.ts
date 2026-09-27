@@ -2,8 +2,8 @@ import type {
   DesktopDiscoveredSshHost,
   DesktopSshEnvironmentBootstrap,
   DesktopSshEnvironmentTarget,
-} from "@lmcstools/contracts";
-import * as NetService from "@lmcstools/shared/Net";
+} from "@lmcstools/core";
+import * as NetService from "@lmcstools/core/Net";
 import * as SshAuth from "@lmcstools/ssh/auth";
 import { resolveSshTarget } from "@lmcstools/ssh/command";
 import { discoverSshHosts } from "@lmcstools/ssh/config";

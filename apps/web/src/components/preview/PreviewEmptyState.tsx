@@ -1,4 +1,4 @@
-import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/contracts";
+import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/core";
 import { Globe, History, RadioTower } from "lucide-react";
 
 import type { BrowserHistoryEntry } from "~/browserHistoryStore";

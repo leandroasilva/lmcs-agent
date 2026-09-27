@@ -17,8 +17,8 @@ import {
   type ProviderUserInputAnswers,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it, vi } from "@effect/vitest";
 

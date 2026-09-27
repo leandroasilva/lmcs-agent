@@ -1,8 +1,8 @@
-import { filePreviewDelimiter } from "@lmcstools/shared/delimitedPreview";
-import type { EnvironmentId } from "@lmcstools/contracts";
-import { formatAttachmentSize } from "@lmcstools/client-runtime/state/attachments";
-import { readFilePreviewResponse } from "@lmcstools/client-runtime/file-preview";
-import { filePreviewKind, FILE_TEXT_PREVIEW_MAX_BYTES } from "@lmcstools/shared/filePreview";
+import { filePreviewDelimiter } from "@lmcstools/core/delimitedPreview";
+import type { EnvironmentId } from "@lmcstools/core";
+import { formatAttachmentSize } from "@lmcstools/client/state/attachments";
+import { readFilePreviewResponse } from "@lmcstools/client/file-preview";
+import { filePreviewKind, FILE_TEXT_PREVIEW_MAX_BYTES } from "@lmcstools/core/filePreview";
 import {
   CheckIcon,
   ChevronRightIcon,

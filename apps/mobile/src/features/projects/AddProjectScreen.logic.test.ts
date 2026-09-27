@@ -1,5 +1,5 @@
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
-import { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
+import { EnvironmentId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { resolveAddProjectEnvironment } from "./AddProjectScreen.logic";

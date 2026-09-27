@@ -3,7 +3,7 @@ import {
   type ProviderInstanceId,
   type ProviderDriverKind,
   type ResolvedKeybindingsConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { memo, useEffect, useMemo, useState } from "react";
 import { Badge } from "../ui/badge";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";

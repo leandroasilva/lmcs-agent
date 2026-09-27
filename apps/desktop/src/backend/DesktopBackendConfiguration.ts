@@ -1,6 +1,6 @@
 import * as NodeOS from "node:os";
 
-import { parsePersistedServerObservabilitySettings } from "@lmcstools/shared/serverSettings";
+import { parsePersistedServerObservabilitySettings } from "@lmcstools/core/serverSettings";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

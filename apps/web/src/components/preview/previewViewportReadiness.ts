@@ -1,4 +1,4 @@
-import type { PreviewRenderedViewportSize, PreviewViewportSetting } from "@lmcstools/contracts";
+import type { PreviewRenderedViewportSize, PreviewViewportSetting } from "@lmcstools/core";
 
 import { browserViewportSettingKey } from "~/browser/browserViewportLayout";
 

@@ -11,10 +11,10 @@ import {
   RuntimeRequestId,
   type ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { getModelSelectionStringOptionValue } from "@lmcstools/shared/model";
-import { stableStringify } from "@lmcstools/shared/relaySigning";
+} from "@lmcstools/core";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { getModelSelectionStringOptionValue } from "@lmcstools/core/model";
+import { stableStringify } from "@lmcstools/core/relaySigning";
 import * as Clock from "effect/Clock";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -1524,7 +1524,8 @@ export function makeGrokAdapter(grokSettings: GrokSettings, options?: GrokAdapte
           return yield* new ProviderAdapterRequestError({
             provider: PROVIDER,
             method: "session/prompt",
-            detail: "Change permissions with LMCS Code's permission selector instead of /always-approve.",
+            detail:
+              "Change permissions with LMCS Code's permission selector instead of /always-approve.",
           });
         }
         const prepared = yield* withThreadLock(

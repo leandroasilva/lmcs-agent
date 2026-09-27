@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import { assert, it } from "@effect/vitest";
 import { assertTrue } from "@effect/vitest/utils";
 import * as Effect from "effect/Effect";

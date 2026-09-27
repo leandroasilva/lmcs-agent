@@ -7,7 +7,7 @@
  *
  * @module ProviderAdapterRegistry
  */
-import type { ProviderDriverKind, ProviderInstanceId } from "@lmcstools/contracts";
+import type { ProviderDriverKind, ProviderInstanceId } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type * as PubSub from "effect/PubSub";

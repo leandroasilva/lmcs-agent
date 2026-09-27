@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import { Atom } from "effect/unstable/reactivity";
 

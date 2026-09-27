@@ -1,9 +1,9 @@
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
 import {
   AuthOrchestrationOperateScope,
   type AuthSessionState,
   type EnvironmentId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export interface ProviderEnvironmentOptionLike {
   readonly environmentId: EnvironmentId;

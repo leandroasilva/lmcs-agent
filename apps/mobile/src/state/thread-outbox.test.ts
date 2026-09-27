@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import { EnvironmentNotRegisteredError } from "@lmcstools/client-runtime/connection";
-import { isTransportConnectionErrorMessage } from "@lmcstools/client-runtime/errors";
-import { EnvironmentRpcUnavailableError } from "@lmcstools/client-runtime/rpc";
+import { EnvironmentNotRegisteredError } from "@lmcstools/client/connection";
+import { isTransportConnectionErrorMessage } from "@lmcstools/client/errors";
+import { EnvironmentRpcUnavailableError } from "@lmcstools/client/rpc";
 import {
   CommandId,
   ComposerContextId,
@@ -12,7 +12,7 @@ import {
   ProjectId,
   ProviderInstanceId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { AtomRegistry } from "effect/unstable/reactivity";
 import * as RpcClientError from "effect/unstable/rpc/RpcClientError";
 import * as Socket from "effect/unstable/socket/Socket";

@@ -1,4 +1,4 @@
-import type { AssetResource, EnvironmentId } from "@lmcstools/contracts";
+import type { AssetResource, EnvironmentId } from "@lmcstools/core";
 
 import type { FileBackedComposerAttachment } from "../lib/composerImages";
 import type { MediaActionsSource } from "../lib/mediaActions";

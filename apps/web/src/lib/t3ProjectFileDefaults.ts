@@ -1,6 +1,6 @@
-import { T3_PROJECT_FILE_NAME, type EnvironmentId, type T3ProjectFile } from "@lmcstools/contracts";
-import { parseT3ProjectFile } from "@lmcstools/shared/t3ProjectFile";
-import { executeAtomQuery } from "@lmcstools/client-runtime/state/runtime";
+import { T3_PROJECT_FILE_NAME, type EnvironmentId, type T3ProjectFile } from "@lmcstools/core";
+import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
+import { executeAtomQuery } from "@lmcstools/client/state/runtime";
 
 import {
   getProjectFileQueryAtom,

@@ -1,4 +1,4 @@
-import { EventId, TurnId, type OrchestrationThreadActivity } from "@lmcstools/contracts";
+import { EventId, TurnId, type OrchestrationThreadActivity } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { deriveWorkLogEntries } from "./session-logic";

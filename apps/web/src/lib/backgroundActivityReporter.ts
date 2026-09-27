@@ -1,15 +1,15 @@
-import { EnvironmentRegistry } from "@lmcstools/client-runtime/connection";
+import { EnvironmentRegistry } from "@lmcstools/client/connection";
 import {
   EnvironmentRpcSubscriptionObserver,
   request,
   type EnvironmentRpcSubscriptionObservation,
-} from "@lmcstools/client-runtime/rpc";
+} from "@lmcstools/client/rpc";
 import {
   type BackgroundScope,
   type ClientActivityReportInput,
   type EnvironmentId,
   WS_METHODS,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";

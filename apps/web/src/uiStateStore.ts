@@ -1,5 +1,5 @@
 import { Debouncer } from "@tanstack/react-pacer";
-import type { PullRequestMergeMethod } from "@lmcstools/contracts";
+import type { PullRequestMergeMethod } from "@lmcstools/core";
 import { create } from "zustand";
 import { normalizeProjectPathForComparison } from "./lib/projectPaths";
 

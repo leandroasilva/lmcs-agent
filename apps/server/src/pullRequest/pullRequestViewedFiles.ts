@@ -13,7 +13,7 @@ import {
   type PullRequestFilesViewedResult,
   type PullRequestRef,
   type PullRequestSetFilesViewedInput,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import type * as PullRequestFilesViewed from "../persistence/PullRequestFilesViewed.ts";
 import type { ProviderFileRevisions, PullRequestProviderError } from "./PullRequestProvider.ts";

@@ -5,7 +5,7 @@ import {
   getQuestionAnswerPreview,
   getQuestionAnswerText,
   hasQuestionAnswer,
-} from "@lmcstools/client-runtime/work-log/user-input";
+} from "@lmcstools/client/work-log/user-input";
 import {
   deriveTimelineMinimapItems,
   resolveTimelineMinimapPreview,
@@ -21,30 +21,27 @@ import {
   type ToolActivityIcon,
   type TurnId,
   type WorktreeSetupSnapshot,
-} from "@lmcstools/contracts";
-import { parseScopedThreadKey } from "@lmcstools/client-runtime/environment";
-import { replaceComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
-import type { CodexArtifactTemplate } from "@lmcstools/client-runtime/codex-artifact-templates";
+} from "@lmcstools/core";
+import { parseScopedThreadKey } from "@lmcstools/client/environment";
+import { replaceComposerContextReferences } from "@lmcstools/core/composerContextReferences";
+import type { CodexArtifactTemplate } from "@lmcstools/client/codex-artifact-templates";
 import {
   resolveWorkEntryToolPresentation,
   resolveViewedImageAsset,
   workEntryViewedImagePath,
   summarizeToolGroup,
   omitSupersededLifecycleMarkers,
-} from "@lmcstools/client-runtime/work-log/presentation";
-import { resolveWorkGroupScrollAnchor } from "@lmcstools/client-runtime/work-log/scroll-anchor";
-import type {
-  AgentPanelModel,
-  RuntimeSubagent,
-} from "@lmcstools/client-runtime/state/subagentRuntime";
-import { formatAttachmentSize } from "@lmcstools/client-runtime/state/attachments";
+} from "@lmcstools/client/work-log/presentation";
+import { resolveWorkGroupScrollAnchor } from "@lmcstools/client/work-log/scroll-anchor";
+import type { AgentPanelModel, RuntimeSubagent } from "@lmcstools/client/state/subagentRuntime";
+import { formatAttachmentSize } from "@lmcstools/client/state/attachments";
 import {
   emptyAgentPanelModel,
   formatSubagentModelLabel,
   formatSubagentTokenCount,
   isActiveSubagentStatus,
   isTerminalSubagentStatus,
-} from "@lmcstools/client-runtime/state/subagentRuntime";
+} from "@lmcstools/client/state/subagentRuntime";
 
 const EMPTY_AGENT_PANEL_MODEL = emptyAgentPanelModel();
 const NOOP_OPEN_AGENTS = () => {};
@@ -52,10 +49,10 @@ const EMPTY_QUEUED_MESSAGES: ReadonlyArray<QueuedComposerMessage> = [];
 const NOOP_QUEUED_MESSAGE_ACTION = (_id: string) => {};
 const NOOP_USE_ARTIFACT_TEMPLATE = () => {};
 const NOOP_OPEN_ATTACHMENT = (_attachment: ChatFileAttachment) => {};
-import { resolveChatListAnchoredEndSpace } from "@lmcstools/shared/chatList";
-import { toolActivityFaviconUrl } from "@lmcstools/shared/favicon";
-import { formatDuration } from "@lmcstools/shared/orchestrationTiming";
-import { getProjectFaviconCacheKey } from "@lmcstools/shared/projectFavicon";
+import { resolveChatListAnchoredEndSpace } from "@lmcstools/core/chatList";
+import { toolActivityFaviconUrl } from "@lmcstools/core/favicon";
+import { formatDuration } from "@lmcstools/core/orchestrationTiming";
+import { getProjectFaviconCacheKey } from "@lmcstools/core/projectFavicon";
 import { observeVisibleAnimation } from "../../lib/visibleAnimation";
 import {
   createContext,
@@ -135,7 +132,7 @@ import type {
   ComposerContextId,
   ComposerContextRecord,
   KnownComposerContextRecord,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { Button } from "../ui/button";
 import type { QueuedComposerMessage } from "../../queuedMessageStore";
 import { useAssetUrlRefresh, useAssetUrls, useAssetUrlState } from "../../assets/assetUrls";
@@ -229,12 +226,12 @@ import {
 import {
   collectComposerContextReferences,
   formatComposerContextReference,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
   encodeComposerContextFragment,
-} from "@lmcstools/shared/composerContextClipboard";
+} from "@lmcstools/core/composerContextClipboard";
 import { chatMarkdownClipboardPayload } from "../../markdown-clipboard";
 import { ContextChip, ContextChipLabel, type ContextChipKind } from "../ContextChip";
 import { createContextPresentationRegistry } from "../contextPresentationRegistry";
@@ -243,7 +240,7 @@ import type { ChatMarkdownContextReference } from "../ChatMarkdown";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 import { cn } from "~/lib/utils";
 import { useUiStateStore } from "~/uiStateStore";
-import { type TimestampFormat } from "@lmcstools/contracts/settings";
+import { type TimestampFormat } from "@lmcstools/core/settings";
 import { formatChatTimestampTooltip, formatDayAwareTimestamp } from "../../timestampFormat";
 
 import { SkillChipIcon, SkillInlineText } from "./SkillInlineText";
@@ -4943,7 +4940,7 @@ const PlainWorkEntryRow = memo(function PlainWorkEntryRow(props: {
 function QuestionAnswerHistory({
   answer,
 }: {
-  answer: import("@lmcstools/contracts").UserInputAttachmentAnswerPayload;
+  answer: import("@lmcstools/core").UserInputAttachmentAnswerPayload;
 }) {
   const { activeThreadEnvironmentId } = use(TimelineRowCtx);
   const attachments = useMemo(() => Object.values(answer.attachmentsByQuestionId).flat(), [answer]);

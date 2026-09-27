@@ -18,8 +18,8 @@ import {
   TrimmedNonEmptyString,
   type ProviderDriverKind,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
-import { codexModelFamily } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { codexModelFamily } from "@lmcstools/core/model";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";

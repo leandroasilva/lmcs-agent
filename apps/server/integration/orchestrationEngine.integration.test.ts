@@ -16,7 +16,7 @@ import {
   ThreadId,
   ModelSelection,
   ProviderInstanceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { assert, it } from "@effect/vitest";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";

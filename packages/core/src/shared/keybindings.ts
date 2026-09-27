@@ -8,7 +8,7 @@ import {
   type ResolvedKeybindingRule,
   type ResolvedKeybindingsConfig,
   THREAD_JUMP_KEYBINDING_COMMANDS,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 type WhenToken =
   | { type: "identifier"; value: string }

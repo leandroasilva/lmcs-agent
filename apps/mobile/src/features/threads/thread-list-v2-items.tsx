@@ -11,13 +11,10 @@ import { CustomSnoozeSheet } from "./CustomSnoozeSheet";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { threadArrangementOpenAtom } from "../../state/thread-order";
 import type { ThreadMoveDestination } from "./threadOrder";
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
-import type { EnvironmentThreadSearchMatch } from "@lmcstools/client-runtime/state/thread-search";
-import type { EnvironmentMachineKind } from "@lmcstools/contracts";
-import { canSnooze, resolveSnoozePresets } from "@lmcstools/client-runtime/state/thread-settled";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import type { EnvironmentThreadSearchMatch } from "@lmcstools/client/state/thread-search";
+import type { EnvironmentMachineKind } from "@lmcstools/core";
+import { canSnooze, resolveSnoozePresets } from "@lmcstools/client/state/thread-settled";
 import type { MenuAction } from "@react-native-menu/menu";
 import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps } from "react";
 import { Alert, Pressable, useWindowDimensions, View } from "react-native";

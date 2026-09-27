@@ -10,7 +10,7 @@
  */
 import * as NodeOS from "node:os";
 
-import type { ServerProviderSkill } from "@lmcstools/contracts";
+import type { ServerProviderSkill } from "@lmcstools/core";
 import * as ByteSize from "effect/ByteSize";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

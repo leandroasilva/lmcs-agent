@@ -2,7 +2,7 @@ import {
   DESKTOP_PREVIEW_RECORDING_CAPTURE_TRIGGER,
   EnvironmentId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { ensureClientSettingsHydrated } from "~/hooks/useSettings";

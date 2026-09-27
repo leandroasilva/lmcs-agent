@@ -2,7 +2,7 @@ import {
   HostProcessArchitecture,
   HostProcessEnvironment,
   HostProcessPlatform,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

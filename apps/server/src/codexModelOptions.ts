@@ -1,8 +1,8 @@
-import type { ModelSelection } from "@lmcstools/contracts";
+import type { ModelSelection } from "@lmcstools/core";
 import {
   getModelSelectionBooleanOptionValue,
   getModelSelectionStringOptionValue,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 
 export function getCodexServiceTierOptionValue(
   modelSelection: ModelSelection | null | undefined,

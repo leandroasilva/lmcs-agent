@@ -4,7 +4,7 @@ import {
   type AuthEnvironmentScope,
   type AuthPairingLink,
   type ServerAuthBootstrapMethod,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";

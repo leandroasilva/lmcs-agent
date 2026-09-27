@@ -1,5 +1,5 @@
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
-import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@lmcstools/contracts";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@lmcstools/core";
 import { useCallback } from "react";
 
 import type { ThreadListV2ListItem } from "../threads/threadListV2";

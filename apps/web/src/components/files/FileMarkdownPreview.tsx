@@ -1,4 +1,4 @@
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import type { ScopedThreadRef } from "@lmcstools/core";
 
 import ChatMarkdown from "~/components/ChatMarkdown";
 import { resolvePathLinkTarget } from "~/terminal-links";

@@ -1,19 +1,19 @@
-import type { EnvironmentId, PullRequestRef, ScopedThreadRef } from "@lmcstools/contracts";
+import type { EnvironmentId, PullRequestRef, ScopedThreadRef } from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate } from "@tanstack/react-router";
 import { type MouseEvent, useCallback, useMemo } from "react";
 
-import { pullRequestHostOf, type SourceControlProviderKind } from "@lmcstools/contracts";
-import { parseChangeRequestUrl, type ChangeRequestLink } from "@lmcstools/shared/changeRequestUrl";
+import { pullRequestHostOf, type SourceControlProviderKind } from "@lmcstools/core";
+import { parseChangeRequestUrl, type ChangeRequestLink } from "@lmcstools/core/changeRequestUrl";
 import {
   canonicalRepositoryKey,
   sourceControlRepositorySelector,
-} from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core/sourceControl";
 
 import { useOpenLink } from "../browser/useOpenLink";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
 import { useRightPanelStore } from "../rightPanelStore";
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 
 import { useProjects, useServerConfigs } from "../state/entities";
 import { serverEnvironment } from "../state/server";
@@ -26,7 +26,7 @@ export {
   pullRequestCandidateUrlFromReferenceAutolink,
   matchesLinkedPullRequestUrl,
   changeRequestRepositoryUrl,
-} from "@lmcstools/shared/changeRequestUrl";
+} from "@lmcstools/core/changeRequestUrl";
 
 function resolvedForgejoRepository(project: EnvironmentProject): URL | null {
   const identity = project.repositoryIdentity;

@@ -1,5 +1,5 @@
-import { scopeProjectRef } from "@lmcstools/client-runtime/environment";
-import { EnvironmentId, ProjectId, ThreadId } from "@lmcstools/contracts";
+import { scopeProjectRef } from "@lmcstools/client/environment";
+import { EnvironmentId, ProjectId, ThreadId } from "@lmcstools/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("~/state/entities", () => ({ useThreadShell: () => null }));

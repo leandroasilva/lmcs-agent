@@ -76,7 +76,7 @@ vi.mock("./use-thread-detail", () => ({
   }),
 }));
 
-import { ApprovalRequestId, EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { ApprovalRequestId, EnvironmentId, ThreadId } from "@lmcstools/core";
 import { questionAttachmentDraftKey } from "./question-attachments";
 import { useSelectedThreadRequests } from "./use-selected-thread-requests";
 

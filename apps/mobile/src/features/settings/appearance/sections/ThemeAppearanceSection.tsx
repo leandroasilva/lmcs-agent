@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { ScopedTheme, ScopedVariables } from "uniwind";
 
-import { mixThemePreviewBase, THEME_PREVIEW_RENDER_SPECS } from "@lmcstools/shared/themePreview";
+import { mixThemePreviewBase, THEME_PREVIEW_RENDER_SPECS } from "@lmcstools/core/themePreview";
 
 import { SymbolView } from "../../../../components/AppSymbol";
 import { AppText as Text } from "../../../../components/AppText";

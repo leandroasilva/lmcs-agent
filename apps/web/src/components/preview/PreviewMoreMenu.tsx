@@ -1,6 +1,6 @@
 "use client";
 
-import type { DesktopPreviewColorScheme, EnvironmentId } from "@lmcstools/contracts";
+import type { DesktopPreviewColorScheme, EnvironmentId } from "@lmcstools/core";
 import { Minus, MoreVertical, Plus as PlusIcon, RotateCcw } from "lucide-react";
 
 import { Button } from "~/components/ui/button";

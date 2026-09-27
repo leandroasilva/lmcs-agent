@@ -4,10 +4,10 @@ import {
   settlePromise,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
-import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/client/state/runtime";
+import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
 import { AsyncResult } from "effect/unstable/reactivity";
-import { type EnvironmentId, type ProjectIconOverride } from "@lmcstools/contracts";
+import { type EnvironmentId, type ProjectIconOverride } from "@lmcstools/core";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as Cause from "effect/Cause";
 import { InfoIcon, Trash2Icon } from "lucide-react";

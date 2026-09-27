@@ -12,7 +12,7 @@ import {
   EnvironmentHttpInternalServerError,
   EnvironmentHttpUnauthorizedError,
   DESKTOP_UPDATE_RESTART_MARKER_FILE,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   RelayCloudEnvironmentHealthProofPayload,
   RelayCloudEnvironmentHealthRequest,
@@ -34,8 +34,8 @@ import {
   RelayManagedEndpointRecoveryResponse,
   type RelayManagedEndpointRuntimeConfig,
   RelayOkResponse,
-} from "@lmcstools/contracts/relay";
-import { withRelayClientTracing } from "@lmcstools/shared/relayTracing";
+} from "@lmcstools/core/relay";
+import { withRelayClientTracing } from "@lmcstools/core/relayTracing";
 import {
   normalizeRelayIssuer,
   RELAY_HEALTH_REQUEST_TYP,
@@ -46,8 +46,8 @@ import {
   RELAY_MINT_RESPONSE_TYP,
   signRelayJwt,
   verifyRelayJwt,
-} from "@lmcstools/shared/relayJwt";
-import { isSecureRelayUrl } from "@lmcstools/shared/relayUrl";
+} from "@lmcstools/core/relayJwt";
+import { isSecureRelayUrl } from "@lmcstools/core/relayUrl";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
 import * as Crypto from "effect/Crypto";

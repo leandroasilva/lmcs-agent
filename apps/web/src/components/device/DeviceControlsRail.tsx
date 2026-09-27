@@ -1,4 +1,4 @@
-import type { DevicePlatform } from "@lmcstools/contracts";
+import type { DevicePlatform } from "@lmcstools/core";
 import {
   Camera,
   ChevronLeft,

@@ -5,7 +5,7 @@ import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
-import type { ProviderInstanceId, SidebarProjectGroupingMode } from "@lmcstools/contracts";
+import type { ProviderInstanceId, SidebarProjectGroupingMode } from "@lmcstools/core";
 import type { ComposerEnterBehavior } from "../lib/composerEnterBehavior";
 import { MOBILE_THEME_IDS, type MobileThemeId, type MobileThemeMode } from "../lib/mobileTheme";
 import * as MobileDatabase from "./mobile-database";

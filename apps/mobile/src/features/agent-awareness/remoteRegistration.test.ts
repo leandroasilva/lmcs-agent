@@ -15,10 +15,10 @@ import {
   HttpClientRequest,
   HttpClientResponse,
 } from "effect/unstable/http";
-import { ManagedRelay } from "@lmcstools/client-runtime/relay";
+import { ManagedRelay } from "@lmcstools/client/relay";
 
-import type { EnvironmentId } from "@lmcstools/contracts";
-import { verifyDpopProof } from "@lmcstools/shared/dpop";
+import type { EnvironmentId } from "@lmcstools/core";
+import { verifyDpopProof } from "@lmcstools/core/dpop";
 import type { SavedRemoteConnection } from "../../lib/connection";
 import { cryptoLayer } from "../cloud/dpop";
 import { managedRelayClientLayer } from "../cloud/managedRelayLayer";

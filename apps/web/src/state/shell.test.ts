@@ -1,10 +1,7 @@
-import {
-  BearerConnectionTarget,
-  PrimaryConnectionTarget,
-} from "@lmcstools/client-runtime/connection";
-import type { EnvironmentCatalogState } from "@lmcstools/client-runtime/state/connections";
-import type { EnvironmentShellState } from "@lmcstools/client-runtime/state/shell";
-import { EnvironmentId } from "@lmcstools/contracts";
+import { BearerConnectionTarget, PrimaryConnectionTarget } from "@lmcstools/client/connection";
+import type { EnvironmentCatalogState } from "@lmcstools/client/state/connections";
+import type { EnvironmentShellState } from "@lmcstools/client/state/shell";
+import { EnvironmentId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { Atom, AtomRegistry } from "effect/unstable/reactivity";
 import { describe, expect, it } from "vite-plus/test";

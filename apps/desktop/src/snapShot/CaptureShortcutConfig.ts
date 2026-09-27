@@ -11,7 +11,7 @@ import type {
   DesktopCaptureConfigApplied,
   DesktopCaptureConfigPreview,
   DesktopCaptureConfigRequest,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   captureConfigKeys,
   editCaptureConfig,

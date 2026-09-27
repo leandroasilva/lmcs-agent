@@ -2,8 +2,8 @@ import { memo, useState, useId } from "react";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
-import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/runtime";
+import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/core";
 import {
   buildCollapsedProposedPlanPreviewMarkdown,
   buildProposedPlanMarkdownFilename,

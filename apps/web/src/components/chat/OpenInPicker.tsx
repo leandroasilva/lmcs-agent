@@ -3,7 +3,7 @@ import {
   EditorId,
   type EnvironmentId,
   type ResolvedKeybindingsConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { memo, useCallback, useEffect, useMemo } from "react";
 import { isOpenFavoriteEditorShortcut, shortcutLabelForCommand } from "../../keybindings";
 import { usePreferredEditor } from "../../editorPreferences";

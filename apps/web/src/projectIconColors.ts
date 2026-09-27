@@ -1,4 +1,4 @@
-import type { ProjectIconColor } from "@lmcstools/contracts";
+import type { ProjectIconColor } from "@lmcstools/core";
 
 export const PROJECT_ICON_COLORS: ReadonlyArray<{
   readonly value: ProjectIconColor;

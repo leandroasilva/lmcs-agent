@@ -1,10 +1,6 @@
-import {
-  type ModelSelection,
-  type ProviderSetupError,
-  TextGenerationError,
-} from "@lmcstools/contracts";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/shared/git";
-import { extractJsonObject } from "@lmcstools/shared/schemaJson";
+import { type ModelSelection, type ProviderSetupError, TextGenerationError } from "@lmcstools/core";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
+import { extractJsonObject } from "@lmcstools/core/schemaJson";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";

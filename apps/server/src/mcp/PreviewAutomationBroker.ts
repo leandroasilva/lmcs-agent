@@ -24,7 +24,7 @@ import {
   type PreviewAutomationHostFocus,
   type PreviewAutomationResponse,
   type PreviewAutomationStreamEvent,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Context from "effect/Context";
 import type * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";

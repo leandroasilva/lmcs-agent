@@ -1,6 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import {
   CircleAlertIcon,

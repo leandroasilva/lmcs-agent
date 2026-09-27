@@ -1,1 +1,1 @@
-export { faviconUrlForOrigin } from "@lmcstools/shared/favicon";
+export { faviconUrlForOrigin } from "@lmcstools/core/favicon";

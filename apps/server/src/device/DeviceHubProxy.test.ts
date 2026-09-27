@@ -5,7 +5,7 @@ import {
   AuthSessionId,
   LOCAL_DEVICE_HOST_ID,
   type AuthEnvironmentScope,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { HttpClient, HttpClientResponse, HttpRouter } from "effect/unstable/http";

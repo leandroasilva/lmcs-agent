@@ -1,4 +1,4 @@
-import type { DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopUpdateState } from "@lmcstools/core";
 import { isValidElement, type MouseEvent, type ReactElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 

@@ -1,10 +1,10 @@
 import { useAuth } from "@clerk/react";
-import { ManagedRelay, setManagedRelaySession } from "@lmcstools/client-runtime/relay";
+import { ManagedRelay, setManagedRelaySession } from "@lmcstools/client/relay";
 import {
   reportAtomCommandResult,
   settleAsyncResult,
   settlePromise,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import * as Effect from "effect/Effect";
 import { useEffect, useRef, type ReactNode } from "react";
 

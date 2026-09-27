@@ -8,7 +8,7 @@ import type {
   PullRequestReviewThread,
   PullRequestThreadCommentsResult,
   PullRequestThreadComment,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   CheckCircle2Icon,
   CircleIcon,

@@ -1,7 +1,4 @@
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 
 import type {
   AgentActivityPhase,

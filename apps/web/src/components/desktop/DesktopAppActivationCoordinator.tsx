@@ -1,5 +1,5 @@
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
-import type { DesktopAppActivationRequest } from "@lmcstools/contracts";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
+import type { DesktopAppActivationRequest } from "@lmcstools/core";
 import { useEffect, useEffectEvent, useRef } from "react";
 
 import { handleDesktopAppActivationRequest } from "../../desktopAppActivation";

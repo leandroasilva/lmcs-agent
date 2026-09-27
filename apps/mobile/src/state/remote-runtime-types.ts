@@ -1,5 +1,5 @@
-import { type EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
-import { EnvironmentId, ThreadId, type ServerConfig } from "@lmcstools/contracts";
+import { type EnvironmentConnectionPhase } from "@lmcstools/client/connection";
+import { EnvironmentId, ThreadId, type ServerConfig } from "@lmcstools/core";
 
 export interface EnvironmentRuntimeState {
   readonly connectionState: EnvironmentConnectionPhase;

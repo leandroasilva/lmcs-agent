@@ -5,7 +5,7 @@ import {
   USAGE_CONTRACT_VERSION,
   type EnvironmentId,
   type UsageProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   CircleAlertIcon,
   ChevronDownIcon,
@@ -13,14 +13,14 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { refreshUsageLimits } from "@lmcstools/client-runtime/state/usage";
+import { refreshUsageLimits } from "@lmcstools/client/state/usage";
 
 import {
   isCompatibleUsageContractVersion,
   isModelCostUnknown,
   type DailyTotals,
   type HourlyTotals,
-} from "@lmcstools/shared/usageMerge";
+} from "@lmcstools/core/usageMerge";
 
 import { isElectron } from "../../env";
 import { cn } from "../../lib/utils";
@@ -39,7 +39,7 @@ import {
   formatTokens,
   formatUsd,
   makeWindow,
-} from "@lmcstools/shared/usageFormat";
+} from "@lmcstools/core/usageFormat";
 import { Button, InlineButton } from "../ui/button";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import {

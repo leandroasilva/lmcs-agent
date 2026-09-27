@@ -1,4 +1,4 @@
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import type { ScopedThreadRef } from "@lmcstools/core";
 
 /**
  * The server only guarantees preview tab ids are unique within one process.

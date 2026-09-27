@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { act } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";

@@ -4,15 +4,15 @@ import type {
   VcsRef,
   ProjectId,
   WorktreeSubmodules,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
-import { sanitizeNewRefName } from "@lmcstools/shared/git";
+import { sanitizeNewRefName } from "@lmcstools/core/git";
 import { toSortableTimestamp } from "../lib/threadSort";
 export {
   dedupeRemoteBranchesWithLocalMatches,
   deriveLocalBranchNameFromRemoteRef,
   sanitizeNewRefName,
-} from "@lmcstools/shared/git";
+} from "@lmcstools/core/git";
 
 export interface EnvironmentOption {
   environmentId: EnvironmentId;

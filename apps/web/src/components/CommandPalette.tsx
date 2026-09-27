@@ -1,9 +1,9 @@
 "use client";
 
-import { threadPullRequestLinkMode } from "@lmcstools/client-runtime/thread-pull-request-compatibility";
-import { visibleThreadPullRequests } from "@lmcstools/shared/threadPullRequests";
+import { threadPullRequestLinkMode } from "@lmcstools/client/thread-pull-request-compatibility";
+import { visibleThreadPullRequests } from "@lmcstools/core/threadPullRequests";
 
-import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client-runtime/environment";
+import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
 import {
   canCreateProjectInEnvironment,
   getCloneDestinationBrowsePath,
@@ -11,21 +11,21 @@ import {
   getCloneDirectoryName,
   getDefaultCloneUrl,
   normalizePastedCloneUrl,
-} from "@lmcstools/client-runtime/operations/projects";
-import { connectionStatusText } from "@lmcstools/client-runtime/connection";
-import { threadSearchMatchKey } from "@lmcstools/client-runtime/state/thread-search";
-import { resolveThreadReferenceCopyTarget } from "@lmcstools/shared/threadReference";
+} from "@lmcstools/client/operations/projects";
+import { connectionStatusText } from "@lmcstools/client/connection";
+import { threadSearchMatchKey } from "@lmcstools/client/state/thread-search";
+import { resolveThreadReferenceCopyTarget } from "@lmcstools/core/threadReference";
 import {
   canPreloadBrowsePath,
   createBrowseNavigationCoordinator,
   filterFilesystemBrowseEntries,
   getFilesystemBrowsePath,
-} from "@lmcstools/client-runtime/state/filesystem";
+} from "@lmcstools/client/state/filesystem";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   type DesktopWslState,
   type EnvironmentId,
@@ -37,7 +37,7 @@ import {
   type SourceControlRepositoryInfo,
   PRIMARY_LOCAL_ENVIRONMENT_ID,
   resolveEnvironmentMachineKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import * as Option from "effect/Option";
 import {
@@ -80,7 +80,7 @@ import { useClientSettings } from "../hooks/useSettings";
 import { useTheme } from "../hooks/useTheme";
 import { useCustomThemes } from "../hooks/useCustomThemes";
 import { useEnvironmentThemeDefinitions } from "../hooks/useEnvironmentTheme";
-import { BUILT_IN_THEMES } from "@lmcstools/shared/themePalettes";
+import { BUILT_IN_THEMES } from "@lmcstools/core/themePalettes";
 import { getThemeDefinition } from "../themePalette";
 import {
   STANDARD_THEME_CARDS,

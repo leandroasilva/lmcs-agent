@@ -1,4 +1,4 @@
-import type { ProviderOptionDescriptor, RuntimeMode } from "@lmcstools/contracts";
+import type { ProviderOptionDescriptor, RuntimeMode } from "@lmcstools/core";
 
 /**
  * Desktop-oriented effort keywords that don't belong in the phone picker.

@@ -1,5 +1,5 @@
 import * as Mime from "effect/unstable/http/Mime";
-import { githubMediaFileName } from "@lmcstools/shared/githubMedia";
+import { githubMediaFileName } from "@lmcstools/core/githubMedia";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

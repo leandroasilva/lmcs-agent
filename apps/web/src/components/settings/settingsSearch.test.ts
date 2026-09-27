@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 
 import {
   filterAvailableSettingsSearchItems,

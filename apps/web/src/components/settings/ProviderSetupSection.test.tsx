@@ -6,7 +6,7 @@ import {
   type ProviderAuthState,
   type ProviderInstallState,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { visitElements } from "../../test/reactElementTree";

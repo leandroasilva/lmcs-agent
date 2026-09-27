@@ -1,4 +1,4 @@
-import type { ContextMenuItem } from "@lmcstools/contracts";
+import type { ContextMenuItem } from "@lmcstools/core";
 
 import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";
 import { readLocalApi } from "~/localApi";

@@ -1,13 +1,10 @@
 import { useAtomValue } from "@effect/atom-react";
-import {
-  RelayConnectionRegistration,
-  RelayConnectionTarget,
-} from "@lmcstools/client-runtime/connection";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import { RelayConnectionRegistration, RelayConnectionTarget } from "@lmcstools/client/connection";
+import type { EnvironmentId } from "@lmcstools/core";
 import type {
   RelayClientEnvironmentRecord,
   RelayEnvironmentStatusResponse,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import * as Option from "effect/Option";
 import { useCallback, useMemo } from "react";
 

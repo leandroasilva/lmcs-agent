@@ -1,5 +1,5 @@
-import type { ServerSelfUpdateOutcome } from "@lmcstools/contracts";
-import { HostProcessEnvironment } from "@lmcstools/shared/hostProcess";
+import type { ServerSelfUpdateOutcome } from "@lmcstools/core";
+import { HostProcessEnvironment } from "@lmcstools/core/hostProcess";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

@@ -11,13 +11,13 @@ import {
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type {
   ServerProcessDiagnosticsEntry,
   ServerProcessResourceHistorySummary,
   ServerProcessSignal,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 

@@ -11,7 +11,7 @@ import {
   type AuthEnvironmentScope,
   WS_METHODS,
   WsRpcGroup,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 
 type WsRpcMethod = RpcGroup.Rpcs<typeof WsRpcGroup>["_tag"];

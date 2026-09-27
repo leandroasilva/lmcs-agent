@@ -8,14 +8,14 @@ import type {
   ServerSettings,
   SidebarProjectGroupingMode,
   UnifiedSettings,
-} from "@lmcstools/contracts";
-import { DEFAULT_UNIFIED_SETTINGS } from "@lmcstools/contracts/settings";
+} from "@lmcstools/core";
+import { DEFAULT_UNIFIED_SETTINGS } from "@lmcstools/core/settings";
 import {
   getBackgroundActivityBaseProfile,
   normalizeBackgroundActivitySettings,
   normalizeServerBackgroundActivitySettings,
   resolveServerBackgroundActivitySettings,
-} from "@lmcstools/shared/backgroundActivitySettings";
+} from "@lmcstools/core/backgroundActivitySettings";
 import * as Duration from "effect/Duration";
 import * as Equal from "effect/Equal";
 

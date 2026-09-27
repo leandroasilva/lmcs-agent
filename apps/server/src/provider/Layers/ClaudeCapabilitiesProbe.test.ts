@@ -4,7 +4,7 @@ import { vi } from "vite-plus/test";
 import * as Deferred from "effect/Deferred";
 import * as Fiber from "effect/Fiber";
 import * as TestClock from "effect/testing/TestClock";
-import { ClaudeSettings } from "@lmcstools/contracts";
+import { ClaudeSettings } from "@lmcstools/core";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";

@@ -1,4 +1,4 @@
-import type { DeviceHubAccess } from "@lmcstools/client-runtime/state/deviceHubAccess";
+import type { DeviceHubAccess } from "@lmcstools/client/state/deviceHubAccess";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";

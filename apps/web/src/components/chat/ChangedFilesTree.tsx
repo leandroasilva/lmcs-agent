@@ -1,4 +1,4 @@
-import { type TurnId } from "@lmcstools/contracts";
+import { type TurnId } from "@lmcstools/core";
 import { type MouseEvent, memo, useCallback, useMemo, useState } from "react";
 import { type TurnDiffFileChange } from "../../types";
 import {

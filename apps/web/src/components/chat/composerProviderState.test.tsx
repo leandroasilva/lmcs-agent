@@ -4,8 +4,8 @@ import {
   type ProviderOptionDescriptor,
   type ProviderOptionSelection,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
-import { getProviderOptionDescriptors } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { getProviderOptionDescriptors } from "@lmcstools/core/model";
 import { getProviderModelCapabilities } from "../../providerModels";
 import {
   getComposerPromptInjectionState,

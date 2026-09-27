@@ -23,7 +23,7 @@ export interface RelayClientTracingResource {
 }
 
 export class RelayClientTracer extends Context.Reference(
-  "@lmcstools/shared/relayTracing/RelayClientTracer",
+  "@lmcstools/core/relayTracing/RelayClientTracer",
   {
     defaultValue: () => Option.none<Tracer.Tracer>(),
   },

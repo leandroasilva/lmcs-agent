@@ -13,7 +13,7 @@ import {
   type ReviewDiffPreviewError,
   type ReviewDiffPreviewInput,
   type ReviewDiffPreviewResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as ServerConfig from "../config.ts";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";

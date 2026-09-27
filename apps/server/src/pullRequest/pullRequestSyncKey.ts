@@ -4,9 +4,9 @@ import {
   type RepositoryIdentity,
   type SourceControlProviderKind,
   type ThreadPullRequestKey,
-} from "@lmcstools/contracts";
-import { sourceControlRepositorySelector } from "@lmcstools/shared/sourceControl";
-import { normalizeThreadPullRequestKey } from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core";
+import { sourceControlRepositorySelector } from "@lmcstools/core/sourceControl";
+import { normalizeThreadPullRequestKey } from "@lmcstools/core/threadPullRequests";
 
 /** Convert checkout-scoped references to the host-level identity used by linked threads. */
 export function pullRequestSyncKey(

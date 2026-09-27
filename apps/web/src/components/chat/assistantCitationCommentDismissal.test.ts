@@ -1,4 +1,4 @@
-import { ASSISTANT_CITATION_MAX_COMMENT_LENGTH } from "@lmcstools/contracts";
+import { ASSISTANT_CITATION_MAX_COMMENT_LENGTH } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { resolveAssistantCitationCommentDismissal } from "./assistantCitationCommentDismissal";

@@ -25,13 +25,13 @@ import {
   type ServerProvider,
   type ServerProviderSlashCommand,
   type ServerSettings as ContractServerSettings,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as PlatformError from "effect/PlatformError";
 import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { ChildProcessSpawner } from "effect/unstable/process";
-import { deepMerge } from "@lmcstools/shared/Struct";
-import { createModelCapabilities } from "@lmcstools/shared/model";
-import { applyServerSettingsPatch } from "@lmcstools/shared/serverSettings";
+import { deepMerge } from "@lmcstools/core/Struct";
+import { createModelCapabilities } from "@lmcstools/core/model";
+import { applyServerSettingsPatch } from "@lmcstools/core/serverSettings";
 
 import { checkCodexProviderStatus, type CodexAppServerProviderSnapshot } from "./CodexProvider.ts";
 import { checkClaudeProviderStatus } from "./ClaudeProvider.ts";

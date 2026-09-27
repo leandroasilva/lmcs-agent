@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off - Drives the real shell installer through a PTY and a gated HTTP fixture.
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as NodeChildProcess from "node:child_process";
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";

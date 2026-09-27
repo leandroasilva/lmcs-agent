@@ -2,7 +2,7 @@ import type {
   PickedElementPayload,
   PickedElementStackFrame,
   PreviewAnnotationPayload,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 const ELEMENT_CONTEXT_HTML_PREVIEW_LIMIT = 4000;
 const ELEMENT_CONTEXT_STYLES_LIMIT = 4000;

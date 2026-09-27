@@ -1,4 +1,4 @@
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
 
 import { cn } from "~/lib/utils";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";

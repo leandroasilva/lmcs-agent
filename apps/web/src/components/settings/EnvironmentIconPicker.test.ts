@@ -1,4 +1,4 @@
-import type { ServerConfig } from "@lmcstools/contracts";
+import type { ServerConfig } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { resolveEnvironmentIconPickerLock } from "./EnvironmentIconPicker";

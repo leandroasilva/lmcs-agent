@@ -1,5 +1,5 @@
-import type { ChatAttachment } from "@lmcstools/contracts";
-import { assistantCitationsToPlainText } from "@lmcstools/shared/assistantCitations";
+import type { ChatAttachment } from "@lmcstools/core";
+import { assistantCitationsToPlainText } from "@lmcstools/core/assistantCitations";
 
 export type ThreadTitleMessage = {
   readonly role: "user" | "assistant" | "system" | "reasoning";

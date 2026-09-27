@@ -1,14 +1,14 @@
 import {
   requestKindFromRequestType,
   type PendingApproval,
-} from "@lmcstools/client-runtime/pending-requests";
-import { UserInputAttachmentAnswerPayload } from "@lmcstools/contracts";
-import { foldUserInputActivities } from "@lmcstools/client-runtime/work-log/user-input";
+} from "@lmcstools/client/pending-requests";
+import { UserInputAttachmentAnswerPayload } from "@lmcstools/core";
+import { foldUserInputActivities } from "@lmcstools/client/work-log/user-input";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Arr from "effect/Array";
 import { shallow } from "zustand/vanilla/shallow";
-import { isBackgroundTaskActivity } from "@lmcstools/client-runtime/state/subagentRuntime";
+import { isBackgroundTaskActivity } from "@lmcstools/client/state/subagentRuntime";
 import {
   commandDetailRepeatsCommand,
   extractCommandOutputText,
@@ -18,8 +18,8 @@ import {
   workEntryIndicatesToolSuccess,
   workLogEntryIsToolLike,
   type WorkLogToolLifecycleStatus,
-} from "@lmcstools/client-runtime/work-log/presentation";
-import { extractToolActivityPresentation } from "@lmcstools/client-runtime/work-log/tool-presentation";
+} from "@lmcstools/client/work-log/presentation";
+import { extractToolActivityPresentation } from "@lmcstools/client/work-log/tool-presentation";
 import {
   isToolLifecycleItemType,
   type AssetResource,
@@ -29,7 +29,7 @@ import {
   type ToolLifecycleItemType,
   type ThreadId,
   type TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   isImageAttachment,
@@ -42,16 +42,16 @@ import {
   type TurnDiffSummary,
 } from "./types";
 
-export type { PendingApproval, PendingUserInput } from "@lmcstools/client-runtime/pending-requests";
+export type { PendingApproval, PendingUserInput } from "@lmcstools/client/pending-requests";
 
-export { formatDuration } from "@lmcstools/shared/orchestrationTiming";
+export { formatDuration } from "@lmcstools/core/orchestrationTiming";
 
 export {
   workEntryDisplayIndicatesToolFailure,
   workEntryIndicatesToolSuccess,
   workLogEntryIsToolLike,
   type WorkLogToolLifecycleStatus,
-} from "@lmcstools/client-runtime/work-log/presentation";
+} from "@lmcstools/client/work-log/presentation";
 
 export interface WorkLogEntry {
   questionAnswer?: UserInputAttachmentAnswerPayload;
@@ -68,9 +68,9 @@ export interface WorkLogEntry {
   changedFiles?: ReadonlyArray<string>;
   tone: "thinking" | "tool" | "info" | "error";
   toolTitle?: string;
-  toolSurface?: import("@lmcstools/contracts").ToolActivitySurface;
-  toolIcon?: import("@lmcstools/contracts").ToolActivityIcon;
-  toolSource?: import("@lmcstools/contracts").ToolActivitySource;
+  toolSurface?: import("@lmcstools/core").ToolActivitySurface;
+  toolIcon?: import("@lmcstools/core").ToolActivityIcon;
+  toolSource?: import("@lmcstools/core").ToolActivitySource;
   toolData?: unknown;
   itemType?: ToolLifecycleItemType;
   requestKind?: PendingApproval["requestKind"];

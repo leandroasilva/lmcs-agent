@@ -5,7 +5,7 @@ import {
   DesktopPendingSnapShot,
   type ClientSettings,
   type DesktopSnapShotEvent,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";

@@ -2,8 +2,8 @@ import {
   ConnectionCatalogDocument,
   type ConnectionCatalogDocument as ConnectionCatalogDocumentType,
   EMPTY_CONNECTION_CATALOG_DOCUMENT,
-} from "@lmcstools/client-runtime/platform";
-import { ConnectionTransientError } from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/platform";
+import { ConnectionTransientError } from "@lmcstools/client/connection";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";

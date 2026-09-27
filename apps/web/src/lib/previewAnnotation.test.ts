@@ -1,4 +1,4 @@
-import type { PreviewAnnotationPayload } from "@lmcstools/contracts";
+import type { PreviewAnnotationPayload } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { capturePreviewAnnotationScreenshot } from "./previewAnnotation";

@@ -1,4 +1,4 @@
-import { resolveEnvironmentMachineKind } from "@lmcstools/contracts";
+import { resolveEnvironmentMachineKind } from "@lmcstools/core";
 
 import {
   useClientSettings,

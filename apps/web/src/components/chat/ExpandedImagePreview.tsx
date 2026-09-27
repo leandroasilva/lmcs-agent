@@ -1,4 +1,4 @@
-import type { SnapShotSource } from "@lmcstools/contracts";
+import type { SnapShotSource } from "@lmcstools/core";
 
 import type { ComposerFileAttachment } from "../../composerDraftStore";
 import { type ChatFileAttachment, type ChatImageAttachment, isVideoAttachment } from "../../types";
@@ -7,14 +7,11 @@ import type {
   AssetResource,
   EnvironmentId,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
-import { videoMimeType } from "@lmcstools/shared/video";
-import { resolveMediaSource } from "@lmcstools/client-runtime/media-source";
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
-import {
-  squashAtomCommandFailure,
-  type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/core";
+import { videoMimeType } from "@lmcstools/core/video";
+import { resolveMediaSource } from "@lmcstools/client/media-source";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
+import { squashAtomCommandFailure, type AtomCommandResult } from "@lmcstools/client/state/runtime";
 import { resolveExternalWebLinkHost } from "./externalLinkContextMenu";
 import type { MediaActionSource } from "../media/MediaActions";
 import { resolveProtocolRelativeMediaUrl } from "../media/mediaContent";

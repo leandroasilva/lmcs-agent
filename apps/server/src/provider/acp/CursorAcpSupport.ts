@@ -2,7 +2,7 @@ import {
   type CursorSettings,
   type ProviderOptionSelection,
   type RuntimeMode,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

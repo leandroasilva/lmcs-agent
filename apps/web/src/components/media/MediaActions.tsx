@@ -1,11 +1,8 @@
-import type { MediaActionId } from "@lmcstools/client-runtime/media-actions";
-import {
-  mediaReferenceFileName,
-  type MediaReference,
-} from "@lmcstools/client-runtime/media-reference";
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
-import type { AssetResource, ContextMenuItem, EnvironmentId } from "@lmcstools/contracts";
+import type { MediaActionId } from "@lmcstools/client/media-actions";
+import { mediaReferenceFileName, type MediaReference } from "@lmcstools/client/media-reference";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
+import type { AssetResource, ContextMenuItem, EnvironmentId } from "@lmcstools/core";
 import { useCallback, useRef, useState, type ReactElement } from "react";
 
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";

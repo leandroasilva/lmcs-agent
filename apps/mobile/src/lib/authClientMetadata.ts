@@ -1,4 +1,4 @@
-import type { AuthClientPresentationMetadata } from "@lmcstools/contracts";
+import type { AuthClientPresentationMetadata } from "@lmcstools/core";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 

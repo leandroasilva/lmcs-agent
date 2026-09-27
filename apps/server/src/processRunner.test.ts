@@ -9,8 +9,8 @@ import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import { TestClock } from "effect/testing";
 import { ChildProcessSpawner } from "effect/unstable/process";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { SpawnExecutableResolution } from "@lmcstools/shared/shell";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { SpawnExecutableResolution } from "@lmcstools/core/shell";
 
 import * as ProcessRunner from "./processRunner.ts";
 

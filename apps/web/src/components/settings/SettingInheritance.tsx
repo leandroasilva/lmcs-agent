@@ -5,7 +5,7 @@ import {
   resolveEnvironmentMachineKind,
   type ServerSettings,
   type WorktreeSubmodules,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { CheckIcon, LayersIcon } from "lucide-react";
 import * as Equal from "effect/Equal";
 

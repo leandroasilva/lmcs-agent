@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import { act, useLayoutEffect } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";

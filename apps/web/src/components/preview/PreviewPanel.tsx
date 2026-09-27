@@ -1,6 +1,6 @@
 "use client";
 
-import type { PreviewAnnotationPayload, ScopedThreadRef } from "@lmcstools/contracts";
+import type { PreviewAnnotationPayload, ScopedThreadRef } from "@lmcstools/core";
 
 import type { ComposerImageAttachment } from "~/composerDraftStore";
 import { isPreviewSupportedInRuntime } from "~/previewStateStore";

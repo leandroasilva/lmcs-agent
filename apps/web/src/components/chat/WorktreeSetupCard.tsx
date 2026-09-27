@@ -2,8 +2,8 @@ import {
   worktreeSetupStageLabel,
   type WorktreeSetupSnapshot,
   type WorktreeSetupStage,
-} from "@lmcstools/contracts";
-import { formatDuration } from "@lmcstools/shared/orchestrationTiming";
+} from "@lmcstools/core";
+import { formatDuration } from "@lmcstools/core/orchestrationTiming";
 import {
   CheckIcon,
   ChevronDownIcon,

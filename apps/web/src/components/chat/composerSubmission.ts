@@ -1,5 +1,5 @@
-import { PROVIDER_SEND_TURN_MAX_INPUT_CHARS } from "@lmcstools/contracts";
-import { expandAssistantCitationsForProvider } from "@lmcstools/shared/assistantCitations";
+import { PROVIDER_SEND_TURN_MAX_INPUT_CHARS } from "@lmcstools/core";
+import { expandAssistantCitationsForProvider } from "@lmcstools/core/assistantCitations";
 
 type ComposerSubmitEvent = { preventDefault: () => void };
 

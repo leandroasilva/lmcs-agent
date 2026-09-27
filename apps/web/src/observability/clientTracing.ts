@@ -5,8 +5,8 @@ import * as Scope from "effect/Scope";
 import { HttpClient } from "effect/unstable/http";
 import { OtlpExporter, OtlpSerialization, OtlpTracer } from "effect/unstable/observability";
 
-import { settleAsyncResult, squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
-import { safeErrorLogAttributes } from "@lmcstools/client-runtime/errors";
+import { settleAsyncResult, squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
+import { safeErrorLogAttributes } from "@lmcstools/client/errors";
 import { resolvePrimaryEnvironmentHttpUrl } from "../environments/primary";
 import * as ClientTracer from "./clientTracer";
 import { primaryEnvironmentHttpLayer } from "../environments/primary/httpLayer";

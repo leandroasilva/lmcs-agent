@@ -1,4 +1,4 @@
-import type { ProviderDriverKind } from "@lmcstools/contracts";
+import type { ProviderDriverKind } from "@lmcstools/core";
 import { FolderGit2Icon, FolderIcon, GitBranchIcon } from "lucide-react";
 import { ProjectFavicon, type ProjectFaviconProject } from "./ProjectFavicon";
 import { ProviderInstanceIcon } from "./chat/ProviderInstanceIcon";

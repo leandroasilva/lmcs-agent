@@ -9,9 +9,9 @@ import {
   ThreadId,
   type DesktopAppActivationRequest,
   type DesktopAppActivationResponse,
-} from "@lmcstools/contracts";
-import { resolveDesktopAppControlAddress } from "@lmcstools/shared/desktopAppControl";
-import { HostProcessPlatform, HostProcessUserId } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { resolveDesktopAppControlAddress } from "@lmcstools/core/desktopAppControl";
+import { HostProcessPlatform, HostProcessUserId } from "@lmcstools/core/hostProcess";
 import { it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import { afterEach, describe, expect } from "vite-plus/test";

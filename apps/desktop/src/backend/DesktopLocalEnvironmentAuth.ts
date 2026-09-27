@@ -1,5 +1,5 @@
-import { bootstrapRemoteBearerSession } from "@lmcstools/client-runtime/authorization";
-import { PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/contracts";
+import { bootstrapRemoteBearerSession } from "@lmcstools/client/authorization";
+import { PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

@@ -4,8 +4,8 @@ import {
   type DiscoveredLocalServer,
   type EnvironmentId,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { isLoopbackHost } from "@lmcstools/shared/preview";
+} from "@lmcstools/core";
+import { isLoopbackHost } from "@lmcstools/core/preview";
 import { useMemo } from "react";
 
 import { previewEnvironment } from "./state/preview";

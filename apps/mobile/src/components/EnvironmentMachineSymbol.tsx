@@ -1,4 +1,4 @@
-import type { EnvironmentMachineKind } from "@lmcstools/contracts";
+import type { EnvironmentMachineKind } from "@lmcstools/core";
 import { SymbolView, type AppSymbolName } from "./AppSymbol";
 
 const SYMBOL_BY_KIND: Record<EnvironmentMachineKind, AppSymbolName> = {

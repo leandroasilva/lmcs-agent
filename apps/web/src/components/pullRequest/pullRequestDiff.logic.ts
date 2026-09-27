@@ -1,5 +1,5 @@
 import type { FileDiffMetadata } from "@pierre/diffs";
-import type { PullRequestDiffSide } from "@lmcstools/contracts";
+import type { PullRequestDiffSide } from "@lmcstools/core";
 
 /**
  * Whether a conversation's line is really in this file's hunks.

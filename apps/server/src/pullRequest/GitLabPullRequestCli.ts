@@ -18,7 +18,7 @@ import type {
   PullRequestReviewThread,
   PullRequestReviewVerdict,
   PullRequestReviewerCandidateList,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as GitLabCli from "../sourceControl/GitLabCli.ts";
 import {

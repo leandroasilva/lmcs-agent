@@ -1,6 +1,6 @@
 "use client";
 
-import type { PreviewViewportSetting, ScopedThreadRef } from "@lmcstools/contracts";
+import type { PreviewViewportSetting, ScopedThreadRef } from "@lmcstools/core";
 import { useShallow } from "zustand/react/shallow";
 import { useCallback, useEffect, useRef, useState } from "react";
 

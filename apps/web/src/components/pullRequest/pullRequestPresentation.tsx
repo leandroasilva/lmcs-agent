@@ -8,7 +8,7 @@ import type {
   PullRequestMergeability,
   PullRequestReviewDecision,
   PullRequestState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   CircleCheckIcon,
   CircleDashedIcon,

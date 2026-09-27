@@ -1,9 +1,9 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
+import type { EnvironmentId } from "@lmcstools/core";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 
 type RefreshProvidersTarget = {
   readonly environmentId: EnvironmentId;

@@ -1,5 +1,5 @@
-import { createAdvertisedEndpoint } from "@lmcstools/shared/advertisedEndpoint";
-import type { AdvertisedEndpoint, AdvertisedEndpointProvider } from "@lmcstools/contracts";
+import { createAdvertisedEndpoint } from "@lmcstools/core/advertisedEndpoint";
+import type { AdvertisedEndpoint, AdvertisedEndpointProvider } from "@lmcstools/core";
 import {
   buildTailscaleHttpsBaseUrl,
   isTailscaleIpv4Address,

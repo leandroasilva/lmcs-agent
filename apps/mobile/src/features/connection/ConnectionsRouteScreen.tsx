@@ -1,7 +1,7 @@
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { NativeHeaderToolbar } from "../../native/StackHeader";
 import { useNavigation } from "@react-navigation/native";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import { useCallback, useState } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import { act, type ComponentProps, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { create, type ReactTestRenderer } from "react-test-renderer";

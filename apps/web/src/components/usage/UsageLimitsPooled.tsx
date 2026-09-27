@@ -10,7 +10,7 @@ import {
   type LimitPoolMember,
   type LimitPoolWindow,
   remainingPercent,
-} from "@lmcstools/shared/usageLimits";
+} from "@lmcstools/core/usageLimits";
 import { AlertTriangleIcon, TicketIcon } from "lucide-react";
 import { Fragment, type ReactNode, useState } from "react";
 

@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import type { ServerUpdateState } from "@lmcstools/client-runtime/state/server";
+import type { ServerUpdateState } from "@lmcstools/client/state/server";
 import { Atom } from "effect/unstable/reactivity";
 import { useMemo, useState } from "react";
 

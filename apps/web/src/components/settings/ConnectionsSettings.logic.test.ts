@@ -1,4 +1,4 @@
-import type { AdvertisedEndpoint, DesktopWslState } from "@lmcstools/contracts";
+import type { AdvertisedEndpoint, DesktopWslState } from "@lmcstools/core";
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
   applyWslEnableSelection,

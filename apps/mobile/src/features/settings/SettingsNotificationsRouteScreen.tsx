@@ -16,7 +16,7 @@ import {
   settleAsyncResult,
   settlePromise,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { supportsAgentAwarenessPush } from "../agent-awareness/capabilities";
 import {
   openAndroidLiveUpdateSettings,

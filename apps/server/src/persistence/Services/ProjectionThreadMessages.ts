@@ -14,7 +14,7 @@ import {
   ThreadId,
   TurnId,
   IsoDateTime,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import * as Context from "effect/Context";
 import * as Struct from "effect/Struct";

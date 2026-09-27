@@ -1,10 +1,10 @@
-import { ProjectId } from "@lmcstools/contracts";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { ProjectId } from "@lmcstools/core";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import {
   projectScriptRuntimeEnv,
   resolveProjectScripts,
   setupProjectScript,
-} from "@lmcstools/shared/projectScripts";
+} from "@lmcstools/core/projectScripts";
 import * as NodeCrypto from "node:crypto";
 
 import * as Clock from "effect/Clock";

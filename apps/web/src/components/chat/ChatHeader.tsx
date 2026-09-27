@@ -4,13 +4,13 @@ import {
   type ProjectScript,
   type ResolvedKeybindingsConfig,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+} from "@lmcstools/core";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { ChevronDownIcon, EllipsisIcon } from "lucide-react";
 import {
   memo,

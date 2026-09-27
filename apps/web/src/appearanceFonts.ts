@@ -15,7 +15,7 @@ import {
   MIN_CODE_FONT_SIZE,
   MIN_INTERFACE_FONT_SIZE,
   MIN_PROMPT_FONT_SIZE,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export const DEFAULT_SANS_FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';

@@ -1,5 +1,5 @@
-import type { ProjectEntry } from "@lmcstools/contracts";
-import { normalizeSearchQuery, scoreQueryMatch } from "@lmcstools/shared/searchRanking";
+import type { ProjectEntry } from "@lmcstools/core";
+import { normalizeSearchQuery, scoreQueryMatch } from "@lmcstools/core/searchRanking";
 
 export interface FileTreeNode {
   readonly path: string;

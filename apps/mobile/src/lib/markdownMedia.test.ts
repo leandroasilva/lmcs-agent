@@ -1,4 +1,4 @@
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { resolveMarkdownMediaPreview } from "./markdownMedia";

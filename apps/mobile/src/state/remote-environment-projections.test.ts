@@ -1,10 +1,7 @@
-import type {
-  EnvironmentPresentation,
-  PreparedConnection,
-} from "@lmcstools/client-runtime/connection";
-import { PrimaryConnectionTarget } from "@lmcstools/client-runtime/connection";
-import type { ServerConfig } from "@lmcstools/contracts";
-import { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentPresentation, PreparedConnection } from "@lmcstools/client/connection";
+import { PrimaryConnectionTarget } from "@lmcstools/client/connection";
+import type { ServerConfig } from "@lmcstools/core";
+import { EnvironmentId } from "@lmcstools/core";
 import { describe, expect, it } from "@effect/vitest";
 import * as Option from "effect/Option";
 import { Atom, AtomRegistry } from "effect/unstable/reactivity";

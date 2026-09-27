@@ -1,6 +1,6 @@
 "use client";
 
-import { FILL_PREVIEW_VIEWPORT, type ScopedThreadRef } from "@lmcstools/contracts";
+import { FILL_PREVIEW_VIEWPORT, type ScopedThreadRef } from "@lmcstools/core";
 import { PanelRightIcon, PictureInPicture2, XIcon } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
@@ -35,7 +35,7 @@ import { useRightPanelStore } from "~/rightPanelStore";
 import { useDeviceState } from "~/state/device";
 
 import { DeviceStreamView } from "../device/DeviceStreamView";
-import type { DeviceScreenSize } from "@lmcstools/client-runtime/device/stream";
+import type { DeviceScreenSize } from "@lmcstools/client/device/stream";
 import { previewBridge } from "./previewBridge";
 import {
   clampPreviewMiniPlayerPosition,

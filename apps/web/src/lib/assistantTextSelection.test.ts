@@ -4,11 +4,11 @@ import {
   EnvironmentId,
   MessageId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   formatAssistantCitationHref,
   parseAssistantCitationHref,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 
 import {
   type AssistantTextSelector,

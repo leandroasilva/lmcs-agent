@@ -1,4 +1,4 @@
-import type { ThreadId } from "@lmcstools/contracts";
+import type { ThreadId } from "@lmcstools/core";
 
 /**
  * Opaque, exclusive cursor for windowed thread detail reads. Encodes the thread

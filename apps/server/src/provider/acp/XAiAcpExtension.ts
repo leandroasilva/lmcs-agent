@@ -1,6 +1,6 @@
 import * as NodeOS from "node:os";
 
-import type { ProviderUserInputAnswers, UserInputQuestion } from "@lmcstools/contracts";
+import type { ProviderUserInputAnswers, UserInputQuestion } from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Ref from "effect/Ref";

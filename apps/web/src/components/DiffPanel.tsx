@@ -5,9 +5,9 @@ import { useParams } from "@tanstack/react-router";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
-import { safeErrorLogAttributes } from "@lmcstools/client-runtime/errors";
-import type { ScopedThreadRef, TurnId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/runtime";
+import { safeErrorLogAttributes } from "@lmcstools/client/errors";
+import type { ScopedThreadRef, TurnId } from "@lmcstools/core";
 import {
   ArrowRightIcon,
   CheckIcon,

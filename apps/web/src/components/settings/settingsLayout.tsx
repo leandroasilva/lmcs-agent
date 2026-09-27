@@ -1,6 +1,6 @@
 import { SettingsGroup } from "./SettingsGroup";
 import { InfoIcon, Undo2Icon } from "lucide-react";
-import { DEFAULT_SERVER_SETTINGS, type ServerSettings } from "@lmcstools/contracts";
+import { DEFAULT_SERVER_SETTINGS, type ServerSettings } from "@lmcstools/core";
 import * as Equal from "effect/Equal";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {

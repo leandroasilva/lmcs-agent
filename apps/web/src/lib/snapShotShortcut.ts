@@ -5,8 +5,8 @@ import {
   type KeybindingShortcut,
   type SnapShotModifier,
   type SnapShotShortcut,
-} from "@lmcstools/contracts";
-import { parseKeybindingShortcut } from "@lmcstools/shared/keybindings";
+} from "@lmcstools/core";
+import { parseKeybindingShortcut } from "@lmcstools/core/keybindings";
 
 import { formatShortcutKeyLabel, formatShortcutLabel, shortcutConflictKey } from "../keybindings";
 import { isMacPlatform, isWindowsPlatform } from "./utils";

@@ -1,4 +1,4 @@
-import type { ServerSettings } from "@lmcstools/contracts";
+import type { ServerSettings } from "@lmcstools/core";
 import type { ComponentProps } from "react";
 
 import { Switch } from "../ui/switch";

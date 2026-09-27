@@ -643,7 +643,7 @@ export class RelayClientPrincipal extends Context.Service<
     readonly proofKeyThumbprint?: string;
     readonly dpopScopes?: ReadonlyArray<RelayDpopAccessTokenScope>;
   }
->()("@lmcstools/contracts/relay/RelayClientPrincipal") {}
+>()("@lmcstools/core/relay/RelayClientPrincipal") {}
 
 export class RelayEnvironmentPrincipal extends Context.Service<
   RelayEnvironmentPrincipal,
@@ -651,7 +651,7 @@ export class RelayEnvironmentPrincipal extends Context.Service<
     readonly environmentId: string;
     readonly environmentPublicKey: string;
   }
->()("@lmcstools/contracts/relay/RelayEnvironmentPrincipal") {}
+>()("@lmcstools/core/relay/RelayEnvironmentPrincipal") {}
 
 const RelayClientBearerAuthorization = HttpApiSecurity.http({ scheme: "bearer" }).pipe(
   HttpApiSecurity.annotate(

@@ -1,5 +1,5 @@
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useContext, useMemo } from "react";

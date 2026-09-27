@@ -1,4 +1,4 @@
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {

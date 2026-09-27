@@ -1,13 +1,13 @@
 import { useEffect, useRef, type RefObject } from "react";
-import type { DuoViewer } from "@lmcstools/client-runtime/device/duo-viewer";
-import type { DeviceModelSource } from "@lmcstools/client-runtime/device/model";
-import { createPhoneInteraction } from "@lmcstools/client-runtime/device/phone-interaction";
-import { createCanvasFrameSink } from "@lmcstools/client-runtime/device/frame";
-import type { DeviceScreenSize, DeviceStreamClient } from "@lmcstools/client-runtime/device/stream";
-import { createDuoPinch } from "@lmcstools/client-runtime/device/duo-control";
+import type { DuoViewer } from "@lmcstools/client/device/duo-viewer";
+import type { DeviceModelSource } from "@lmcstools/client/device/model";
+import { createPhoneInteraction } from "@lmcstools/client/device/phone-interaction";
+import { createCanvasFrameSink } from "@lmcstools/client/device/frame";
+import type { DeviceScreenSize, DeviceStreamClient } from "@lmcstools/client/device/stream";
+import { createDuoPinch } from "@lmcstools/client/device/duo-control";
 import { bindPhoneTrackpad } from "./phoneTrackpad";
 
-const loadDuoViewer = () => import("@lmcstools/client-runtime/device/duo-viewer");
+const loadDuoViewer = () => import("@lmcstools/client/device/duo-viewer");
 
 /** Web shell for the framework-independent viewer. The decoded screen and input connection remain owned by DeviceStreamView. */
 export function DeviceDuoViewport(props: {

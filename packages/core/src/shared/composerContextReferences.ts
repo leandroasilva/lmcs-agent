@@ -5,7 +5,7 @@ import {
   type ComposerContextRecord,
   type ElementContextDetails,
   type KnownComposerContextRecord,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 /**
  * Canonical inline reference: `[label](t3-context://v1/<kind>/<contextId>)`, or the image

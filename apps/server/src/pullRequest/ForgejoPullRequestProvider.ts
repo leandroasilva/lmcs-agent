@@ -1,8 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Result from "effect/Result";
-import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@lmcstools/contracts";
-import { decodeJsonResult } from "@lmcstools/shared/schemaJson";
+import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@lmcstools/core";
+import { decodeJsonResult } from "@lmcstools/core/schemaJson";
 import { ForgejoCli, type ForgejoApiInput } from "../sourceControl/ForgejoCli.ts";
 import { parseDiffFileRevisions } from "./bitbucketDiffRevisions.ts";
 import {

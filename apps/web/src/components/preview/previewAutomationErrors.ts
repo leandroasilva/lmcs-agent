@@ -11,7 +11,7 @@ import {
   PreviewTabId,
   ThreadId,
   TrimmedNonEmptyString,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 export interface PreviewAutomationOperationContext {

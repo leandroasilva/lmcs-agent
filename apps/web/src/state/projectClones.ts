@@ -1,6 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
-import { parseScopedProjectKey, scopedProjectKey } from "@lmcstools/client-runtime/environment";
-import type { EnvironmentId, ProjectCloneSnapshot, ScopedProjectRef } from "@lmcstools/contracts";
+import { parseScopedProjectKey, scopedProjectKey } from "@lmcstools/client/environment";
+import type { EnvironmentId, ProjectCloneSnapshot, ScopedProjectRef } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 

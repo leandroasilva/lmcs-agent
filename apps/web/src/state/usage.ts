@@ -12,13 +12,13 @@ import {
   type EnvironmentId,
   type UsageSummary,
   type UsageSummaryInput,
-} from "@lmcstools/contracts";
-import { refreshUsage } from "@lmcstools/client-runtime/state/usage";
+} from "@lmcstools/core";
+import { refreshUsage } from "@lmcstools/client/state/usage";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useCallback, useMemo } from "react";
 
-import { mergeUsage, type EnvironmentUsage, type MergedUsage } from "@lmcstools/shared/usageMerge";
+import { mergeUsage, type EnvironmentUsage, type MergedUsage } from "@lmcstools/core/usageMerge";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { environmentPresentations } from "./presentation";
 import { serverEnvironment } from "./server";

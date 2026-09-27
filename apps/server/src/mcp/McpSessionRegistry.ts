@@ -1,4 +1,4 @@
-import { ProviderInstanceId, ThreadId } from "@lmcstools/contracts";
+import { ProviderInstanceId, ThreadId } from "@lmcstools/core";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";

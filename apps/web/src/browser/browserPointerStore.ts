@@ -1,4 +1,4 @@
-import type { DesktopPreviewPointerEvent } from "@lmcstools/contracts";
+import type { DesktopPreviewPointerEvent } from "@lmcstools/core";
 import { create } from "zustand";
 
 interface BrowserPointerStoreState {

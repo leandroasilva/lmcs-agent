@@ -5,9 +5,9 @@ import {
   CONFIGURED_LOCAL_SERVER_URLS_MAX_ITEMS,
   PREVIEW_URL_MAX_LENGTH,
   type DiscoveredLocalServer,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import * as Net from "@lmcstools/shared/Net";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import * as Net from "@lmcstools/core/Net";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";

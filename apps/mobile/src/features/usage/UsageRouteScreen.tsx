@@ -1,12 +1,12 @@
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
-import { EnvironmentId, USAGE_CONTRACT_VERSION } from "@lmcstools/contracts";
+import { EnvironmentId, USAGE_CONTRACT_VERSION } from "@lmcstools/core";
 import { type RouteProp, useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import {
   isCompatibleUsageContractVersion,
   isModelCostUnknown,
   type DailyTotals,
   type MergedUsage,
-} from "@lmcstools/shared/usageMerge";
+} from "@lmcstools/core/usageMerge";
 import {
   enumerateDays,
   enumerateHourStarts,
@@ -17,7 +17,7 @@ import {
   formatTokens,
   formatUsd,
   makeWindow,
-} from "@lmcstools/shared/usageFormat";
+} from "@lmcstools/core/usageFormat";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, RefreshControl, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";

@@ -8,7 +8,7 @@ import type {
   ProviderOptionSelection,
   RuntimeMode,
   ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   CommandId,
   DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -17,10 +17,10 @@ import {
   MessageId,
   T3_PROJECT_FILE_NAME,
   ThreadId,
-} from "@lmcstools/contracts";
-import { sanitizeNewRefName } from "@lmcstools/shared/git";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
-import { parseT3ProjectFile } from "@lmcstools/shared/t3ProjectFile";
+} from "@lmcstools/core";
+import { sanitizeNewRefName } from "@lmcstools/core/git";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
+import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import * as Arr from "effect/Array";
 import { pipe } from "effect/Function";
 
@@ -79,8 +79,8 @@ import {
   setPendingConnectionError,
   useSavedRemoteConnections,
 } from "../../state/use-remote-environment-registry";
-import { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
-import { type VcsRef } from "@lmcstools/client-runtime/state/vcs";
+import { EnvironmentProject } from "@lmcstools/client/state/shell";
+import { type VcsRef } from "@lmcstools/client/state/vcs";
 import {
   buildHomeProjectScopes,
   sortHomeProjectScopes,

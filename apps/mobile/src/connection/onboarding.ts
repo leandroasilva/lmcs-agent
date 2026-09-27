@@ -1,9 +1,6 @@
-import { ConnectionOnboarding } from "@lmcstools/client-runtime/connection";
-import {
-  createAtomCommandScheduler,
-  createRuntimeCommand,
-} from "@lmcstools/client-runtime/state/runtime";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import { ConnectionOnboarding } from "@lmcstools/client/connection";
+import { createAtomCommandScheduler, createRuntimeCommand } from "@lmcstools/client/state/runtime";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 
 import { connectionAtomRuntime } from "./runtime";

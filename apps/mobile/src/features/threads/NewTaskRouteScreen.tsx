@@ -7,7 +7,7 @@ import {
   type StaticScreenProps,
 } from "@react-navigation/native";
 import { SymbolView } from "../../components/AppSymbol";
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

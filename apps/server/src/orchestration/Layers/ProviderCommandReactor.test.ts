@@ -10,8 +10,8 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   ProviderSetupError,
-} from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
 import {
   ApprovalRequestId,
   CommandId,
@@ -23,8 +23,8 @@ import {
   ProjectId,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { serializeAssistantCitation } from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core";
+import { serializeAssistantCitation } from "@lmcstools/core/assistantCitations";
 import * as Effect from "effect/Effect";
 import * as Deferred from "effect/Deferred";
 import * as Exit from "effect/Exit";
@@ -39,7 +39,7 @@ import { it as effectIt } from "@effect/vitest";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { deriveServerPaths, ServerConfig } from "../../config.ts";
-import { TextGenerationError } from "@lmcstools/contracts";
+import { TextGenerationError } from "@lmcstools/core";
 import {
   ProviderAdapterRequestError,
   ProviderWorkspaceMissingError,

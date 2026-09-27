@@ -1,6 +1,6 @@
 import { it } from "@effect/vitest";
-import { type PreviewEvent, ThreadId } from "@lmcstools/contracts";
-import { PreviewUrlNormalizationError } from "@lmcstools/shared/preview";
+import { type PreviewEvent, ThreadId } from "@lmcstools/core";
+import { PreviewUrlNormalizationError } from "@lmcstools/core/preview";
 import { Effect, PubSub } from "effect";
 import { expect } from "vite-plus/test";
 

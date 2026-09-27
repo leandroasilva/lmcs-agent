@@ -1,5 +1,5 @@
-import type { EnvironmentId, SidebarProjectGroupingMode } from "@lmcstools/contracts";
-import { DEFAULT_SIDEBAR_PROJECT_SORT_ORDER } from "@lmcstools/contracts";
+import type { EnvironmentId, SidebarProjectGroupingMode } from "@lmcstools/core";
+import { DEFAULT_SIDEBAR_PROJECT_SORT_ORDER } from "@lmcstools/core";
 import {
   createContext,
   createElement,

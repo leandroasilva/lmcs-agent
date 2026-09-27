@@ -1,4 +1,4 @@
-import type { DeviceServiceState, EnvironmentId } from "@lmcstools/contracts";
+import type { DeviceServiceState, EnvironmentId } from "@lmcstools/core";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { deviceEnvironment } from "~/state/device";

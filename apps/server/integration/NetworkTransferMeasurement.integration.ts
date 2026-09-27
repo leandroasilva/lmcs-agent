@@ -3,7 +3,7 @@ import * as NodeHttp from "node:http";
 import * as NodeZlib from "node:zlib";
 
 import * as NodeSocket from "@effect/platform-node/NodeSocket";
-import { WsRpcGroup } from "@lmcstools/contracts";
+import { WsRpcGroup } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";

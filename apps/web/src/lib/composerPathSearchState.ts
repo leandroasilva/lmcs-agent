@@ -1,7 +1,7 @@
 import {
   type ComposerPathSearchState,
   type ComposerPathSearchTarget,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/client/state/threads";
 
 import { useComposerPathSearch as useComposerPathSearchQuery } from "../state/queries";
 

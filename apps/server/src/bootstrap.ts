@@ -9,8 +9,8 @@ import * as Option from "effect/Option";
 import * as Predicate from "effect/Predicate";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
-import { decodeJsonResult } from "@lmcstools/shared/schemaJson";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { decodeJsonResult } from "@lmcstools/core/schemaJson";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 export class BootstrapFdStatError extends Schema.TaggedError<BootstrapFdStatError>()(
   "BootstrapFdStatError",

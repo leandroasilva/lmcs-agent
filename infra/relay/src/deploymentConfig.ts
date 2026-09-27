@@ -1,4 +1,4 @@
-import type { RelayManagedEndpoint } from "@lmcstools/contracts/relay";
+import type { RelayManagedEndpoint } from "@lmcstools/core/relay";
 import * as Schema from "effect/Schema";
 
 const DNS_LABEL_MAX_LENGTH = 63;

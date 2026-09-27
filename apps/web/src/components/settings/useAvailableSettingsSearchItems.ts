@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { AuthAccessWriteScope } from "@lmcstools/contracts";
+import { AuthAccessWriteScope } from "@lmcstools/core";
 
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 import { isElectron } from "~/env";

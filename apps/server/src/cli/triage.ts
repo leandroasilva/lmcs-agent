@@ -14,8 +14,8 @@ import * as NodeChildProcess from "node:child_process";
 import * as NodeOS from "node:os";
 import * as NodeReadlinePromises from "node:readline/promises";
 
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { isCommandAvailable, resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { isCommandAvailable, resolveSpawnCommand } from "@lmcstools/core/shell";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
 import * as DateTime from "effect/DateTime";

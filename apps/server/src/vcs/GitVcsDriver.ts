@@ -31,7 +31,7 @@ import {
   type VcsStatusInput,
   type VcsStatusResult,
   type WorktreeSubmodules,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   makeGitVcsDriverCore,
   PATCH_RENDER_PREFIX_ARGS,

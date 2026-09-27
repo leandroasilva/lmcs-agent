@@ -29,8 +29,7 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@lmcstools/contracts": "workspace:*",
-    "@lmcstools/shared": "workspace:*",
+    "@lmcstools/core": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

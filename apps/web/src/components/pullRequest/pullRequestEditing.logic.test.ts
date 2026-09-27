@@ -4,7 +4,7 @@ import type {
   PullRequestComment,
   PullRequestDetail,
   PullRequestViewerPermissions,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

@@ -6,11 +6,8 @@ import {
   type ProviderDriverKind,
   type ProviderInstanceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
-import {
-  squashAtomCommandFailure,
-  type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/core";
+import { squashAtomCommandFailure, type AtomCommandResult } from "@lmcstools/client/state/runtime";
 
 export type ProviderUpdateCandidate = ServerProvider & {
   readonly versionAdvisory: NonNullable<ServerProvider["versionAdvisory"]> & {

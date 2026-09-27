@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { MessageId } from "@lmcstools/contracts";
+import { MessageId } from "@lmcstools/core";
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
 import { deriveTimelineMinimapItems, resolveTimelineMinimapPreview } from "./timelineMinimapItems";
 import type { ChatMessage } from "../../types";

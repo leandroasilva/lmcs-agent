@@ -20,7 +20,7 @@ import {
   type DesktopPreviewTabDefaults,
   type PreviewAppearancePreference,
   type PreviewViewportSetting,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   ensureClientSettingsHydrated,

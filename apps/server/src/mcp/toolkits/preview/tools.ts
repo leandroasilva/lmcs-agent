@@ -18,7 +18,7 @@ import {
   PreviewAutomationTabTargetInput,
   PreviewAutomationTypeInput,
   PreviewAutomationWaitForInput,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import * as FileSystem from "effect/FileSystem";
 import { Tool, Toolkit } from "effect/unstable/ai";

@@ -19,29 +19,29 @@ import {
   resolveAddProjectPath,
   sortAddProjectProviderSources,
   type AddProjectRemoteSource,
-} from "@lmcstools/client-runtime/operations/projects";
+} from "@lmcstools/client/operations/projects";
 import {
   connectionStatusText,
   type EnvironmentConnectionPhase,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   canPreloadBrowsePath,
   createBrowseNavigationCoordinator,
   filterFilesystemBrowseEntries,
   getFilesystemBrowsePath,
-} from "@lmcstools/client-runtime/state/filesystem";
+} from "@lmcstools/client/state/filesystem";
 import {
   appendBrowsePathSegment,
   inferProjectTitleFromPath,
   isWindowsPlatform,
-} from "@lmcstools/client-runtime/state/projects";
+} from "@lmcstools/client/state/projects";
 import {
   CommandId,
   type EnvironmentId,
   type EnvironmentMachineKind,
   ProjectId,
   resolveEnvironmentMachineKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { CommonActions, StackActions, useNavigation } from "@react-navigation/native";
 import { SymbolView } from "../../components/AppSymbol";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";

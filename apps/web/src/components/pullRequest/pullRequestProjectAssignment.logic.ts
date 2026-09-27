@@ -1,4 +1,4 @@
-import type { EnvironmentId, EnvironmentMachineKind, ProjectId } from "@lmcstools/contracts";
+import type { EnvironmentId, EnvironmentMachineKind, ProjectId } from "@lmcstools/core";
 
 /** The little of a project this needs: who holds it, and which repository it is a copy of. */
 export interface AssignableProject {

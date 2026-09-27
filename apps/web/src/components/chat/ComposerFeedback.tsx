@@ -1,7 +1,4 @@
-import {
-  codexFeedbackNotice,
-  type CodexFeedbackSubmission,
-} from "@lmcstools/client-runtime/state/threads";
+import { codexFeedbackNotice, type CodexFeedbackSubmission } from "@lmcstools/client/state/threads";
 import { MessageSquareIcon } from "lucide-react";
 
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";

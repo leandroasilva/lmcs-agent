@@ -5,7 +5,7 @@ import {
   clearComposerDraftContent,
 } from "../../state/use-composer-drafts";
 import { useWorktreeSetup } from "./use-worktree-setup";
-import { worktreeSetupAgentStarted } from "@lmcstools/client-runtime/worktree-setup";
+import { worktreeSetupAgentStarted } from "@lmcstools/client/worktree-setup";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { ScreenHeaderButton } from "../../components/ScreenHeaderButton";
 import type { ScreenHeaderAction } from "../../components/ScreenHeader.types";
@@ -25,16 +25,13 @@ import {
   EnvironmentId,
   ThreadId,
   type ProjectScript,
-} from "@lmcstools/contracts";
-import {
-  requestOlderThreadTurns,
-  threadHasOlderTurns,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/core";
+import { requestOlderThreadTurns, threadHasOlderTurns } from "@lmcstools/client/state/threads";
 import {
   projectScriptCwd,
   projectScriptRuntimeEnv,
   resolveProjectScripts,
-} from "@lmcstools/shared/projectScripts";
+} from "@lmcstools/core/projectScripts";
 import { Alert, Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWorkspaceState } from "../../state/workspace";

@@ -6,8 +6,8 @@
  *
  * @module AnalyticsService
  */
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import type { ClientOs } from "@lmcstools/contracts";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import type { ClientOs } from "@lmcstools/core";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";

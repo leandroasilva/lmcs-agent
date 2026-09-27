@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   readBase64: vi.fn(),
 }));
 
-vi.mock("@lmcstools/client-runtime/state/runtime", () => ({
+vi.mock("@lmcstools/client/state/runtime", () => ({
   // The client-runtime attachments module resolves the same file through its
   // relative import, so these fakes also feed runAttachmentUploadCycle and
   // verifyPersistedAttachmentUpload.

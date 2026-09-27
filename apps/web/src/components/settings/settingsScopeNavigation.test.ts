@@ -1,4 +1,4 @@
-import { EnvironmentId, ProviderInstanceId } from "@lmcstools/contracts";
+import { EnvironmentId, ProviderInstanceId } from "@lmcstools/core";
 import {
   createMemoryHistory,
   createRootRoute,

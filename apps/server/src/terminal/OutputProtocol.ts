@@ -1,4 +1,4 @@
-import { WS_METHODS } from "@lmcstools/contracts";
+import { WS_METHODS } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import type { RpcServer } from "effect/unstable/rpc";
 

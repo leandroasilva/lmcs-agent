@@ -6,8 +6,8 @@ import {
   type OrchestrationEvent,
   type OrchestrationSessionStatus,
   ThreadId,
-} from "@lmcstools/contracts";
-import { compareDateTimeStrings } from "@lmcstools/shared/dateTime";
+} from "@lmcstools/core";
+import { compareDateTimeStrings } from "@lmcstools/core/dateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -19,7 +19,7 @@ import * as SqlClient from "effect/unstable/sql/SqlClient";
 import {
   legacyThreadPullRequestKey,
   threadPullRequestKeysEqual,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 
 import { toPersistenceSqlError, type ProjectionRepositoryError } from "../../persistence/Errors.ts";
 import { OrchestrationEventStore } from "../../persistence/Services/OrchestrationEventStore.ts";

@@ -5,7 +5,7 @@ import { runtimeModeConfig, runtimeModeOptions } from "./runtimeModeConfig";
 import { useRightPanelStore } from "~/rightPanelStore";
 import { AttachmentFilePreview } from "../files/AttachmentFilePreview";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
-import { filterComposerPullRequestMatches } from "@lmcstools/shared/composerPullRequestMatches";
+import { filterComposerPullRequestMatches } from "@lmcstools/core/composerPullRequestMatches";
 import { importPastedComposerText, readPastedComposerContext } from "../composerInlineTokenPaste";
 import { elementContextToPreviewAnnotation } from "../../lib/elementContext";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
@@ -33,25 +33,25 @@ import type {
   ServerProvider,
   ThreadId,
   SnapShotSource,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   ProviderDriverKind,
   ProviderInstanceId,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
-} from "@lmcstools/contracts";
-import type { EnvironmentConnectionPresentation } from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/core";
+import type { EnvironmentConnectionPresentation } from "@lmcstools/client/connection";
 import {
   isPasteAsTextShortcut,
   nextPastedTextFileName,
   pastedTextDisposition,
   wouldTextPasteExceedLimit,
-} from "@lmcstools/client-runtime/text-paste";
-import { serializeComposerFileLink } from "@lmcstools/shared/composerTrigger";
+} from "@lmcstools/client/text-paste";
+import { serializeComposerFileLink } from "@lmcstools/core/composerTrigger";
 import { folderDropTarget, resolveDroppedFolderPath } from "./folderDrop";
-import { createModelSelection, normalizeModelSlug } from "@lmcstools/shared/model";
-import { USAGE_LIMITS_COMMAND } from "@lmcstools/shared/usageLimits";
+import { createModelSelection, normalizeModelSlug } from "@lmcstools/core/model";
+import { USAGE_LIMITS_COMMAND } from "@lmcstools/core/usageLimits";
 import {
   memo,
   type ComponentProps,
@@ -150,7 +150,7 @@ import { compressImageForStash, prepareImageForAttachment } from "../../lib/imag
 import {
   fileAttachmentTooLargeMessage,
   formatAttachmentSize,
-} from "@lmcstools/client-runtime/state/attachments";
+} from "@lmcstools/client/state/attachments";
 import {
   attachmentsToReleaseOnUploadCapabilityLoss,
   composerOtherFilesForPresentation,
@@ -184,7 +184,7 @@ import {
   type TerminalContextSelection,
 } from "../../lib/terminalContext";
 import { useComposerPathSearch } from "../../lib/composerPathSearchState";
-import { replaceComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
+import { replaceComposerContextReferences } from "@lmcstools/core/composerContextReferences";
 import {
   getRestingComposerImagePreviewCounts,
   resolveRestingComposerControlsLayout,
@@ -230,8 +230,8 @@ import {
   terminalContextRecord,
 } from "~/lib/composerContextRecords";
 import { requestConfirmDialog } from "~/confirmDialog";
-import { encodeComposerContextFragment } from "@lmcstools/shared/composerContextClipboard";
-import type { ComposerContextClipboardFragment, ComposerContextRecord } from "@lmcstools/contracts";
+import { encodeComposerContextFragment } from "@lmcstools/core/composerContextClipboard";
+import type { ComposerContextClipboardFragment, ComposerContextRecord } from "@lmcstools/core";
 import { resolveAssetUrl } from "~/assets/assetUrls";
 import { assetEnvironment } from "~/state/assets";
 import { readPreparedConnection } from "~/state/session";
@@ -952,7 +952,7 @@ import {
   type ProviderInstanceEntry,
 } from "../../providerInstances";
 import { type AppModelOption, getAppModelOptionsForInstance } from "../../modelSelection";
-import type { UnifiedSettings } from "@lmcstools/contracts/settings";
+import type { UnifiedSettings } from "@lmcstools/core/settings";
 import {
   isVideoAttachment,
   type ChatMessage,
@@ -975,7 +975,7 @@ import {
   getProviderSkillsForSlashMenu,
   resolveProviderSkillsForCwd,
   resolveProviderSlashCommandsForCwd,
-} from "@lmcstools/client-runtime/providerSkills";
+} from "@lmcstools/client/providerSkills";
 import { searchProviderSkills } from "../../providerSkillSearch";
 import { useDelayedStatus } from "../../hooks/useDelayedStatus";
 import { useMediaQuery } from "../../hooks/useMediaQuery";

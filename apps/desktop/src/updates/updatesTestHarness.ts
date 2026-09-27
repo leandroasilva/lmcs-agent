@@ -1,5 +1,5 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import type { DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopUpdateState } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as PlatformError from "effect/PlatformError";

@@ -132,7 +132,7 @@ function resolveSpawnExecutableWithNode(
 }
 
 export const SpawnExecutableResolution = Context.Reference<SpawnExecutableResolver>(
-  "@lmcstools/shared/shell/SpawnExecutableResolution",
+  "@lmcstools/core/shell/SpawnExecutableResolution",
   {
     defaultValue: () => resolveSpawnExecutableWithNode,
   },
@@ -319,14 +319,14 @@ export type WindowsShellEnvironmentReader = (
 ) => Partial<Record<string, string>>;
 
 export const WindowsShellEnvironment = Context.Reference<WindowsShellEnvironmentReader>(
-  "@lmcstools/shared/shell/WindowsShellEnvironment",
+  "@lmcstools/core/shell/WindowsShellEnvironment",
   {
     defaultValue: () => readEnvironmentFromWindowsShell,
   },
 );
 
 export const CommandAvailability = Context.Reference<CommandAvailabilityChecker>(
-  "@lmcstools/shared/shell/CommandAvailability",
+  "@lmcstools/core/shell/CommandAvailability",
   {
     defaultValue: () => isCommandAvailable,
   },
@@ -505,7 +505,7 @@ interface CommandResolutionCacheEntry {
 // so tests and embedders can provide an isolated instance; the default is a
 // single process-wide map shared by all consumers.
 export const CommandResolutionCache = Context.Reference<Map<string, CommandResolutionCacheEntry>>(
-  "@lmcstools/shared/shell/CommandResolutionCache",
+  "@lmcstools/core/shell/CommandResolutionCache",
   {
     defaultValue: () => new Map(),
   },

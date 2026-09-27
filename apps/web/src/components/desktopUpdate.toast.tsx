@@ -1,4 +1,4 @@
-import type { DesktopBridge, DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopBridge, DesktopUpdateState } from "@lmcstools/core";
 import { ArrowRightIcon } from "lucide-react";
 
 import {

@@ -1,11 +1,11 @@
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import {
   generateSpreadPinOrderKeys,
   pinOrderKeyBetween,
   planPinnedReorder,
-} from "@lmcstools/client-runtime/state/thread-sort";
-import { effectiveSnoozed } from "@lmcstools/client-runtime/state/thread-settled";
-import type { EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/thread-sort";
+import { effectiveSnoozed } from "@lmcstools/client/state/thread-settled";
+import type { EnvironmentId } from "@lmcstools/core";
 
 export type ThreadMoveDestination =
   | "up"

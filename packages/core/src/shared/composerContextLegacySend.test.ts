@@ -1,4 +1,4 @@
-import { ComposerContextId, type ComposerContextRecord } from "@lmcstools/contracts";
+import { ComposerContextId, type ComposerContextRecord } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { upgradeLegacyContextMessage } from "./composerContextLegacy.ts";

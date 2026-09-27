@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { ProviderDriverKind } from "@lmcstools/contracts";
+import { ProviderDriverKind } from "@lmcstools/core";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";

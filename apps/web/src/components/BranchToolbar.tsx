@@ -1,5 +1,5 @@
-import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import {
   ChevronDownIcon,
   FolderGit2Icon,

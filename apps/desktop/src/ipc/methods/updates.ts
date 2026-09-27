@@ -3,7 +3,7 @@ import {
   DesktopUpdateChannelSchema,
   DesktopUpdateCheckResultSchema,
   DesktopUpdateStateSchema,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 

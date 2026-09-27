@@ -5,7 +5,7 @@ import {
   type PreviewOpenInput,
   type PreviewSessionSnapshot,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 

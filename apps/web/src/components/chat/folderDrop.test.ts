@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import { folderDropTarget, resolveDroppedFolderPath } from "./folderDrop";
 
 const environmentId = EnvironmentId.make("environment-1");

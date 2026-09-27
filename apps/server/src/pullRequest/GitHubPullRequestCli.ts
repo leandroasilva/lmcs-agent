@@ -36,7 +36,7 @@ import {
   type PullRequestThreadCommentsResult,
   type PullRequestUpdateMethod,
   type PullRequestPreview,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as GitHubCli from "../sourceControl/GitHubCli.ts";
 import * as GitHubGraphQlBudget from "../sourceControl/githubGraphQlBudget.ts";

@@ -1,11 +1,5 @@
-import {
-  EnvironmentId,
-  MessageId,
-  ProjectId,
-  ProviderInstanceId,
-  ThreadId,
-} from "@lmcstools/contracts";
-import { serializeAssistantCitation } from "@lmcstools/shared/assistantCitations";
+import { EnvironmentId, MessageId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/core";
+import { serializeAssistantCitation } from "@lmcstools/core/assistantCitations";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

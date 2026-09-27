@@ -7,14 +7,14 @@ import {
   RelayWebClientId,
   type RelayPublicClientId,
   type RelayEnvironmentLinkChallengeRequest,
-} from "@lmcstools/contracts/relay";
-import { encodeOAuthScope, parseAllowedOAuthScope } from "@lmcstools/shared/oauthScope";
+} from "@lmcstools/core/relay";
+import { encodeOAuthScope, parseAllowedOAuthScope } from "@lmcstools/core/oauthScope";
 import {
   normalizeRelayIssuer,
   RelayJwtError,
   signRelayJwt,
   verifyRelayJwt,
-} from "@lmcstools/shared/relayJwt";
+} from "@lmcstools/core/relayJwt";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

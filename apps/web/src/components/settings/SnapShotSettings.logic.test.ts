@@ -1,5 +1,5 @@
 import { assert, expect, it } from "vite-plus/test";
-import { DEFAULT_CLIENT_SETTINGS, type DesktopSnapShotState } from "@lmcstools/contracts";
+import { DEFAULT_CLIENT_SETTINGS, type DesktopSnapShotState } from "@lmcstools/core";
 
 import {
   createRecordingRequestTracker,

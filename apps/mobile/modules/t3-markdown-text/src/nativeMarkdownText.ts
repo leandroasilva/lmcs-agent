@@ -1,7 +1,7 @@
 import type { MarkdownNode } from "react-native-nitro-markdown/headless";
-import { collectComposerInlineTokens } from "@lmcstools/shared/composerInlineTokens";
-import { imageMimeType } from "@lmcstools/shared/image";
-import { videoMimeType } from "@lmcstools/shared/video";
+import { collectComposerInlineTokens } from "@lmcstools/core/composerInlineTokens";
+import { imageMimeType } from "@lmcstools/core/image";
+import { videoMimeType } from "@lmcstools/core/video";
 /**
  * Every accent shares a lightness so no kind reads heavier than another; only hue carries
  * identity. These are the sRGB form of the same OKLCH set web uses, so a chip looks the
@@ -86,11 +86,11 @@ export function contextChipPresentation(
     ? CONTEXT_CHIP_PRESENTATIONS[presentationKind as keyof typeof CONTEXT_CHIP_PRESENTATIONS]
     : CONTEXT_CHIP_PRESENTATIONS.file;
 }
-import { formatAttachmentSize } from "@lmcstools/client-runtime/state/attachments";
+import { formatAttachmentSize } from "@lmcstools/client/state/attachments";
 import {
   formatComposerContextReference,
   parseComposerContextHref,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 
 /** Native selections count UTF-16 display units, including each inline image placeholder. */
 export function nativeMarkdownContextCopyRanges(

@@ -1,4 +1,4 @@
-import type { EnvironmentId, ProjectId, PullRequestCheck } from "@lmcstools/contracts";
+import type { EnvironmentId, ProjectId, PullRequestCheck } from "@lmcstools/core";
 import { Children, isValidElement, type ReactNode } from "react";
 import { describe, expect, it } from "vite-plus/test";
 

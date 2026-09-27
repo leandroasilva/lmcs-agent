@@ -1,4 +1,4 @@
-import type { ComposerContextRecord, ElementContextDetails } from "@lmcstools/contracts";
+import type { ComposerContextRecord, ElementContextDetails } from "@lmcstools/core";
 
 import { collectComposerContextReferences } from "./composerContextReferences.ts";
 

@@ -7,8 +7,8 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ServerSettings as ContractServerSettings,
-} from "@lmcstools/contracts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+} from "@lmcstools/core";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -969,7 +969,10 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
           { path: plain, git: null },
           {
             path: repo,
-            git: { remoteKey: "github.com/leandroasilva/lmcs-agent", repository: "leandroasilva/lmcs-agent" },
+            git: {
+              remoteKey: "github.com/leandroasilva/lmcs-agent",
+              repository: "leandroasilva/lmcs-agent",
+            },
           },
         ]);
       }),

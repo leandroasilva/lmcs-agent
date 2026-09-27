@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
-import type { RelayAgentActivityState } from "@lmcstools/contracts/relay";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
+import type { RelayAgentActivityState } from "@lmcstools/core/relay";
 import { makeAggregateState } from "./agentActivityAggregate.ts";
 import {
   attentionTransitionRows,

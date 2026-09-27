@@ -6,14 +6,14 @@ import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it } from "@effect/vitest";
-import type { DesktopAppActivationRequest } from "@lmcstools/contracts";
-import { resolveDesktopAppControlAddress } from "@lmcstools/shared/desktopAppControl";
+import type { DesktopAppActivationRequest } from "@lmcstools/core";
+import { resolveDesktopAppControlAddress } from "@lmcstools/core/desktopAppControl";
 import {
   HostProcessPlatform,
   HostProcessUserId,
   HostProcessWorkingDirectory,
-} from "@lmcstools/shared/hostProcess";
-import * as NetService from "@lmcstools/shared/Net";
+} from "@lmcstools/core/hostProcess";
+import * as NetService from "@lmcstools/core/Net";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

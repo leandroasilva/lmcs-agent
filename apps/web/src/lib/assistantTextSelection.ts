@@ -1,4 +1,4 @@
-import { ASSISTANT_CITATION_CONTEXT_LENGTH, type AssistantCitation } from "@lmcstools/contracts";
+import { ASSISTANT_CITATION_CONTEXT_LENGTH, type AssistantCitation } from "@lmcstools/core";
 
 export type AssistantTextSelector = {
   readonly text: string;

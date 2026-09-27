@@ -1,4 +1,4 @@
-import { createFilesystemEnvironmentAtoms } from "@lmcstools/client-runtime/state/filesystem";
+import { createFilesystemEnvironmentAtoms } from "@lmcstools/client/state/filesystem";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

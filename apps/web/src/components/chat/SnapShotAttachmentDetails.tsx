@@ -1,4 +1,4 @@
-import type { SnapShotSource } from "@lmcstools/contracts";
+import type { SnapShotSource } from "@lmcstools/core";
 import { ImageIcon, TextIcon } from "lucide-react";
 import { Suspense, use, useMemo, type CSSProperties } from "react";
 

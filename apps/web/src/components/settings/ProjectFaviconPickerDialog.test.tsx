@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 

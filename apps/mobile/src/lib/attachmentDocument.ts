@@ -1,7 +1,7 @@
-import { filePreviewDelimiter, parseDelimitedPreview } from "@lmcstools/shared/delimitedPreview";
-import type { EnvironmentId } from "@lmcstools/contracts";
-import { readFilePreviewResponse } from "@lmcstools/client-runtime/file-preview";
-import { filePreviewKind, FILE_TEXT_PREVIEW_MAX_BYTES } from "@lmcstools/shared/filePreview";
+import { filePreviewDelimiter, parseDelimitedPreview } from "@lmcstools/core/delimitedPreview";
+import type { EnvironmentId } from "@lmcstools/core";
+import { readFilePreviewResponse } from "@lmcstools/client/file-preview";
+import { filePreviewKind, FILE_TEXT_PREVIEW_MAX_BYTES } from "@lmcstools/core/filePreview";
 import { fetch } from "expo/fetch";
 import { File } from "expo-file-system";
 import { useEffect, useMemo, useRef, useState } from "react";

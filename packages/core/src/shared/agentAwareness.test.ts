@@ -6,8 +6,8 @@ import type {
   OrchestrationThreadShell,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { ProviderInstanceId } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { ProviderInstanceId } from "@lmcstools/core";
 
 import { projectThreadAwareness } from "./agentAwareness.ts";
 

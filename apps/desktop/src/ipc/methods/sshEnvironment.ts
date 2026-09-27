@@ -4,8 +4,8 @@ import {
   issueRemoteWebSocketTicket,
   RemoteEnvironmentAuthUndeclaredStatusError,
   type RemoteEnvironmentAuthError,
-} from "@lmcstools/client-runtime/authorization";
-import { fetchRemoteEnvironmentDescriptor } from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/client/authorization";
+import { fetchRemoteEnvironmentDescriptor } from "@lmcstools/client/environment";
 import {
   EnvironmentAuthInvalidError,
   DesktopDiscoveredSshHostSchema,
@@ -25,7 +25,7 @@ import {
   AuthAccessTokenResult,
   AuthSessionState,
   AuthWebSocketTicketResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { SshHttpBridgeError } from "@lmcstools/ssh/errors";
 import { resolveLoopbackSshHttpBaseUrl } from "@lmcstools/ssh/tunnel";
 import * as Data from "effect/Data";

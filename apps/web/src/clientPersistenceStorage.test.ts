@@ -1,4 +1,4 @@
-import { DEFAULT_CLIENT_SETTINGS } from "@lmcstools/contracts";
+import { DEFAULT_CLIENT_SETTINGS } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 function createLocalStorageStub(): Storage {

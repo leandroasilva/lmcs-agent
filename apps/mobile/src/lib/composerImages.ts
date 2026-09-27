@@ -1,7 +1,7 @@
 import {
   clampFileAttachmentUploadBytes,
   fileAttachmentTooLargeMessage,
-} from "@lmcstools/client-runtime/state/attachments";
+} from "@lmcstools/client/state/attachments";
 import {
   isProviderSendTurnSupportedImageMimeType,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
@@ -10,7 +10,7 @@ import {
   type EnvironmentId,
   type PastedTextAttachmentSource,
   type UploadChatImageAttachment,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type { DocumentPickerResult } from "expo-document-picker";
 import { estimateBase64ByteSize } from "./base64";
 import {
@@ -18,8 +18,8 @@ import {
   isComposerAttachmentFileRetained,
   resolveOwnedComposerAttachmentFileUri,
 } from "./composerAttachmentFiles";
-import { imageMimeType } from "@lmcstools/shared/image";
-import { videoMimeType } from "@lmcstools/shared/video";
+import { imageMimeType } from "@lmcstools/core/image";
+import { videoMimeType } from "@lmcstools/core/video";
 import { beginForegroundHandoff } from "./foreground-handoff";
 import { uuidv4 } from "./uuid";
 import { writeFileAtomically } from "./atomic-file";

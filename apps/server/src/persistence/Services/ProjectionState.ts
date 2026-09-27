@@ -6,7 +6,7 @@
  *
  * @module ProjectionStateRepository
  */
-import { IsoDateTime, NonNegativeInt } from "@lmcstools/contracts";
+import { IsoDateTime, NonNegativeInt } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Context from "effect/Context";

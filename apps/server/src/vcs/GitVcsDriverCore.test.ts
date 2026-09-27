@@ -1,7 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off - realpathSync.native resolves Windows 8.3 short names, which the Effect realPath does not.
 import * as NodeFS from "node:fs";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import { assert, it, describe } from "@effect/vitest";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -27,7 +27,7 @@ import {
   ReviewDiffPreviewInput,
   type ReviewDiffFileContentsInput,
   type WorktreeSubmodules,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { ServerConfig } from "../config.ts";
 import { gitCommandDuration } from "../observability/Metrics.ts";
 import {
@@ -2688,7 +2688,12 @@ it.layer(TestLayer)("GitVcsDriver core integration", (it) => {
         yield* initRepoWithCommit(cwd);
         const driver = yield* GitVcsDriver.GitVcsDriver;
 
-        yield* git(cwd, ["remote", "add", "origin", "https://github.com/leandroasilva/lmcs-agent.git"]);
+        yield* git(cwd, [
+          "remote",
+          "add",
+          "origin",
+          "https://github.com/leandroasilva/lmcs-agent.git",
+        ]);
 
         const reusedForSsh = yield* driver.ensureRemote({
           cwd,

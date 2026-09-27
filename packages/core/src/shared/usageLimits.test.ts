@@ -4,7 +4,7 @@ import {
   ProviderInstanceId,
   type ServerProvider,
   UsageLimitSourceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

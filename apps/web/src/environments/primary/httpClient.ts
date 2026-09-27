@@ -1,4 +1,4 @@
-import { makeEnvironmentHttpApiClient } from "@lmcstools/client-runtime/rpc";
+import { makeEnvironmentHttpApiClient } from "@lmcstools/client/rpc";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

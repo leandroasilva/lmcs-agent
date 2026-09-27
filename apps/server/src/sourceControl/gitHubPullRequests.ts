@@ -4,8 +4,8 @@ import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
-import { PositiveInt, TrimmedNonEmptyString } from "@lmcstools/contracts";
-import { decodeJsonResult } from "@lmcstools/shared/schemaJson";
+import { PositiveInt, TrimmedNonEmptyString } from "@lmcstools/core";
+import { decodeJsonResult } from "@lmcstools/core/schemaJson";
 
 export interface NormalizedGitHubPullRequestRecord {
   readonly number: number;

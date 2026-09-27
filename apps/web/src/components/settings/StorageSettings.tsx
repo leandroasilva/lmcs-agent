@@ -1,5 +1,5 @@
-import type { StorageCleanupSettings, WorktreeCleanupRules } from "@lmcstools/contracts";
-import { resolveWorktreeCleanup } from "@lmcstools/shared/projectSettings";
+import type { StorageCleanupSettings, WorktreeCleanupRules } from "@lmcstools/core";
+import { resolveWorktreeCleanup } from "@lmcstools/core/projectSettings";
 import { useState } from "react";
 
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";

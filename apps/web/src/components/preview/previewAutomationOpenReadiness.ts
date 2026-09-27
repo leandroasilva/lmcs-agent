@@ -4,7 +4,7 @@ import {
   type PreviewAutomationOpenInput,
   type PreviewSessionSnapshot,
   type PreviewViewportSetting,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 /**
  * Viewport an agent-opened tab falls back to when the user has no configured

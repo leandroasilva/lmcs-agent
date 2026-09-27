@@ -3,7 +3,7 @@ import type {
   AuthClientPresentationMetadata,
   ClientOs,
   DesktopBridge,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 interface BrowserIdentity {
   readonly userAgent: string;

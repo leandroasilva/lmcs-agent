@@ -1,9 +1,9 @@
-import { executeAtomQuery } from "@lmcstools/client-runtime/state/runtime";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import { executeAtomQuery } from "@lmcstools/client/state/runtime";
+import type { EnvironmentId } from "@lmcstools/core";
 import {
   isWorkspaceBrowserPreviewPath,
   isWorkspaceImagePreviewPath,
-} from "@lmcstools/shared/filePreview";
+} from "@lmcstools/core/filePreview";
 
 import { appAtomRegistry } from "../../state/atom-registry";
 import { projectEnvironment } from "../../state/projects";

@@ -1,5 +1,5 @@
-import type { ConnectionTarget } from "@lmcstools/client-runtime/connection";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { ConnectionTarget } from "@lmcstools/client/connection";
+import type { EnvironmentId } from "@lmcstools/core";
 
 interface OnboardingEnvironment {
   readonly environmentId: EnvironmentId;

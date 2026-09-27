@@ -1,4 +1,4 @@
-import type { PullRequestContextMetadata } from "@lmcstools/contracts";
+import type { PullRequestContextMetadata } from "@lmcstools/core";
 import { ArrowRightIcon } from "lucide-react";
 
 import { cn } from "~/lib/utils";

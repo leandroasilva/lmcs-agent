@@ -1,8 +1,5 @@
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
-import { EnvironmentId, ThreadId, type SidebarProjectGroupingMode } from "@lmcstools/contracts";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { EnvironmentId, ThreadId, type SidebarProjectGroupingMode } from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { useFocusEffect } from "@react-navigation/native";
 import {

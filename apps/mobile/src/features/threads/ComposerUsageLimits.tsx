@@ -1,4 +1,4 @@
-import type { EnvironmentId, UsageLimitsReport } from "@lmcstools/contracts";
+import type { EnvironmentId, UsageLimitsReport } from "@lmcstools/core";
 import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 
 import { SymbolView } from "../../components/AppSymbol";

@@ -1,5 +1,5 @@
-import type { RelayAgentActivityState } from "@lmcstools/contracts/relay";
-import { RelayAgentActivityState as RelayAgentActivityStateSchema } from "@lmcstools/contracts/relay";
+import type { RelayAgentActivityState } from "@lmcstools/core/relay";
+import { RelayAgentActivityState as RelayAgentActivityStateSchema } from "@lmcstools/core/relay";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";

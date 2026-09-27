@@ -1,6 +1,6 @@
 import { DownloadIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
-import type { RelayClientInstallProgressStage } from "@lmcstools/contracts";
+import type { RelayClientInstallProgressStage } from "@lmcstools/core";
 
 import {
   completeRelayClientInstallDialogClose,

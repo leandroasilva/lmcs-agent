@@ -1,5 +1,5 @@
-import type { ContextMenuItem } from "@lmcstools/contracts";
-import type { SnoozePreset } from "@lmcstools/client-runtime/state/thread-settled";
+import type { ContextMenuItem } from "@lmcstools/core";
+import type { SnoozePreset } from "@lmcstools/client/state/thread-settled";
 
 /**
  * Ids for the per-thread action menu. Snooze presets are dispatched as

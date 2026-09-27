@@ -2,7 +2,7 @@ import {
   RelayClientInstallProgressStageSchema,
   type RelayClientInstallProgressEvent,
   type RelayClientInstallProgressStage,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 export class RelayClientInstallConfirmationConflictError extends Schema.TaggedError<RelayClientInstallConfirmationConflictError>()(

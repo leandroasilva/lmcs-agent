@@ -3,13 +3,13 @@ import type {
   EnvironmentProject,
   EnvironmentThread,
   EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
+} from "@lmcstools/client/state/shell";
 import {
   type EnvironmentThreadStatus,
   mergeEnvironmentThread,
-} from "@lmcstools/client-runtime/state/threads";
-import type { ScopedProjectRef, ScopedThreadRef, ServerConfig } from "@lmcstools/contracts";
-import type { EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/threads";
+import type { ScopedProjectRef, ScopedThreadRef, ServerConfig } from "@lmcstools/core";
+import type { EnvironmentId } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 import { useMemo } from "react";
 import { appAtomRegistry } from "../rpc/atomRegistry";

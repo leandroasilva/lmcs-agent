@@ -3,8 +3,8 @@ import {
   type DesktopCaptureConfigApplied,
   type DesktopCaptureConfigPreview,
   type DesktopSnapShotState,
-} from "@lmcstools/contracts";
-import { parseKeybindingShortcut } from "@lmcstools/shared/keybindings";
+} from "@lmcstools/core";
+import { parseKeybindingShortcut } from "@lmcstools/core/keybindings";
 import { FileDiff } from "@pierre/diffs/react";
 import { parseDiffFromFile } from "@pierre/diffs";
 import { useMemo, useState } from "react";

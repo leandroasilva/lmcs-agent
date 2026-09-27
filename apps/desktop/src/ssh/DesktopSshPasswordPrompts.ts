@@ -1,5 +1,5 @@
-import type { DesktopSshPasswordPromptRequest } from "@lmcstools/contracts";
-import { DesktopSshPasswordPromptResolutionInputSchema } from "@lmcstools/contracts";
+import type { DesktopSshPasswordPromptRequest } from "@lmcstools/core";
+import { DesktopSshPasswordPromptResolutionInputSchema } from "@lmcstools/core";
 import type { SshPasswordRequest } from "@lmcstools/ssh/auth";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";

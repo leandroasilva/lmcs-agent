@@ -2,7 +2,7 @@ import {
   DEFAULT_CLIENT_SETTINGS,
   DEFAULT_UNIFIED_SETTINGS,
   type DeviceServiceState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   createMemoryHistory,
   createRootRoute,

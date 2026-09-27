@@ -1,4 +1,4 @@
-import { normalizeSearchQuery, scoreQueryMatch } from "@lmcstools/shared/searchRanking";
+import { normalizeSearchQuery, scoreQueryMatch } from "@lmcstools/core/searchRanking";
 
 type ModelPickerSearchableModel = {
   /** Driver kind — indexed so "codex" still matches a Codex Personal instance. */

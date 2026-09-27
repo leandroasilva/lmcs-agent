@@ -6,7 +6,7 @@ import {
   reportAtomCommandResult,
   settlePromise,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 
 export type AppUpdateCheckState =
   | "idle"

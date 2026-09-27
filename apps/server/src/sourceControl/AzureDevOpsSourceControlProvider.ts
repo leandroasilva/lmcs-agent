@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import { SourceControlProviderError, type ChangeRequest } from "@lmcstools/contracts";
+import { SourceControlProviderError, type ChangeRequest } from "@lmcstools/core";
 
 import * as AzureDevOpsCli from "./AzureDevOpsCli.ts";
 import * as SourceControlProvider from "./SourceControlProvider.ts";

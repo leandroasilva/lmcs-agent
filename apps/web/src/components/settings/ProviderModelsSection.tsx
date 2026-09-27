@@ -6,8 +6,8 @@ import {
   ProviderDriverKind,
   type ProviderInstanceId,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
-import { type CustomModelDefinition, normalizeCustomModelSlug } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { type CustomModelDefinition, normalizeCustomModelSlug } from "@lmcstools/core/model";
 
 import { cn } from "../../lib/utils";
 import { sortModelsForProviderInstance } from "../../modelOrdering";

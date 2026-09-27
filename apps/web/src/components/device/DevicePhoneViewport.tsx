@@ -1,15 +1,12 @@
 import { useEffect, useRef, type RefObject } from "react";
-import type { PhoneViewer } from "@lmcstools/client-runtime/device/phone-viewer";
-import type {
-  DeviceAccessorySource,
-  DeviceModelSource,
-} from "@lmcstools/client-runtime/device/model";
-import type { DeviceShapeProfile } from "@lmcstools/client-runtime/device/shape-profile";
-import { createPhoneInteraction } from "@lmcstools/client-runtime/device/phone-interaction";
-import type { DeviceScreenSize, DeviceStreamClient } from "@lmcstools/client-runtime/device/stream";
+import type { PhoneViewer } from "@lmcstools/client/device/phone-viewer";
+import type { DeviceAccessorySource, DeviceModelSource } from "@lmcstools/client/device/model";
+import type { DeviceShapeProfile } from "@lmcstools/client/device/shape-profile";
+import { createPhoneInteraction } from "@lmcstools/client/device/phone-interaction";
+import type { DeviceScreenSize, DeviceStreamClient } from "@lmcstools/client/device/stream";
 import { bindPhoneTrackpad } from "./phoneTrackpad";
 
-const loadPhoneViewer = () => import("@lmcstools/client-runtime/device/phone-viewer");
+const loadPhoneViewer = () => import("@lmcstools/client/device/phone-viewer");
 
 /** Web shell for the framework-independent viewer. The decoded screen and input connection remain owned by DeviceStreamView. */
 export function DevicePhoneViewport(props: {

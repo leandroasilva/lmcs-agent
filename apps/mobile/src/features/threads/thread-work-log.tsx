@@ -1,8 +1,5 @@
 import { QuestionAnswerHistory } from "./QuestionAnswerHistory";
-import {
-  getQuestionAnswerPreview,
-  hasQuestionAnswer,
-} from "@lmcstools/client-runtime/work-log/user-input";
+import { getQuestionAnswerPreview, hasQuestionAnswer } from "@lmcstools/client/work-log/user-input";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { type AppSymbolName, SymbolView } from "../../components/AppSymbol";
@@ -32,8 +29,8 @@ import {
   View,
 } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import type { EnvironmentId, ToolActivityIcon } from "@lmcstools/contracts";
-import { toolActivityFaviconUrl } from "@lmcstools/shared/favicon";
+import type { EnvironmentId, ToolActivityIcon } from "@lmcstools/core";
+import { toolActivityFaviconUrl } from "@lmcstools/core/favicon";
 
 import { AppText as Text } from "../../components/AppText";
 import { LMCSWordmark } from "../../components/LMCSWordmark";
@@ -53,8 +50,8 @@ import {
   resolveWorkEntryToolPresentation,
   type ToolGroupSummaryKind,
   workEntryViewedImagePath,
-} from "@lmcstools/client-runtime/work-log/presentation";
-import { resolveWorkGroupScrollAnchor } from "@lmcstools/client-runtime/work-log/scroll-anchor";
+} from "@lmcstools/client/work-log/presentation";
+import { resolveWorkGroupScrollAnchor } from "@lmcstools/client/work-log/scroll-anchor";
 import type { MarkdownImageRenderer } from "../../native/SelectableMarkdownText";
 import Animated, {
   cancelAnimation,
@@ -927,7 +924,7 @@ export function ThreadWorkGroupToggle(props: {
   readonly summaryKind: ToolGroupSummaryKind;
   readonly summaryToolIcon?: "browser" | "device" | "lmcs-code" | "pull-request" | "brain";
   readonly themeAppearance: "light" | "dark";
-  readonly toolSurface?: import("@lmcstools/contracts").ToolActivitySurface;
+  readonly toolSurface?: import("@lmcstools/core").ToolActivitySurface;
   readonly toolIcon?: ToolActivityIcon;
   readonly hasFailure: boolean;
   readonly shimmer: boolean;

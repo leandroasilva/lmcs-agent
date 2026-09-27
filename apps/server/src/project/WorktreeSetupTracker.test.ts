@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { ThreadId, WorktreeSetupSnapshot } from "@lmcstools/contracts";
+import { ThreadId, WorktreeSetupSnapshot } from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

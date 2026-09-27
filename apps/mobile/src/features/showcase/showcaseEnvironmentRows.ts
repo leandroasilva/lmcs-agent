@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 
 import type { RelayEnvironmentView } from "../connection/useConnectionController";
 import type { ConnectedEnvironmentSummary } from "../../state/remote-runtime-types";

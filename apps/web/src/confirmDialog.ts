@@ -1,4 +1,4 @@
-import type { ConfirmDialogOptions, ConfirmDialogVariant } from "@lmcstools/contracts";
+import type { ConfirmDialogOptions, ConfirmDialogVariant } from "@lmcstools/core";
 
 export type ConfirmDialogState =
   | { readonly status: "idle" }

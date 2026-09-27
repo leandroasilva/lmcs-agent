@@ -1,4 +1,4 @@
-import { ApprovalRequestId, EnvironmentId, ProjectId, ThreadId } from "@lmcstools/contracts";
+import { ApprovalRequestId, EnvironmentId, ProjectId, ThreadId } from "@lmcstools/core";
 
 export function scopedProjectKey(environmentId: EnvironmentId, projectId: ProjectId): string {
   return `${environmentId}:${projectId}`;

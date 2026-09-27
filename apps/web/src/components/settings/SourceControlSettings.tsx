@@ -11,12 +11,12 @@ import type {
   SourceControlProviderDiscoveryItem,
   VcsDriverKind,
   VcsDiscoveryItem,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   getBackgroundActivityBaseProfile,
   getBackgroundActivityPresetSettings,
   resolveServerBackgroundActivitySettings,
-} from "@lmcstools/shared/backgroundActivitySettings";
+} from "@lmcstools/core/backgroundActivitySettings";
 
 import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 import { useSettingsScope } from "./SettingsScopeContext";

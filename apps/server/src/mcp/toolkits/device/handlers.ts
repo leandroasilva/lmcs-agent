@@ -6,13 +6,13 @@ import {
   type DeviceSummary,
   DeviceToolUnavailableError,
   LOCAL_DEVICE_HOST_ID,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Path from "effect/Path";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import { ServerConfig } from "../../../config.ts";
 import { ensureAgentDeviceShim } from "../../../device/AgentDeviceShim.ts";
-import { nodeRuntimeUnavailableMessage } from "@lmcstools/shared/nodeRuntime";
+import { nodeRuntimeUnavailableMessage } from "@lmcstools/core/nodeRuntime";
 
 import * as DeviceService from "../../../device/DeviceService.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";

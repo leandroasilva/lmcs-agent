@@ -22,15 +22,15 @@ import type {
   ProviderOptionDescriptor,
   ServerProviderModel,
   ServerProviderSkill,
-} from "@lmcstools/contracts";
-import { PREFERRED_DEFAULT_CODEX_MODELS, ServerSettingsError } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { PREFERRED_DEFAULT_CODEX_MODELS, ServerSettingsError } from "@lmcstools/core";
 
 import {
   codexModelFamily,
   createModelCapabilities,
   readCustomModelEntries,
-} from "@lmcstools/shared/model";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+} from "@lmcstools/core/model";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import { codexAppServerArgs, resolveCodexLaunchArgs } from "./codexLaunchArgs.ts";
 import {
   AUTH_PROBE_TIMEOUT_MS,

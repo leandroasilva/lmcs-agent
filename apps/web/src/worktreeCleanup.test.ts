@@ -1,4 +1,4 @@
-import { EnvironmentId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { DEFAULT_INTERACTION_MODE, DEFAULT_RUNTIME_MODE, type Thread } from "./types";

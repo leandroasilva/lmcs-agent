@@ -1,5 +1,5 @@
 import * as Encoding from "effect/Encoding";
-import { CheckpointRef, ProjectId, type ThreadId } from "@lmcstools/contracts";
+import { CheckpointRef, ProjectId, type ThreadId } from "@lmcstools/core";
 
 const CHECKPOINT_REFS_PREFIX = "refs/t3/checkpoints";
 

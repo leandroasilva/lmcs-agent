@@ -3,9 +3,9 @@ import {
   type OrchestrationEvent,
   type ServerSettings as ServerSettingsValue,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
+} from "@lmcstools/core";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";

@@ -5,12 +5,7 @@
  * server only honors when its `shellRevealInFileManager` config flag is set,
  * so both actions work for every client and connection mode.
  */
-import {
-  EDITORS,
-  type ContextMenuItem,
-  type EditorId,
-  type EnvironmentId,
-} from "@lmcstools/contracts";
+import { EDITORS, type ContextMenuItem, type EditorId, type EnvironmentId } from "@lmcstools/core";
 import { useCallback, useMemo } from "react";
 
 import { resolveDiffPathForWorkspace } from "./diffFileActions";

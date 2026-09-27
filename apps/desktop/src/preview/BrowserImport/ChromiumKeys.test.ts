@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { HostProcessEnvironment } from "@lmcstools/shared/hostProcess";
+import { HostProcessEnvironment } from "@lmcstools/core/hostProcess";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

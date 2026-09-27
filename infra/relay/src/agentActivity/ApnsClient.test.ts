@@ -1,7 +1,7 @@
 import * as NodeCrypto from "node:crypto";
 
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
-import type { RelayAgentActivityAggregateState } from "@lmcstools/contracts/relay";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
+import type { RelayAgentActivityAggregateState } from "@lmcstools/core/relay";
 import { describe, expect, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";

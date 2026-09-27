@@ -1,6 +1,6 @@
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { TextInputWrapper } from "expo-paste-input";
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { KeyboardAvoidingView, KeyboardStickyView } from "react-native-keyboard-controller";

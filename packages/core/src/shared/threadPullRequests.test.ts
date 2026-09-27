@@ -2,7 +2,7 @@ import {
   ProjectId,
   type ThreadPullRequestLink,
   type ThreadPullRequestSnapshot,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import {

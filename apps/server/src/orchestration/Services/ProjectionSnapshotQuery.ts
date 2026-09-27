@@ -26,7 +26,7 @@ import type {
   OrchestrationThreadShell,
   ProjectId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Context from "effect/Context";
 import type * as Option from "effect/Option";
 import type * as Effect from "effect/Effect";

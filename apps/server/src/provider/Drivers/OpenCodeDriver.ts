@@ -12,7 +12,7 @@
  *
  * @module provider/Drivers/OpenCodeDriver
  */
-import { OpenCodeSettings, ProviderDriverKind } from "@lmcstools/contracts";
+import { OpenCodeSettings, ProviderDriverKind } from "@lmcstools/core";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

@@ -3,8 +3,8 @@ import {
   ORCHESTRATION_PROTOCOL_VERSION,
   PROVIDER_SEND_TURN_MAX_FILE_BYTES,
   type ExecutionEnvironmentDescriptor,
-} from "@lmcstools/contracts";
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

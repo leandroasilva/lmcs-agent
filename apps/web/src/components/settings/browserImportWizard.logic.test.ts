@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { BrowserImportSource } from "@lmcstools/contracts";
+import type { BrowserImportSource } from "@lmcstools/core";
 
 import {
   canCloseWizard,

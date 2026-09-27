@@ -2,11 +2,11 @@ import {
   type EnvironmentId,
   isProviderSendTurnSupportedImageMimeType,
   PROVIDER_SEND_TURN_MAX_FILE_BYTES,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   clampFileAttachmentUploadBytes,
   fileAttachmentTooLargeMessage,
-} from "@lmcstools/client-runtime/state/attachments";
+} from "@lmcstools/client/state/attachments";
 
 import type { ComposerFileAttachment, ComposerImageAttachment } from "../../composerDraftStore";
 import { isHeicImageFile } from "../../lib/imageCompression";

@@ -2,14 +2,14 @@ import {
   formatProviderSkillDisplayName,
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
-} from "@lmcstools/client-runtime/providerSkills";
+} from "@lmcstools/client/providerSkills";
 import {
   type ProjectEntry,
   type ProviderDriverKind,
   type PullRequestContextMetadata,
   type ServerProviderSkill,
   type ServerProviderSlashCommand,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   BlocksIcon,
   FolderIcon,

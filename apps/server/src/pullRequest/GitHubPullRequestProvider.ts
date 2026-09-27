@@ -5,7 +5,7 @@ import type {
   PullRequestCheck,
   PullRequestReaction,
   PullRequestViewerPermissions,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as GitHubPullRequestCli from "./GitHubPullRequestCli.ts";
 import {

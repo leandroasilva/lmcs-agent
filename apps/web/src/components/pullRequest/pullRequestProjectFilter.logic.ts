@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 
 import type { AssignableProject } from "./pullRequestProjectAssignment.logic";
 

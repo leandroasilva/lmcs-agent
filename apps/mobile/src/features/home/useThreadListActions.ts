@@ -1,6 +1,6 @@
 import type { ThreadMoveDestination } from "../threads/threadOrder";
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
-import { canSnooze, effectiveSnoozed } from "@lmcstools/client-runtime/state/thread-settled";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { canSnooze, effectiveSnoozed } from "@lmcstools/client/state/thread-settled";
 import * as Cause from "effect/Cause";
 import * as Haptics from "expo-haptics";
 import { useCallback, useRef } from "react";
@@ -10,7 +10,7 @@ import { withThreadDismissal } from "./thread-dismissal";
 import { showConfirmDialog, showTextInputDialog } from "../../components/ConfirmDialogHost";
 import { scopedThreadKey } from "../../lib/scopedEntities";
 import { refreshArchivedThreadsForEnvironment } from "../archive/useArchivedThreadSnapshots";
-import { pinOrderKeyBetween } from "@lmcstools/client-runtime/state/thread-sort";
+import { pinOrderKeyBetween } from "@lmcstools/client/state/thread-sort";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { environmentServerConfigsAtom } from "../../state/server";
 import { environmentThreadShells, threadEnvironment } from "../../state/threads";

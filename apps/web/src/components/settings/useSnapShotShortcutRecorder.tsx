@@ -2,8 +2,8 @@ import {
   isModifierPairShortcut,
   type SnapShotModifier,
   type SnapShotShortcut,
-} from "@lmcstools/contracts";
-import { parseKeybindingShortcut } from "@lmcstools/shared/keybindings";
+} from "@lmcstools/core";
+import { parseKeybindingShortcut } from "@lmcstools/core/keybindings";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
 import {

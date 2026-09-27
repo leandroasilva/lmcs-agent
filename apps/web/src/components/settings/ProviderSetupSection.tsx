@@ -2,7 +2,7 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   ANTIGRAVITY_AUTH_METHODS,
   type AntigravityAuthMethod,
@@ -10,7 +10,7 @@ import {
   type ProviderAuthState,
   type ProviderInstanceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useRef, useState } from "react";
 import { Trash2Icon } from "lucide-react";
 

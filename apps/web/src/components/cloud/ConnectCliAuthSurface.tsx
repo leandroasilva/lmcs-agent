@@ -1,5 +1,5 @@
 import { useAuth, useClerk } from "@clerk/react";
-import { readConnectAuthorizeRequest } from "@lmcstools/shared/connectAuth";
+import { readConnectAuthorizeRequest } from "@lmcstools/core/connectAuth";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {

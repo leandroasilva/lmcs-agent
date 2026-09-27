@@ -1,4 +1,4 @@
-import type { DesktopBridge } from "@lmcstools/contracts";
+import type { DesktopBridge } from "@lmcstools/core";
 
 const SNAP_SHOT_FOCUS_EVENT = "t3code:focus-composer";
 

@@ -3,8 +3,8 @@ import type {
   ProviderApprovalOption,
   ProviderUserInputAnswers,
   UserInputQuestion,
-} from "@lmcstools/contracts";
-import { isWorkspaceImagePreviewPath } from "@lmcstools/shared/filePreview";
+} from "@lmcstools/core";
+import { isWorkspaceImagePreviewPath } from "@lmcstools/core/filePreview";
 import * as Option from "effect/Option";
 import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";

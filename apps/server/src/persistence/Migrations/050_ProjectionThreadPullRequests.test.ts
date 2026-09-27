@@ -5,13 +5,11 @@ import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 
 import { runMigrations } from "../Migrations.ts";
-import * as NodeSqliteClient from "@lmcstools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@lmcstools/core/nodeSqliteClient";
 
 const encodeJson = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 
-const layer = it.layer(
-  Layer.mergeAll(NodeSqliteClient.layer({ filename: ":memory:" })),
-);
+const layer = it.layer(Layer.mergeAll(NodeSqliteClient.layer({ filename: ":memory:" })));
 
 interface PullRequestRow {
   readonly threadId: string;
@@ -148,18 +146,12 @@ layer("050_ProjectionThreadPullRequests", (it) => {
       const columns = yield* sql<{ readonly name: string }>`
         PRAGMA table_info(projection_threads)
       `;
-      assert.ok(
-        columns.some((column) => column.name === "linked_pull_request_json"),
-      );
+      assert.ok(columns.some((column) => column.name === "linked_pull_request_json"));
 
       const indexes = yield* sql<{ readonly name: string }>`
         PRAGMA index_list(projection_thread_pull_requests)
       `;
-      assert.ok(
-        indexes.some(
-          (index) => index.name === "idx_projection_thread_pull_requests_pr",
-        ),
-      );
+      assert.ok(indexes.some((index) => index.name === "idx_projection_thread_pull_requests_pr"));
     }),
   );
 });
@@ -167,36 +159,34 @@ layer("050_ProjectionThreadPullRequests", (it) => {
 it.layer(Layer.fresh(NodeSqliteClient.layer({ filename: ":memory:" })))(
   "050 Azure legacy links",
   (it) => {
-    it.effect(
-      "keeps legacy Azure repositories distinct across organizations",
-      () =>
-        Effect.gen(function* () {
-          const sql = yield* SqlClient.SqlClient;
-          yield* runMigrations({ toMigrationInclusive: 49 });
-          for (const organization of ["org-a", "org-b"]) {
-            yield* sql`
+    it.effect("keeps legacy Azure repositories distinct across organizations", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        yield* runMigrations({ toMigrationInclusive: 49 });
+        for (const organization of ["org-a", "org-b"]) {
+          yield* sql`
           INSERT INTO projection_threads (thread_id, project_id, title, model_selection_json, linked_pull_request_json, created_at, updated_at)
           VALUES (${organization}, ${organization}, 'Azure', '{"instanceId":"codex","model":"gpt-5.4"}',
             ${encodeJson({ projectId: organization, repository: "web", number: 7, url: `https://dev.azure.com/${organization}/project/_git/web/pullrequest/7` })},
             '2026-03-01T00:00:00.000Z', '2026-03-01T00:00:00.000Z')
         `;
-          }
-          yield* runMigrations({ toMigrationInclusive: 50 });
-          const rows =
-            yield* sql`SELECT host, repository, number FROM projection_thread_pull_requests ORDER BY repository`;
-          assert.deepStrictEqual(rows, [
-            {
-              host: "dev.azure.com",
-              repository: "org-a/project/_git/web",
-              number: 7,
-            },
-            {
-              host: "dev.azure.com",
-              repository: "org-b/project/_git/web",
-              number: 7,
-            },
-          ]);
-        }),
+        }
+        yield* runMigrations({ toMigrationInclusive: 50 });
+        const rows =
+          yield* sql`SELECT host, repository, number FROM projection_thread_pull_requests ORDER BY repository`;
+        assert.deepStrictEqual(rows, [
+          {
+            host: "dev.azure.com",
+            repository: "org-a/project/_git/web",
+            number: 7,
+          },
+          {
+            host: "dev.azure.com",
+            repository: "org-b/project/_git/web",
+            number: 7,
+          },
+        ]);
+      }),
     );
   },
 );

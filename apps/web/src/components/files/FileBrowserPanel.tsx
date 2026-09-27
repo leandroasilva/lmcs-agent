@@ -3,9 +3,9 @@ import type {
   ContextMenuItem as TreeContextMenuItem,
   ContextMenuOpenContext as TreeContextMenuOpenContext,
 } from "@pierre/trees";
-import type { EnvironmentId, ProjectEntry } from "@lmcstools/contracts";
+import type { EnvironmentId, ProjectEntry } from "@lmcstools/core";
 import { FileTree, useFileTree, useFileTreeSearch, useFileTreeSelector } from "@pierre/trees/react";
-import { serializeComposerFileLink } from "@lmcstools/shared/composerTrigger";
+import { serializeComposerFileLink } from "@lmcstools/core/composerTrigger";
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 

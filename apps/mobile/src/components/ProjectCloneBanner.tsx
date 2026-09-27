@@ -2,7 +2,7 @@ import {
   projectCloneDisplayName,
   projectCloneProgressSummary,
   type ProjectCloneSnapshot,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { cn } from "../lib/cn";

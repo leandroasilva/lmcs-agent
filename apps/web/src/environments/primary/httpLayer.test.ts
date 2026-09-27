@@ -1,4 +1,4 @@
-import type { DesktopBridge } from "@lmcstools/contracts";
+import type { DesktopBridge } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import { HttpClient } from "effect/unstable/http";

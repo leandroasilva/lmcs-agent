@@ -17,7 +17,7 @@ import {
   type PreviewAutomationSnapshot,
   type PreviewAutomationStatus,
   type PreviewTabId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   parseAttachmentUuid,
@@ -57,7 +57,7 @@ const invoke = Effect.fn("PreviewToolkit.invoke")(function* <A>(
   tabId?: PreviewTabId,
 ): Effect.fn.Return<
   { result: A; toolIcon?: ToolActivityIcon },
-  import("@lmcstools/contracts").PreviewAutomationError,
+  import("@lmcstools/core").PreviewAutomationError,
   McpInvocationContext.McpInvocationContext | PreviewAutomationBroker.PreviewAutomationBroker
 > {
   const scope = yield* McpInvocationContext.requireMcpCapability("preview");

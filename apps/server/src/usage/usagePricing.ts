@@ -7,7 +7,7 @@
  *
  * @module usagePricing
  */
-import type { UsageCostSource, UsageModelPriceOverride } from "@lmcstools/contracts";
+import type { UsageCostSource, UsageModelPriceOverride } from "@lmcstools/core";
 
 import type { UsageRecord } from "./usageTranscripts.ts";
 

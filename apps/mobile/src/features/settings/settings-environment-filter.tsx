@@ -1,5 +1,5 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
-import { buildProjectGroups } from "@lmcstools/client-runtime/state/project-grouping";
+import type { EnvironmentId } from "@lmcstools/core";
+import { buildProjectGroups } from "@lmcstools/client/state/project-grouping";
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 import { useEnvironments, type EnvironmentPresentation } from "../../state/environments";

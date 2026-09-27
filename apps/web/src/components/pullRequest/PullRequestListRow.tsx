@@ -1,8 +1,4 @@
-import type {
-  PullRequestActor,
-  PullRequestMergeability,
-  PullRequestState,
-} from "@lmcstools/contracts";
+import type { PullRequestActor, PullRequestMergeability, PullRequestState } from "@lmcstools/core";
 import type { ReactNode } from "react";
 
 import { cn } from "~/lib/utils";

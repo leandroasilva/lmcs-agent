@@ -1,12 +1,12 @@
 import { useAtomValue } from "@effect/atom-react";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
-import { clampFileAttachmentUploadBytes } from "@lmcstools/client-runtime/state/attachments";
+import { clampFileAttachmentUploadBytes } from "@lmcstools/client/state/attachments";
 import {
   nextPastedTextFileName,
   pastedTextDisposition,
   replaceTextSelection,
-} from "@lmcstools/client-runtime/text-paste";
+} from "@lmcstools/client/text-paste";
 import { NativeHeaderToolbar, NativeStackScreenOptions } from "../../native/StackHeader";
 import {
   CommonActions,
@@ -31,7 +31,7 @@ import {
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
   resolveEnvironmentMachineKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   ComposerEditor,
@@ -64,7 +64,7 @@ import { VideoPreviewModal, type VideoPreviewSource } from "../../components/Vid
 import { ProviderIcon } from "../../components/ProviderIcon";
 import { SymbolView } from "../../components/AppSymbol";
 import { AppText as Text } from "../../components/AppText";
-import { hasProviderUsageLimits, isUsageLimitsCommand } from "@lmcstools/shared/usageLimits";
+import { hasProviderUsageLimits, isUsageLimitsCommand } from "@lmcstools/core/usageLimits";
 import { COMPOSER_LAYOUT_TRANSITION, ComposerSurface } from "./ThreadComposer";
 import { ComposerCommandPopover } from "./ComposerCommandPopover";
 import { useComposerCommandMenu } from "./use-composer-command-menu";

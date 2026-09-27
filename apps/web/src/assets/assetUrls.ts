@@ -4,9 +4,9 @@ import {
   assetUrlStateFromResult,
   EMPTY_ASSET_URL_ATOM,
   resolveAssetUrl,
-} from "@lmcstools/client-runtime/state/assets";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
-import type { AssetResource, EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/assets";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
+import type { AssetResource, EnvironmentId } from "@lmcstools/core";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useCallback, useMemo } from "react";
 
@@ -14,7 +14,7 @@ import { assetEnvironment } from "~/state/assets";
 import { usePreparedConnection } from "~/state/session";
 import { useAtomQueryRunner } from "~/state/use-atom-query-runner";
 
-export { resolveAssetUrl, type AssetUrlState } from "@lmcstools/client-runtime/state/assets";
+export { resolveAssetUrl, type AssetUrlState } from "@lmcstools/client/state/assets";
 
 export function useAssetUrlState(
   environmentId: EnvironmentId | null,

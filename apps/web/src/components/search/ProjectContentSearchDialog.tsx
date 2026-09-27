@@ -1,5 +1,5 @@
 import { Spinner } from "~/components/ui/spinner";
-import type { ProjectContentMatch } from "@lmcstools/contracts";
+import type { ProjectContentMatch } from "@lmcstools/core";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 

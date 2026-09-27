@@ -7,7 +7,7 @@ import {
   MessageId,
   ThreadId,
   type AssistantCitation,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   assistantCitationsToPlainText,
   collectAssistantCitations,

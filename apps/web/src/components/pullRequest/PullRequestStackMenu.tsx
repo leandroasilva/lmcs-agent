@@ -4,8 +4,8 @@ import type {
   PullRequestRef,
   PullRequestStack,
   PullRequestMergeMethod,
-} from "@lmcstools/contracts";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/core";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 import { useAtomCommand } from "~/state/use-atom-command";

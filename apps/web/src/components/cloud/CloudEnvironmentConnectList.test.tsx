@@ -1,6 +1,6 @@
-import type { Discovery } from "@lmcstools/client-runtime/relay";
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
-import { EnvironmentId, ORCHESTRATION_PROTOCOL_VERSION } from "@lmcstools/contracts";
+import type { Discovery } from "@lmcstools/client/relay";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
+import { EnvironmentId, ORCHESTRATION_PROTOCOL_VERSION } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { act, useState, type ButtonHTMLAttributes, type ReactNode } from "react";

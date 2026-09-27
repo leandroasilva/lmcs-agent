@@ -7,8 +7,8 @@ import {
   ThreadId,
   type ScopedProjectRef,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+} from "@lmcstools/core";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import * as Option from "effect/Option";
 
 import { scopedThreadKey } from "../lib/scopedEntities";

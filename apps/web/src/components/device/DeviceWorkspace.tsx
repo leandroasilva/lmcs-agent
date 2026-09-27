@@ -1,9 +1,9 @@
-import type { DeviceSummary, EnvironmentId } from "@lmcstools/contracts";
+import type { DeviceSummary, EnvironmentId } from "@lmcstools/core";
 import { useEffect, useRef, useState } from "react";
 import {
   captureDeviceScreenshot,
   DeviceScreenshotError,
-} from "@lmcstools/client-runtime/device/screenshot";
+} from "@lmcstools/client/device/screenshot";
 import { refreshDeviceHubAccess, useDeviceHubAccess } from "~/state/device";
 import { DeviceControlsRail } from "./DeviceControlsRail";
 import { DeviceStreamView, type DeviceStreamHandle } from "./DeviceStreamView";

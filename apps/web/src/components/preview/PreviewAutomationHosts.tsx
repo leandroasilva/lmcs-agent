@@ -1,8 +1,8 @@
 "use client";
 
 import { RegistryContext, useAtomSet, useAtomValue } from "@effect/atom-react";
-import { parseScopedThreadKey } from "@lmcstools/client-runtime/environment";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+import { parseScopedThreadKey } from "@lmcstools/client/environment";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import {
   FILL_PREVIEW_VIEWPORT,
   PREVIEW_AUTOMATION_OPERATIONS,
@@ -19,8 +19,8 @@ import {
   type PreviewRenderedViewportSize,
   type PreviewViewportSetting,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
-import { resolvePreviewViewport } from "@lmcstools/shared/previewViewport";
+} from "@lmcstools/core";
+import { resolvePreviewViewport } from "@lmcstools/core/previewViewport";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Atom } from "effect/unstable/reactivity";
 import { useShallow } from "zustand/react/shallow";

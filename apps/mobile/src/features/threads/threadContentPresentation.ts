@@ -1,4 +1,4 @@
-import { type EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
+import { type EnvironmentConnectionPhase } from "@lmcstools/client/connection";
 
 export type ThreadContentPresentation =
   | { readonly kind: "ready" }

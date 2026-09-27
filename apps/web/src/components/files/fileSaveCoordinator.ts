@@ -1,4 +1,4 @@
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
 
 export interface FileSaveCoordinatorOptions<A, E> {
   readonly debounceMs: number;

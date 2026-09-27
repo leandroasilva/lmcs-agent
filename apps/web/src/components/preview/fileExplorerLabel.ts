@@ -1,4 +1,4 @@
-import type { ExecutionEnvironmentPlatformOs, FileManagerRevealKind } from "@lmcstools/contracts";
+import type { ExecutionEnvironmentPlatformOs, FileManagerRevealKind } from "@lmcstools/core";
 
 export function revealInFileExplorerLabel(platform: string): string {
   const normalized = platform.toLowerCase();

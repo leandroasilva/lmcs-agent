@@ -1,10 +1,10 @@
-import { changeRequestUrlFor as changeRequestWebUrl } from "@lmcstools/shared/changeRequestUrl";
-export { changeRequestUrlFor as changeRequestWebUrl } from "@lmcstools/shared/changeRequestUrl";
+import { changeRequestUrlFor as changeRequestWebUrl } from "@lmcstools/core/changeRequestUrl";
+export { changeRequestUrlFor as changeRequestWebUrl } from "@lmcstools/core/changeRequestUrl";
 import {
   pullRequestHostOf,
   type ScopedThreadRef,
   type SourceControlProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

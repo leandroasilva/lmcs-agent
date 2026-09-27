@@ -1,6 +1,6 @@
-import { serializeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacySend";
-import { filePreviewKind } from "@lmcstools/shared/filePreview";
-import { videoMimeType } from "@lmcstools/shared/video";
+import { serializeLegacyContextMessage } from "@lmcstools/core/composerContextLegacySend";
+import { filePreviewKind } from "@lmcstools/core/filePreview";
+import { videoMimeType } from "@lmcstools/core/video";
 import {
   COMPOSER_CONTEXT_MAX_RECORDS,
   ComposerContextId,
@@ -8,17 +8,17 @@ import {
   OrchestrationMessageContext,
   type PullRequestContextMetadata,
   type ReviewCommentContextRecord,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import {
   collectComposerContextReferences,
   formatComposerContextReference,
   replaceComposerContextReferences,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 import {
   collectComposerInlineTokens,
   type ComposerInlineToken,
-} from "@lmcstools/shared/composerInlineTokens";
+} from "@lmcstools/core/composerInlineTokens";
 
 const isMessageContext = Schema.is(OrchestrationMessageContext);
 const decodeMessageContext = Schema.decodeUnknownOption(OrchestrationMessageContext);

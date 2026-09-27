@@ -7,7 +7,7 @@ import type {
   PullRequestListFilters,
   PullRequestListState,
   SourceControlProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   CircleCheckIcon,
   CircleDashedIcon,

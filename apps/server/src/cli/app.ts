@@ -9,13 +9,13 @@ import {
   DesktopAppActivationResponse,
   type DesktopAppActivationPlatform,
   type DesktopAppActivationRequest,
-} from "@lmcstools/contracts";
-import { resolveDesktopAppControlAddress } from "@lmcstools/shared/desktopAppControl";
+} from "@lmcstools/core";
+import { resolveDesktopAppControlAddress } from "@lmcstools/core/desktopAppControl";
 import {
   HostProcessPlatform,
   HostProcessUserId,
   HostProcessWorkingDirectory,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";

@@ -1,4 +1,4 @@
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import {
   CommandId,
   DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -6,7 +6,7 @@ import {
   MessageId,
   ProviderInstanceId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import type { QueuedThreadMessage } from "../../state/thread-outbox-model";
 

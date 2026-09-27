@@ -8,9 +8,9 @@ import type {
   PullRequestMergeMethod,
   PullRequestMergeability,
   PullRequestState,
-} from "@lmcstools/contracts";
-import { TrimmedNonEmptyString } from "@lmcstools/contracts";
-import { decodeJsonResult } from "@lmcstools/shared/schemaJson";
+} from "@lmcstools/core";
+import { TrimmedNonEmptyString } from "@lmcstools/core";
+import { decodeJsonResult } from "@lmcstools/core/schemaJson";
 
 import { azureDevOpsPullRequestWebUrl } from "../sourceControl/azureDevOpsPullRequests.ts";
 

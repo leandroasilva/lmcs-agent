@@ -9,14 +9,14 @@ import {
   EnvironmentHttpForbiddenError,
   EnvironmentHttpInternalServerError,
   EnvironmentHttpUnauthorizedError,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   type RelayEnvironmentLinkResponse as RelayEnvironmentLinkResponseType,
   type RelayManagedEndpointProviderKind,
-} from "@lmcstools/contracts/relay";
-import { findErrorTraceId } from "@lmcstools/client-runtime/errors";
-import { ManagedRelay, relayProtectedErrorMessage } from "@lmcstools/client-runtime/relay";
-import { makeEnvironmentHttpApiClient } from "@lmcstools/client-runtime/rpc";
+} from "@lmcstools/core/relay";
+import { findErrorTraceId } from "@lmcstools/client/errors";
+import { ManagedRelay, relayProtectedErrorMessage } from "@lmcstools/client/relay";
+import { makeEnvironmentHttpApiClient } from "@lmcstools/client/rpc";
 
 import type { SavedRemoteConnection } from "../../lib/connection";
 import * as MobileStorage from "../../persistence/mobile-storage";

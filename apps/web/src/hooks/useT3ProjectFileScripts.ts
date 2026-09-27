@@ -3,8 +3,8 @@ import {
   type EnvironmentId,
   type T3ProjectFile,
   type T3ProjectFileScript,
-} from "@lmcstools/contracts";
-import { parseT3ProjectFile } from "@lmcstools/shared/t3ProjectFile";
+} from "@lmcstools/core";
+import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import { useMemo } from "react";
 
 import { useProjectFileQuery } from "~/components/files/projectFilesQueryState";

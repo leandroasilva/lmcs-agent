@@ -17,7 +17,7 @@ import {
   VcsProcessSpawnError,
   VcsProcessStdinWriteError,
   VcsProcessTimeoutError,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as ProcessRunner from "../processRunner.ts";
 
 export interface VcsProcessInput {

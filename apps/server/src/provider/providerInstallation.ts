@@ -5,8 +5,8 @@ import {
   type ProviderInstanceId,
   ProviderSetupError,
   type ProviderSetupInput,
-} from "@lmcstools/contracts";
-import { resolveCommandPath } from "@lmcstools/shared/shell";
+} from "@lmcstools/core";
+import { resolveCommandPath } from "@lmcstools/core/shell";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";

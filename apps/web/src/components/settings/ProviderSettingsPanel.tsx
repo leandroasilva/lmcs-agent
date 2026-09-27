@@ -1,12 +1,12 @@
 import { SettingsGroup } from "./SettingsGroup";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
-import { connectionStatusTitle } from "@lmcstools/client-runtime/connection";
-import { safeErrorLogAttributes } from "@lmcstools/client-runtime/errors";
+import { connectionStatusTitle } from "@lmcstools/client/connection";
+import { safeErrorLogAttributes } from "@lmcstools/client/errors";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   defaultInstanceIdForDriver,
   type EnvironmentId,
@@ -16,12 +16,12 @@ import {
   type ProviderInstanceId,
   resolveEnvironmentMachineKind,
   resolveProviderInstanceEnabled,
-} from "@lmcstools/contracts";
-import { DEFAULT_UNIFIED_SETTINGS } from "@lmcstools/contracts/settings";
+} from "@lmcstools/core";
+import { DEFAULT_UNIFIED_SETTINGS } from "@lmcstools/core/settings";
 import {
   getBackgroundActivityPresetSettings,
   resolveServerBackgroundActivitySettings,
-} from "@lmcstools/shared/backgroundActivitySettings";
+} from "@lmcstools/core/backgroundActivitySettings";
 import * as Arr from "effect/Array";
 import * as Duration from "effect/Duration";
 import * as Equal from "effect/Equal";

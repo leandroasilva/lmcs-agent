@@ -14,7 +14,7 @@ import {
   type UsageSource,
   type UsageSourceFingerprint,
   type UsageSummary,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export interface EnvironmentUsage {
   readonly environmentId: EnvironmentId;

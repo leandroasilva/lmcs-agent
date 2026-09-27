@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import { SourceControlProviderError, type ChangeRequest } from "@lmcstools/contracts";
+import { SourceControlProviderError, type ChangeRequest } from "@lmcstools/core";
 
 import * as BitbucketApi from "./BitbucketApi.ts";
 import type { NormalizedBitbucketPullRequestRecord } from "./bitbucketPullRequests.ts";

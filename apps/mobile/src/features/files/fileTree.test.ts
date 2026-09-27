@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { ProjectEntry } from "@lmcstools/contracts";
+import type { ProjectEntry } from "@lmcstools/core";
 
 import { buildFileTree, defaultExpandedTreePaths, flattenFileTree } from "./fileTree";
 

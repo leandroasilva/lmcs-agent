@@ -1,7 +1,4 @@
-import type {
-  DesktopPreviewAnnotationTheme,
-  DesktopPreviewRecordingInput,
-} from "@lmcstools/contracts";
+import type { DesktopPreviewAnnotationTheme, DesktopPreviewRecordingInput } from "@lmcstools/core";
 
 import {
   DEFAULT_RECORDING_INPUT_OPTIONS,

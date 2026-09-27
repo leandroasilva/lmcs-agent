@@ -1,13 +1,9 @@
-import type {
-  ProjectScript,
-  ProjectScriptIcon,
-  ResolvedKeybindingsConfig,
-} from "@lmcstools/contracts";
+import type { ProjectScript, ProjectScriptIcon, ResolvedKeybindingsConfig } from "@lmcstools/core";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   BugIcon,
   FlaskConicalIcon,

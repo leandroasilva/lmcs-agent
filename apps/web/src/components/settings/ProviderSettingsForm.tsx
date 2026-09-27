@@ -8,7 +8,7 @@ import type {
   ProviderSettingsFormControl,
   ProviderSettingsFormOption,
   ProviderSettingsFormSchemaAnnotation,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { cn } from "../../lib/utils";
 import { DraftInput } from "../ui/draft-input";

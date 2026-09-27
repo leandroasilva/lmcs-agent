@@ -1,7 +1,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
-import { ConnectionCatalogDocument } from "@lmcstools/client-runtime/platform";
-import { EnvironmentId, type PersistedSavedEnvironmentRecord } from "@lmcstools/contracts";
+import { ConnectionCatalogDocument } from "@lmcstools/client/platform";
+import { EnvironmentId, type PersistedSavedEnvironmentRecord } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Encoding from "effect/Encoding";
 import * as FileSystem from "effect/FileSystem";

@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import { ScaleIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 

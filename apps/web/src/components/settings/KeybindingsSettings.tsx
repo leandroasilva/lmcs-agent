@@ -26,12 +26,12 @@ import {
   type KeybindingWhenNode,
   type ServerRemoveKeybindingInput,
   type ServerUpsertKeybindingInput,
-} from "@lmcstools/contracts";
-import { mergeWithDefaultKeybindings } from "@lmcstools/shared/keybindings";
+} from "@lmcstools/core";
+import { mergeWithDefaultKeybindings } from "@lmcstools/core/keybindings";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 
 import { isElectron } from "../../env";
 import { useOpenInPreferredEditor } from "../../editorPreferences";

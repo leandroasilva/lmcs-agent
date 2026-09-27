@@ -6,14 +6,14 @@ import {
   type SourceControlProviderKind,
   type ThreadId,
   type ThreadPullRequestLink,
-} from "@lmcstools/contracts";
-import { changeRequestUrlFor, parseChangeRequestUrl } from "@lmcstools/shared/changeRequestUrl";
+} from "@lmcstools/core";
+import { changeRequestUrlFor, parseChangeRequestUrl } from "@lmcstools/core/changeRequestUrl";
 import {
   normalizeThreadPullRequestKey,
   resolveThreadPullRequestChains,
   threadPullRequestKeyOf,
   visibleThreadPullRequests,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

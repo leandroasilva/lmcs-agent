@@ -2,7 +2,7 @@
 import {
   phoneWheelNavigation,
   type createPhoneInteraction,
-} from "@lmcstools/client-runtime/device/phone-interaction";
+} from "@lmcstools/client/device/phone-interaction";
 
 /** Canvas-local, non-passive listeners consume browser zoom. Safari reports cumulative pinch scale instead of Ctrl-wheel. */
 export function bindPhoneTrackpad(

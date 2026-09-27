@@ -1,7 +1,7 @@
 import { appAtomRegistry } from "../../state/atom-registry";
 import { useAtomValue } from "@effect/atom-react";
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
-import { effectiveSnoozed } from "@lmcstools/client-runtime/state/thread-settled";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { effectiveSnoozed } from "@lmcstools/client/state/thread-settled";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, FlatList, Modal, Pressable, View } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";

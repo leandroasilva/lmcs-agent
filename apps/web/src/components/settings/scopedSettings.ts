@@ -10,14 +10,14 @@ import {
   ServerSettings,
   type T3ProjectFile,
   type ServerSettingsPatch,
-} from "@lmcstools/contracts";
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/core";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
 import {
   clearProjectSettingsOverrides,
   resolveProjectSettings,
   resolveWorktreeCleanup,
   type ProjectSettingSource,
-} from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core/projectSettings";
 import * as Equal from "effect/Equal";
 
 import type { ResolvedSettingsScope } from "./settingsScope";

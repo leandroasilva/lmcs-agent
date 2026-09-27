@@ -1,4 +1,4 @@
-import type { DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopUpdateState } from "@lmcstools/core";
 import { TriangleAlertIcon } from "lucide-react";
 import { type ComponentProps, useCallback, useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";

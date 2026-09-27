@@ -1,7 +1,7 @@
 import {
   COMPOSER_CONTEXT_REVIEW_DIFF_MAX_CHARS,
   COMPOSER_CONTEXT_REVIEW_TEXT_MAX_CHARS,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type {
   ComposerContextId,
   ComposerContextRecord,
@@ -16,13 +16,13 @@ import type {
   ReviewCommentContextRecord,
   TerminalContextRecord,
   ThreadId,
-} from "@lmcstools/contracts";
-import { upgradeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacy";
-import { encodeComposerContextFragment } from "@lmcstools/shared/composerContextClipboard";
+} from "@lmcstools/core";
+import { upgradeLegacyContextMessage } from "@lmcstools/core/composerContextLegacy";
+import { encodeComposerContextFragment } from "@lmcstools/core/composerContextClipboard";
 import {
   collectComposerContextReferences,
   sanitizeComposerContextLabel,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 
 import {
   type ComposerContextReference,

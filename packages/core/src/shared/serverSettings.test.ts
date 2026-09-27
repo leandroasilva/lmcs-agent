@@ -5,7 +5,7 @@ import {
   ProviderInstanceId,
   UsageLimitSourceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Duration from "effect/Duration";
 import { describe, expect, it } from "vite-plus/test";
 import { resolveServerBackgroundActivitySettings } from "./backgroundActivitySettings.ts";

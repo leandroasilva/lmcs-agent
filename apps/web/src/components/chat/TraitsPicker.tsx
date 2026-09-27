@@ -5,7 +5,7 @@ import {
   type ProviderOptionSelection,
   type ScopedThreadRef,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   applyClaudePromptEffortPrefix,
   buildProviderOptionSelectionsFromDescriptors,
@@ -14,7 +14,7 @@ import {
   getProviderOptionDescriptors,
   isClaudeUltrathinkPrompt,
   normalizeModelSlug,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import { memo, useCallback } from "react";
 import { BrainIcon, ZapIcon } from "lucide-react";
 import {

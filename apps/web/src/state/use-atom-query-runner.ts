@@ -3,7 +3,7 @@ import {
   executeAtomQuery,
   type AtomQueryOptions,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { AsyncResult, type Atom } from "effect/unstable/reactivity";
 import { useCallback, useContext } from "react";
 

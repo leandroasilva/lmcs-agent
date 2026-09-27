@@ -1,19 +1,19 @@
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
 import {
   clampFileAttachmentUploadBytes,
   fileAttachmentTooLargeMessage,
   isAssetAttachmentNotFoundFailure,
   runAttachmentUploadCycle,
   verifyPersistedAttachmentUpload,
-} from "@lmcstools/client-runtime/state/attachments";
-import { runAtomCommand, squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/attachments";
+import { runAtomCommand, squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import type {
   ChatFileAttachment,
   ChatImageAttachment,
   EnvironmentId,
   UploadChatImageAttachment,
-} from "@lmcstools/contracts";
-import { PROVIDER_SEND_TURN_SUPPORTED_IMAGE_MIME_TYPES } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { PROVIDER_SEND_TURN_SUPPORTED_IMAGE_MIME_TYPES } from "@lmcstools/core";
 import * as Option from "effect/Option";
 
 import { appAtomRegistry } from "../state/atom-registry";
@@ -28,7 +28,7 @@ import {
   type DraftComposerAttachment,
   type DraftComposerImageAttachment,
 } from "./composerImages";
-import { imageMimeType } from "@lmcstools/shared/image";
+import { imageMimeType } from "@lmcstools/core/image";
 import { uuidv4 } from "./uuid";
 
 /**

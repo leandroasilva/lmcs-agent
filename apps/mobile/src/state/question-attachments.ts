@@ -1,4 +1,4 @@
-import type { ApprovalRequestId, EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { ApprovalRequestId, EnvironmentId, ThreadId } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 import { appAtomRegistry } from "./atom-registry";
 

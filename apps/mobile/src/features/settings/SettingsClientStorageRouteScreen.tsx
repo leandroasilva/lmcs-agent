@@ -1,6 +1,6 @@
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { type EnvironmentMachineKind, resolveEnvironmentMachineKind } from "@lmcstools/contracts";
+import { type EnvironmentMachineKind, resolveEnvironmentMachineKind } from "@lmcstools/core";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useMemo } from "react";
 import { ActivityIndicator, Alert, Pressable, View } from "react-native";

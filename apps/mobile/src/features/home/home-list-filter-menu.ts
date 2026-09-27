@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 
 export interface HomeListFilterMenuEnvironment {
   readonly environmentId: EnvironmentId;

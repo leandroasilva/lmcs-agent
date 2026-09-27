@@ -2,11 +2,11 @@ import type {
   ProjectScript,
   ResolvedKeybindingsConfig,
   T3ProjectFileScript,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { ChevronDownIcon, DownloadIcon, PlusIcon, SettingsIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 

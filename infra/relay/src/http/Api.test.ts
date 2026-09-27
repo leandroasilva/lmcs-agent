@@ -3,7 +3,7 @@ import {
   RelayClientAuth,
   RelayClientPrincipal,
   type RelayClientDeviceRecord,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import * as EnvironmentLinker from "../environments/EnvironmentLinker.ts";
 import * as RelayTokens from "../auth/RelayTokens.ts";
 import * as Devices from "../agentActivity/Devices.ts";
@@ -31,13 +31,9 @@ import * as HttpServerRequest from "effect/unstable/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
 import * as HttpApi from "effect/unstable/httpapi/HttpApi";
 import * as HttpApiBuilder from "effect/unstable/httpapi/HttpApiBuilder";
-import { EnvironmentId } from "@lmcstools/contracts";
-import {
-  RelayEnvironmentAuth,
-  RelayEnvironmentPrincipal,
-  RelayApi,
-} from "@lmcstools/contracts/relay";
-import { RELAY_MANAGED_TUNNEL_RECOVERY_TYP, signRelayJwt } from "@lmcstools/shared/relayJwt";
+import { EnvironmentId } from "@lmcstools/core";
+import { RelayEnvironmentAuth, RelayEnvironmentPrincipal, RelayApi } from "@lmcstools/core/relay";
+import { RELAY_MANAGED_TUNNEL_RECOVERY_TYP, signRelayJwt } from "@lmcstools/core/relayJwt";
 
 import {
   RELAY_HTTP_ROUTER_CONFIG,

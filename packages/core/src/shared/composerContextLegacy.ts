@@ -5,7 +5,7 @@ import {
   type PreviewAnnotationContextRecord,
   ReviewCommentContextRecord,
   type TerminalContextRecord,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 import { formatComposerContextReference } from "./composerContextReferences.ts";

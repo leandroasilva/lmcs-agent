@@ -1,5 +1,5 @@
-import type { ScopedThreadRef } from "@lmcstools/contracts";
-import { isAtomCommandInterrupted } from "@lmcstools/client-runtime/state/runtime";
+import type { ScopedThreadRef } from "@lmcstools/core";
+import { isAtomCommandInterrupted } from "@lmcstools/client/state/runtime";
 import * as Schema from "effect/Schema";
 
 import {

@@ -1,10 +1,5 @@
-import { scopeProjectRef } from "@lmcstools/client-runtime/environment";
-import type {
-  EnvironmentId,
-  ModelSelection,
-  ProjectId,
-  ScopedProjectRef,
-} from "@lmcstools/contracts";
+import { scopeProjectRef } from "@lmcstools/client/environment";
+import type { EnvironmentId, ModelSelection, ProjectId, ScopedProjectRef } from "@lmcstools/core";
 import type { ComposerThreadDraftState, DraftThreadEnvMode } from "../composerDraftStore";
 
 type ComposerModelSelectionState = Pick<

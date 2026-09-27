@@ -4,9 +4,9 @@ import type {
   ThreadLinkedPullRequest,
   ThreadPullRequestKey,
   ThreadPullRequestLink,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
-import { pullRequestHostOf } from "@lmcstools/contracts";
+import { pullRequestHostOf } from "@lmcstools/core";
 import { parseChangeRequestUrl } from "./changeRequestUrl.ts";
 import { canonicalRepositoryKey, sourceControlRepositorySelector } from "./sourceControl.ts";
 

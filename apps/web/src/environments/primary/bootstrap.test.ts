@@ -1,4 +1,4 @@
-import { EnvironmentId, type ExecutionEnvironmentDescriptor } from "@lmcstools/contracts";
+import { EnvironmentId, type ExecutionEnvironmentDescriptor } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 

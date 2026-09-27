@@ -1,4 +1,4 @@
-import { OtlpHeadersFromString, OtlpProtocol } from "@lmcstools/shared/observability";
+import { OtlpHeadersFromString, OtlpProtocol } from "@lmcstools/core/observability";
 import * as Config from "effect/Config";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Option from "effect/Option";

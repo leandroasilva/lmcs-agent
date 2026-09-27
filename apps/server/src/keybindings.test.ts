@@ -1,4 +1,4 @@
-import { KeybindingCommand, KeybindingRule, KeybindingsConfig } from "@lmcstools/contracts";
+import { KeybindingCommand, KeybindingRule, KeybindingsConfig } from "@lmcstools/core";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";
 import { assertFailure } from "@effect/vitest/utils";
@@ -11,8 +11,8 @@ import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import * as ServerConfig from "./config.ts";
 import * as Keybindings from "./keybindings.ts";
-import { KeybindingsConfigError } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { KeybindingsConfigError } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 const KeybindingsConfigJson = Schema.fromJsonString(KeybindingsConfig);
 const encodeKeybindingsConfigJson = Schema.encodeEffect(KeybindingsConfigJson);

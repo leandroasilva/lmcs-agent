@@ -1,4 +1,4 @@
-import { CommandId, EnvironmentId, MessageId, ProjectId, ThreadId } from "@lmcstools/contracts";
+import { CommandId, EnvironmentId, MessageId, ProjectId, ThreadId } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 const harness = vi.hoisted(() => ({

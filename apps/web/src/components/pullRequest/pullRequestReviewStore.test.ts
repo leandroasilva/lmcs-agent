@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
-import { ProjectId } from "@lmcstools/contracts";
+import { ProjectId } from "@lmcstools/core";
 
 import {
   type PendingReviewComment,

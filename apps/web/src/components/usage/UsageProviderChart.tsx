@@ -1,14 +1,14 @@
-import type { UsageProviderKind } from "@lmcstools/contracts";
+import type { UsageProviderKind } from "@lmcstools/core";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import type { DailyTotals, HourlyTotals } from "@lmcstools/shared/usageMerge";
+import type { DailyTotals, HourlyTotals } from "@lmcstools/core/usageMerge";
 import {
   formatDayShort,
   formatHourShort,
   formatRelativeHourShort,
   formatTokens,
   formatUsd,
-} from "@lmcstools/shared/usageFormat";
+} from "@lmcstools/core/usageFormat";
 import { PROVIDER_ORDER, PROVIDER_PRESENTATION } from "./usageProviders";
 
 const VIEW_WIDTH = 960;

@@ -1,10 +1,10 @@
-import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client-runtime/environment";
+import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client/environment";
 import {
   type EnvironmentId,
   type PreviewEvent,
   type PreviewSessionSnapshot,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import {

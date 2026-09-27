@@ -2,10 +2,10 @@ import {
   deviceToolVersionLabels,
   deviceToolUpdateOwnership,
   deviceToolUpdatePolicy,
-} from "@lmcstools/client-runtime/state/device";
+} from "@lmcstools/client/state/device";
 import { useIsFocused, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { ActivityIndicator, Alert, AppState, Platform, Pressable, View } from "react-native";

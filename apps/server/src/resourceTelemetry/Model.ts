@@ -6,7 +6,7 @@ import type {
   ResourceTelemetryAggregate,
   ResourceTelemetryProcess,
   ResourceTelemetryProcessCategory,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 

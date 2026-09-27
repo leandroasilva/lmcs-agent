@@ -1,5 +1,5 @@
-import type { ThreadPullRequestLink } from "@lmcstools/contracts";
-import type { ThreadPullRequestChain } from "@lmcstools/shared/threadPullRequests";
+import type { ThreadPullRequestLink } from "@lmcstools/core";
+import type { ThreadPullRequestChain } from "@lmcstools/core/threadPullRequests";
 
 /** One line of a thread's pull-request list: a link plus how deep it sits in its stack. */
 export interface PullRequestListLine {

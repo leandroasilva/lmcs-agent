@@ -1,4 +1,4 @@
-import type { ToolLifecycleItemType } from "@lmcstools/contracts";
+import type { ToolLifecycleItemType } from "@lmcstools/core";
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value)

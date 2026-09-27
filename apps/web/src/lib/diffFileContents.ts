@@ -1,8 +1,5 @@
 import type { FileDiffContentsLoader } from "@pierre/diffs";
-import {
-  squashAtomCommandFailure,
-  type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+import { squashAtomCommandFailure, type AtomCommandResult } from "@lmcstools/client/state/runtime";
 import type {
   EnvironmentId,
   PullRequestDiffFileContentsInput,
@@ -11,7 +8,7 @@ import type {
   ReviewDiffFileContentsInput,
   ReviewDiffFileContentsResult,
   ReviewDiffPreviewSourceKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { resolveFileDiffPath } from "./diffRendering";
 

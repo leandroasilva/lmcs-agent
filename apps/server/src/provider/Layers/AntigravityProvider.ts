@@ -6,8 +6,8 @@ import {
   type ServerProvider,
   type ServerProviderModel,
   type ServerProviderSlashCommand,
-} from "@lmcstools/contracts";
-import { createModelCapabilities } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelCapabilities } from "@lmcstools/core/model";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

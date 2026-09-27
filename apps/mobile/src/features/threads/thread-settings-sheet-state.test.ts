@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { ProviderInstanceId, type ProviderOptionSelection } from "@lmcstools/contracts";
+import { ProviderInstanceId, type ProviderOptionSelection } from "@lmcstools/core";
 
 import type { ModelOption } from "../../lib/modelOptions";
 import {

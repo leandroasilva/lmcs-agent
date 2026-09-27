@@ -8,16 +8,16 @@ import {
   ProviderInstanceId,
   type ServerProvider,
   type ServerSettingsPatch,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   type CustomModelDefinition,
   createModelSelection,
   normalizeCustomModelSlug,
   readCustomModelEntries,
   resolveSelectableModel,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import { getComposerProviderState } from "./components/chat/composerProviderState";
-import { UnifiedSettings } from "@lmcstools/contracts/settings";
+import { UnifiedSettings } from "@lmcstools/core/settings";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
 import {

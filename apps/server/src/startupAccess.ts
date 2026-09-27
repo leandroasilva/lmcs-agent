@@ -1,6 +1,6 @@
 import * as NodeOS from "node:os";
 
-import { QrCode } from "@lmcstools/shared/qrCode";
+import { QrCode } from "@lmcstools/core/qrCode";
 import * as Effect from "effect/Effect";
 import { HttpServer } from "effect/unstable/http";
 

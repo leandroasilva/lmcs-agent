@@ -11,14 +11,14 @@ import type {
   ProjectId,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type {
   RelayAgentActivityPublishProofPayload,
   RelayAgentActivityState,
-} from "@lmcstools/contracts/relay";
-import { CommandId, ProviderInstanceId } from "@lmcstools/contracts";
-import { RelayClientTracer } from "@lmcstools/shared/relayTracing";
-import { RELAY_ACTIVITY_PUBLISH_TYP, verifyRelayJwt } from "@lmcstools/shared/relayJwt";
+} from "@lmcstools/core/relay";
+import { CommandId, ProviderInstanceId } from "@lmcstools/core";
+import { RelayClientTracer } from "@lmcstools/core/relayTracing";
+import { RELAY_ACTIVITY_PUBLISH_TYP, verifyRelayJwt } from "@lmcstools/core/relayJwt";
 import { describe, expect, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";

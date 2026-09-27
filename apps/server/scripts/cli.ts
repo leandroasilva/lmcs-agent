@@ -11,7 +11,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { DEVELOPMENT_ICON_OVERRIDES } from "../../../scripts/lib/brand-assets.ts";
 import { findEsmImportsOfExternalPackages } from "../../../scripts/lib/cli-executable-imports.ts";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import {
   ServerCliBuildAssetMissingError,
   ServerCliCommandExitError,

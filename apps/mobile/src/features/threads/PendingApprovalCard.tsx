@@ -3,7 +3,7 @@ import type {
   ApprovalRequestId,
   ProviderApprovalDecision,
   ProviderApprovalOption,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { View } from "react-native";
 
 import { AppText as Text } from "../../components/AppText";

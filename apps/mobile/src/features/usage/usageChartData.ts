@@ -4,8 +4,8 @@
  *
  * @module usageChartData
  */
-import type { UsageProviderKind } from "@lmcstools/contracts";
-import type { DailyTotals } from "@lmcstools/shared/usageMerge";
+import type { UsageProviderKind } from "@lmcstools/core";
+import type { DailyTotals } from "@lmcstools/core/usageMerge";
 
 import { PROVIDER_ORDER } from "./usageProviders";
 

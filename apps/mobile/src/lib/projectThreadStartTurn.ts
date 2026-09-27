@@ -7,8 +7,8 @@ import {
   type ProjectId,
   type ProviderInteractionMode,
   type RuntimeMode,
-} from "@lmcstools/contracts";
-import { assistantCitationsToPlainText } from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core";
+import { assistantCitationsToPlainText } from "@lmcstools/core/assistantCitations";
 
 import type { UploadedMobileAttachment } from "./attachmentUpload";
 

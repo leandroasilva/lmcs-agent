@@ -24,11 +24,11 @@ import {
   type ThreadLinkedPullRequest,
   type ThreadPullRequestLink,
   type VcsRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   threadPullRequestKeysEqual,
   visibleThreadPullRequests,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 
 import { inferReviewCommentFenceLanguage, type ReviewCommentContext } from "~/reviewCommentContext";
 import { reviewCommentContextId } from "~/lib/composerContextRecords";

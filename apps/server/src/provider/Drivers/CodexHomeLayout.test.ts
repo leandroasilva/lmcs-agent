@@ -6,14 +6,14 @@ import * as Path from "effect/Path";
 import * as PlatformError from "effect/PlatformError";
 import * as Schema from "effect/Schema";
 
-import { CodexSettings } from "@lmcstools/contracts";
+import { CodexSettings } from "@lmcstools/core";
 import {
   CodexShadowHomeEntryConflictError,
   CodexShadowHomePathConflictError,
   materializeCodexShadowHome,
   resolveCodexHomeLayout,
 } from "./CodexHomeLayout.ts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 const decodeCodexSettingsValue = Schema.decodeSync(CodexSettings);
 
 const decodeCodexSettings = (input: {

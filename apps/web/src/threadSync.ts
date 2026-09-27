@@ -1,4 +1,4 @@
-import type { EnvironmentThreadStatus } from "@lmcstools/client-runtime/state/threads";
+import type { EnvironmentThreadStatus } from "@lmcstools/client/state/threads";
 
 export type ThreadSyncPhase = "loading" | "syncing";
 

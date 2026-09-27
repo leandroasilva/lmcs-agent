@@ -9,8 +9,8 @@ import {
   resolveProviderInstanceEnabled,
   ServerSettings,
   ServerSettingsPatch,
-} from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
 import { assert, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Duration from "effect/Duration";

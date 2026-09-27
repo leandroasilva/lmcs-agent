@@ -7,7 +7,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 
-import { clerkFrontendApiHostnameFromPublishableKey } from "@lmcstools/shared/relayAuth";
+import { clerkFrontendApiHostnameFromPublishableKey } from "@lmcstools/core/relayAuth";
 import * as ElectronApp from "../electron/ElectronApp.ts";
 import * as ElectronProtocol from "../electron/ElectronProtocol.ts";
 import * as ElectronWindow from "../electron/ElectronWindow.ts";

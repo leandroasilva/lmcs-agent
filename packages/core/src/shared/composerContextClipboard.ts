@@ -1,7 +1,4 @@
-import {
-  COMPOSER_CONTEXT_CLIPBOARD_MIME,
-  ComposerContextClipboardFragment,
-} from "@lmcstools/contracts";
+import { COMPOSER_CONTEXT_CLIPBOARD_MIME, ComposerContextClipboardFragment } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 

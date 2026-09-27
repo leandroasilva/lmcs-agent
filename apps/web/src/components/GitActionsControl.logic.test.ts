@@ -1,4 +1,4 @@
-import type { VcsStatusResult } from "@lmcstools/contracts";
+import type { VcsStatusResult } from "@lmcstools/core";
 import { assert, describe, it } from "vite-plus/test";
 import {
   buildGitActionProgressStages,

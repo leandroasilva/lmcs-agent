@@ -1,10 +1,10 @@
-import type { DeviceHubAccess } from "@lmcstools/client-runtime/state/deviceHubAccess";
+import type { DeviceHubAccess } from "@lmcstools/client/state/deviceHubAccess";
 import type {
   DeviceActionInput,
   DeviceDetail,
   DeviceSummary,
   EnvironmentId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { deviceEnvironment } from "~/state/device";
 import { formatEnvironmentQueryError } from "~/state/query";

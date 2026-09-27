@@ -1,6 +1,6 @@
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { Spinner } from "~/components/ui/spinner";
-import { pullRequestHostOf, resolveEnvironmentMachineKind } from "@lmcstools/contracts";
+import { pullRequestHostOf, resolveEnvironmentMachineKind } from "@lmcstools/core";
 import type {
   EnvironmentId,
   ProjectId,
@@ -12,7 +12,7 @@ import type {
   PullRequestListResult,
   PullRequestListState,
   SourceControlProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {

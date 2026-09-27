@@ -1,8 +1,5 @@
-import {
-  mapAtomCommandResult,
-  type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import { mapAtomCommandResult, type AtomCommandResult } from "@lmcstools/client/state/runtime";
+import type { ScopedThreadRef } from "@lmcstools/core";
 
 import type { BrowserSettingsReadError, OpenPreviewMutation } from "~/browser/openFileInPreview";
 import { useRightPanelStore } from "~/rightPanelStore";

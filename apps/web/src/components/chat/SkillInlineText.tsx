@@ -1,6 +1,6 @@
 import { Children, cloneElement, isValidElement, type ReactNode } from "react";
-import type { ServerProviderSkill } from "@lmcstools/contracts";
-import { formatProviderSkillDisplayName } from "@lmcstools/client-runtime/providerSkills";
+import type { ServerProviderSkill } from "@lmcstools/core";
+import { formatProviderSkillDisplayName } from "@lmcstools/client/providerSkills";
 
 import { SKILL_CHIP_ICON_SVG } from "../composerInlineChip";
 import { ContextChip, ContextChipLabel } from "../ContextChip";

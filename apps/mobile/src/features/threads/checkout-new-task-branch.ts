@@ -1,10 +1,7 @@
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
-import type { VcsRef } from "@lmcstools/client-runtime/state/vcs";
-import {
-  type AtomCommandResult,
-  mapAtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
-import type { VcsSwitchRefInput, VcsSwitchRefResult } from "@lmcstools/contracts";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
+import type { VcsRef } from "@lmcstools/client/state/vcs";
+import { type AtomCommandResult, mapAtomCommandResult } from "@lmcstools/client/state/runtime";
+import type { VcsSwitchRefInput, VcsSwitchRefResult } from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
 

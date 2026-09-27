@@ -1,8 +1,8 @@
 import { requestCustomSnooze } from "./CustomSnoozeDialog";
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
-import { resolveThreadCurrentPullRequestLink } from "@lmcstools/shared/threadPullRequests";
+import { resolveThreadCurrentPullRequestLink } from "@lmcstools/core/threadPullRequests";
 import { useAtomValue } from "@effect/atom-react";
-import { replaceComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
+import { replaceComposerContextReferences } from "@lmcstools/core/composerContextReferences";
 import * as Schema from "effect/Schema";
 import {
   DndContext,
@@ -16,31 +16,27 @@ import {
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { restrictToFirstScrollableAncestor, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  canSnooze,
-  effectiveSnoozed,
-  threadWokeAt,
-} from "@lmcstools/client-runtime/state/thread-settled";
-import { resolveSettledThreadTimestamp } from "@lmcstools/client-runtime/state/thread-sort";
+import { canSnooze, effectiveSnoozed, threadWokeAt } from "@lmcstools/client/state/thread-settled";
+import { resolveSettledThreadTimestamp } from "@lmcstools/client/state/thread-sort";
 import {
   threadSearchMatchKey,
   type EnvironmentThreadSearchMatch,
-} from "@lmcstools/client-runtime/state/thread-search";
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/models";
+} from "@lmcstools/client/state/thread-search";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/models";
 import {
   parseScopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
   scopedThreadKey,
-} from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/client/environment";
 import {
   resolveEnvironmentMachineKind,
   type EnvironmentMachineKind,
   type ProjectIconOverride,
   type ScopedThreadRef,
   type ThreadId,
-} from "@lmcstools/contracts";
-import type { TimestampFormat } from "@lmcstools/contracts/settings";
+} from "@lmcstools/core";
+import type { TimestampFormat } from "@lmcstools/core/settings";
 import {
   AlarmClockIcon,
   AlarmClockOffIcon,
@@ -85,7 +81,7 @@ import {
   settlePromise,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { isElectron } from "../env";
 import {
   resolveShortcutCommand,
@@ -147,7 +143,7 @@ import {
 } from "../threadRoutes";
 import { formatRelativeTimeLabel, parseTimestampDate } from "../timestampFormat";
 import type { SidebarThreadSummary } from "../types";
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import { cn } from "~/lib/utils";
 import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
 import { ProjectEnvironmentBadge } from "./ProjectEnvironmentBadge";

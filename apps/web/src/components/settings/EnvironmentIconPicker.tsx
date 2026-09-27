@@ -4,7 +4,7 @@ import {
   resolveEnvironmentMachineKind,
   type EnvironmentId,
   type ServerConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { isElectron } from "../../env";
 import { usePrimarySessionState } from "../../environments/primary";

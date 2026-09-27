@@ -1,9 +1,9 @@
-import type { TimestampFormat } from "@lmcstools/contracts/settings";
+import type { TimestampFormat } from "@lmcstools/core/settings";
 import {
   resolveSnoozePresets as resolveSharedSnoozePresets,
   snoozeWakeLabel,
   type SnoozePreset,
-} from "@lmcstools/client-runtime/state/thread-settled";
+} from "@lmcstools/client/state/thread-settled";
 
 import { formatShortTimestamp, parseTimestampDate } from "../timestampFormat";
 

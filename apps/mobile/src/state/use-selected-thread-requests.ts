@@ -1,4 +1,4 @@
-import { derivePendingRequests } from "@lmcstools/client-runtime/pending-requests";
+import { derivePendingRequests } from "@lmcstools/client/pending-requests";
 import { useServerConfigs } from "./entities";
 import { Alert } from "react-native";
 import {
@@ -19,7 +19,7 @@ import {
   ApprovalRequestId,
   type ProviderApprovalDecision,
   type UserInputQuestion,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 
 import { threadEnvironment } from "../state/threads";
@@ -247,7 +247,7 @@ export function useSelectedThreadRequests() {
     if (userInputResponsesInFlight.current.has(responseKey)) return;
     const attachmentsByQuestionId = new Map<
       string,
-      import("@lmcstools/contracts").UserInputAttachments[string]
+      import("@lmcstools/core").UserInputAttachments[string]
     >();
     for (const question of activePendingUserInput.questions) {
       const key = questionAttachmentDraftKey(

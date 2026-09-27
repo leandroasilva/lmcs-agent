@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { EnvironmentId, ThreadId, type TerminalSummary } from "@lmcstools/contracts";
-import { selectRunningSubprocessTerminalIds } from "@lmcstools/client-runtime/state/terminal";
+import { EnvironmentId, ThreadId, type TerminalSummary } from "@lmcstools/core";
+import { selectRunningSubprocessTerminalIds } from "@lmcstools/client/state/terminal";
 
 import { selectKnownTerminalSessions } from "./terminalSessions";
 

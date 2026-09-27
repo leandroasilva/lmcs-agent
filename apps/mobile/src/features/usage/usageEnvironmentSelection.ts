@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 
 /** Null follows all environments, including ones connected after the menu opened. */
 export function toggleUsageEnvironment(

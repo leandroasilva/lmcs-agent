@@ -7,8 +7,8 @@ import {
   type ProviderInstanceId,
   type ServerProvider,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
-import { createModelCapabilities, resolveSelectableModel } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelCapabilities, resolveSelectableModel } from "@lmcstools/core/model";
 
 const EMPTY_CAPABILITIES: ModelCapabilities = createModelCapabilities({
   optionDescriptors: [],

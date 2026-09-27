@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "@effect/vitest";
-import { type OrchestrationProject, ProjectId, type TerminalEvent } from "@lmcstools/contracts";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { type OrchestrationProject, ProjectId, type TerminalEvent } from "@lmcstools/core";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";

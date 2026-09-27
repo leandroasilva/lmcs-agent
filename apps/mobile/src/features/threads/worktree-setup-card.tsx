@@ -2,9 +2,9 @@ import {
   worktreeSetupStageLabel,
   type WorktreeSetupSnapshot,
   type WorktreeSetupStage,
-} from "@lmcstools/contracts";
-import { worktreeSetupAgentStarted } from "@lmcstools/client-runtime/worktree-setup";
-import { formatDuration } from "@lmcstools/shared/orchestrationTiming";
+} from "@lmcstools/core";
+import { worktreeSetupAgentStarted } from "@lmcstools/client/worktree-setup";
+import { formatDuration } from "@lmcstools/core/orchestrationTiming";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

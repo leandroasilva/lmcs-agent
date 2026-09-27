@@ -1,11 +1,11 @@
-import { MAX_SCRIPT_ID_LENGTH } from "@lmcstools/contracts";
+import { MAX_SCRIPT_ID_LENGTH } from "@lmcstools/core";
 import { shortcutLabelForCommand } from "./keybindings";
 import { describe, expect, it } from "vite-plus/test";
 import {
   projectScriptCwd,
   projectScriptRuntimeEnv,
   setupProjectScript,
-} from "@lmcstools/shared/projectScripts";
+} from "@lmcstools/core/projectScripts";
 
 import {
   buildProjectScript,

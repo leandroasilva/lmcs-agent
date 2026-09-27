@@ -1,4 +1,4 @@
-import type { PreviewSessionSnapshot } from "@lmcstools/contracts";
+import type { PreviewSessionSnapshot } from "@lmcstools/core";
 
 interface PreviewAutomationSessionIndex {
   readonly snapshot: PreviewSessionSnapshot | null;

@@ -2,8 +2,8 @@ import type {
   PreviewAutomationResizeInput,
   PreviewViewportPresetId,
   PreviewViewportSetting,
-} from "@lmcstools/contracts";
-import { PREVIEW_VIEWPORT_PRESET_IDS } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { PREVIEW_VIEWPORT_PRESET_IDS } from "@lmcstools/core";
 
 export interface PreviewViewportPreset {
   readonly id: PreviewViewportPresetId;

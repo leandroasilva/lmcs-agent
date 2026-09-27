@@ -3,8 +3,8 @@ import {
   type ProviderInstanceId,
   type ProviderDriverKind,
   type ResolvedKeybindingsConfig,
-} from "@lmcstools/contracts";
-import { resolveSelectableModel } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { resolveSelectableModel } from "@lmcstools/core/model";
 import { useAtomValue } from "@effect/atom-react";
 import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { memo, useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";

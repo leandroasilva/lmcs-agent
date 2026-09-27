@@ -6,7 +6,7 @@
  *
  * @module usageTranscripts
  */
-import type { UsageProviderKind, UsageTokenTotals } from "@lmcstools/contracts";
+import type { UsageProviderKind, UsageTokenTotals } from "@lmcstools/core";
 
 export interface UsageRecord {
   readonly provider: UsageProviderKind;

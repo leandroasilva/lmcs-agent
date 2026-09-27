@@ -1,4 +1,4 @@
-import type { PreviewAutomationOpenInput, PreviewSessionSnapshot } from "@lmcstools/contracts";
+import type { PreviewAutomationOpenInput, PreviewSessionSnapshot } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

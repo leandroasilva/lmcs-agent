@@ -1,17 +1,17 @@
 import { useParams } from "@tanstack/react-router";
-import { scopeProjectRef } from "@lmcstools/client-runtime/environment";
+import { scopeProjectRef } from "@lmcstools/client/environment";
 import {
   type AtomCommandResult,
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   projectCloneDisplayName,
   projectCloneProgressSummary,
   type EnvironmentId,
   type ProjectCloneSnapshot,
   type ProjectId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useCallback, useEffect, useRef } from "react";
 
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";

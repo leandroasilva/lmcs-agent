@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

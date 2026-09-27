@@ -7,7 +7,7 @@ import {
   ProviderInstanceId,
   type ProviderOptionDescriptor,
   type ProviderOptionSelection,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 

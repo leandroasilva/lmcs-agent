@@ -1,14 +1,14 @@
 import { useLoadBalancedEnvironment } from "../hooks/useLoadBalancedEnvironment";
-import { visibleThreadPullRequests } from "@lmcstools/shared/threadPullRequests";
-import type { UsageLimitSourceSnapshots } from "@lmcstools/contracts";
+import { visibleThreadPullRequests } from "@lmcstools/core/threadPullRequests";
+import type { UsageLimitSourceSnapshots } from "@lmcstools/core";
 import {
   collectProviderUsageLimits,
   hasProviderUsageLimits,
   isUsageLimitsCommand,
-} from "@lmcstools/shared/usageLimits";
+} from "@lmcstools/core/usageLimits";
 import { feedbackBannerItem } from "./chat/ComposerFeedback";
 import { usageLimitsBannerItem } from "./chat/ComposerUsageLimits";
-import { derivePendingRequests } from "@lmcstools/client-runtime/pending-requests";
+import { derivePendingRequests } from "@lmcstools/client/pending-requests";
 import {
   questionAttachmentDraftId,
   questionAttachmentDraftPrefix,
@@ -44,46 +44,43 @@ import {
   RuntimeMode,
   TerminalOpenInput,
   type WorktreeSetupSnapshot,
-} from "@lmcstools/contracts";
-import { type EnvironmentConnectionPresentation } from "@lmcstools/client-runtime/connection";
-import {
-  wasBootstrapThreadDeleted,
-  wasBootstrapThreadNotCreated,
-} from "@lmcstools/client-runtime/errors";
+} from "@lmcstools/core";
+import { type EnvironmentConnectionPresentation } from "@lmcstools/client/connection";
+import { wasBootstrapThreadDeleted, wasBootstrapThreadNotCreated } from "@lmcstools/client/errors";
 import { readPastedComposerContext } from "./composerInlineTokenPaste";
-import { isPasteAsTextShortcut } from "@lmcstools/client-runtime/text-paste";
-import { type CodexArtifactTemplate } from "@lmcstools/client-runtime/codex-artifact-templates";
-import { effectiveSnoozed, threadWokeAt } from "@lmcstools/client-runtime/state/thread-settled";
+import { isPasteAsTextShortcut } from "@lmcstools/client/text-paste";
+import { type CodexArtifactTemplate } from "@lmcstools/client/codex-artifact-templates";
+import { effectiveSnoozed, threadWokeAt } from "@lmcstools/client/state/thread-settled";
 import {
   parseCodexFeedbackCommand,
   submitCodexFeedback,
   type CodexFeedbackSubmission,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/client/state/threads";
 import {
   parseScopedThreadKey,
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
-} from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/client/environment";
 import {
   applyClaudePromptEffortPrefix,
   createModelSelection,
   resolvePromptInjectedEffort,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import {
   projectScriptCwd,
   projectScriptRuntimeEnv,
   resolveProjectScripts,
-} from "@lmcstools/shared/projectScripts";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
-import { sourceControlRepositorySelector } from "@lmcstools/shared/sourceControl";
-import { truncate } from "@lmcstools/shared/String";
-import { resolveThreadReferenceCopyTarget } from "@lmcstools/shared/threadReference";
+} from "@lmcstools/core/projectScripts";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
+import { sourceControlRepositorySelector } from "@lmcstools/core/sourceControl";
+import { truncate } from "@lmcstools/core/String";
+import { resolveThreadReferenceCopyTarget } from "@lmcstools/core/threadReference";
 import {
   getTerminalLabel,
   nextTerminalId,
   resolveTerminalSessionLabel,
-} from "@lmcstools/shared/terminalLabels";
+} from "@lmcstools/core/terminalLabels";
 import { Debouncer } from "@tanstack/react-pacer";
 import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/unstable/reactivity";
@@ -102,7 +99,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { assistantCitationsToPlainText } from "@lmcstools/shared/assistantCitations";
+import { assistantCitationsToPlainText } from "@lmcstools/core/assistantCitations";
 import { assistantCitationFromLocation } from "../lib/assistantCitationNavigation";
 import { isMacPlatform } from "../lib/utils";
 import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
@@ -113,7 +110,7 @@ import {
   settlePromise,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import * as Cause from "effect/Cause";
 import * as Schema from "effect/Schema";
 import { AsyncResult } from "effect/unstable/reactivity";
@@ -177,7 +174,7 @@ import { useTheme } from "../hooks/useTheme";
 import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
 import { isCommandPaletteOpen } from "../commandPaletteBus";
 import { subscribeSnapShotComposerFocus } from "../lib/desktopSnapShot";
-import { buildTemporaryWorktreeBranchName } from "@lmcstools/shared/git";
+import { buildTemporaryWorktreeBranchName } from "@lmcstools/core/git";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY } from "../rightPanelLayout";
 import {
@@ -226,7 +223,7 @@ import { WizardPopup } from "./ui/wizard";
 import {
   deriveAgentPanelModel,
   foldSubagentActivities,
-} from "@lmcstools/client-runtime/state/subagentRuntime";
+} from "@lmcstools/client/state/subagentRuntime";
 import { BranchToolbar, type BranchToolbarHandle } from "./BranchToolbar";
 import { resolveShortcutCommand, shortcutLabelForCommand } from "../keybindings";
 import { isEditableFocused } from "../lib/editableFocus";
@@ -315,7 +312,7 @@ import {
   removeInlineContextReference,
   stripInlineContextReferences,
 } from "../lib/composerContextReferences";
-import { serializeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacySend";
+import { serializeLegacyContextMessage } from "@lmcstools/core/composerContextLegacySend";
 import {
   buildMessageContext,
   previewAnnotationContextLabel,
@@ -345,15 +342,12 @@ import {
 } from "../state/server";
 import { terminalEnvironment } from "../state/terminal";
 import { threadEnvironment, useEnvironmentThread } from "../state/threads";
-import {
-  requestOlderThreadTurns,
-  threadHasOlderTurns,
-} from "@lmcstools/client-runtime/state/threads";
-import { resolveProviderSkillsForCwd } from "@lmcstools/client-runtime/providerSkills";
+import { requestOlderThreadTurns, threadHasOlderTurns } from "@lmcstools/client/state/threads";
+import { resolveProviderSkillsForCwd } from "@lmcstools/client/providerSkills";
 import { vcsEnvironment } from "../state/vcs";
 import { sourceControlEnvironment } from "../state/sourceControl";
 import { useProjectClone } from "../state/projectClones";
-import { projectCloneDisplayName, projectCloneProgressSummary } from "@lmcstools/contracts";
+import { projectCloneDisplayName, projectCloneProgressSummary } from "@lmcstools/core";
 import { useEnvironments, usePrimaryEnvironment } from "../state/environments";
 import {
   useProject,
@@ -490,7 +484,7 @@ import {
 import { sanitizeThreadErrorMessage } from "~/rpc/transportError";
 import { RightPanelSheet } from "./RightPanelSheet";
 import { previewEnvironment } from "../state/preview";
-import { clampFileAttachmentUploadBytes } from "@lmcstools/client-runtime/state/attachments";
+import { clampFileAttachmentUploadBytes } from "@lmcstools/client/state/attachments";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { fileAttachmentCapabilityBlockReason } from "./chat/composerAttachmentFiles";
 import { assetEnvironment } from "../state/assets";
@@ -8756,7 +8750,7 @@ export default function ChatView(props: ChatViewProps) {
       if (userInputResponsesInFlight.current.has(responseKey)) return;
       const attachmentsByQuestionId = new Map<
         string,
-        import("@lmcstools/contracts").UserInputAttachments[string]
+        import("@lmcstools/core").UserInputAttachments[string]
       >();
       for (const question of activePendingUserInput.questions) {
         const target = questionAttachmentDraftId(
@@ -8779,7 +8773,7 @@ export default function ChatView(props: ChatViewProps) {
         }
         attachmentsByQuestionId.set(
           question.id,
-          uploaded as import("@lmcstools/contracts").UserInputAttachments[string],
+          uploaded as import("@lmcstools/core").UserInputAttachments[string],
         );
       }
       userInputResponsesInFlight.current.add(responseKey);

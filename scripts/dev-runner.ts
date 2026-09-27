@@ -4,10 +4,10 @@ import * as NodeOS from "node:os";
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as NetService from "@lmcstools/shared/Net";
-import { resolveGitWorktreePath, resolveWorktreeT3Home } from "@lmcstools/shared/devHome";
-import { HostProcessEnvironment, HostProcessWorkingDirectory } from "@lmcstools/shared/hostProcess";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import * as NetService from "@lmcstools/core/Net";
+import { resolveGitWorktreePath, resolveWorktreeT3Home } from "@lmcstools/core/devHome";
+import { HostProcessEnvironment, HostProcessWorkingDirectory } from "@lmcstools/core/hostProcess";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Hash from "effect/Hash";
@@ -74,7 +74,7 @@ export const DEFAULT_T3_HOME = Effect.map(Effect.service(Path.Path), (path) =>
 const MODE_ARGS = {
   dev: [
     "run",
-    "--filter=@lmcstools/contracts",
+    "--filter=@lmcstools/core",
     "--filter=@lmcstools/web",
     "--filter=t3",
     "--parallel",
@@ -665,7 +665,7 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
 
     const hostEnvironment = yield* HostProcessEnvironment;
     // A dev server started inside a worktree defaults to that worktree's own
-    // (gitignored) `.t3` — see @lmcstools/shared/devHome for why this must
+    // (gitignored) `.t3` — see @lmcstools/core/devHome for why this must
     // outrank an ambient LMCS_HOME. `--home-dir` still wins.
     const worktreeHome = yield* resolveWorktreeT3Home(yield* HostProcessWorkingDirectory);
     // Trim before choosing: `--home-dir ""` is not a selection, and treating it

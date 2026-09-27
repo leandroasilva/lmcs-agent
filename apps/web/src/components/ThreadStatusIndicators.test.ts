@@ -1,4 +1,4 @@
-import { ProjectId, type PullRequestSummary, type VcsStatusResult } from "@lmcstools/contracts";
+import { ProjectId, type PullRequestSummary, type VcsStatusResult } from "@lmcstools/core";
 import { describe, expect, it } from "@effect/vitest";
 import type { AnimationEvent } from "react";
 

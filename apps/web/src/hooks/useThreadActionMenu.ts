@@ -1,13 +1,13 @@
 import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
-import { scopeProjectRef, scopedThreadKey } from "@lmcstools/client-runtime/environment";
+import { scopeProjectRef, scopedThreadKey } from "@lmcstools/client/environment";
 import {
   type AtomCommandResult,
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
-import { canSnooze, effectiveSnoozed } from "@lmcstools/client-runtime/state/thread-settled";
-import type { ScopedThreadRef, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/runtime";
+import { canSnooze, effectiveSnoozed } from "@lmcstools/client/state/thread-settled";
+import type { ScopedThreadRef, ThreadId } from "@lmcstools/core";
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 

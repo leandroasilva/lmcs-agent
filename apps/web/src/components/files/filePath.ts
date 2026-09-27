@@ -1,5 +1,5 @@
-import type { ProjectEntry } from "@lmcstools/contracts";
-import { isWindowsAbsolutePath } from "@lmcstools/shared/path";
+import type { ProjectEntry } from "@lmcstools/core";
+import { isWindowsAbsolutePath } from "@lmcstools/core/path";
 
 import { isAbsolutePath } from "~/terminal-links";
 

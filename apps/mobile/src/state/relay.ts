@@ -1,4 +1,4 @@
-import { createRelayEnvironmentDiscoveryAtoms } from "@lmcstools/client-runtime/state/relay";
+import { createRelayEnvironmentDiscoveryAtoms } from "@lmcstools/client/state/relay";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

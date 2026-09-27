@@ -13,7 +13,7 @@ import {
   OrchestrationThreadActivityTone,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";

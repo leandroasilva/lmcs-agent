@@ -11,7 +11,7 @@ import {
   type T3ProjectFile,
   type ThreadEnvMode,
   type WorktreeCleanupRules,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { isModelSelectionProviderEnabled } from "./serverSettings.ts";
 
 /**

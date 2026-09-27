@@ -2,7 +2,7 @@ import {
   ProviderSetupError,
   type ProviderAuthState,
   type ProviderInstanceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Crypto from "effect/Crypto";

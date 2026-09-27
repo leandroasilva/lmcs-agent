@@ -6,9 +6,9 @@ import type {
   ServerAuthSessionMethod,
   AuthSessionId,
   AuthSessionState,
-} from "@lmcstools/contracts";
-import { EnvironmentHttpCommonError, PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/contracts";
-import type { EnvironmentHttpCommonError as EnvironmentHttpCommonErrorType } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { EnvironmentHttpCommonError, PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/core";
+import type { EnvironmentHttpCommonError as EnvironmentHttpCommonErrorType } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { HttpClientError } from "effect/unstable/http";

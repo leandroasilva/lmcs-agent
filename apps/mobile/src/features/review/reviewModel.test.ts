@@ -5,7 +5,7 @@ import {
   TurnId,
   type OrchestrationCheckpointSummary,
   type ReviewDiffPreviewSource,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   applyReviewDiffMetadata,

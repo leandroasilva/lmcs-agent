@@ -1,5 +1,5 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
-import type { RelayClientEnvironmentRecord } from "@lmcstools/contracts/relay";
+import type { EnvironmentId } from "@lmcstools/core";
+import type { RelayClientEnvironmentRecord } from "@lmcstools/core/relay";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vite-plus/test";
 

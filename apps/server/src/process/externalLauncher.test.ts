@@ -16,8 +16,8 @@ import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { SpawnExecutableResolution } from "@lmcstools/shared/shell";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { SpawnExecutableResolution } from "@lmcstools/core/shell";
 import * as ExternalLauncher from "./externalLauncher.ts";
 
 // Tests below write `#!/bin/sh` stubs into a real temp dir and hand that

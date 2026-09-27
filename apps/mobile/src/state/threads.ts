@@ -6,8 +6,8 @@ import {
   EMPTY_ENVIRONMENT_THREAD_STATE,
   type EnvironmentThreadState,
   createThreadEnvironmentAtoms,
-} from "@lmcstools/client-runtime/state/threads";
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/threads";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 

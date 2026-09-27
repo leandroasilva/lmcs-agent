@@ -6,7 +6,7 @@ import {
   PullRequestListProjectError,
   PullRequestListResult,
   resolvePullRequestAuthorFilter,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type {
   ProjectId,
   PullRequestAction,
@@ -18,7 +18,7 @@ import type {
   PullRequestListFilters,
   PullRequestListState,
   PullRequestState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { toSortableTimestamp } from "../../lib/threadSort";
 import type { PullRequestListSort } from "./pullRequestListPreferences";

@@ -15,10 +15,10 @@ import * as Schema from "effect/Schema";
 import {
   DesktopBackendBootstrap,
   type DesktopBackendBootstrap as DesktopBackendBootstrapValue,
-} from "@lmcstools/contracts";
-import * as NetService from "@lmcstools/shared/Net";
-import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
+} from "@lmcstools/core";
+import * as NetService from "@lmcstools/core/Net";
+import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { deriveServerPaths } from "../config.ts";
 import { resolveServerConfig } from "./config.ts";

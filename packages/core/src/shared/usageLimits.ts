@@ -16,7 +16,7 @@ import {
   type ServerProviderUsageLimits,
   type ServerProviderUsageWindow,
   type UsageLimitSourceSnapshots,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as DateTime from "effect/DateTime";
 

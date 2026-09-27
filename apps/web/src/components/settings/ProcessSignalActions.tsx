@@ -1,4 +1,4 @@
-import type { ServerProcessSignal } from "@lmcstools/contracts";
+import type { ServerProcessSignal } from "@lmcstools/core";
 
 import { InlineButton } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";

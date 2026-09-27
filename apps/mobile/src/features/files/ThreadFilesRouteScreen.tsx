@@ -4,14 +4,14 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import { EnvironmentId, type ProjectReadFileResult, ThreadId } from "@lmcstools/contracts";
-import { videoMimeType } from "@lmcstools/shared/video";
+import { EnvironmentId, type ProjectReadFileResult, ThreadId } from "@lmcstools/core";
+import { videoMimeType } from "@lmcstools/core/video";
 import {
   isWorkspaceBrowserPreviewPath,
   isWorkspaceImagePreviewPath,
   mediaMimeTypeFromExtension,
-} from "@lmcstools/shared/filePreview";
-import { mediaFileReference } from "@lmcstools/client-runtime/media-reference";
+} from "@lmcstools/core/filePreview";
+import { mediaFileReference } from "@lmcstools/client/media-reference";
 
 import { MaterialScreenContent } from "../../components/MaterialScreenContent";
 import { AudioFilePreview } from "../../components/AudioFilePreview";

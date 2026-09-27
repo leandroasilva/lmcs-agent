@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ProviderDriverKind } from "@lmcstools/contracts";
+import { ProviderDriverKind } from "@lmcstools/core";
 
 import type { ComposerCommandItem } from "./ComposerCommandMenu";
 import {

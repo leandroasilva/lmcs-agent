@@ -1,4 +1,4 @@
-import { type TimestampFormat } from "@lmcstools/contracts/settings";
+import { type TimestampFormat } from "@lmcstools/core/settings";
 
 function getTimestampFormatOptions(
   timestampFormat: TimestampFormat,

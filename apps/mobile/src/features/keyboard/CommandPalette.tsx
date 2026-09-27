@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
-import type { EnvironmentThreadSearchMatch } from "@lmcstools/client-runtime/state/thread-search";
-import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@lmcstools/contracts";
-import { threadPullRequestSearchTerms } from "@lmcstools/shared/threadPullRequests";
+import type { EnvironmentThreadSearchMatch } from "@lmcstools/client/state/thread-search";
+import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@lmcstools/core";
+import { threadPullRequestSearchTerms } from "@lmcstools/core/threadPullRequests";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,

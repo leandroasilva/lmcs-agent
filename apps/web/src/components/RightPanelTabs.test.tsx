@@ -1,5 +1,5 @@
-import { EnvironmentId, type ThreadPullRequestLink } from "@lmcstools/contracts";
-import type { DesktopPreviewFavicon, PreviewSessionSnapshot } from "@lmcstools/contracts";
+import { EnvironmentId, type ThreadPullRequestLink } from "@lmcstools/core";
+import type { DesktopPreviewFavicon, PreviewSessionSnapshot } from "@lmcstools/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 

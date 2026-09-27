@@ -4,8 +4,8 @@ import type {
   PreviewSessionSnapshot,
   PreviewViewportSetting,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/core";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
 

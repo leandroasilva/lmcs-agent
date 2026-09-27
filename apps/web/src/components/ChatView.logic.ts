@@ -18,19 +18,16 @@ import {
   type ThreadId,
   type ThreadLinkedPullRequest,
   type TurnId,
-} from "@lmcstools/contracts";
-import { parseScopedThreadKey } from "@lmcstools/client-runtime/environment";
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
-import {
-  squashAtomCommandFailure,
-  type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
-import { videoMimeType } from "@lmcstools/shared/video";
+} from "@lmcstools/core";
+import { parseScopedThreadKey } from "@lmcstools/client/environment";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
+import { squashAtomCommandFailure, type AtomCommandResult } from "@lmcstools/client/state/runtime";
+import { videoMimeType } from "@lmcstools/core/video";
 import {
   appendCodexArtifactTemplateUsePrompt,
   codexArtifactTemplateUsePrompt,
   type CodexArtifactTemplate,
-} from "@lmcstools/client-runtime/codex-artifact-templates";
+} from "@lmcstools/client/codex-artifact-templates";
 import {
   type ChatMessage,
   isImageAttachment,
@@ -242,7 +239,7 @@ export function shouldReleaseTimelineAnchorForToolActivity(input: {
 export {
   findRecordedWorktreeSetup,
   resolveVisibleWorktreeSetup,
-} from "@lmcstools/client-runtime/worktree-setup";
+} from "@lmcstools/client/worktree-setup";
 
 export function resolveDraftHeroState(input: {
   isLocalDraftThread: boolean;

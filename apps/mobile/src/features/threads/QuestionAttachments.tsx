@@ -6,7 +6,7 @@ import {
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   type ApprovalRequestId,
   type UserInputQuestion,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { Alert, View } from "react-native";
 import { useEffect, useRef, useState } from "react";

@@ -1,4 +1,4 @@
-import type { ApprovalRequestId, EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { ApprovalRequestId, EnvironmentId, ThreadId } from "@lmcstools/core";
 import { create } from "zustand";
 import { DraftId, useComposerDraftStore } from "./composerDraftStore";
 import { releaseDraftAttachments } from "./lib/attachmentUploadQueue";

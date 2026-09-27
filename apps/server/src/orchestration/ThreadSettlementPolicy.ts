@@ -1,5 +1,5 @@
-import type { OrchestrationThreadShell } from "@lmcstools/contracts";
-import { visibleThreadPullRequests } from "@lmcstools/shared/threadPullRequests";
+import type { OrchestrationThreadShell } from "@lmcstools/core";
+import { visibleThreadPullRequests } from "@lmcstools/core/threadPullRequests";
 
 export interface SettlementPullRequest {
   readonly state: "open" | "closed" | "merged";

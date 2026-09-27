@@ -2,7 +2,7 @@ import type {
   RepositoryIdentity,
   SourceControlProviderInfo,
   SourceControlProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export interface ChangeRequestPresentation {
   readonly icon: "github" | "gitlab" | "forgejo" | "azure-devops" | "bitbucket" | "change-request";

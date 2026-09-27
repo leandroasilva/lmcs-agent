@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import type { ResourceTelemetryProcess } from "@lmcstools/contracts";
+import type { ResourceTelemetryProcess } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 
 import {

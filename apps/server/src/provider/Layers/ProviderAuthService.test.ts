@@ -6,7 +6,7 @@ import {
   ThreadId,
   type ProviderAuthState,
   type ProviderSession,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Deferred from "effect/Deferred";
 import * as Fiber from "effect/Fiber";

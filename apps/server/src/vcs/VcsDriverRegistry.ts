@@ -5,8 +5,8 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 
-import type { VcsDriverKind, VcsError, VcsRepositoryIdentity } from "@lmcstools/contracts";
-import { VcsUnsupportedOperationError } from "@lmcstools/contracts";
+import type { VcsDriverKind, VcsError, VcsRepositoryIdentity } from "@lmcstools/core";
+import { VcsUnsupportedOperationError } from "@lmcstools/core";
 import * as GitVcsDriver from "./GitVcsDriver.ts";
 import * as VcsProjectConfig from "./VcsProjectConfig.ts";
 import * as VcsDriver from "./VcsDriver.ts";

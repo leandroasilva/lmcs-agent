@@ -4,7 +4,7 @@ import {
   gitHubRoutingConnectionKey,
   gitHubRoutingPermissionFor,
   type GitHubRoutingPermission,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 

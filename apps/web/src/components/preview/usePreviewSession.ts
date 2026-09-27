@@ -1,8 +1,8 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import { parseScopedThreadKey, scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import { parseScopedThreadKey, scopedThreadKey } from "@lmcstools/client/environment";
+import type { ScopedThreadRef } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 

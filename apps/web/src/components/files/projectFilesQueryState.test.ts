@@ -1,5 +1,5 @@
-import type { ProjectReadFileResult } from "@lmcstools/contracts";
-import { EnvironmentId } from "@lmcstools/contracts";
+import type { ProjectReadFileResult } from "@lmcstools/core";
+import { EnvironmentId } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {

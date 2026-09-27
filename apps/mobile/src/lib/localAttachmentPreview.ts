@@ -1,4 +1,4 @@
-import { videoMimeType } from "@lmcstools/shared/video";
+import { videoMimeType } from "@lmcstools/core/video";
 
 import type { FileBackedComposerAttachment } from "./composerImages";
 import { resolveOwnedComposerAttachmentFileUri } from "./composerAttachmentFiles";

@@ -4,7 +4,7 @@ import {
   localSnoozeTime,
   resolveCustomSnooze,
   type CustomSnoozeInput,
-} from "@lmcstools/client-runtime/state/thread-settled";
+} from "@lmcstools/client/state/thread-settled";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,

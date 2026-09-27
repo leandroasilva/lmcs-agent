@@ -1,5 +1,5 @@
-import { EnvironmentId } from "@lmcstools/contracts";
-import { type EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
+import { EnvironmentId } from "@lmcstools/core";
+import { type EnvironmentConnectionPhase } from "@lmcstools/client/connection";
 
 export interface SavedRemoteConnection {
   readonly environmentId: EnvironmentId;

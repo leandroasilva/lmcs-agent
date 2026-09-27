@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { CommandId, EnvironmentId, MessageId, ThreadId } from "@lmcstools/contracts";
+import { CommandId, EnvironmentId, MessageId, ThreadId } from "@lmcstools/core";
 import type { QueuedThreadMessage } from "./thread-outbox-model";
 
 const state = vi.hoisted(() => ({

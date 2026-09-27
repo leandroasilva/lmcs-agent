@@ -8,7 +8,7 @@
  *
  * @module provider/Layers/resetCreditCoordinator
  */
-import type { ProviderConsumeResetCreditOutcome } from "@lmcstools/contracts";
+import type { ProviderConsumeResetCreditOutcome } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

@@ -1,4 +1,4 @@
-import type { DesktopUpdateActionResult, DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopUpdateActionResult, DesktopUpdateState } from "@lmcstools/core";
 
 export type DesktopUpdateButtonAction = "download" | "install" | "none";
 

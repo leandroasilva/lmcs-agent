@@ -1,4 +1,4 @@
-import type { BrowserLinkTarget } from "@lmcstools/contracts";
+import type { BrowserLinkTarget } from "@lmcstools/core";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { ensureClientSettingsHydrated } from "~/hooks/useSettings";

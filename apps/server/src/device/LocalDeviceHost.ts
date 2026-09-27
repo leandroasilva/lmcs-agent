@@ -1,5 +1,5 @@
 import { pruneLocalDeviceTools } from "./deviceToolMaintenance.ts";
-import { deviceToolInstallMessage } from "@lmcstools/contracts";
+import { deviceToolInstallMessage } from "@lmcstools/core";
 /**
  * The device host that is this machine.
  *
@@ -17,15 +17,15 @@ import {
   type DevicePlatform,
   type DevicePlatformAvailability,
   LOCAL_DEVICE_HOST_ID,
-} from "@lmcstools/contracts";
-import { waitForHttpReady } from "@lmcstools/shared/httpReadiness";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { waitForHttpReady } from "@lmcstools/core/httpReadiness";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import {
   resolveNodeExecutable,
   type NodeRuntimeUnavailableError,
-} from "@lmcstools/shared/nodeRuntime";
-import * as NetService from "@lmcstools/shared/Net";
-import { isCommandAvailable } from "@lmcstools/shared/shell";
+} from "@lmcstools/core/nodeRuntime";
+import * as NetService from "@lmcstools/core/Net";
+import { isCommandAvailable } from "@lmcstools/core/shell";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

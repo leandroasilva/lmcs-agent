@@ -1,5 +1,5 @@
-import { T3_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/contracts";
-import { parseT3ProjectFile } from "@lmcstools/shared/t3ProjectFile";
+import { T3_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/core";
+import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import { useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";

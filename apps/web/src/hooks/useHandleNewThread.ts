@@ -1,10 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
-import {
-  scopedProjectKey,
-  scopeProjectRef,
-  scopeThreadRef,
-} from "@lmcstools/client-runtime/environment";
-import { DEFAULT_SERVER_SETTINGS, type ScopedProjectRef, type ThreadId } from "@lmcstools/contracts";
+import { scopedProjectKey, scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
+import { DEFAULT_SERVER_SETTINGS, type ScopedProjectRef, type ThreadId } from "@lmcstools/core";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import {
@@ -22,7 +18,7 @@ import {
   getProjectOrderKey,
   selectProjectGroupingSettings,
 } from "../logicalProject";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import { readProjects, readThreadShell, useProjects, useThread } from "../state/entities";
 import {
   hasExplicitComposerModelSelection,

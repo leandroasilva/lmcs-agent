@@ -1,4 +1,4 @@
-import type { ProviderInteractionMode } from "@lmcstools/contracts";
+import type { ProviderInteractionMode } from "@lmcstools/core";
 import type { V2TurnStartParams__AdditionalContextEntry } from "effect-codex-app-server/schema";
 import { buildRuntimeInstructions } from "./RuntimeInstructions.ts";
 

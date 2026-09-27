@@ -1,4 +1,4 @@
-import { COMPOSER_CONTEXT_KINDS } from "@lmcstools/contracts";
+import { COMPOSER_CONTEXT_KINDS } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

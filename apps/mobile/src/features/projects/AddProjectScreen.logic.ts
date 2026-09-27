@@ -1,6 +1,6 @@
-import { canCreateProjectInEnvironment } from "@lmcstools/client-runtime/operations/projects";
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import { canCreateProjectInEnvironment } from "@lmcstools/client/operations/projects";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
+import type { EnvironmentId } from "@lmcstools/core";
 
 export function resolveAddProjectEnvironment<
   T extends {

@@ -6,7 +6,7 @@ import {
   type DesktopUpdateChannel,
   type DesktopUpdateCheckResult,
   type DesktopUpdateState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";

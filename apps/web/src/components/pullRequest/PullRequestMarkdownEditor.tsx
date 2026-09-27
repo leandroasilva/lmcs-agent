@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/contracts";
+import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/core";
 
 import { cn } from "~/lib/utils";
 

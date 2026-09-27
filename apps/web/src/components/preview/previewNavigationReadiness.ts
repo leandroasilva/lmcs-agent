@@ -2,7 +2,7 @@ import {
   type PreviewAutomationNavigateInput,
   type PreviewAutomationRequest,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { isCurrentPreviewRuntimeTab } from "~/browser/previewRuntimeTabId";
 import { readThreadPreviewState } from "~/previewStateStore";

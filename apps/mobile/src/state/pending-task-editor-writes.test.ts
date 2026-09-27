@@ -1,4 +1,4 @@
-import { CommandId, EnvironmentId, MessageId, ThreadId } from "@lmcstools/contracts";
+import { CommandId, EnvironmentId, MessageId, ThreadId } from "@lmcstools/core";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import type { QueuedThreadMessage } from "./thread-outbox-model";

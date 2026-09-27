@@ -1,4 +1,4 @@
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 
 interface TerminalLocationLike {
   readonly cwd: string;

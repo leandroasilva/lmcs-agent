@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 
 import { migrateLegacyConnectionCatalog } from "./migration";

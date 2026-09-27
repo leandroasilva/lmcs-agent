@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
-import { PROVIDER_SEND_TURN_MAX_FILE_BYTES } from "@lmcstools/contracts";
+import { PROVIDER_SEND_TURN_MAX_FILE_BYTES } from "@lmcstools/core";
 import {
   clearSharedPayloads,
   getResolvedSharedPayloadsAsync,

@@ -8,7 +8,7 @@ import {
   Unlink2Icon,
   TriangleAlertIcon,
 } from "lucide-react";
-import type { PullRequestState } from "@lmcstools/contracts";
+import type { PullRequestState } from "@lmcstools/core";
 
 export const PullRequestGlyph = {
   pullRequest: GitPullRequestArrowIcon,

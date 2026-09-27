@@ -4,8 +4,8 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ProviderInstanceConfig,
-} from "@lmcstools/contracts";
-import { getBackgroundActivityPresetSettings } from "@lmcstools/shared/backgroundActivitySettings";
+} from "@lmcstools/core";
+import { getBackgroundActivityPresetSettings } from "@lmcstools/core/backgroundActivitySettings";
 import * as Duration from "effect/Duration";
 import { describe, expect, it } from "vite-plus/test";
 import {

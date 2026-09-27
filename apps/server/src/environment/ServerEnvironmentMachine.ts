@@ -1,5 +1,5 @@
-import type { EnvironmentMachineKind } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import type { EnvironmentMachineKind } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 

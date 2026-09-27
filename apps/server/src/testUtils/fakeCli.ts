@@ -2,7 +2,7 @@
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 export interface FakeCliOptions {
   /** Directory the launcher and its stub are written into. */

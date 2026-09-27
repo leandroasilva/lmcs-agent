@@ -10,8 +10,8 @@ import type {
   ReviewDiffPreviewInput,
   ReviewDiffPreviewResult,
   VcsRepositoryIdentity,
-} from "@lmcstools/contracts";
-import { CheckpointRef } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { CheckpointRef } from "@lmcstools/core";
 import * as VcsProcess from "./VcsProcess.ts";
 
 export interface VcsCaptureCheckpointInput {

@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import * as Arr from "effect/Array";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";

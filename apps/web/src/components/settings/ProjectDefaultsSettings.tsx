@@ -3,9 +3,9 @@ import {
   type ModelSelection,
   type ProviderInstanceId,
   type WorktreeSubmodules,
-} from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import { useNavigate } from "@tanstack/react-router";
 
 import { getCustomModelOptionsByInstance } from "../../modelSelection";

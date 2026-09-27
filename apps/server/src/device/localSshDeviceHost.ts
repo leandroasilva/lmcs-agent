@@ -1,6 +1,6 @@
 import * as NodeDnsPromises from "node:dns/promises";
 import * as NodeNet from "node:net";
-import type { SshDeviceHostConfig } from "@lmcstools/contracts";
+import type { SshDeviceHostConfig } from "@lmcstools/core";
 import * as NodeOS from "node:os";
 import * as Context from "effect/Context";
 import { runSshCommand } from "@lmcstools/ssh/command";

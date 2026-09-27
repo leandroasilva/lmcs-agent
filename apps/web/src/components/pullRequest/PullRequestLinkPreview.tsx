@@ -1,5 +1,5 @@
-import { isAtomCommandInterrupted } from "@lmcstools/client-runtime/state/runtime";
-import type { EnvironmentId, PullRequestRef } from "@lmcstools/contracts";
+import { isAtomCommandInterrupted } from "@lmcstools/client/state/runtime";
+import type { EnvironmentId, PullRequestRef } from "@lmcstools/core";
 import {
   cloneElement,
   useState,

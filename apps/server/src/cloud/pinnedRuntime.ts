@@ -16,7 +16,7 @@ import {
   cliArchiveTarCommand,
   cliReleaseDownloadBaseUrl,
   parseChecksums,
-} from "@lmcstools/shared/cliRelease";
+} from "@lmcstools/core/cliRelease";
 
 import * as ProcessRunner from "../processRunner.ts";
 

@@ -5,49 +5,49 @@ import * as NodeOS from "node:os";
 import * as NodeSea from "node:sea";
 
 export const HostProcessPlatform = Context.Reference<NodeJS.Platform>(
-  "@lmcstools/shared/hostProcess/HostProcessPlatform",
+  "@lmcstools/core/hostProcess/HostProcessPlatform",
   {
     defaultValue: () => process.platform,
   },
 );
 
 export const HostProcessArchitecture = Context.Reference<NodeJS.Architecture>(
-  "@lmcstools/shared/hostProcess/HostProcessArchitecture",
+  "@lmcstools/core/hostProcess/HostProcessArchitecture",
   {
     defaultValue: () => process.arch,
   },
 );
 
 export const HostProcessHostname = Context.Reference<string>(
-  "@lmcstools/shared/hostProcess/HostProcessHostname",
+  "@lmcstools/core/hostProcess/HostProcessHostname",
   {
     defaultValue: () => NodeOS.hostname(),
   },
 );
 
 export const HostProcessEnvironment = Context.Reference<NodeJS.ProcessEnv>(
-  "@lmcstools/shared/hostProcess/HostProcessEnvironment",
+  "@lmcstools/core/hostProcess/HostProcessEnvironment",
   {
     defaultValue: () => process.env,
   },
 );
 
 export const HostProcessWorkingDirectory = Context.Reference<string>(
-  "@lmcstools/shared/hostProcess/HostProcessWorkingDirectory",
+  "@lmcstools/core/hostProcess/HostProcessWorkingDirectory",
   {
     defaultValue: () => process.cwd(),
   },
 );
 
 export const HostProcessExecutablePath = Context.Reference<string>(
-  "@lmcstools/shared/hostProcess/HostProcessExecutablePath",
+  "@lmcstools/core/hostProcess/HostProcessExecutablePath",
   {
     defaultValue: () => process.execPath,
   },
 );
 
 export const HostProcessArguments = Context.Reference<ReadonlyArray<string>>(
-  "@lmcstools/shared/hostProcess/HostProcessArguments",
+  "@lmcstools/core/hostProcess/HostProcessArguments",
   {
     defaultValue: () => process.argv,
   },
@@ -59,7 +59,7 @@ export const HostProcessArguments = Context.Reference<ReadonlyArray<string>>(
  * path. `process.argv[0]` and `execPath` are always the resolved binary.
  */
 export const HostProcessInvokedAs = Context.Reference<string>(
-  "@lmcstools/shared/hostProcess/HostProcessInvokedAs",
+  "@lmcstools/core/hostProcess/HostProcessInvokedAs",
   {
     defaultValue: () => process.argv0,
   },
@@ -72,7 +72,7 @@ export const HostProcessInvokedAs = Context.Reference<string>(
  * subcommands of itself.
  */
 export const HostProcessIsExecutable = Context.Reference<boolean>(
-  "@lmcstools/shared/hostProcess/HostProcessIsExecutable",
+  "@lmcstools/core/hostProcess/HostProcessIsExecutable",
   {
     defaultValue: () => NodeSea.isSea(),
   },
@@ -89,7 +89,7 @@ export const HostProcessIsExecutable = Context.Reference<boolean>(
  * Best effort: a failed lookup just leaves the interface set.
  */
 export const HostProcessAddresses = Context.Reference<Effect.Effect<ReadonlySet<string>>>(
-  "@lmcstools/shared/hostProcess/HostProcessAddresses",
+  "@lmcstools/core/hostProcess/HostProcessAddresses",
   {
     defaultValue: () =>
       Effect.gen(function* () {
@@ -109,7 +109,7 @@ export const HostProcessAddresses = Context.Reference<Effect.Effect<ReadonlySet<
 
 /** Undefined on platforms without POSIX uids (Windows). */
 export const HostProcessUserId = Context.Reference<number | undefined>(
-  "@lmcstools/shared/hostProcess/HostProcessUserId",
+  "@lmcstools/core/hostProcess/HostProcessUserId",
   {
     defaultValue: () => process.getuid?.(),
   },

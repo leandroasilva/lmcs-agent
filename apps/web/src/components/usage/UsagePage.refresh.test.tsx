@@ -1,5 +1,5 @@
-import { EnvironmentId, ProviderInstanceId, USAGE_CONTRACT_VERSION } from "@lmcstools/contracts";
-import { mergeUsage } from "@lmcstools/shared/usageMerge";
+import { EnvironmentId, ProviderInstanceId, USAGE_CONTRACT_VERSION } from "@lmcstools/core";
+import { mergeUsage } from "@lmcstools/core/usageMerge";
 import { StrictMode, act } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";

@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 import { useEffect, useRef } from "react";
 

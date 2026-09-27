@@ -4,7 +4,7 @@ import type {
   PullRequestChecksState,
   PullRequestRef,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { useOpenLink } from "~/browser/useOpenLink";
 import { cn } from "~/lib/utils";

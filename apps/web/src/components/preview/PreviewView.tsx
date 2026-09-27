@@ -1,18 +1,18 @@
 "use client";
 
-import { scopedThreadKey } from "@lmcstools/client-runtime/environment";
+import { scopedThreadKey } from "@lmcstools/client/environment";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   DEFAULT_BROWSER_PROFILE_ID,
   FILL_PREVIEW_VIEWPORT,
   type PreviewAnnotationPayload,
   type PreviewViewportSetting,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
-import { normalizePreviewUrl } from "@lmcstools/shared/preview";
+} from "@lmcstools/core";
+import { normalizePreviewUrl } from "@lmcstools/core/preview";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {

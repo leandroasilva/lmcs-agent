@@ -1,5 +1,5 @@
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
-import { isAtomCommandInterrupted } from "@lmcstools/client-runtime/state/runtime";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
+import { isAtomCommandInterrupted } from "@lmcstools/client/state/runtime";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

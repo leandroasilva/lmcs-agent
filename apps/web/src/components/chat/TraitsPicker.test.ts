@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ProviderDriverKind, type ProviderOptionDescriptor } from "@lmcstools/contracts";
+import { ProviderDriverKind, type ProviderOptionDescriptor } from "@lmcstools/core";
 import { buildTraitsTriggerDisplay, buildUnavailableModelOptionDescriptors } from "./TraitsPicker";
 
 function selectDescriptor(

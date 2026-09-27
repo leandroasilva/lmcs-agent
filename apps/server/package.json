@@ -39,8 +39,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@lmcstools/contracts": "workspace:*",
-    "@lmcstools/shared": "workspace:*",
+    "@lmcstools/core": "workspace:*",
     "@lmcstools/ssh": "workspace:*",
     "@lmcstools/tailscale": "workspace:*",
     "@types/node": "catalog:",

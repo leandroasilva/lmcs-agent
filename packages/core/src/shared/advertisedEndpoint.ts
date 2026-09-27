@@ -5,7 +5,7 @@ import type {
   AdvertisedEndpointReachability,
   AdvertisedEndpointSource,
   AdvertisedEndpointStatus,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export interface CreateAdvertisedEndpointInput {
   readonly id: string;

@@ -9,11 +9,11 @@ import {
   type MobileThemeId as SharedMobileThemeId,
   type ThemeAppearance,
   type ThemeColors,
-} from "@lmcstools/shared/themePalettes";
+} from "@lmcstools/core/themePalettes";
 import {
   STANDARD_THEME_PREVIEW_COLORS,
   type ThemePreviewColors,
-} from "@lmcstools/shared/themePreview";
+} from "@lmcstools/core/themePreview";
 
 export const DEFAULT_MOBILE_THEME_ID = MOBILE_DEFAULT_THEME_ID;
 export const MOBILE_THEME_IDS = [...SHARED_MOBILE_THEME_IDS, "material-you"] as const;

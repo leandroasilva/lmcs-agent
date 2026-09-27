@@ -1,8 +1,8 @@
-import { WS_METHODS } from "@lmcstools/contracts";
+import { WS_METHODS } from "@lmcstools/core";
 import {
   createEnvironmentRpcCommand,
   createEnvironmentRpcQueryAtomFamily,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

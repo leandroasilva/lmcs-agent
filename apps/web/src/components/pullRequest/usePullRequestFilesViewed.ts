@@ -1,5 +1,5 @@
-import { isAtomCommandInterrupted } from "@lmcstools/client-runtime/state/runtime";
-import type { EnvironmentId, PullRequestRef } from "@lmcstools/contracts";
+import { isAtomCommandInterrupted } from "@lmcstools/client/state/runtime";
+import type { EnvironmentId, PullRequestRef } from "@lmcstools/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { pullRequestEnvironment } from "~/state/pullRequests";

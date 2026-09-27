@@ -1,4 +1,4 @@
-import type { ProviderOptionDescriptor } from "@lmcstools/contracts";
+import type { ProviderOptionDescriptor } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { selectableChoices } from "./thread-settings-options";

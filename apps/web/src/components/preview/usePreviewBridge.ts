@@ -5,8 +5,8 @@ import type {
   PreviewReportStatusInput,
   ScopedThreadRef,
   ThreadId,
-} from "@lmcstools/contracts";
-import { parseScopedThreadKey, scopedThreadKey } from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/core";
+import { parseScopedThreadKey, scopedThreadKey } from "@lmcstools/client/environment";
 import * as Option from "effect/Option";
 import { useEffect, useEffectEvent, useMemo, useRef } from "react";
 

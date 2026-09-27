@@ -1,4 +1,4 @@
-import type { EnvironmentId, PullRequestLinkedThreadsResult } from "@lmcstools/contracts";
+import type { EnvironmentId, PullRequestLinkedThreadsResult } from "@lmcstools/core";
 
 export interface CommandPaletteLinkedThreads {
   readonly environmentId: EnvironmentId;

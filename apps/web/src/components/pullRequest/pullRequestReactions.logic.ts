@@ -1,4 +1,4 @@
-import type { PullRequestReaction, PullRequestReactionContent } from "@lmcstools/contracts";
+import type { PullRequestReaction, PullRequestReactionContent } from "@lmcstools/core";
 
 /** The picker's order, which is GitHub's: the two verdicts first, then the rest as it lists them. */
 export const PULL_REQUEST_REACTION_ORDER: ReadonlyArray<PullRequestReactionContent> = [

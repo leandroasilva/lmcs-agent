@@ -1,4 +1,4 @@
-import type { DesktopSshEnvironmentTarget, EnvironmentMachineKind } from "@lmcstools/contracts";
+import type { DesktopSshEnvironmentTarget, EnvironmentMachineKind } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import type { ReactNode } from "react";
 

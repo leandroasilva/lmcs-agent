@@ -11,7 +11,7 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "@lmcstools/shared": "workspace:*",
+    "@lmcstools/core": "workspace:*",
     "astro": "^7.2.8",
     "sharp": "0.35.4"
   },

@@ -5,7 +5,7 @@ import {
   ProjectMonogramText,
   type ProjectIconColor,
   type ProjectIconOverride,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {

@@ -21,10 +21,10 @@ import {
   EnvironmentScopeRequiredError,
   EnvironmentAuthenticatedAuth,
   EnvironmentAuthenticatedPrincipal,
-} from "@lmcstools/contracts";
-import type { AuthEnvironmentScope, DpopFailureReason } from "@lmcstools/contracts";
-import { parseAllowedOAuthScope } from "@lmcstools/shared/oauthScope";
-import { causeErrorTag } from "@lmcstools/shared/observability";
+} from "@lmcstools/core";
+import type { AuthEnvironmentScope, DpopFailureReason } from "@lmcstools/core";
+import { parseAllowedOAuthScope } from "@lmcstools/core/oauthScope";
+import { causeErrorTag } from "@lmcstools/core/observability";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import { identity } from "effect/Function";

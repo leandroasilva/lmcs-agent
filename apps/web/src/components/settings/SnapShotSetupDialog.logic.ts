@@ -1,4 +1,4 @@
-import type { DesktopSnapShotState } from "@lmcstools/contracts";
+import type { DesktopSnapShotState } from "@lmcstools/core";
 
 export type CaptureSetupStep = "access" | "shortcut";
 

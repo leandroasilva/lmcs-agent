@@ -13,7 +13,7 @@ import {
   type TurnTokenUsage,
   TurnId,
   type UserInputQuestion,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -30,7 +30,7 @@ import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import type { OpencodeClient, Part, PermissionRequest, QuestionRequest } from "@opencode-ai/sdk/v2";
-import { getModelSelectionStringOptionValue } from "@lmcstools/shared/model";
+import { getModelSelectionStringOptionValue } from "@lmcstools/core/model";
 
 import { resolveAttachmentPath } from "../../attachmentStore.ts";
 import { ServerConfig } from "../../config.ts";

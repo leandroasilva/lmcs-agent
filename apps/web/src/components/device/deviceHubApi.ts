@@ -1,6 +1,6 @@
-import { withDeviceHubQuery } from "@lmcstools/client-runtime/state/deviceHubAccess";
-import type { DeviceHubAccess } from "@lmcstools/client-runtime/state/deviceHubAccess";
-import type { DevicePlatform } from "@lmcstools/contracts";
+import { withDeviceHubQuery } from "@lmcstools/client/state/deviceHubAccess";
+import type { DeviceHubAccess } from "@lmcstools/client/state/deviceHubAccess";
+import type { DevicePlatform } from "@lmcstools/core";
 
 /**
  * Read-only hub endpoints the Tools drawer consumes directly: the accessibility

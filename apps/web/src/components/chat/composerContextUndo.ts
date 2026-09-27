@@ -1,4 +1,4 @@
-import type { PreviewAnnotationPayload } from "@lmcstools/contracts";
+import type { PreviewAnnotationPayload } from "@lmcstools/core";
 
 import type { ComposerFileAttachment, ComposerImageAttachment } from "../../composerDraftStore";
 import { fileContextReference, previewAnnotationContextId } from "../../lib/composerContextRecords";

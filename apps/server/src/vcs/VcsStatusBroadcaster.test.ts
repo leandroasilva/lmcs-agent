@@ -21,13 +21,13 @@ import type {
   VcsStatusRemoteResult,
   VcsStatusResult,
   VcsStatusStreamEvent,
-} from "@lmcstools/contracts";
-import { GitManagerError } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { GitManagerError } from "@lmcstools/core";
 
 import * as VcsStatusBroadcaster from "./VcsStatusBroadcaster.ts";
 import * as BackgroundPolicy from "../background/BackgroundPolicy.ts";
 import * as GitWorkflowService from "../git/GitWorkflowService.ts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 const TEST_EPOCH = DateTime.makeUnsafe("1970-01-01T00:00:00.000Z");
 

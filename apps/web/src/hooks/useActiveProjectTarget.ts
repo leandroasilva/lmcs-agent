@@ -1,5 +1,5 @@
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/contracts";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/core";
 
 import { useProjects } from "~/state/entities";
 

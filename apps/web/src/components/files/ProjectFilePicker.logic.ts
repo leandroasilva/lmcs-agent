@@ -1,5 +1,5 @@
-import type { ProjectEntry } from "@lmcstools/contracts";
-import { normalizeSearchQuery } from "@lmcstools/shared/searchRanking";
+import type { ProjectEntry } from "@lmcstools/core";
+import { normalizeSearchQuery } from "@lmcstools/core/searchRanking";
 
 export const PROJECT_FILE_PICKER_RESULT_LIMIT = 200;
 

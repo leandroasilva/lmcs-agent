@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 
 import { ProjectSettingsPanel } from "./ProjectSettingsPanel";
 import { useSettingsScope } from "./SettingsScopeContext";

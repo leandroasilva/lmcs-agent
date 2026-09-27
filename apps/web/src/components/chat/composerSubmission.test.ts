@@ -4,11 +4,11 @@ import {
   MessageId,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   expandAssistantCitationsForProvider,
   serializeAssistantCitation,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { submitComposerDraft } from "./composerSubmission";

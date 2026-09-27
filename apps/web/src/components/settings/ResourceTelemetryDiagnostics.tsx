@@ -25,14 +25,14 @@ import type {
   ResourceTelemetrySourceHealth,
   ResourceTelemetrySourceStatus,
   ServerProcessSignal,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 
 import {
   useResourceTelemetry,
@@ -1270,8 +1270,8 @@ export function ResourceTelemetryDiagnostics({
         <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs/5">
           <div className="bg-muted/15 px-4 py-3 text-2xs leading-relaxed text-muted-foreground sm:px-5">
             Native counters identify which process is reading or writing. These application-level
-            counters identify known LMCS operations so process spikes can be correlated with specific
-            persistence and logging paths.
+            counters identify known LMCS operations so process spikes can be correlated with
+            specific persistence and logging paths.
           </div>
           <AttributionTable entries={snapshot?.attribution.entries ?? []} />
         </div>

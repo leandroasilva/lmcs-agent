@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { EventId, type OrchestrationThreadActivity, TurnId } from "@lmcstools/contracts";
+import { EventId, type OrchestrationThreadActivity, TurnId } from "@lmcstools/core";
 
 import { deriveLatestContextWindowSnapshot, formatContextWindowTokens } from "./contextWindow";
 

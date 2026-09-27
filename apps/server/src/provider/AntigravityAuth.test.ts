@@ -1,6 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";
-import { ProviderInstanceId, ProviderSetupError, type ProviderAuthState } from "@lmcstools/contracts";
+import { ProviderInstanceId, ProviderSetupError, type ProviderAuthState } from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";

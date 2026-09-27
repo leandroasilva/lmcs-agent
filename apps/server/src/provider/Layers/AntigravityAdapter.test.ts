@@ -6,7 +6,7 @@ import {
   ProviderInstanceId,
   ThreadId,
   type ProviderRuntimeEvent,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

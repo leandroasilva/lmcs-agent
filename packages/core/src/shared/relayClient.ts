@@ -2,7 +2,7 @@ import * as Clock from "effect/Clock";
 import type {
   RelayClientInstallProgressEvent,
   RelayClientInstallProgressStage,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
@@ -132,7 +132,7 @@ export interface RelayClientShape {
 }
 
 export class RelayClient extends Context.Service<RelayClient, RelayClientShape>()(
-  "@lmcstools/shared/relayClient",
+  "@lmcstools/core/relayClient",
 ) {}
 
 function executableFileName(platform: NodeJS.Platform): string {

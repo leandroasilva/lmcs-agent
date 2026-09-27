@@ -91,8 +91,8 @@ import {
   wslRuntimeArchiveStem,
 } from "./build-desktop-artifact.ts";
 import { BRAND_ASSET_PATHS } from "./lib/brand-assets.ts";
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 // A minimal stand-in for the Linux CLI release archive: one top-level
 // directory named after the archive stem holding the executable, the web
@@ -394,8 +394,8 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
           "@crowecawcaw/xa11y": "0.13.0",
           "@effect/platform-node": "catalog:",
           "@napi-rs/keyring": "^1.3.0",
-          "@lmcstools/contracts": "workspace:*",
-          "@lmcstools/shared": "workspace:*",
+          "@lmcstools/core": "workspace:*",
+          "@lmcstools/core": "workspace:*",
           "dbus-next": "0.10.2",
           effect: "catalog:",
           electron: "41.5.0",

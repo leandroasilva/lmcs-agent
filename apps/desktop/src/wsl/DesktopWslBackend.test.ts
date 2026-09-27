@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 
-import * as NetService from "@lmcstools/shared/Net";
+import * as NetService from "@lmcstools/core/Net";
 
 import * as DesktopBackendConfiguration from "../backend/DesktopBackendConfiguration.ts";
 import * as DesktopBackendPool from "../backend/DesktopBackendPool.ts";

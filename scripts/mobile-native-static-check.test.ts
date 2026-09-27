@@ -1,5 +1,5 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as HostProcess from "@lmcstools/shared/hostProcess";
+import * as HostProcess from "@lmcstools/core/hostProcess";
 import { assert, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

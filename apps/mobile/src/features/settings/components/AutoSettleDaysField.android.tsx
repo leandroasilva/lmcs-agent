@@ -1,7 +1,7 @@
 import {
   MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
   MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { View } from "react-native";
 
 import { AppText } from "../../../components/AppText";

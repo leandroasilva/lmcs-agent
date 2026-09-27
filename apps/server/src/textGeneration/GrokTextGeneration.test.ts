@@ -9,9 +9,9 @@ import { it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
-import { createModelSelection } from "@lmcstools/shared/model";
+import { createModelSelection } from "@lmcstools/core/model";
 import { expect } from "vite-plus/test";
-import { GrokSettings, ProviderInstanceId } from "@lmcstools/contracts";
+import { GrokSettings, ProviderInstanceId } from "@lmcstools/core";
 
 import * as ServerConfig from "../config.ts";
 import * as TextGeneration from "./TextGeneration.ts";

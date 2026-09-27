@@ -5,11 +5,11 @@ import {
   type KeybindingWhenNode,
   type ResolvedKeybindingRule,
   type ResolvedKeybindingsConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   DEFAULT_RESOLVED_KEYBINDINGS,
   parseKeybindingWhenExpression,
-} from "@lmcstools/shared/keybindings";
+} from "@lmcstools/core/keybindings";
 
 import { shortcutKeyFromEvent } from "../../keybindings";
 import { isMacPlatform } from "../../lib/utils";

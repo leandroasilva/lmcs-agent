@@ -1,7 +1,7 @@
 import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import type { ChangeTypes, FileDiffMetadata } from "@pierre/diffs/types";
-import type { OrchestrationCheckpointSummary, ReviewDiffPreviewSource } from "@lmcstools/contracts";
-import { unquoteGitPatchPath } from "@lmcstools/shared/gitPatchPath";
+import type { OrchestrationCheckpointSummary, ReviewDiffPreviewSource } from "@lmcstools/core";
+import { unquoteGitPatchPath } from "@lmcstools/core/gitPatchPath";
 import * as Arr from "effect/Array";
 import { pipe } from "effect/Function";
 import * as Order from "effect/Order";

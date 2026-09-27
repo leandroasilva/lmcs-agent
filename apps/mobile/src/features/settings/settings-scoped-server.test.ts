@@ -3,7 +3,7 @@ import {
   type EnvironmentId,
   type ProjectId,
   type ServerSettings,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import type { SettingsTarget } from "./settings-environment-filter";

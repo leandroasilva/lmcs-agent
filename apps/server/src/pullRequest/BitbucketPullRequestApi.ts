@@ -19,7 +19,7 @@ import type {
   PullRequestReviewThread,
   PullRequestReviewVerdict,
   PullRequestReviewerCandidateList,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as BitbucketApi from "../sourceControl/BitbucketApi.ts";
 import { parseDiffFileRevisions } from "./bitbucketDiffRevisions.ts";

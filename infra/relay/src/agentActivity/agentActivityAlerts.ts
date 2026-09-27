@@ -2,7 +2,7 @@ import type {
   RelayAgentActivityAggregateRow,
   RelayAgentActivityAggregateState,
   RelayAgentAwarenessPreferences,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 

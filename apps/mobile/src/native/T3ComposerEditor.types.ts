@@ -1,4 +1,4 @@
-import type { OrchestrationMessageContext, ServerProviderSkill } from "@lmcstools/contracts";
+import type { OrchestrationMessageContext, ServerProviderSkill } from "@lmcstools/core";
 import type { Ref } from "react";
 import type { StyleProp, TextStyle, ViewStyle } from "react-native";
 

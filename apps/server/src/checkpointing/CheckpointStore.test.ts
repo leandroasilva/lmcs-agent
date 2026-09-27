@@ -3,8 +3,8 @@ import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it } from "@effect/vitest";
-import { ThreadId, type VcsError } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { ThreadId, type VcsError } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";

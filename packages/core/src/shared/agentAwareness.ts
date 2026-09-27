@@ -3,7 +3,7 @@ import type {
   OrchestrationProjectShell,
   OrchestrationThreadShell,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export type AgentAwarenessPhase =
   | "starting"

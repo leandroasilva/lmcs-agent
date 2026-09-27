@@ -3,7 +3,7 @@ import { useAtomValue } from "@effect/atom-react";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
-} from "@lmcstools/shared/composerContextClipboard";
+} from "@lmcstools/core/composerContextClipboard";
 import {
   CheckIcon,
   ChevronRightIcon,
@@ -33,26 +33,26 @@ import type {
   ScopedThreadRef,
   ServerProviderSkill,
   ThreadPullRequestKey,
-} from "@lmcstools/contracts";
-import { faviconUrlForOrigin } from "@lmcstools/shared/favicon";
-import { githubMediaFetchUrl } from "@lmcstools/shared/githubMedia";
+} from "@lmcstools/core";
+import { faviconUrlForOrigin } from "@lmcstools/core/favicon";
+import { githubMediaFetchUrl } from "@lmcstools/core/githubMedia";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   codexArtifactTemplatePresentationLabel,
   type CodexArtifactTemplate,
   type CodexArtifactTemplateKind,
-} from "@lmcstools/client-runtime/codex-artifact-templates";
+} from "@lmcstools/client/codex-artifact-templates";
 import {
   classifyMarkdownImageSource,
   markdownImageSourceFragment,
-} from "@lmcstools/client-runtime/markdown-images";
-import { inlineCodeFilePathCandidate } from "@lmcstools/client-runtime/markdown-links";
-import { mediaFileReference, mediaUrlReference } from "@lmcstools/client-runtime/media-reference";
-import { mediaKindFromPath, mediaMimeTypeFromExtension } from "@lmcstools/shared/filePreview";
+} from "@lmcstools/client/markdown-images";
+import { inlineCodeFilePathCandidate } from "@lmcstools/client/markdown-links";
+import { mediaFileReference, mediaUrlReference } from "@lmcstools/client/media-reference";
+import { mediaKindFromPath, mediaMimeTypeFromExtension } from "@lmcstools/core/filePreview";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
 import React, {
@@ -85,8 +85,8 @@ import { defaultUrlTransform } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkBreaks from "remark-breaks";
-import { parseAssistantCitationHref } from "@lmcstools/shared/assistantCitations";
-import { parseComposerContextHref } from "@lmcstools/shared/composerContextReferences";
+import { parseAssistantCitationHref } from "@lmcstools/core/assistantCitations";
+import { parseComposerContextHref } from "@lmcstools/core/composerContextReferences";
 import { AssistantCitationChip } from "./chat/AssistantCitationChip";
 import remarkGfm from "remark-gfm";
 import { remarkGithubAlerts } from "../markdown-github-alerts";
@@ -95,7 +95,7 @@ import {
   CODEX_ARTIFACT_TEMPLATE_HAST_PROPERTIES,
   remarkCodexDirectives,
   renderCodexFileCitationsAsMarkdown,
-} from "@lmcstools/client-runtime/codex-markdown-directives";
+} from "@lmcstools/client/codex-markdown-directives";
 import { renderSkillInlineMarkdownChildren } from "./chat/SkillInlineText";
 import {
   resolveMarkdownMediaPreview,

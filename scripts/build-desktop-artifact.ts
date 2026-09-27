@@ -13,10 +13,10 @@ import {
   type DirectoryRecord,
 } from "@electron/asar";
 
-import { fromYaml } from "@lmcstools/shared/schemaYaml";
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { clerkFrontendApiHostnameFromPublishableKey } from "@lmcstools/shared/relayAuth";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { fromYaml } from "@lmcstools/core/schemaYaml";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { clerkFrontendApiHostnameFromPublishableKey } from "@lmcstools/core/relayAuth";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import rootPackageJson from "../package.json" with { type: "json" };
 import desktopPackageJson from "../apps/desktop/package.json" with { type: "json" };
 import gnomeCaptureBundle from "../apps/desktop/gnome-extension/bundle.json" with { type: "json" };

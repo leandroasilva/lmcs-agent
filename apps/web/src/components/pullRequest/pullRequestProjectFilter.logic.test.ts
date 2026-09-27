@@ -1,4 +1,4 @@
-import { EnvironmentId, ProjectId } from "@lmcstools/contracts";
+import { EnvironmentId, ProjectId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { findScopedProject } from "./pullRequestList.logic";
@@ -52,18 +52,14 @@ describe("pull request project filter choices", () => {
   });
 
   it("keeps a saved worktree selection as the repository's only choice", () => {
-    const projects = [
-      project("main"),
-      project("worktree"),
-      project("worktree", cups),
-    ];
+    const projects = [project("main"), project("worktree"), project("worktree", cups)];
     const selected = findScopedProject(projects, nucbox, "worktree");
 
     const choices = pullRequestFilterProjects(projects, labels, selected);
 
-    expect(choices.filter((choice) => choice.environmentId === nucbox)).toEqual(
-      [{ ...projects[1], title: "t3code · nucbox-1" }],
-    );
+    expect(choices.filter((choice) => choice.environmentId === nucbox)).toEqual([
+      { ...projects[1], title: "t3code · nucbox-1" },
+    ]);
     expect(findScopedProject(choices, nucbox, "worktree")).toBeDefined();
     expect(findScopedProject(choices, nucbox, "main")).toBeUndefined();
     expect(findScopedProject(choices, cups, "worktree")).toBeDefined();
@@ -71,11 +67,7 @@ describe("pull request project filter choices", () => {
 
   it("matches canonical repositories regardless of casing", () => {
     const main = project("main");
-    const worktree = project(
-      "worktree",
-      nucbox,
-      "GitHub.com/LeandroAsilva/LMCS-Agent",
-    );
+    const worktree = project("worktree", nucbox, "GitHub.com/LeandroAsilva/LMCS-Agent");
 
     expect(pullRequestFilterProjects([main, worktree], labels)).toEqual([main]);
   });
@@ -83,9 +75,7 @@ describe("pull request project filter choices", () => {
   it("does not add a server suffix after duplicate checkouts have collapsed", () => {
     const main = project("main");
 
-    expect(
-      pullRequestFilterProjects([main, project("worktree")], labels),
-    ).toEqual([main]);
+    expect(pullRequestFilterProjects([main, project("worktree")], labels)).toEqual([main]);
     expect(main.title).toBe("t3code");
   });
 
@@ -107,19 +97,12 @@ describe("pull request project filter choices", () => {
     const choices = pullRequestFilterProjects(
       [
         project("github"),
-        project(
-          "enterprise",
-          nucbox,
-          "git.example.com/leandroasilva/lmcs-agent",
-        ),
+        project("enterprise", nucbox, "git.example.com/leandroasilva/lmcs-agent"),
       ],
       labels,
     );
 
-    expect(choices.map((choice) => choice.id)).toEqual([
-      "enterprise",
-      "github",
-    ]);
+    expect(choices.map((choice) => choice.id)).toEqual(["enterprise", "github"]);
   });
 
   it("does not merge projects whose repository identity is unknown", () => {
@@ -184,10 +167,7 @@ describe("pull request project filter choices", () => {
       title: "Alpha",
     };
 
-    expect(pullRequestFilterProjects([app, tools], labels)).toEqual([
-      tools,
-      app,
-    ]);
+    expect(pullRequestFilterProjects([app, tools], labels)).toEqual([tools, app]);
     expect(pullRequestFilterProjects([], labels)).toEqual([]);
   });
 });

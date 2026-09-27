@@ -1,17 +1,17 @@
 import type { ElementType } from "react";
-import type { SourceControlProviderInfo, SourceControlProviderKind } from "@lmcstools/contracts";
+import type { SourceControlProviderInfo, SourceControlProviderKind } from "@lmcstools/core";
 export {
   DEFAULT_CHANGE_REQUEST_TERMINOLOGY,
   getChangeRequestTerminology,
   resolveChangeRequestPresentation,
   type ChangeRequestPresentation,
   type ChangeRequestTerminology,
-} from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core/sourceControl";
 import {
   getChangeRequestTerminology,
   resolveChangeRequestPresentation,
   type ChangeRequestTerminology,
-} from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core/sourceControl";
 import {
   AzureDevOpsIcon,
   BitbucketIcon,

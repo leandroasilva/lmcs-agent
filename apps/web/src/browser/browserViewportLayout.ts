@@ -4,7 +4,7 @@ import {
   PREVIEW_VIEWPORT_MIN_DIMENSION,
   type PreviewViewportSetting,
   type PreviewViewportSize,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export interface BrowserViewportLayout {
   readonly canvasWidth: number;

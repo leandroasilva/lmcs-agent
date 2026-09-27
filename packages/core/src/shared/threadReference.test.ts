@@ -1,4 +1,4 @@
-import type { ThreadPullRequestLink } from "@lmcstools/contracts";
+import type { ThreadPullRequestLink } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { resolveThreadReferenceCopyTarget } from "./threadReference.ts";

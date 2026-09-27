@@ -5,13 +5,13 @@ import {
   RelayConnectionRegistration,
   RelayConnectionTarget,
   BearerConnectionTarget,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   type ConnectionCatalogDocument,
   EMPTY_CONNECTION_CATALOG_DOCUMENT,
   registerConnectionInCatalog,
-} from "@lmcstools/client-runtime/platform";
-import { EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/platform";
+import { EnvironmentId } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 

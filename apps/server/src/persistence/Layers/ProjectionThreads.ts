@@ -12,7 +12,7 @@ import {
   ProjectionThreadRepository,
   type ProjectionThreadRepositoryShape,
 } from "../Services/ProjectionThreads.ts";
-import { ModelSelection, ThreadLinkedPullRequest, ThreadTitleState } from "@lmcstools/contracts";
+import { ModelSelection, ThreadLinkedPullRequest, ThreadTitleState } from "@lmcstools/core";
 
 const ProjectionThreadDbRow = ProjectionThread.mapFields(
   Struct.assign({

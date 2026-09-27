@@ -1,9 +1,9 @@
-import { worktreeSetupAgentStarted } from "@lmcstools/client-runtime/worktree-setup";
-export { worktreeSetupAgentStarted } from "@lmcstools/client-runtime/worktree-setup";
+import { worktreeSetupAgentStarted } from "@lmcstools/client/worktree-setup";
+export { worktreeSetupAgentStarted } from "@lmcstools/client/worktree-setup";
 import * as Equal from "effect/Equal";
 import { shallow } from "zustand/vanilla/shallow";
-import { renderCodexDirectivesForCopy } from "@lmcstools/client-runtime/codex-markdown-directives";
-import { commandProgramName } from "@lmcstools/client-runtime/work-log/command-label";
+import { renderCodexDirectivesForCopy } from "@lmcstools/client/codex-markdown-directives";
+import { commandProgramName } from "@lmcstools/client/work-log/command-label";
 import {
   liveActivityToolStatus,
   normalizeCompactToolLabel,
@@ -13,11 +13,11 @@ import {
   toolGroupAction,
   toolGroupSummaryKind,
   type ToolGroupSummaryKind,
-} from "@lmcstools/client-runtime/work-log/presentation";
+} from "@lmcstools/client/work-log/presentation";
 export {
   normalizeCompactToolLabel,
   toolGroupAction,
-} from "@lmcstools/client-runtime/work-log/presentation";
+} from "@lmcstools/client/work-log/presentation";
 import {
   formatDuration,
   inferCheckpointTurnCountByTurnId,
@@ -36,7 +36,7 @@ import {
   type OrchestrationLatestTurn,
   type TurnId,
   type WorktreeSetupSnapshot,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { formatWorkspaceRelativePath } from "../../filePathDisplay";
 
 const TIMELINE_MINIMAP_ITEM_SPACING = 8;

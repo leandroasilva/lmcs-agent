@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { PROVIDER_SEND_TURN_MAX_ATTACHMENTS } from "@lmcstools/contracts";
+import { PROVIDER_SEND_TURN_MAX_ATTACHMENTS } from "@lmcstools/core";
 
 const files = new Map<string, { base64: string; deleted: boolean; text?: string }>();
 

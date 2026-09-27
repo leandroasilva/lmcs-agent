@@ -1,4 +1,4 @@
-import { ProviderSetupError, type ProviderInstanceId } from "@lmcstools/contracts";
+import { ProviderSetupError, type ProviderInstanceId } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";

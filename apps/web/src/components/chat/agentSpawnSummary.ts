@@ -2,7 +2,7 @@ import {
   isActiveSubagentStatus,
   isTerminalSubagentStatus,
   type RuntimeSubagent,
-} from "@lmcstools/client-runtime/state/subagentRuntime";
+} from "@lmcstools/client/state/subagentRuntime";
 
 /** Summarize observed states without treating idle or missing agents as completed. */
 export function deriveAgentSpawnSummary({

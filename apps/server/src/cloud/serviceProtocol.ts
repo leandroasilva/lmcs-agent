@@ -1,4 +1,4 @@
-import type { ServerSelfUpdateOutcome } from "@lmcstools/contracts";
+import type { ServerSelfUpdateOutcome } from "@lmcstools/core";
 
 // Protocol 3 requires the standalone executable layout. Bump when runtimePaths
 // or the installed runtime tree changes incompatibly; launchers survive self-updates.

@@ -1,5 +1,5 @@
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 import type { Atom } from "effect/unstable/reactivity";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 

@@ -7,14 +7,14 @@ import {
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   COMPOSER_CONTEXT_MAX_RECORDS,
   type EnvironmentId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   decodeComposerContextClipboardHtml,
   decodeComposerContextFragment,
   encodeComposerContextFragment,
-} from "@lmcstools/shared/composerContextClipboard";
-import { executeAtomQuery, squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
+} from "@lmcstools/core/composerContextClipboard";
+import { executeAtomQuery, squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
 import * as Option from "effect/Option";
 import { appAtomRegistry } from "../state/atom-registry";
 import { assetEnvironment } from "../state/assets";

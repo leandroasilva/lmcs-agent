@@ -1,7 +1,7 @@
 import type { DraftId } from "~/composerDraftStore";
 import { useComposerDraftStore } from "~/composerDraftStore";
-import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@lmcstools/contracts";
-import { scopedProjectKey, scopeProjectRef } from "@lmcstools/client-runtime/environment";
+import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@lmcstools/core";
+import { scopedProjectKey, scopeProjectRef } from "@lmcstools/client/environment";
 import { FolderPlusIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 
@@ -30,7 +30,7 @@ import {
 } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { InlineButton } from "../ui/button";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 
 interface DraftHeroHeadlineProps {
   readonly draftId: DraftId | null;

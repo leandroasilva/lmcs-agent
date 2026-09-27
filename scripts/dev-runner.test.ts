@@ -3,12 +3,12 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import * as NetService from "@lmcstools/shared/Net";
+import * as NetService from "@lmcstools/core/Net";
 import {
   HostProcessEnvironment,
   HostProcessPlatform,
   HostProcessWorkingDirectory,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 import { assert, describe, it } from "@effect/vitest";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";

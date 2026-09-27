@@ -1,4 +1,4 @@
-import { EnvironmentId, WS_METHODS } from "@lmcstools/contracts";
+import { EnvironmentId, WS_METHODS } from "@lmcstools/core";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 

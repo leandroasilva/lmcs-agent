@@ -27,8 +27,8 @@ import {
   type UsageSummary,
   type UsageSummaryInput,
   UsageReadError,
-} from "@lmcstools/contracts";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";

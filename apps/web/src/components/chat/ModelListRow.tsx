@@ -1,4 +1,4 @@
-import { type ProviderDriverKind, type ProviderInstanceId } from "@lmcstools/contracts";
+import { type ProviderDriverKind, type ProviderInstanceId } from "@lmcstools/core";
 import { memo } from "react";
 import { CheckIcon, StarIcon } from "lucide-react";
 import {

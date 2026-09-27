@@ -10,7 +10,7 @@ import * as Schema from "effect/Schema";
 import {
   RelayDeliveryKind as RelayDeliveryKindSchema,
   type RelayDeliveryResult,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 
 import {
   sanitizeAgentActivityAggregateState,

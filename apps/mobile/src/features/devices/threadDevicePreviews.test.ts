@@ -1,4 +1,4 @@
-import { ThreadId, type DeviceServiceState } from "@lmcstools/contracts";
+import { ThreadId, type DeviceServiceState } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { selectedThreadDevicePreview, threadDevicePreviews } from "./threadDevicePreviews";

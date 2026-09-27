@@ -3,12 +3,8 @@ import * as NodeHttp from "node:http";
 
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import {
-  EnvironmentHttpApi,
-  ProviderDriverKind,
-  type RepositoryIdentity,
-} from "@lmcstools/contracts";
-import type { RelayManagedEndpointRuntimeConfig } from "@lmcstools/contracts/relay";
+import { EnvironmentHttpApi, ProviderDriverKind, type RepositoryIdentity } from "@lmcstools/core";
+import type { RelayManagedEndpointRuntimeConfig } from "@lmcstools/core/relay";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
@@ -165,8 +161,8 @@ import {
   persistServerRuntimeState,
 } from "./serverRuntimeState.ts";
 import { orchestrationHttpApiLayer } from "./orchestration/http.ts";
-import * as NetService from "@lmcstools/shared/Net";
-import * as RelayClient from "@lmcstools/shared/relayClient";
+import * as NetService from "@lmcstools/core/Net";
+import * as RelayClient from "@lmcstools/core/relayClient";
 import { disableTailscaleServe, ensureTailscaleServe } from "@lmcstools/tailscale";
 import { forkParked, ServerActivation } from "./serverActivation.ts";
 
@@ -781,7 +777,9 @@ const makeServerLayer = Layer.unwrap(
                     ),
                   }),
                   Effect.tap((recovered) =>
-                    recovered ? Effect.logInfo("LMCS Connect managed tunnel recovered") : Effect.void,
+                    recovered
+                      ? Effect.logInfo("LMCS Connect managed tunnel recovered")
+                      : Effect.void,
                   ),
                   Effect.catchCause((cause) =>
                     Cause.hasInterrupts(cause)
@@ -805,9 +803,9 @@ const makeServerLayer = Layer.unwrap(
             const wantsCliLink = hasCloudPublicConfig
               ? yield* CloudCliState.readCliDesiredCloudLink.pipe(
                   Effect.catch((cause) =>
-                    Effect.logWarning("Failed to read the desired LMCS Connect link", { cause }).pipe(
-                      Effect.as(false),
-                    ),
+                    Effect.logWarning("Failed to read the desired LMCS Connect link", {
+                      cause,
+                    }).pipe(Effect.as(false)),
                   ),
                 )
               : false;

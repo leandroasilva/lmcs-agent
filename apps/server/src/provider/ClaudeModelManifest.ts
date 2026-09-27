@@ -1,5 +1,5 @@
-import { TrimmedNonEmptyString } from "@lmcstools/contracts";
-import { compareSemverVersions, parseSemver } from "@lmcstools/shared/semver";
+import { TrimmedNonEmptyString } from "@lmcstools/core";
+import { compareSemverVersions, parseSemver } from "@lmcstools/core/semver";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 

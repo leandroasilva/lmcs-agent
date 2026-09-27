@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 
 const { readPreparedConnection } = vi.hoisted(() => ({
   readPreparedConnection: vi.fn<() => { httpBaseUrl: string } | null>(() => null),

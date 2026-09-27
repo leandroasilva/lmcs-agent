@@ -1,5 +1,5 @@
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { openDiffFilePrimaryAction, resolveDiffPathForWorkspace } from "./diffFileActions";

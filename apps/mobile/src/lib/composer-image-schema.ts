@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import { EnvironmentId, PastedTextAttachmentSource } from "@lmcstools/contracts";
+import { EnvironmentId, PastedTextAttachmentSource } from "@lmcstools/core";
 
 export const DraftComposerImageAttachmentSchema = Schema.Struct({
   id: Schema.String,

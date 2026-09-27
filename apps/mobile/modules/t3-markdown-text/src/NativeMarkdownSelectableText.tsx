@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo } from "react";
-import { decodeComposerContextFragment } from "@lmcstools/shared/composerContextClipboard";
+import { decodeComposerContextFragment } from "@lmcstools/core/composerContextClipboard";
 import {
   findNodeHandle,
   Image,
@@ -26,7 +26,7 @@ import {
   installMarkdownCopySanitizer,
   renderAndroidContextChip,
 } from "./T3MarkdownTextSelectionModule";
-import { parseComposerContextHref } from "@lmcstools/shared/composerContextReferences";
+import { parseComposerContextHref } from "@lmcstools/core/composerContextReferences";
 import { contextChipPresentation } from "./nativeMarkdownText";
 
 export const MarkdownContextClipboardContext = createContext("");

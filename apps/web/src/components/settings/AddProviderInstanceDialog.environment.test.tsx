@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { reactHookHarness as hooks } from "../../test/reactHookHarness";

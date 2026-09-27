@@ -15,7 +15,7 @@ import {
   type RuntimeTaskStatus,
   type ThreadId,
   type TurnCompletedPayload,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";

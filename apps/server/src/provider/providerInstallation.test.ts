@@ -1,11 +1,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
-import {
-  ProviderDriverKind,
-  ProviderInstanceId,
-  type ProviderInstallState,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { ProviderDriverKind, ProviderInstanceId, type ProviderInstallState } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";

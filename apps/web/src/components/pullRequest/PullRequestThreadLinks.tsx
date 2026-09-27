@@ -1,13 +1,13 @@
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import type { EnvironmentId, PullRequestRef, ScopedThreadRef, ThreadId } from "@lmcstools/contracts";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import type { EnvironmentId, PullRequestRef, ScopedThreadRef, ThreadId } from "@lmcstools/core";
 import { CheckIcon, MessageSquareIcon } from "lucide-react";
 import { useState } from "react";
-import { threadPullRequestLinkMode } from "@lmcstools/client-runtime/thread-pull-request-compatibility";
+import { threadPullRequestLinkMode } from "@lmcstools/client/thread-pull-request-compatibility";
 import { usePullRequestLinking } from "~/hooks/usePullRequestLinking";
 
 import { parseChangeRequestUrl } from "~/lib/openPullRequestLink";
-import { normalizeThreadPullRequestKey } from "@lmcstools/shared/threadPullRequests";
+import { normalizeThreadPullRequestKey } from "@lmcstools/core/threadPullRequests";
 import { useProjects, useServerConfigs, useThreadShell, useThreadShells } from "~/state/entities";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";

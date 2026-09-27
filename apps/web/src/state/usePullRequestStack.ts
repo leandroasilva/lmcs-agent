@@ -1,4 +1,4 @@
-import type { EnvironmentId, PullRequestRef } from "@lmcstools/contracts";
+import type { EnvironmentId, PullRequestRef } from "@lmcstools/core";
 import { useMemo } from "react";
 import {
   savedPullRequestStack,

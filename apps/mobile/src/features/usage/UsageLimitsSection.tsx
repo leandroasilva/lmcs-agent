@@ -7,7 +7,7 @@ import type {
   ServerProviderResetCredits,
   ServerProviderUsageWindow,
   UsageProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   elapsedShare,
   formatDuration,
@@ -15,9 +15,9 @@ import {
   limitsNotice,
   paceOf,
   remainingPercent,
-} from "@lmcstools/shared/usageLimits";
+} from "@lmcstools/core/usageLimits";
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from "react";
-import { refreshUsageLimits } from "@lmcstools/client-runtime/state/usage";
+import { refreshUsageLimits } from "@lmcstools/client/state/usage";
 import { Alert, Pressable, View } from "react-native";
 
 import { AppText as Text } from "../../components/AppText";

@@ -16,8 +16,8 @@ import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
-import { T3_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/contracts";
-import { T3ProjectFileFromJson } from "@lmcstools/shared/t3ProjectFile";
+import { T3_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/core";
+import { T3ProjectFileFromJson } from "@lmcstools/core/t3ProjectFile";
 
 const decodeT3ProjectFileJson = Schema.decodeEffect(T3ProjectFileFromJson);
 

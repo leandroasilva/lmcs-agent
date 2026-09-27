@@ -1,4 +1,4 @@
-import type { PullRequestStack } from "@lmcstools/contracts";
+import type { PullRequestStack } from "@lmcstools/core";
 import { cn } from "~/lib/utils";
 import { resolvePullRequestState } from "./pullRequestPresentation";
 

@@ -1,17 +1,17 @@
-import type { DevicePlatform, EnvironmentId } from "@lmcstools/contracts";
+import type { DevicePlatform, EnvironmentId } from "@lmcstools/core";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { refreshDeviceHubAccess, useDeviceHubAccess } from "~/state/device";
-import { createCanvasFrameSink } from "@lmcstools/client-runtime/device/frame";
-import { resolveDeviceShape } from "@lmcstools/client-runtime/device/shape-profile";
+import { createCanvasFrameSink } from "@lmcstools/client/device/frame";
+import { resolveDeviceShape } from "@lmcstools/client/device/shape-profile";
 import { deviceKeyboard, deviceModel } from "./deviceModels";
 import { fitDeviceFrame } from "./deviceFrameLayout";
 import { DeviceDuoViewport } from "./DeviceDuoViewport";
 import { DeviceDuoControls } from "./DeviceDuoControls";
 import { DeviceAndroidFoldControls } from "./DeviceAndroidFoldControls";
-import type { DuoControlState } from "@lmcstools/client-runtime/device/duo-control";
+import type { DuoControlState } from "@lmcstools/client/device/duo-control";
 import { DevicePhoneViewport } from "./DevicePhoneViewport";
 import { DeviceLoadingView } from "./DeviceLoadingView";
 import { type DeviceAxElement, fetchDeviceAxTree } from "./deviceHubApi";
@@ -21,7 +21,7 @@ import {
   type DeviceScreenSize,
   type DeviceStreamClient,
   type DeviceStreamStatus,
-} from "@lmcstools/client-runtime/device/stream";
+} from "@lmcstools/client/device/stream";
 
 const AX_POLL_INTERVAL_MS = 2_000;
 const CONTROLS_RAIL_WIDTH = 56;

@@ -1,15 +1,15 @@
-import { ComposerContextId } from "@lmcstools/contracts";
-import type { ComposerContextClipboardFragment } from "@lmcstools/contracts";
+import { ComposerContextId } from "@lmcstools/core";
+import type { ComposerContextClipboardFragment } from "@lmcstools/core";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   decodeComposerContextFragment,
   decodeComposerContextClipboardHtml,
-} from "@lmcstools/shared/composerContextClipboard";
+} from "@lmcstools/core/composerContextClipboard";
 import {
   collectComposerContextReferences,
   formatComposerContextReference,
   replaceComposerContextReferences,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 /** Clipboard records referenced by the copied text, including dependent screenshots. */
 export function readPastedComposerContext(
   clipboardData: Pick<DataTransfer, "getData">,

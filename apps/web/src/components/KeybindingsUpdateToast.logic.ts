@@ -1,4 +1,4 @@
-import type { ServerConfigStreamEvent } from "@lmcstools/contracts";
+import type { ServerConfigStreamEvent } from "@lmcstools/core";
 
 export const KEYBINDINGS_SUCCESS_TOAST_COOLDOWN_MS = 2_000;
 

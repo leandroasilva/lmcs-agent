@@ -3,7 +3,7 @@ import {
   getBuiltInSpriteSheet,
   type FileTreeIcons,
 } from "@pierre/trees";
-import { VIDEO_FILE_EXTENSIONS } from "@lmcstools/shared/video";
+import { VIDEO_FILE_EXTENSIONS } from "@lmcstools/core/video";
 
 export interface PierreIconResolution {
   name: string;

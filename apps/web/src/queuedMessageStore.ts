@@ -1,4 +1,4 @@
-import type { PreviewAnnotationPayload } from "@lmcstools/contracts";
+import type { PreviewAnnotationPayload } from "@lmcstools/core";
 import { create } from "zustand";
 
 import type { ComposerSubmissionIntent } from "./composer-logic";

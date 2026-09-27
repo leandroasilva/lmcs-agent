@@ -6,7 +6,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 import * as PtyAdapter from "./PtyAdapter.ts";
 

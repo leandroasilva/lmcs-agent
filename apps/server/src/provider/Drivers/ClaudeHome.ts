@@ -1,6 +1,6 @@
 import * as NodeOS from "node:os";
 
-import type { ClaudeSettings } from "@lmcstools/contracts";
+import type { ClaudeSettings } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";

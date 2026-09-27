@@ -1,11 +1,11 @@
-import { ComposerContextId } from "@lmcstools/contracts";
+import { ComposerContextId } from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "react-native";
-import type { EnvironmentId } from "@lmcstools/contracts";
-import { encodeComposerContextFragment } from "@lmcstools/shared/composerContextClipboard";
-import { collectComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
+import type { EnvironmentId } from "@lmcstools/core";
+import { encodeComposerContextFragment } from "@lmcstools/core/composerContextClipboard";
+import { collectComposerContextReferences } from "@lmcstools/core/composerContextReferences";
 import { ComposerEditor as NativeComposerEditor } from "../native/T3ComposerEditor";
 import type { ComposerEditorProps as NativeComposerEditorProps } from "../native/T3ComposerEditor";
 import {

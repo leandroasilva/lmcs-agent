@@ -2,14 +2,14 @@ import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   INITIAL_TERMINAL_OUTPUT_CURSOR,
   readTerminalOutputUpdate,
   type TerminalOutputCursor,
   type TerminalOutputUpdate,
   type TerminalSessionState,
-} from "@lmcstools/client-runtime/state/terminal";
+} from "@lmcstools/client/state/terminal";
 import {
   Plus,
   Square,
@@ -24,8 +24,8 @@ import {
   type ResolvedKeybindingsConfig,
   type ScopedThreadRef,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { getTerminalLabel } from "@lmcstools/shared/terminalLabels";
+} from "@lmcstools/core";
+import { getTerminalLabel } from "@lmcstools/core/terminalLabels";
 import * as Schema from "effect/Schema";
 import {
   type PointerEvent as ReactPointerEvent,

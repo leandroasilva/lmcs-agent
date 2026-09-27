@@ -6,7 +6,7 @@ import { useEnvironments } from "../../state/environments";
 import type { SettingsScopeSearch } from "./settingsScope";
 import { useSettingsProjectGroups } from "./useSettingsProjectGroups";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 
 /** Offer an explicit target change when a category has no settings at this scope. */
 export function SettingsScopeNotice({

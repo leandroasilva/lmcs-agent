@@ -1,6 +1,6 @@
-import type { ProviderRuntimeEvent } from "@lmcstools/contracts";
-import { ProviderDriverKind, ProviderInstanceId, ThreadId } from "@lmcstools/contracts";
-import { DEFAULT_SERVER_SETTINGS } from "@lmcstools/contracts/settings";
+import type { ProviderRuntimeEvent } from "@lmcstools/core";
+import { ProviderDriverKind, ProviderInstanceId, ThreadId } from "@lmcstools/core";
+import { DEFAULT_SERVER_SETTINGS } from "@lmcstools/core/settings";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it, assert } from "@effect/vitest";
 import * as Effect from "effect/Effect";

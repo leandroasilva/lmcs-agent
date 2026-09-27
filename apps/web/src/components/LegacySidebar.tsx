@@ -1,5 +1,5 @@
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
-import { resolveThreadCurrentPullRequestLink } from "@lmcstools/shared/threadPullRequests";
+import { resolveThreadCurrentPullRequestLink } from "@lmcstools/core/threadPullRequests";
 import { Spinner } from "~/components/ui/spinner";
 import {
   ArchiveIcon,
@@ -52,20 +52,20 @@ import {
   type SidebarProjectGroupingMode,
   resolveEnvironmentMachineKind,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   parseScopedThreadKey,
   scopedProjectKey,
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
-} from "@lmcstools/client-runtime/environment";
-import { safeErrorLogAttributes } from "@lmcstools/client-runtime/errors";
+} from "@lmcstools/client/environment";
+import { safeErrorLogAttributes } from "@lmcstools/client/errors";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { useNavigate, useParams, useRouter } from "@tanstack/react-router";
 import {
   MAX_SIDEBAR_THREAD_PREVIEW_COUNT,
@@ -73,7 +73,7 @@ import {
   type SidebarProjectSortOrder,
   type SidebarThreadPreviewCount,
   type SidebarThreadSortOrder,
-} from "@lmcstools/contracts/settings";
+} from "@lmcstools/core/settings";
 import { isDesktopLocalConnectionTarget, isWslConnectionTarget } from "../connection/desktopLocal";
 import { useDesktopLocalBootstraps } from "../connection/useDesktopLocalBootstraps";
 import { isElectron } from "../env";

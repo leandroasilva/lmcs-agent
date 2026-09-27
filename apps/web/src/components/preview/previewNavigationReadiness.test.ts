@@ -1,4 +1,4 @@
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({

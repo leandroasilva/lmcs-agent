@@ -1,5 +1,5 @@
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import type { EnvironmentId, ScopedThreadRef, ThreadId } from "@lmcstools/contracts";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import type { EnvironmentId, ScopedThreadRef, ThreadId } from "@lmcstools/core";
 import type { DraftId } from "./composerDraftStore";
 
 export type ThreadRouteTarget =

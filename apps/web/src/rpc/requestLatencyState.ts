@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import { WS_METHODS } from "@lmcstools/contracts";
+import { WS_METHODS } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 
 import { appAtomRegistry } from "./atomRegistry";

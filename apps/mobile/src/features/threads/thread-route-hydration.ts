@@ -1,6 +1,6 @@
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
-import type { EnvironmentShellStatus } from "@lmcstools/client-runtime/state/shell";
-import type { EnvironmentThreadStatus } from "@lmcstools/client-runtime/state/threads";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
+import type { EnvironmentShellStatus } from "@lmcstools/client/state/shell";
+import type { EnvironmentThreadStatus } from "@lmcstools/client/state/threads";
 
 /**
  * Reports whether the route-local projections can still yield the requested

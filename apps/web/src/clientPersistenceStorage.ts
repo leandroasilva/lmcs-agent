@@ -1,4 +1,4 @@
-import { ClientSettingsSchema, type ClientSettings } from "@lmcstools/contracts";
+import { ClientSettingsSchema, type ClientSettings } from "@lmcstools/core";
 
 import { getLocalStorageItem, setLocalStorageItem } from "./hooks/useLocalStorage";
 

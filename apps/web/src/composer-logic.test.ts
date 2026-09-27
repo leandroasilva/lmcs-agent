@@ -1,10 +1,10 @@
-import { filterComposerPullRequestMatches } from "@lmcstools/shared/composerPullRequestMatches";
-import { EnvironmentId, MessageId, ThreadId, type AssistantCitation } from "@lmcstools/contracts";
+import { filterComposerPullRequestMatches } from "@lmcstools/core/composerPullRequestMatches";
+import { EnvironmentId, MessageId, ThreadId, type AssistantCitation } from "@lmcstools/core";
 import {
   collectAssistantCitations,
   expandAssistantCitationsForProvider,
   serializeAssistantCitation,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

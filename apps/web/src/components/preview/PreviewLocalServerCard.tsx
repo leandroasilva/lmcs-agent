@@ -1,4 +1,4 @@
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import type { ScopedThreadRef } from "@lmcstools/core";
 import { DiscoveryListRow } from "../ui/discovery-list";
 
 import { PreviewFaviconIcon } from "./PreviewFaviconIcon";

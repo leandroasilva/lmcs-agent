@@ -7,7 +7,7 @@ import {
   THREAD_JUMP_KEYBINDING_COMMANDS,
   type ModelPickerJumpKeybindingCommand,
   type ThreadJumpKeybindingCommand,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { isElectron } from "./env";
 import { isMacPlatform } from "./lib/utils";
 

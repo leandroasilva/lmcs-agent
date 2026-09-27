@@ -3,7 +3,7 @@ import type {
   PreviewAutomationRequest,
   PreviewAutomationResponse,
   PreviewAutomationStreamEvent,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import {

@@ -1,13 +1,13 @@
-import { threadPullRequestSearchTerms } from "@lmcstools/shared/threadPullRequests";
+import { threadPullRequestSearchTerms } from "@lmcstools/core/threadPullRequests";
 import type { CommandPaletteLinkedThreads } from "../commandPaletteBus";
 import {
   type EnvironmentId,
   type FilesystemBrowseEntry,
   type KeybindingCommand,
   THREAD_JUMP_KEYBINDING_COMMANDS,
-} from "@lmcstools/contracts";
-import { filterFilesystemBrowseEntries } from "@lmcstools/client-runtime/state/filesystem";
-import type { SidebarThreadSortOrder } from "@lmcstools/contracts/settings";
+} from "@lmcstools/core";
+import { filterFilesystemBrowseEntries } from "@lmcstools/client/state/filesystem";
+import type { SidebarThreadSortOrder } from "@lmcstools/core/settings";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
 import { type ReactNode } from "react";

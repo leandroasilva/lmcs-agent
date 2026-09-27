@@ -34,12 +34,12 @@ import {
   type ProviderRuntimeEvent,
   type ProviderSession,
   type ServerSettings as ServerSettingsValue,
-} from "@lmcstools/contracts";
-import { expandAssistantCitationsForProvider } from "@lmcstools/shared/assistantCitations";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { causeErrorTag } from "@lmcstools/shared/observability";
-import { getModelSelectionStringOptionValue } from "@lmcstools/shared/model";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core";
+import { expandAssistantCitationsForProvider } from "@lmcstools/core/assistantCitations";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { causeErrorTag } from "@lmcstools/core/observability";
+import { getModelSelectionStringOptionValue } from "@lmcstools/core/model";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";

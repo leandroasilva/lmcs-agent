@@ -5,7 +5,7 @@ import {
   HostProcessIsExecutable,
   HostProcessPlatform,
   HostProcessWorkingDirectory,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 import {
   CLI_RELEASE_BASE_URL_ENV,
   CLI_RELEASE_CHANNELS,
@@ -13,7 +13,7 @@ import {
   cliReleaseChannelOf,
   newestCliReleaseVersion,
   type CliReleaseChannel,
-} from "@lmcstools/shared/cliRelease";
+} from "@lmcstools/core/cliRelease";
 import * as Console from "effect/Console";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

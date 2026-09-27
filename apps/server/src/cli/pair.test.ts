@@ -5,8 +5,8 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import * as NetService from "@lmcstools/shared/Net";
-import { HostProcessEnvironment } from "@lmcstools/shared/hostProcess";
+import * as NetService from "@lmcstools/core/Net";
+import { HostProcessEnvironment } from "@lmcstools/core/hostProcess";
 import { assert, describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

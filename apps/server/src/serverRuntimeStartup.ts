@@ -14,8 +14,8 @@ import {
   WORKTREE_SETUP_ACTIVITY_KIND,
   WorktreeSetupSnapshot,
   worktreeSetupActivityId,
-} from "@lmcstools/contracts";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import * as Cause from "effect/Cause";
 import * as Console from "effect/Console";
 import * as Context from "effect/Context";

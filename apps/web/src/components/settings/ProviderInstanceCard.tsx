@@ -25,13 +25,13 @@ import {
   type ProviderDriverKind,
   type ServerProvider,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   type CustomModelDefinition,
   readCustomModelEntries,
   toCustomModelSetting,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import { cn } from "../../lib/utils";
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { normalizeProviderAccentColor } from "../../providerInstances";

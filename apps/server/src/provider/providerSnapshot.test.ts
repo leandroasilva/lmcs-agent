@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { ModelCapabilities } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { createModelCapabilities } from "@lmcstools/shared/model";
+import type { ModelCapabilities } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { createModelCapabilities } from "@lmcstools/core/model";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as PlatformError from "effect/PlatformError";

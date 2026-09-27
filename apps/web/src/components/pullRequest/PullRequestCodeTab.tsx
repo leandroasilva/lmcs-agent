@@ -9,7 +9,7 @@ import type {
   PullRequestReviewPosition,
   PullRequestReviewThread,
   PullRequestThreadCommentsResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   ChevronDownIcon,
   ChevronRightIcon,

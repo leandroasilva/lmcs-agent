@@ -1,23 +1,23 @@
-import { findErrorTraceId } from "@lmcstools/client-runtime/errors";
+import { findErrorTraceId } from "@lmcstools/client/errors";
 import {
   type EnvironmentConnectionPresentation,
   RelayConnectionRegistration,
   RelayConnectionTarget,
   orchestrationProtocolCompatibilityError,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   type EnvironmentId,
   resolveEnvironmentMachineKind,
   type ServerConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type {
   RelayClientEnvironmentRecord,
   RelayEnvironmentStatusResponse,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import * as Option from "effect/Option";
 import { type ReactNode, useCallback, useEffect, useEffectEvent, useState } from "react";
 

@@ -350,7 +350,7 @@ export interface EnvironmentSessionPrincipalShape {
 export class EnvironmentAuthenticatedPrincipal extends Context.Service<
   EnvironmentAuthenticatedPrincipal,
   EnvironmentSessionPrincipalShape
->()("@lmcstools/contracts/environmentHttp/EnvironmentAuthenticatedPrincipal") {}
+>()("@lmcstools/core/environmentHttp/EnvironmentAuthenticatedPrincipal") {}
 
 export class EnvironmentAuthenticatedAuth extends HttpApiMiddleware.Service<
   EnvironmentAuthenticatedAuth,

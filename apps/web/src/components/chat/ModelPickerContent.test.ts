@@ -3,7 +3,7 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { deriveProviderInstanceEntries } from "../../providerInstances";

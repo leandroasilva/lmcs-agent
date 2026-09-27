@@ -1,6 +1,6 @@
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
-import { resolveMediaSource } from "@lmcstools/client-runtime/media-source";
-import { getBrowseDirectoryPath } from "@lmcstools/client-runtime/state/projects";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
+import { resolveMediaSource } from "@lmcstools/client/media-source";
+import { getBrowseDirectoryPath } from "@lmcstools/client/state/projects";
 import { useCallback, useMemo, useState } from "react";
 import {
   Markdown,

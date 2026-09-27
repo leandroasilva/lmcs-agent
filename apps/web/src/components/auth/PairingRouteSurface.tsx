@@ -1,5 +1,5 @@
-import type { AuthSessionState } from "@lmcstools/contracts";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+import type { AuthSessionState } from "@lmcstools/core";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import React, { startTransition, useEffect, useRef, useState, useCallback } from "react";
 
 import { APP_DISPLAY_NAME } from "../../branding";

@@ -1,4 +1,4 @@
-import type { ComposerContextRecord, EnvironmentId } from "@lmcstools/contracts";
+import type { ComposerContextRecord, EnvironmentId } from "@lmcstools/core";
 import { Alert, Pressable, View } from "react-native";
 import { Image } from "expo-image";
 import { useEffect, useId, useMemo, useState } from "react";

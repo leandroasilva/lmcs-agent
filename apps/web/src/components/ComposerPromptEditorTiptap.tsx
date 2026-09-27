@@ -10,15 +10,15 @@ import type {
   AssistantCitation,
   ComposerContextClipboardFragment,
   ServerProviderSkill,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   serializeAssistantCitation,
   withAssistantCitationComment,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
-} from "@lmcstools/shared/composerContextClipboard";
+} from "@lmcstools/core/composerContextClipboard";
 import {
   createContext,
   use,
@@ -71,7 +71,7 @@ import {
   ComposerContextRecordsContext,
 } from "./composerContextPresentation";
 import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
-import { formatProviderSkillDisplayName } from "@lmcstools/client-runtime/providerSkills";
+import { formatProviderSkillDisplayName } from "@lmcstools/client/providerSkills";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import { importPastedComposerText } from "./composerInlineTokenPaste";
 import { didComposerSelectionChangeVisibly } from "./composerSelection";

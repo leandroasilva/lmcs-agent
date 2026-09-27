@@ -1,8 +1,5 @@
-import {
-  BearerConnectionTarget,
-  PrimaryConnectionTarget,
-} from "@lmcstools/client-runtime/connection";
-import { EnvironmentId, PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/contracts";
+import { BearerConnectionTarget, PrimaryConnectionTarget } from "@lmcstools/client/connection";
+import { EnvironmentId, PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

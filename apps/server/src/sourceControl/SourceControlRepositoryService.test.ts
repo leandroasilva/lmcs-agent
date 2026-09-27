@@ -8,7 +8,7 @@ import * as Layer from "effect/Layer";
 import * as PlatformError from "effect/PlatformError";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
-import { GitCommandError, SourceControlProviderError } from "@lmcstools/contracts";
+import { GitCommandError, SourceControlProviderError } from "@lmcstools/core";
 
 import * as ServerConfig from "../config.ts";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";

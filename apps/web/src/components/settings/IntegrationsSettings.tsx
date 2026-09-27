@@ -37,8 +37,8 @@ import {
   type BrowserImportSource,
   type PreviewAppearancePreference,
   type PreviewViewportSetting,
-} from "@lmcstools/contracts";
-import { PREVIEW_VIEWPORT_PRESETS } from "@lmcstools/shared/previewViewport";
+} from "@lmcstools/core";
+import { PREVIEW_VIEWPORT_PRESETS } from "@lmcstools/core/previewViewport";
 import { MoreVertical, Plus as PlusIcon } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 

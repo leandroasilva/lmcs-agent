@@ -1,6 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
-import type { EnvironmentId } from "@lmcstools/contracts";
-import { isWindowsAbsolutePath } from "@lmcstools/shared/path";
+import type { EnvironmentId } from "@lmcstools/core";
+import { isWindowsAbsolutePath } from "@lmcstools/core/path";
 import { useMemo, useState } from "react";
 
 import { primaryServerKeybindingsAtom } from "~/state/server";

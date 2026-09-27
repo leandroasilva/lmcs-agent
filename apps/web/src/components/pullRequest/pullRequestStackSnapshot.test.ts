@@ -1,5 +1,5 @@
-import type { ThreadPullRequestLink } from "@lmcstools/contracts";
-import { ProjectId } from "@lmcstools/contracts";
+import type { ThreadPullRequestLink } from "@lmcstools/core";
+import { ProjectId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 import { savedPullRequestStack, pullRequestStackView } from "./pullRequestStackSnapshot";
 

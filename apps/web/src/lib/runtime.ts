@@ -3,8 +3,8 @@ import type * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Socket from "effect/unstable/socket/Socket";
 
-import { remoteHttpClientLayer } from "@lmcstools/client-runtime/rpc";
-import { makeRelayClientTracingLayer } from "@lmcstools/shared/relayTracing";
+import { remoteHttpClientLayer } from "@lmcstools/client/rpc";
+import { makeRelayClientTracingLayer } from "@lmcstools/core/relayTracing";
 import * as PrimaryEnvironmentHttpClient from "../environments/primary/httpClient";
 import { primaryEnvironmentHttpLayer } from "../environments/primary/httpLayer";
 

@@ -1,10 +1,10 @@
 import { useAtomValue } from "@effect/atom-react";
-import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client/environment";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import {
   createLinkedPullRequestSummaryAtomFamily,
   pullRequestDetailToVcsStatus,
-} from "@lmcstools/client-runtime/state/pull-requests";
+} from "@lmcstools/client/state/pull-requests";
 import { Atom } from "effect/unstable/reactivity";
 import { useCallback, useEffect, useMemo } from "react";
 

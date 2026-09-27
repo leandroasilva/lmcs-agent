@@ -1,9 +1,6 @@
-import {
-  ConnectionTransientError,
-  PrimaryConnectionTarget,
-} from "@lmcstools/client-runtime/connection";
-import { EnvironmentId } from "@lmcstools/contracts";
-import { ConnectionCatalogDocument } from "@lmcstools/client-runtime/platform";
+import { ConnectionTransientError, PrimaryConnectionTarget } from "@lmcstools/client/connection";
+import { EnvironmentId } from "@lmcstools/core";
+import { ConnectionCatalogDocument } from "@lmcstools/client/platform";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Deferred from "effect/Deferred";

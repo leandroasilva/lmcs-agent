@@ -5,13 +5,13 @@ import type {
   EnvironmentId,
   ResolvedKeybindingsConfig,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
-import { filePreviewDelimiter } from "@lmcstools/shared/delimitedPreview";
+} from "@lmcstools/core";
+import { filePreviewDelimiter } from "@lmcstools/core/delimitedPreview";
 import {
   isWorkspaceAudioPreviewPath,
   isWorkspaceImagePreviewPath,
   isWorkspaceVideoPreviewPath,
-} from "@lmcstools/shared/filePreview";
+} from "@lmcstools/core/filePreview";
 import { VirtualizedFile, type SelectedLineRange } from "@pierre/diffs";
 import { Editor } from "@pierre/diffs/editor";
 import { EditProvider, File, type FileOptions, Virtualizer } from "@pierre/diffs/react";
@@ -19,8 +19,8 @@ import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
-import { mediaFileReference } from "@lmcstools/client-runtime/media-reference";
+} from "@lmcstools/client/state/runtime";
+import { mediaFileReference } from "@lmcstools/client/media-reference";
 import { Code2, Eye, FolderTree, Globe2, Table2, WrapTextIcon } from "lucide-react";
 import * as Schema from "effect/Schema";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

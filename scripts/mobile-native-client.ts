@@ -4,8 +4,8 @@ import {
   HostProcessEnvironment,
   HostProcessExecutablePath,
   HostProcessPlatform,
-} from "@lmcstools/shared/hostProcess";
-import { isCommandAvailable, resolveSpawnCommand } from "@lmcstools/shared/shell";
+} from "@lmcstools/core/hostProcess";
+import { isCommandAvailable, resolveSpawnCommand } from "@lmcstools/core/shell";
 import * as Console from "effect/Console";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

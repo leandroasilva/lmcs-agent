@@ -17,9 +17,9 @@ import {
   type ServerProviderModel,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
-import { normalizeModelSlug } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
+import { normalizeModelSlug } from "@lmcstools/core/model";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";

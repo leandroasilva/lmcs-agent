@@ -12,13 +12,13 @@ import {
   type SourceControlProviderAuth,
   type SourceControlRepositoryCloneUrls,
   type SourceControlRepositoryVisibility,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/unstable/http";
-import { sanitizeBranchFragment } from "@lmcstools/shared/git";
+import { sanitizeBranchFragment } from "@lmcstools/core/git";
 import {
   detectSourceControlProviderFromRemoteUrl,
   isSshRemoteUrl,
-} from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core/sourceControl";
 
 import {
   BitbucketPullRequestListSchema,

@@ -1,5 +1,5 @@
-import type { EnvironmentId, UsageLimitsReport } from "@lmcstools/contracts";
-import { limitsNotice } from "@lmcstools/shared/usageLimits";
+import type { EnvironmentId, UsageLimitsReport } from "@lmcstools/core";
+import { limitsNotice } from "@lmcstools/core/usageLimits";
 import { GaugeIcon } from "lucide-react";
 
 import { getDriverOption } from "../settings/providerDriverMeta";

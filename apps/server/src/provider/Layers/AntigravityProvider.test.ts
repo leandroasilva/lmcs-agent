@@ -5,7 +5,7 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   ProviderSetupError,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";

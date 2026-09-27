@@ -1,6 +1,6 @@
 import { RequestActionButton } from "./RequestActionButton";
 import { QuestionAttachments } from "./QuestionAttachments";
-import type { ApprovalRequestId, UserInputQuestion } from "@lmcstools/contracts";
+import type { ApprovalRequestId, UserInputQuestion } from "@lmcstools/core";
 import { useCallback, useRef } from "react";
 import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent } from "react-native";
 import Animated, {

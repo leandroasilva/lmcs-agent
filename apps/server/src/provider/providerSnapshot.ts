@@ -9,13 +9,13 @@ import type {
   ServerProviderModel,
   ServerProviderState,
   ServerProviderUsageLimits,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as PlatformError from "effect/PlatformError";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { readCustomModelEntries } from "@lmcstools/shared/model";
+import { readCustomModelEntries } from "@lmcstools/core/model";
 import { isWindowsCommandNotFound } from "../processRunner.ts";
 import { createProviderVersionAdvisory } from "./providerMaintenance.ts";
 import { collectUint8StreamText } from "../stream/collectUint8StreamText.ts";

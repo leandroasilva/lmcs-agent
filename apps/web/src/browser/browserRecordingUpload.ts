@@ -5,12 +5,12 @@ import {
   PreviewAutomationRecordingDeadlineExpiredError,
   type DesktopPreviewRecordingArtifact,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
+} from "@lmcstools/core";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
 import {
   deletePendingAttachmentUpload,
   runAttachmentUploadCycle,
-} from "@lmcstools/client-runtime/state/attachments";
+} from "@lmcstools/client/state/attachments";
 
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { attachmentEnvironment } from "~/state/attachments";

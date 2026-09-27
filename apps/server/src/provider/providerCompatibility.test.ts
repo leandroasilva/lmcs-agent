@@ -1,9 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import {
-  ProviderDriverKind,
-  ProviderInstanceId,
-  type ServerProvider,
-} from "@lmcstools/contracts";
+import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@lmcstools/core";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as Deferred from "effect/Deferred";
 import * as Fiber from "effect/Fiber";
@@ -80,12 +76,7 @@ describe("provider compatibility", () => {
       ["0.0.2-nightly.20260924.2200", "0.156.1", "supported"],
     ] as const) {
       assert.strictEqual(
-        resolveProviderCompatibility(
-          bundled,
-          driver,
-          codexVersion,
-          t3CodeVersion,
-        )?.status,
+        resolveProviderCompatibility(bundled, driver, codexVersion, t3CodeVersion)?.status,
         expected,
         `LMCS Code ${t3CodeVersion} with Codex ${codexVersion}`,
       );
@@ -135,8 +126,7 @@ describe("provider compatibility", () => {
       ["agy_acp_server_20260818_01_RC01", "unknown"],
     ] as const) {
       assert.strictEqual(
-        resolveProviderCompatibility([taggedPolicy], antigravity, version)
-          ?.status,
+        resolveProviderCompatibility([taggedPolicy], antigravity, version)?.status,
         expected,
       );
     }
@@ -154,14 +144,9 @@ describe("provider compatibility", () => {
       ["agy_acp_server_20260818_01_RC01", "unknown"],
       [null, "unknown"],
     ] as const) {
-      assert.strictEqual(
-        resolveProviderCompatibility([policy], driver, version)?.status,
-        expected,
-      );
+      assert.strictEqual(resolveProviderCompatibility([policy], driver, version)?.status, expected);
     }
-    assert.isUndefined(
-      resolveProviderCompatibility([policy], driver, "0.9.0", "0.1.0"),
-    );
+    assert.isUndefined(resolveProviderCompatibility([policy], driver, "0.9.0", "0.1.0"));
   });
 
   it("supports every driver without inventing policies for uncovered adapters", () => {
@@ -176,11 +161,7 @@ describe("provider compatibility", () => {
     ]) {
       const adapter = ProviderDriverKind.make(kind);
       assert.strictEqual(
-        resolveProviderCompatibility(
-          [{ ...policy, driver: adapter }],
-          adapter,
-          "2.0.0",
-        )?.status,
+        resolveProviderCompatibility([{ ...policy, driver: adapter }], adapter, "2.0.0")?.status,
         "supported",
       );
       assert.isUndefined(resolveProviderCompatibility([], adapter, "2.0.0"));
@@ -199,11 +180,8 @@ describe("provider compatibility", () => {
     assert.strictEqual(supported.status, "error");
     assert.strictEqual(supported.message, "Authentication failed");
     assert.strictEqual(
-      applyProviderCompatibility(
-        supported,
-        [{ ...policy, t3CodeRange: ">=9.0.0" }],
-        [policy],
-      ).compatibilityAdvisory?.status,
+      applyProviderCompatibility(supported, [{ ...policy, t3CodeRange: ">=9.0.0" }], [policy])
+        .compatibilityAdvisory?.status,
       "broken",
     );
     const removed = applyProviderCompatibility(supported, [], []);
@@ -211,8 +189,7 @@ describe("provider compatibility", () => {
     assert.strictEqual(removed.status, "error");
     assert.strictEqual(removed.message, "Authentication failed");
     assert.isUndefined(
-      applyProviderCompatibility({ ...broken, enabled: false }, [], [policy])
-        .compatibilityAdvisory,
+      applyProviderCompatibility({ ...broken, enabled: false }, [], [policy]).compatibilityAdvisory,
     );
     assert.isUndefined(
       applyProviderCompatibility({ ...broken, installed: false }, [], [policy])
@@ -254,115 +231,100 @@ describe("provider compatibility", () => {
   });
 });
 
-it.effect(
-  "a remote policy refresh preserves a newer health result on the registry stream",
-  () =>
-    Effect.gen(function* () {
-      const started = yield* Deferred.make<void>();
-      const release = yield* Deferred.make<void>();
-      const health = yield* Ref.make<ServerProvider>({
-        ...provider,
-        status: "ready" as ServerProvider["status"],
-        message: "Healthy",
-      });
-      const manifest = yield* Ref.make<ModelManifest.ModelManifestData>({
-        version: 1,
-        currentModels: {},
-        compatibility: [policy],
-      });
-      const instance: ProviderInstance = {
-        instanceId: provider.instanceId,
+it.effect("a remote policy refresh preserves a newer health result on the registry stream", () =>
+  Effect.gen(function* () {
+    const started = yield* Deferred.make<void>();
+    const release = yield* Deferred.make<void>();
+    const health = yield* Ref.make<ServerProvider>({
+      ...provider,
+      status: "ready" as ServerProvider["status"],
+      message: "Healthy",
+    });
+    const manifest = yield* Ref.make<ModelManifest.ModelManifestData>({
+      version: 1,
+      currentModels: {},
+      compatibility: [policy],
+    });
+    const instance: ProviderInstance = {
+      instanceId: provider.instanceId,
+      driverKind: driver,
+      enabled: true,
+      displayName: undefined,
+      continuationIdentity: {
         driverKind: driver,
-        enabled: true,
-        displayName: undefined,
-        continuationIdentity: {
-          driverKind: driver,
-          continuationKey: "test-codex",
-        },
-        snapshot: {
-          getSnapshot: Ref.get(health),
-          refresh: Ref.get(health),
-          streamChanges: Stream.empty,
-          applyUsageLimits: () => Effect.void,
-          resolveMaintenance: () =>
-            Effect.succeed(
-              makeManualOnlyProviderMaintenanceCapabilities({
-                provider: driver,
-                packageName: null,
-              }),
-            ),
-        },
-        adapter: {} as ProviderInstance["adapter"],
-        textGeneration: {} as ProviderInstance["textGeneration"],
-      };
-      const refresh = Deferred.succeed(started, undefined).pipe(
-        Effect.andThen(Deferred.await(release)),
-        Effect.andThen(
-          Ref.updateAndGet(manifest, (current) => ({
-            ...current,
-            compatibility: [
-              {
-                ...policy,
-                ranges: [{ range: ">=0.0.0", status: "supported" as const }],
-              },
-            ],
-          })),
+        continuationKey: "test-codex",
+      },
+      snapshot: {
+        getSnapshot: Ref.get(health),
+        refresh: Ref.get(health),
+        streamChanges: Stream.empty,
+        applyUsageLimits: () => Effect.void,
+        resolveMaintenance: () =>
+          Effect.succeed(
+            makeManualOnlyProviderMaintenanceCapabilities({
+              provider: driver,
+              packageName: null,
+            }),
+          ),
+      },
+      adapter: {} as ProviderInstance["adapter"],
+      textGeneration: {} as ProviderInstance["textGeneration"],
+    };
+    const refresh = Deferred.succeed(started, undefined).pipe(
+      Effect.andThen(Deferred.await(release)),
+      Effect.andThen(
+        Ref.updateAndGet(manifest, (current) => ({
+          ...current,
+          compatibility: [
+            {
+              ...policy,
+              ranges: [{ range: ">=0.0.0", status: "supported" as const }],
+            },
+          ],
+        })),
+      ),
+    );
+    const dependencies = Layer.mergeAll(
+      Layer.succeed(ModelManifest.ModelManifest, {
+        current: Ref.get(manifest),
+        refresh,
+        forceRefresh: refresh,
+        refreshInBackground: Effect.void,
+      }),
+      Layer.succeed(ProviderInstanceRegistry, {
+        getInstance: (id) => Effect.succeed(id === instance.instanceId ? instance : undefined),
+        listInstances: Effect.succeed([instance]),
+        listUnavailable: Effect.succeed([]),
+        streamChanges: Stream.empty,
+        subscribeChanges: Effect.flatMap(PubSub.unbounded<void>(), PubSub.subscribe),
+      }),
+      ServerConfig.layerTest(process.cwd(), {
+        prefix: "compatibility-registry-test",
+      }).pipe(Layer.provideMerge(NodeServices.layer)),
+    );
+    yield* Effect.gen(function* () {
+      const registry = yield* ProviderRegistry;
+      yield* Deferred.await(started);
+      assert.strictEqual(
+        (yield* registry.getProviders)[0]?.compatibilityAdvisory?.status,
+        "broken",
+      );
+      yield* Ref.set(health, provider);
+      const latestHealth = yield* registry.refreshInstance(provider.instanceId);
+      assert.strictEqual(latestHealth[0]?.message, "Authentication failed");
+      const supported = yield* Stream.toPull(
+        registry.streamChanges.pipe(
+          Stream.filter((snapshots) => snapshots[0]?.compatibilityAdvisory?.status === "supported"),
         ),
       );
-      const dependencies = Layer.mergeAll(
-        Layer.succeed(ModelManifest.ModelManifest, {
-          current: Ref.get(manifest),
-          refresh,
-          forceRefresh: refresh,
-          refreshInBackground: Effect.void,
-        }),
-        Layer.succeed(ProviderInstanceRegistry, {
-          getInstance: (id) =>
-            Effect.succeed(id === instance.instanceId ? instance : undefined),
-          listInstances: Effect.succeed([instance]),
-          listUnavailable: Effect.succeed([]),
-          streamChanges: Stream.empty,
-          subscribeChanges: Effect.flatMap(
-            PubSub.unbounded<void>(),
-            PubSub.subscribe,
-          ),
-        }),
-        ServerConfig.layerTest(process.cwd(), {
-          prefix: "compatibility-registry-test",
-        }).pipe(Layer.provideMerge(NodeServices.layer)),
-      );
-      yield* Effect.gen(function* () {
-        const registry = yield* ProviderRegistry;
-        yield* Deferred.await(started);
-        assert.strictEqual(
-          (yield* registry.getProviders)[0]?.compatibilityAdvisory?.status,
-          "broken",
-        );
-        yield* Ref.set(health, provider);
-        const latestHealth = yield* registry.refreshInstance(
-          provider.instanceId,
-        );
-        assert.strictEqual(latestHealth[0]?.message, "Authentication failed");
-        const supported = yield* Stream.toPull(
-          registry.streamChanges.pipe(
-            Stream.filter(
-              (snapshots) =>
-                snapshots[0]?.compatibilityAdvisory?.status === "supported",
-            ),
-          ),
-        );
-        const subscribed = yield* supported.pipe(
-          Effect.forkScoped({ startImmediately: true }),
-        );
-        yield* Deferred.succeed(release, undefined);
-        const updated = (yield* Fiber.join(subscribed))[0]?.[0];
-        assert.strictEqual(updated?.compatibilityAdvisory?.status, "supported");
-        assert.strictEqual(updated?.status, "error");
-        assert.strictEqual(updated?.message, "Authentication failed");
-      }).pipe(
-        Effect.provide(ProviderRegistryLive.pipe(Layer.provide(dependencies))),
-      );
-    }).pipe(Effect.scoped),
+      const subscribed = yield* supported.pipe(Effect.forkScoped({ startImmediately: true }));
+      yield* Deferred.succeed(release, undefined);
+      const updated = (yield* Fiber.join(subscribed))[0]?.[0];
+      assert.strictEqual(updated?.compatibilityAdvisory?.status, "supported");
+      assert.strictEqual(updated?.status, "error");
+      assert.strictEqual(updated?.message, "Authentication failed");
+    }).pipe(Effect.provide(ProviderRegistryLive.pipe(Layer.provide(dependencies))));
+  }).pipe(Effect.scoped),
 );
 
 it("recomputes latest-version compatibility without losing the underlying update advisory", () => {
@@ -384,18 +346,12 @@ it("recomputes latest-version compatibility without losing the underlying update
     ranges: [...policy.ranges, { range: ">=3.0.0", status: "broken" }],
   };
   const blocked = applyProviderCompatibility(snapshot, [blockedPolicy], []);
-  assert.strictEqual(
-    blocked.compatibilityAdvisory?.latestVersionStatus,
-    "broken",
-  );
+  assert.strictEqual(blocked.compatibilityAdvisory?.latestVersionStatus, "broken");
   const relaxed = applyProviderCompatibility(
     blocked,
     [{ ...policy, ranges: [{ range: ">=2.0.0", status: "supported" }] }],
     [],
   );
-  assert.strictEqual(
-    relaxed.compatibilityAdvisory?.latestVersionStatus,
-    "supported",
-  );
+  assert.strictEqual(relaxed.compatibilityAdvisory?.latestVersionStatus, "supported");
   assert.deepStrictEqual(relaxed.versionAdvisory, snapshot.versionAdvisory);
 });

@@ -11,7 +11,7 @@
  *
  * @module provider/Drivers/CursorDriver
  */
-import { CursorSettings, ProviderDriverKind } from "@lmcstools/contracts";
+import { CursorSettings, ProviderDriverKind } from "@lmcstools/core";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

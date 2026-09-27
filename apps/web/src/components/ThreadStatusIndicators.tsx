@@ -1,19 +1,19 @@
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
-import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import { pullRequestDetailToVcsStatus } from "@lmcstools/client-runtime/state/pull-requests";
+import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client/environment";
+import { pullRequestDetailToVcsStatus } from "@lmcstools/client/state/pull-requests";
 import {
   resolveEnvironmentMachineKind,
   type EnvironmentId,
   type ThreadLinkedPullRequest,
   type ThreadPullRequestLink,
   type VcsStatusResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   resolveThreadCurrentPullRequestLink,
   resolveThreadPullRequestChains,
   visibleThreadPullRequests,
   type ThreadPullRequestBadge,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 import { FolderGit2Icon, TerminalIcon } from "lucide-react";
 import { useRender } from "@base-ui/react/use-render";
 import { useMemo, type AnimationEvent, type MouseEvent, type ReactElement } from "react";
@@ -138,7 +138,7 @@ export function linkedPullRequestSnapshotStatus(
 export {
   resolveThreadPullRequestBadge,
   type ThreadPullRequestBadge,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 
 export interface ThreadPullRequestBadgePresentation {
   readonly Icon: PullRequestGlyphIcon;

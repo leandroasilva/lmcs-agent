@@ -7,7 +7,7 @@ import {
   ProjectId,
   ProviderInstanceId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { onTestFinished, vi } from "vite-plus/test";
 
 const composerDraftFileMocks = vi.hoisted(() => {
@@ -128,7 +128,7 @@ vi.mock("../lib/uuid", () => ({ uuidv4: () => "uuid", randomHex: () => "0000" })
 vi.mock("./assets", () => ({ assetEnvironment: {} }));
 vi.mock("./attachments", () => ({ attachmentEnvironment: {} }));
 vi.mock("./session", () => ({ environmentSession: {} }));
-vi.mock("@lmcstools/client-runtime/state/runtime", () => ({
+vi.mock("@lmcstools/client/state/runtime", () => ({
   createEnvironmentRpcCommand: () => Symbol("rpc-command"),
   executeAtomQuery: () => {
     throw new Error("Unexpected network query in the inline read test");
@@ -148,7 +148,7 @@ vi.mock("../features/sharing/incoming-share-storage", () => ({
 }));
 
 import type { DraftComposerAttachment } from "../lib/composerImages";
-import { formatComposerContextReference } from "@lmcstools/shared/composerContextReferences";
+import { formatComposerContextReference } from "@lmcstools/core/composerContextReferences";
 import { appAtomRegistry } from "./atom-registry";
 import { threadOutboxManager } from "./thread-outbox";
 import {

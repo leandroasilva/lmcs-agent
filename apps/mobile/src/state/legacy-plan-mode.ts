@@ -2,7 +2,7 @@ import {
   DEFAULT_PROVIDER_INTERACTION_MODE,
   type ProviderInteractionMode,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 type InteractionModeProvider = Pick<ServerProvider, "showInteractionModeToggle">;
 

@@ -1,5 +1,5 @@
 import { DeviceHostUpdates } from "./DeviceHostUpdates";
-import type { DevicePlatform, DeviceServiceState, EnvironmentId } from "@lmcstools/contracts";
+import type { DevicePlatform, DeviceServiceState, EnvironmentId } from "@lmcstools/core";
 import { Check, CircleAlert } from "lucide-react";
 import { useState } from "react";
 

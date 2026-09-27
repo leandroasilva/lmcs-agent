@@ -3,7 +3,7 @@ import {
   type ProjectScopedServerSettingKey,
   type ServerSettings,
   type UnifiedSettings,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useCallback, useMemo } from "react";
 
 import {

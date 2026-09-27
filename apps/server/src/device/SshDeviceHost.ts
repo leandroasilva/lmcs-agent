@@ -5,10 +5,10 @@ import {
   DeviceToolVersions,
   deviceToolInstallMessage,
   type SshDeviceHostConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { runSshCommand, baseSshArgs, resolveSshCommand } from "@lmcstools/ssh/command";
-import * as NetService from "@lmcstools/shared/Net";
-import { waitForHttpReady } from "@lmcstools/shared/httpReadiness";
+import * as NetService from "@lmcstools/core/Net";
+import { waitForHttpReady } from "@lmcstools/core/httpReadiness";
 import * as Exit from "effect/Exit";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

@@ -9,8 +9,8 @@ import type {
   BrowserImportResult,
   BrowserImportSource,
   BrowserImportUnavailableReason,
-} from "@lmcstools/contracts";
-import { BrowserImportFailureReason } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { BrowserImportFailureReason } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import type { Session } from "electron";
 import * as Effect from "effect/Effect";
@@ -21,7 +21,7 @@ import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
-import { HostProcessExecutablePath, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessExecutablePath, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 import * as BrowserSession from "../BrowserSession.ts";
 import { ChromiumCookieReadError, readChromiumCookies } from "./ChromiumCookies.ts";

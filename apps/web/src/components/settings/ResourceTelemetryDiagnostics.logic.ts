@@ -1,4 +1,4 @@
-import type { ResourceTelemetryProcess, ResourceTelemetrySourceStatus } from "@lmcstools/contracts";
+import type { ResourceTelemetryProcess, ResourceTelemetrySourceStatus } from "@lmcstools/core";
 
 function processIdentityKey(process: ResourceTelemetryProcess): string {
   return `${process.identity.pid}:${process.identity.startTimeMs}`;

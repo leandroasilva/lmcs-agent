@@ -5,7 +5,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import * as SqlSchema from "effect/unstable/sql/SqlSchema";
 
-import { SourceControlProviderKind } from "@lmcstools/contracts";
+import { SourceControlProviderKind } from "@lmcstools/core";
 
 import {
   PersistenceDecodeError,

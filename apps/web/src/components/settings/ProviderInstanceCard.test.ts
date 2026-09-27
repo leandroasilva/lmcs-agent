@@ -6,7 +6,7 @@ import {
   ProviderInstanceId,
   type ServerProvider,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { deriveProviderModelsForDisplay, ProviderInstanceCard } from "./ProviderInstanceCard";
 

@@ -20,9 +20,9 @@ import type {
   VcsStatusRemoteResult,
   VcsStatusResult,
   VcsStatusStreamEvent,
-} from "@lmcstools/contracts";
-import { mergeGitStatusParts } from "@lmcstools/shared/git";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core";
+import { mergeGitStatusParts } from "@lmcstools/core/git";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 
 import * as BackgroundPolicy from "../background/BackgroundPolicy.ts";
 import * as GitWorkflowService from "../git/GitWorkflowService.ts";

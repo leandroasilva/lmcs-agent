@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { SpawnExecutableResolution } from "@lmcstools/shared/shell";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { SpawnExecutableResolution } from "@lmcstools/core/shell";
 import * as Effect from "effect/Effect";
 
 import { ClaudeExecutableFileCheck, resolveClaudeSdkExecutablePath } from "./ClaudeExecutable.ts";

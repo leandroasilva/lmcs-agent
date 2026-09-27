@@ -1,8 +1,8 @@
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { AppText as Text, AppTextInput } from "../../components/AppText";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
-import { deriveProjectGroupLabel } from "@lmcstools/client-runtime/state/project-grouping";
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import { deriveProjectGroupLabel } from "@lmcstools/client/state/project-grouping";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

@@ -7,13 +7,13 @@
  * terminal surfaces point at terminal session ids, file surfaces point at
  * workspace paths, and diff/files remain singleton surfaces.
  */
-import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client-runtime/environment";
+import { scopedThreadKey, scopeThreadRef } from "@lmcstools/client/environment";
 import {
   EnvironmentId,
   ThreadId,
   type ChatFileAttachment,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 

@@ -1,4 +1,4 @@
-import type { SnapShotSound } from "@lmcstools/contracts";
+import type { SnapShotSound } from "@lmcstools/core";
 
 import snapShotClickUrl from "../assets/snap-shot-click.mp3?url";
 import snapShotWhooshUrl from "../assets/snap-shot-whoosh.mp3?url";

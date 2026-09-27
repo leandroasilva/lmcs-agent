@@ -1,4 +1,4 @@
-import { COMPOSER_CONTEXT_KINDS, type KnownComposerContextKind } from "@lmcstools/contracts";
+import { COMPOSER_CONTEXT_KINDS, type KnownComposerContextKind } from "@lmcstools/core";
 
 export interface ContextPresentationCapability {
   details: "none" | "tooltip" | "popover";

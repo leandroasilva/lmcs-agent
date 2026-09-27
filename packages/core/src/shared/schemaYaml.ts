@@ -68,7 +68,7 @@ function stringifyYaml(options?: YamlStringifyOptions): SchemaGetter.Getter<stri
  *
  * ```ts
  * import * as Schema from "effect/Schema"
- * import { fromYamlString } from "@lmcstools/shared/schemaYaml"
+ * import { fromYamlString } from "@lmcstools/core/schemaYaml"
  *
  * const schema = Schema.String.pipe(Schema.decodeTo(Schema.Unknown, fromYamlString))
  * ```

@@ -1,4 +1,4 @@
-import { WS_METHODS } from "@lmcstools/contracts";
+import { WS_METHODS } from "@lmcstools/core";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

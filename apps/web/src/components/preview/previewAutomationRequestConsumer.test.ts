@@ -5,7 +5,7 @@ import {
   type PreviewAutomationStreamEvent,
   PreviewTabId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { AsyncResult, Atom, AtomRegistry } from "effect/unstable/reactivity";
 import { describe, expect, it, vi } from "vite-plus/test";
 

@@ -1,13 +1,13 @@
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
-import { resolveThreadCurrentPullRequestLink } from "@lmcstools/shared/threadPullRequests";
+import { resolveThreadCurrentPullRequestLink } from "@lmcstools/core/threadPullRequests";
 import { useRightPanelStore } from "../rightPanelStore";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client-runtime/environment";
+import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
-import type { ContextMenuItem, EnvironmentId, VcsRef, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/runtime";
+import type { ContextMenuItem, EnvironmentId, VcsRef, ThreadId } from "@lmcstools/core";
 import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import {

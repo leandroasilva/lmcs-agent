@@ -14,7 +14,7 @@ import {
   type SnapShotKeyChord,
   type SnapShotModifier,
   type SnapShotShortcut,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 interface AccessibilityTreeNode {
   readonly name?: string;

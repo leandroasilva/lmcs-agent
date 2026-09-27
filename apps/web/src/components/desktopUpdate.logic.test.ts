@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { DesktopUpdateActionResult, DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopUpdateActionResult, DesktopUpdateState } from "@lmcstools/core";
 
 import {
   canCheckForUpdate,

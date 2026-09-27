@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@lmcstools/contracts";
+import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@lmcstools/core";
 import {
   getProviderStatusBannerKey,
   getProviderStatusMessage,

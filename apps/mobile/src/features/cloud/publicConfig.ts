@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
-import { relayClerkTokenOptions } from "@lmcstools/shared/relayAuth";
-import { normalizeSecureRelayUrl } from "@lmcstools/shared/relayUrl";
+import { relayClerkTokenOptions } from "@lmcstools/core/relayAuth";
+import { normalizeSecureRelayUrl } from "@lmcstools/core/relayUrl";
 import * as Schema from "effect/Schema";
 
 export class CloudPublicConfigMissingError extends Schema.TaggedError<CloudPublicConfigMissingError>()(

@@ -1,4 +1,4 @@
-import { tokenizeCliArgs } from "@lmcstools/shared/cliArgs";
+import { tokenizeCliArgs } from "@lmcstools/core/cliArgs";
 
 const LMCS_CODEX_LAUNCH_ARGS_ENV = "LMCS_CODEX_LAUNCH_ARGS";
 

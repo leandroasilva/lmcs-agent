@@ -1,4 +1,4 @@
-import type { ExecutionEnvironmentPlatformOs } from "@lmcstools/contracts";
+import type { ExecutionEnvironmentPlatformOs } from "@lmcstools/core";
 
 export type PendingModifier = "ctrl" | "meta";
 export type HostPlatform = "mac" | "linux" | "windows" | "unknown";

@@ -5,7 +5,7 @@ import * as Layer from "effect/Layer";
 import { Argument, Command } from "effect/unstable/cli";
 import * as CliError from "effect/unstable/cli/CliError";
 
-import * as NetService from "@lmcstools/shared/Net";
+import * as NetService from "@lmcstools/core/Net";
 import packageJson from "../package.json" with { type: "json" };
 import { authCommand } from "./cli/auth.ts";
 import { appCommand } from "./cli/app.ts";

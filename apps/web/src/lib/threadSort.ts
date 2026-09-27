@@ -6,4 +6,4 @@ export {
   toSortableTimestamp,
   type SettledThreadTimestampInput,
   type ThreadSortInput,
-} from "@lmcstools/client-runtime/state/thread-sort";
+} from "@lmcstools/client/state/thread-sort";

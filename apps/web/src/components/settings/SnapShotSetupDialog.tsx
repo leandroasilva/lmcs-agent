@@ -4,7 +4,7 @@ import {
   isModifierPairShortcut,
   type DesktopSnapShotSetupAction,
   type DesktopSnapShotState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useState, type ReactNode } from "react";
 import { MacAccessibilityIcon, MacScreenRecordingIcon } from "../Icons";
 import { CaptureShortcutConfig } from "./CaptureShortcutConfig";

@@ -5,9 +5,9 @@ import type {
   ServerSettingsError,
   TerminalSummary,
   WorktreeCleanupRules,
-} from "@lmcstools/contracts";
-import { resolveWorktreeCleanup } from "@lmcstools/shared/projectSettings";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
+} from "@lmcstools/core";
+import { resolveWorktreeCleanup } from "@lmcstools/core/projectSettings";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";

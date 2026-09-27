@@ -1,4 +1,4 @@
-import { serializeComposerFileLink } from "@lmcstools/shared/composerTrigger";
+import { serializeComposerFileLink } from "@lmcstools/core/composerTrigger";
 
 /**
  * Drag payload type carrying a serialized composer mention. Set on drags that

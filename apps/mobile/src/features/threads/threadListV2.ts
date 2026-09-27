@@ -1,4 +1,4 @@
-import { threadPullRequestSearchTerms } from "@lmcstools/shared/threadPullRequests";
+import { threadPullRequestSearchTerms } from "@lmcstools/core/threadPullRequests";
 import {
   canSnooze,
   effectiveSnoozed,
@@ -6,16 +6,16 @@ import {
   QUEUED_TURN_START_GRACE_MS,
   resolveSnoozePresets,
   snoozeWakeLabel,
-} from "@lmcstools/client-runtime/state/thread-settled";
-import type { SnoozePreset } from "@lmcstools/client-runtime/state/thread-settled";
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
-import { threadSearchMatchKey } from "@lmcstools/client-runtime/state/thread-search";
+} from "@lmcstools/client/state/thread-settled";
+import type { SnoozePreset } from "@lmcstools/client/state/thread-settled";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { threadSearchMatchKey } from "@lmcstools/client/state/thread-search";
 import {
   sortActiveThreadsByOrderKey,
   resolveSettledThreadTimestamp,
   sortPinnedThreadsByOrderKey,
-} from "@lmcstools/client-runtime/state/thread-sort";
-import type { EnvironmentId, ProjectId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/thread-sort";
+import type { EnvironmentId, ProjectId } from "@lmcstools/core";
 
 import type { ThreadMoveAvailability } from "./threadOrder";
 

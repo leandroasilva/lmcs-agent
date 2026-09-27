@@ -5,7 +5,7 @@
  * the results. Raw transcripts never leave the machine that produced them.
  *
  * Mirror of `apps/web/src/state/usage.ts` over mobile's atom wiring; the merge
- * rules themselves live in `@lmcstools/shared/usageMerge`.
+ * rules themselves live in `@lmcstools/core/usageMerge`.
  *
  * @module state/usage
  */
@@ -15,9 +15,9 @@ import {
   type EnvironmentId,
   type UsageSummary,
   type UsageSummaryInput,
-} from "@lmcstools/contracts";
-import { refreshUsage } from "@lmcstools/client-runtime/state/usage";
-import { mergeUsage, type EnvironmentUsage, type MergedUsage } from "@lmcstools/shared/usageMerge";
+} from "@lmcstools/core";
+import { refreshUsage } from "@lmcstools/client/state/usage";
+import { mergeUsage, type EnvironmentUsage, type MergedUsage } from "@lmcstools/core/usageMerge";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useCallback, useMemo } from "react";

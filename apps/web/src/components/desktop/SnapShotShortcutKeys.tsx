@@ -1,4 +1,4 @@
-import type { SnapShotShortcut } from "@lmcstools/contracts";
+import type { SnapShotShortcut } from "@lmcstools/core";
 import { snapShotShortcutKeyLabels } from "../../lib/snapShotShortcut";
 import { Kbd, KbdGroup } from "../ui/kbd";
 

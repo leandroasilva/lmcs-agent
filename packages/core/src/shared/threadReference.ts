@@ -1,4 +1,4 @@
-import type { ThreadPullRequestLink } from "@lmcstools/contracts";
+import type { ThreadPullRequestLink } from "@lmcstools/core";
 
 import { resolveThreadCurrentPullRequestLink } from "./threadPullRequests.ts";
 

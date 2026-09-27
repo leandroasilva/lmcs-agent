@@ -1,5 +1,5 @@
-import type { DeviceHubAccess } from "@lmcstools/client-runtime/state/deviceHubAccess";
-import type { DevicePermission, DeviceSummary, DeviceTextSize } from "@lmcstools/contracts";
+import type { DeviceHubAccess } from "@lmcstools/client/state/deviceHubAccess";
+import type { DevicePermission, DeviceSummary, DeviceTextSize } from "@lmcstools/core";
 import { ChevronDown, X } from "lucide-react";
 import { useEffect, useState } from "react";
 

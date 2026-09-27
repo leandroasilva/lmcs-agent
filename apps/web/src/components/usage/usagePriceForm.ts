@@ -1,4 +1,4 @@
-import type { UsageModelPriceOverride } from "@lmcstools/contracts";
+import type { UsageModelPriceOverride } from "@lmcstools/core";
 
 export const USAGE_PRICE_FIELDS = [
   { key: "inputCostPerMillionTokens", label: "Input", optional: false },

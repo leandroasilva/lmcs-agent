@@ -17,7 +17,7 @@ import {
   type SourceControlRepositoryCloneUrls,
   type SourceControlRepositoryInfo,
   type SourceControlRepositoryLookupInput,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { ServerConfig } from "../config.ts";
 import { expandHomePathWith } from "../pathExpansion.ts";

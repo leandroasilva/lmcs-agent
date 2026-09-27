@@ -1,8 +1,8 @@
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import {
   getProjectFaviconResourceKey,
   isProjectFaviconFallbackUrl,
-} from "@lmcstools/shared/projectFavicon";
+} from "@lmcstools/core/projectFavicon";
 import { FolderCodeIcon } from "lucide-react";
 import type { IconName } from "lucide-react/dynamic";
 import type { ComponentType } from "react";

@@ -1,5 +1,5 @@
-import type { OrchestrationEvent } from "@lmcstools/contracts";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
+import type { OrchestrationEvent } from "@lmcstools/core";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

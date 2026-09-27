@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { VcsRef } from "@lmcstools/contracts";
+import type { VcsRef } from "@lmcstools/core";
 import { buildBaseRefChoices, filterBaseRefChoices } from "./baseRefChoices";
 
 function ref(name: string, remoteName?: string): VcsRef {

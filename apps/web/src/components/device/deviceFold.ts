@@ -1,5 +1,5 @@
-import type { DeviceHubAccess } from "@lmcstools/client-runtime/state/deviceHubAccess";
-import { withDeviceHubQuery } from "@lmcstools/client-runtime/state/deviceHubAccess";
+import type { DeviceHubAccess } from "@lmcstools/client/state/deviceHubAccess";
+import { withDeviceHubQuery } from "@lmcstools/client/state/deviceHubAccess";
 
 export type AndroidFoldPosture = "closed" | "opened";
 

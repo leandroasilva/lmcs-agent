@@ -1,5 +1,5 @@
-import { resolveMediaSource } from "@lmcstools/client-runtime/media-source";
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { resolveMediaSource } from "@lmcstools/client/media-source";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { normalizeNativeMarkdownUrl } from "@lmcstools/mobile-markdown-text/links";
 
 import type { FilePreviewSource } from "../components/FilePreviewModal";

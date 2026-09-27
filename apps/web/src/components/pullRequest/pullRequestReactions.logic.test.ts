@@ -1,4 +1,4 @@
-import type { PullRequestReaction, PullRequestReactionContent } from "@lmcstools/contracts";
+import type { PullRequestReaction, PullRequestReactionContent } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

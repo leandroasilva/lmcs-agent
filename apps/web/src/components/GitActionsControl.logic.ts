@@ -1,9 +1,5 @@
-import type {
-  GitRunStackedActionResult,
-  GitStackedAction,
-  VcsStatusResult,
-} from "@lmcstools/contracts";
-import { isTemporaryWorktreeBranch } from "@lmcstools/shared/git";
+import type { GitRunStackedActionResult, GitStackedAction, VcsStatusResult } from "@lmcstools/core";
+import { isTemporaryWorktreeBranch } from "@lmcstools/core/git";
 import {
   DEFAULT_CHANGE_REQUEST_TERMINOLOGY,
   getChangeRequestTerminology,
@@ -414,4 +410,4 @@ export function resolveLiveThreadBranchUpdate(input: {
 }
 
 // Re-export from shared for backwards compatibility in this module's exports
-export { resolveAutoFeatureBranchName } from "@lmcstools/shared/git";
+export { resolveAutoFeatureBranchName } from "@lmcstools/core/git";

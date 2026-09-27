@@ -19,7 +19,7 @@ import {
   type SnapShotShortcut,
   type DesktopSnapShotEvent,
   type DesktopSnapShotId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";

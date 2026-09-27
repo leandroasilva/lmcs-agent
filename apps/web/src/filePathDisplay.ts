@@ -3,8 +3,8 @@ import {
   formatFilePathPosition,
   splitFilePathPosition,
   stripSlashPrefixedWindowsDrive,
-} from "@lmcstools/client-runtime/markdown-links";
-import { isWindowsAbsolutePath } from "@lmcstools/shared/path";
+} from "@lmcstools/client/markdown-links";
+import { isWindowsAbsolutePath } from "@lmcstools/core/path";
 
 function normalizePathSeparators(path: string): string {
   return path.replaceAll("\\", "/");

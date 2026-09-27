@@ -16,20 +16,20 @@ import {
   type EnvironmentId,
   ServerSettings,
   type ServerSettingsPatch,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   type ClientSettingsPatch,
   type ClientSettings,
   DEFAULT_CLIENT_SETTINGS,
   type EnvironmentIdentificationMode,
   type UnifiedSettings,
-} from "@lmcstools/contracts/settings";
-import { safeErrorLogAttributes } from "@lmcstools/client-runtime/errors";
+} from "@lmcstools/core/settings";
+import { safeErrorLogAttributes } from "@lmcstools/client/errors";
 import {
   filterSharedServerPatch,
   splitSharedServerPatch,
   supportsSharedSettingsSync,
-} from "@lmcstools/client-runtime/state/shared-settings";
+} from "@lmcstools/client/state/shared-settings";
 import { ensureLocalApi } from "~/localApi";
 import {
   getThemeDefinition,

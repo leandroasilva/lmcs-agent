@@ -1,5 +1,5 @@
-import { EnvironmentId, type PersistedSavedEnvironmentRecord } from "@lmcstools/contracts";
-import { fromLenientJson } from "@lmcstools/shared/schemaJson";
+import { EnvironmentId, type PersistedSavedEnvironmentRecord } from "@lmcstools/core";
+import { fromLenientJson } from "@lmcstools/core/schemaJson";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Encoding from "effect/Encoding";

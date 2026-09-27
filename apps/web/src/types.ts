@@ -1,4 +1,4 @@
-import { imageMimeType } from "@lmcstools/shared/image";
+import { imageMimeType } from "@lmcstools/core/image";
 import type {
   ChatFileAttachment as ContractChatFileAttachment,
   ChatImageAttachment as ContractChatImageAttachment,
@@ -11,15 +11,15 @@ import type {
   ProjectScript as ContractProjectScript,
   ProviderInteractionMode,
   RuntimeMode,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type {
   EnvironmentProject,
   EnvironmentThread,
   EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
-import { videoMimeType } from "@lmcstools/shared/video";
+} from "@lmcstools/client/state/shell";
+import { videoMimeType } from "@lmcstools/core/video";
 
-export { videoMimeType } from "@lmcstools/shared/video";
+export { videoMimeType } from "@lmcstools/core/video";
 
 export type SessionPhase = "disconnected" | "connecting" | "ready" | "running";
 export const DEFAULT_RUNTIME_MODE: RuntimeMode = "full-access";

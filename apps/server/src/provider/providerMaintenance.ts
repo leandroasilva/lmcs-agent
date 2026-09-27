@@ -2,11 +2,11 @@ import {
   ProviderDriverKind,
   type ServerProvider,
   type ServerProviderVersionAdvisory,
-} from "@lmcstools/contracts";
-import { compareSemverVersions } from "@lmcstools/shared/semver";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { causeErrorTag } from "@lmcstools/shared/observability";
-import { resolveCommandPath } from "@lmcstools/shared/shell";
+} from "@lmcstools/core";
+import { compareSemverVersions } from "@lmcstools/core/semver";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { causeErrorTag } from "@lmcstools/core/observability";
+import { resolveCommandPath } from "@lmcstools/core/shell";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";

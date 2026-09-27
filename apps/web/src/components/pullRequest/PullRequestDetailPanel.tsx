@@ -1,9 +1,9 @@
-import { parseChangeRequestUrl } from "@lmcstools/shared/changeRequestUrl";
+import { parseChangeRequestUrl } from "@lmcstools/core/changeRequestUrl";
 import { useAtomValue } from "@effect/atom-react";
 import { usePullRequestStack } from "~/state/usePullRequestStack";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { scopedThreadKey, scopeProjectRef } from "@lmcstools/client-runtime/environment";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+import { scopedThreadKey, scopeProjectRef } from "@lmcstools/client/environment";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import {
   type EnvironmentId,
   DEFAULT_SERVER_SETTINGS,
@@ -14,8 +14,8 @@ import {
   type PullRequestRef,
   resolveEnvironmentMachineKind,
   type ScopedThreadRef,
-} from "@lmcstools/contracts";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import {
   ArrowDownUpIcon,
   ArrowLeftIcon,

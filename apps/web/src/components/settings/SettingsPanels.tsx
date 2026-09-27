@@ -12,13 +12,13 @@ import {
   type ProviderInstanceId,
   type ScopedThreadRef,
   type SidebarProjectGroupingMode,
-} from "@lmcstools/contracts";
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/core";
+import { scopeThreadRef } from "@lmcstools/client/environment";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE,
   DEFAULT_UNIFIED_SETTINGS,
@@ -42,9 +42,9 @@ import {
   type ResponseStreamingMode,
   MIN_TERMINAL_FONT_SIZE,
   type QuitConfirmationMode,
-} from "@lmcstools/contracts/settings";
-import { resolveServerBackgroundActivitySettings } from "@lmcstools/shared/backgroundActivitySettings";
-import { createModelSelection } from "@lmcstools/shared/model";
+} from "@lmcstools/core/settings";
+import { resolveServerBackgroundActivitySettings } from "@lmcstools/core/backgroundActivitySettings";
+import { createModelSelection } from "@lmcstools/core/model";
 import * as Duration from "effect/Duration";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";

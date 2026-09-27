@@ -11,7 +11,7 @@ import {
   ProviderRuntimeEvent,
   ProviderSession,
   ProviderInstanceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   CommandId,
   CheckpointRef,
@@ -21,7 +21,7 @@ import {
   ProjectId,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as Clock from "effect/Clock";
 import * as Deferred from "effect/Deferred";

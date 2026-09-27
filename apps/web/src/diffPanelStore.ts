@@ -1,5 +1,5 @@
-import { scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import type { ScopedThreadRef, TurnId } from "@lmcstools/contracts";
+import { scopedThreadKey } from "@lmcstools/client/environment";
+import type { ScopedThreadRef, TurnId } from "@lmcstools/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 

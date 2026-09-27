@@ -5,7 +5,7 @@ import type {
   PullRequestDetailView,
   PullRequestRef,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   ChevronDownIcon,
   ExternalLinkIcon,

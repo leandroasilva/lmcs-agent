@@ -1,4 +1,4 @@
-import type { EnvironmentTheme } from "@lmcstools/contracts";
+import type { EnvironmentTheme } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 const NIGHTFALL_THEME = {

@@ -1,4 +1,4 @@
-import { makeRelayClientTracingLayer } from "@lmcstools/shared/relayTracing";
+import { makeRelayClientTracingLayer } from "@lmcstools/core/relayTracing";
 
 import { resolveRelayClientTracingConfig } from "./publicConfig.ts";
 

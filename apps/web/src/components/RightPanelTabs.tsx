@@ -1,18 +1,18 @@
-import { pullRequestHostOf, type SourceControlProviderKind } from "@lmcstools/contracts";
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+import { pullRequestHostOf, type SourceControlProviderKind } from "@lmcstools/core";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import { useProjects, useServerConfigs, useThreadShells } from "~/state/entities";
 import {
   threadPullRequestKeysEqual,
   visibleThreadPullRequests,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 import type {
   ContextMenuItem,
   EnvironmentId,
   PreviewSessionSnapshot,
   ProjectId,
   PullRequestState,
-} from "@lmcstools/contracts";
-import { getTerminalLabel } from "@lmcstools/shared/terminalLabels";
+} from "@lmcstools/core";
+import { getTerminalLabel } from "@lmcstools/core/terminalLabels";
 import {
   Bot,
   Smartphone,

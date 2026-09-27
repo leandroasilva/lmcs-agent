@@ -1,13 +1,10 @@
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import { LegendList } from "@legendapp/list/react-native";
 import {
   type EnvironmentId,
   type EnvironmentMachineKind,
   resolveEnvironmentMachineKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useNavigation } from "@react-navigation/native";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { SymbolView } from "../../components/AppSymbol";

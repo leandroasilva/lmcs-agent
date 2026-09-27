@@ -3,7 +3,7 @@ import {
   type DevicePlatformAvailability,
   type EnvironmentId,
   SshDeviceHostConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 export interface DeviceHostCheckTarget {

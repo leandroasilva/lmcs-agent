@@ -13,10 +13,10 @@ import {
   AuthStandardClientScopes,
   ExecutionEnvironmentDescriptor,
   PortSchema,
-} from "@lmcstools/contracts";
-import { resolveWorktreeT3Home } from "@lmcstools/shared/devHome";
-import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
+} from "@lmcstools/core";
+import { resolveWorktreeT3Home } from "@lmcstools/core/devHome";
+import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 import {
   buildTailscaleHttpsBaseUrl,
   DEFAULT_TAILSCALE_SERVE_PORT,

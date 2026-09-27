@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import * as EffectAcpErrors from "effect-acp/errors";
-import { ProviderDriverKind } from "@lmcstools/contracts";
+import { ProviderDriverKind } from "@lmcstools/core";
 
 import { acpPermissionOutcome, mapAcpToAdapterError } from "./AcpAdapterSupport.ts";
 

@@ -9,8 +9,8 @@ import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as ChildProcess from "effect/unstable/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import {
   collectUint8StreamText,
   decodeUtf8,

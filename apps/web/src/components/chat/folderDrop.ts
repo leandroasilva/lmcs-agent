@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 
 export function folderDropTarget(input: {
   localEnvironmentDisabled: boolean;

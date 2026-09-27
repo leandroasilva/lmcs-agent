@@ -3,8 +3,8 @@ import {
   type ArchivedSnapshotEntry,
   createArchivedThreadSnapshotsAtomFamily,
   makeArchivedThreadsEnvironmentKey,
-} from "@lmcstools/client-runtime/state/threads";
-import type { EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/threads";
+import type { EnvironmentId } from "@lmcstools/core";
 import { useCallback, useMemo } from "react";
 
 import { appAtomRegistry } from "../../state/atom-registry";

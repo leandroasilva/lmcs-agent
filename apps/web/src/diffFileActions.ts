@@ -1,5 +1,5 @@
-import type { ScopedThreadRef } from "@lmcstools/contracts";
-import { isWindowsAbsolutePath, normalizeProjectPathForComparison } from "@lmcstools/shared/path";
+import type { ScopedThreadRef } from "@lmcstools/core";
+import { isWindowsAbsolutePath, normalizeProjectPathForComparison } from "@lmcstools/core/path";
 
 import { useRightPanelStore } from "./rightPanelStore";
 import { resolvePathLinkTarget } from "./terminal-links";

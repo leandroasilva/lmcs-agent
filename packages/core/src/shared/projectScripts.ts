@@ -1,4 +1,4 @@
-import type { ProjectId, ProjectScript, ServerSettings } from "@lmcstools/contracts";
+import type { ProjectId, ProjectScript, ServerSettings } from "@lmcstools/core";
 
 type ProjectScriptSettings = Pick<
   ServerSettings,

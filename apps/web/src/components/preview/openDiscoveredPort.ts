@@ -1,8 +1,5 @@
-import type { DiscoveredLocalServer, ScopedThreadRef } from "@lmcstools/contracts";
-import {
-  mapAtomCommandResult,
-  type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+import type { DiscoveredLocalServer, ScopedThreadRef } from "@lmcstools/core";
+import { mapAtomCommandResult, type AtomCommandResult } from "@lmcstools/client/state/runtime";
 
 import { resolveDiscoveredServerUrl } from "~/browser/browserTargetResolver";
 import type { BrowserSettingsReadError, OpenPreviewMutation } from "~/browser/openFileInPreview";

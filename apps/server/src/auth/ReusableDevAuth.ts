@@ -1,5 +1,5 @@
 import * as NodeCrypto from "node:crypto";
-import { AuthSessionId } from "@lmcstools/contracts";
+import { AuthSessionId } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Redacted from "effect/Redacted";
 

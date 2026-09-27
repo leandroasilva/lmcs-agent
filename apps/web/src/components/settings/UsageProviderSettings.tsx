@@ -1,4 +1,4 @@
-import type { EnvironmentId, UnifiedSettings } from "@lmcstools/contracts";
+import type { EnvironmentId, UnifiedSettings } from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";

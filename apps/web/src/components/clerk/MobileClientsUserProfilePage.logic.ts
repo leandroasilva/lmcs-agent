@@ -1,4 +1,4 @@
-import type { RelayClientDeviceRecord } from "@lmcstools/contracts/relay";
+import type { RelayClientDeviceRecord } from "@lmcstools/core/relay";
 
 const mobileClientUpdatedAtFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",

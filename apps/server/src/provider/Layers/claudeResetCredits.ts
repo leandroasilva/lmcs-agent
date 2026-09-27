@@ -11,8 +11,8 @@ import * as NodeOS from "node:os";
 import type {
   ProviderConsumeResetCreditOutcome,
   ServerProviderResetCredits,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

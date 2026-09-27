@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { ResolvedKeybindingsConfig } from "@lmcstools/contracts";
-import { DEFAULT_RESOLVED_KEYBINDINGS } from "@lmcstools/shared/keybindings";
+import type { ResolvedKeybindingsConfig } from "@lmcstools/core";
+import { DEFAULT_RESOLVED_KEYBINDINGS } from "@lmcstools/core/keybindings";
 
 import {
   buildKeybindingRows,

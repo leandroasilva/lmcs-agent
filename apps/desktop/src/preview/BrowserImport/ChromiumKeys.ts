@@ -19,7 +19,7 @@
  */
 import * as NodeCrypto from "node:crypto";
 
-import { HostProcessEnvironment } from "@lmcstools/shared/hostProcess";
+import { HostProcessEnvironment } from "@lmcstools/core/hostProcess";
 
 import * as Effect from "effect/Effect";
 import * as Encoding from "effect/Encoding";

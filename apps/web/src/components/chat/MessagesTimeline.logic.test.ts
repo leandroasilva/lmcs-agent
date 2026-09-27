@@ -11,12 +11,12 @@ import {
   TurnId,
   type OrchestrationThread,
   type WorktreeSetupSnapshot,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   applyThreadDetailEvent,
   createEnvironmentThreadDetailAtoms,
   EMPTY_ENVIRONMENT_THREAD_STATE,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/client/state/threads";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom, AtomRegistry } from "effect/unstable/reactivity";
 import {

@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { ProviderDriverKind } from "@lmcstools/contracts";
+import { ProviderDriverKind } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { ComposerCommandMenu } from "./ComposerCommandMenu";

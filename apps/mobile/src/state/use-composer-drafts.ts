@@ -16,7 +16,7 @@ import {
   type ProjectId,
   type ProviderInteractionMode,
   type RuntimeMode,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import { useEffect } from "react";
 import { Atom } from "effect/unstable/reactivity";
@@ -28,9 +28,9 @@ import {
   formatComposerContextReference,
   sanitizeComposerContextLabel,
   replaceComposerContextReferences,
-} from "@lmcstools/shared/composerContextReferences";
-import { imageMimeType } from "@lmcstools/shared/image";
-import { videoMimeType } from "@lmcstools/shared/video";
+} from "@lmcstools/core/composerContextReferences";
+import { imageMimeType } from "@lmcstools/core/image";
+import { videoMimeType } from "@lmcstools/core/video";
 import { DraftComposerAttachmentSchema } from "../lib/composer-image-schema";
 import {
   composerAttachmentFileReferenceKey,

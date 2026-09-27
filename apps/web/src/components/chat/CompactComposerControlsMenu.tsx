@@ -1,4 +1,4 @@
-import { ProviderInteractionMode, RuntimeMode } from "@lmcstools/contracts";
+import { ProviderInteractionMode, RuntimeMode } from "@lmcstools/core";
 import { memo, type ReactNode } from "react";
 import { EllipsisIcon } from "lucide-react";
 import {

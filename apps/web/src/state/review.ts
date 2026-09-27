@@ -1,4 +1,4 @@
-import { createReviewEnvironmentAtoms } from "@lmcstools/client-runtime/state/review";
+import { createReviewEnvironmentAtoms } from "@lmcstools/client/state/review";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

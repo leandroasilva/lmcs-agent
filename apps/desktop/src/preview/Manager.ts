@@ -9,7 +9,7 @@ import * as NodeCrypto from "node:crypto";
 import {
   DesktopPreviewRecordingInputSchema,
   DESKTOP_PREVIEW_RECORDING_CAPTURE_TRIGGER,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type {
   DesktopPreviewAnnotationTheme,
   DesktopPreviewAutomationStatus,
@@ -34,9 +34,9 @@ import type {
   PreviewAutomationSnapshot,
   PreviewAutomationTypeInput,
   PreviewAutomationWaitForInput,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { normalizePreviewUrl } from "@lmcstools/shared/preview";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { normalizePreviewUrl } from "@lmcstools/core/preview";
 import {
   BrowserWindow,
   ClipboardItem,

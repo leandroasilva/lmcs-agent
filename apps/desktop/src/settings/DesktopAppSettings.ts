@@ -3,8 +3,8 @@ import {
   DesktopUpdateChannelSchema,
   type DesktopServerExposureMode,
   type DesktopUpdateChannel,
-} from "@lmcstools/contracts";
-import { fromLenientJson } from "@lmcstools/shared/schemaJson";
+} from "@lmcstools/core";
+import { fromLenientJson } from "@lmcstools/core/schemaJson";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

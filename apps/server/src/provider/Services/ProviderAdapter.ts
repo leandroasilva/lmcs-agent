@@ -21,7 +21,7 @@ import type {
   ThreadId,
   ProviderTurnStartResult,
   TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type * as Effect from "effect/Effect";
 import type * as Stream from "effect/Stream";
 

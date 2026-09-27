@@ -1,6 +1,6 @@
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { Spinner } from "~/components/ui/spinner";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import { ArrowLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 

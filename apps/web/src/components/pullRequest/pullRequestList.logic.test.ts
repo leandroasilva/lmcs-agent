@@ -1,4 +1,4 @@
-import type { EnvironmentId, ProjectId, PullRequestListEntry } from "@lmcstools/contracts";
+import type { EnvironmentId, ProjectId, PullRequestListEntry } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

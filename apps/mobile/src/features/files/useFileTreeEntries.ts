@@ -1,5 +1,5 @@
-import { executeAtomQuery } from "@lmcstools/client-runtime/state/runtime";
-import type { EnvironmentId, ProjectEntry } from "@lmcstools/contracts";
+import { executeAtomQuery } from "@lmcstools/client/state/runtime";
+import type { EnvironmentId, ProjectEntry } from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 

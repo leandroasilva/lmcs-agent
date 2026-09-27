@@ -1,4 +1,4 @@
-import type { BrowserImportFailureReason, BrowserImportSource } from "@lmcstools/contracts";
+import type { BrowserImportFailureReason, BrowserImportSource } from "@lmcstools/core";
 
 export interface WizardTargetProfile {
   readonly id: string;

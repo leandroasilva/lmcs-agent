@@ -1,6 +1,6 @@
 import * as NodeOS from "node:os";
-import type { HostResourcesSnapshot } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import type { HostResourcesSnapshot } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Cache from "effect/Cache";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";

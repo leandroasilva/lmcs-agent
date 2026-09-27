@@ -4,7 +4,7 @@ import {
   DEFAULT_CLIENT_SETTINGS,
   EnvironmentId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const { closeTab, createTab, stopBrowserRecording } = vi.hoisted(() => ({

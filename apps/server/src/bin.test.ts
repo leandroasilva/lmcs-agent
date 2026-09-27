@@ -12,11 +12,11 @@ import {
   EnvironmentOrchestrationHttpApi,
   ProviderInstanceId,
   ThreadId,
-} from "@lmcstools/contracts";
-import * as NetService from "@lmcstools/shared/Net";
-import { HostProcessEnvironment } from "@lmcstools/shared/hostProcess";
-import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
+} from "@lmcstools/core";
+import * as NetService from "@lmcstools/core/Net";
+import { HostProcessEnvironment } from "@lmcstools/core/hostProcess";
+import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 import { assert, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as DateTime from "effect/DateTime";

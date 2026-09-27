@@ -1,4 +1,4 @@
-import { NonNegativeInt, ThreadId, type VcsError } from "@lmcstools/contracts";
+import { NonNegativeInt, ThreadId, type VcsError } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 import type { ProjectionRepositoryError } from "../persistence/Errors.ts";

@@ -2,8 +2,8 @@ import {
   DUO_POSES,
   type DuoCommand,
   type DuoControlState,
-} from "@lmcstools/client-runtime/device/duo-control";
-import type { DeviceScreenSize } from "@lmcstools/client-runtime/device/stream";
+} from "@lmcstools/client/device/duo-control";
+import type { DeviceScreenSize } from "@lmcstools/client/device/stream";
 import { DeviceDuoGlyph } from "./DeviceDuoGlyph";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";

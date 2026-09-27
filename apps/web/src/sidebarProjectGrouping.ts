@@ -1,4 +1,4 @@
-import type { EnvironmentId, ScopedProjectRef } from "@lmcstools/contracts";
+import type { EnvironmentId, ScopedProjectRef } from "@lmcstools/core";
 import { buildProjectGroups, type ProjectGroupingSettings } from "./logicalProject";
 import type { Project } from "./types";
 

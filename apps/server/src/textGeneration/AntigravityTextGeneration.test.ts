@@ -1,10 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it } from "@effect/vitest";
-import {
-  ANTIGRAVITY_DEFAULT_MODEL,
-  ProviderInstanceId,
-  ProviderSetupError,
-} from "@lmcstools/contracts";
+import { ANTIGRAVITY_DEFAULT_MODEL, ProviderInstanceId, ProviderSetupError } from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -492,17 +488,19 @@ it.layer(NodeServices.layer)("AntigravityTextGeneration", (it) => {
     }).pipe(Effect.scoped),
   );
 
-  it.effect("uses the native default without sending LMCS Code's default selection as a model ID", () =>
-    Effect.gen(function* () {
-      const fixture = yield* makeFixture();
-      const result = yield* fixture.textGeneration.generateThreadTitle({
-        ...fixture.titleInput,
-        modelSelection: { ...modelSelection, model: ANTIGRAVITY_DEFAULT_MODEL },
-      });
-      expect(result).toEqual({ title: "Repair login" });
-      expect(fixture.state.selectedModels).toEqual([]);
-      yield* fixture.assertCleaned;
-    }).pipe(Effect.scoped),
+  it.effect(
+    "uses the native default without sending LMCS Code's default selection as a model ID",
+    () =>
+      Effect.gen(function* () {
+        const fixture = yield* makeFixture();
+        const result = yield* fixture.textGeneration.generateThreadTitle({
+          ...fixture.titleInput,
+          modelSelection: { ...modelSelection, model: ANTIGRAVITY_DEFAULT_MODEL },
+        });
+        expect(result).toEqual({ title: "Repair login" });
+        expect(fixture.state.selectedModels).toEqual([]);
+        yield* fixture.assertCleaned;
+      }).pipe(Effect.scoped),
   );
 
   it.effect.each([

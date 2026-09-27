@@ -1,4 +1,4 @@
-import type { PullRequestRef, PullRequestStack, ThreadPullRequestLink } from "@lmcstools/contracts";
+import type { PullRequestRef, PullRequestStack, ThreadPullRequestLink } from "@lmcstools/core";
 
 /** Saved native membership is enough for navigation, but never supplies action head SHAs. */
 export function savedPullRequestStack(

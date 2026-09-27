@@ -1,4 +1,4 @@
-import type { RelayAgentActivityAggregateState } from "@lmcstools/contracts/relay";
+import type { RelayAgentActivityAggregateState } from "@lmcstools/core/relay";
 import {
   activityPhasePriority,
   TERMINAL_AGENT_ACTIVITY_DISPLAY_TTL_MS,

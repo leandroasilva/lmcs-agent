@@ -1,7 +1,7 @@
 import {
   type CheckpointDiffState,
   type CheckpointDiffTarget,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/client/state/threads";
 
 import { useCheckpointDiff as useCheckpointDiffQuery } from "../state/queries";
 

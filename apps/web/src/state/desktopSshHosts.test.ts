@@ -1,4 +1,4 @@
-import type { DesktopDiscoveredSshHost } from "@lmcstools/contracts";
+import type { DesktopDiscoveredSshHost } from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import { AtomRegistry } from "effect/unstable/reactivity";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";

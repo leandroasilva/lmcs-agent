@@ -1,9 +1,9 @@
 import { isElectron } from "~/env";
 import { isMacPlatform, isWindowsPlatform, normalizeSearchText } from "~/lib/utils";
-import { STATIC_KEYBINDING_COMMANDS, type KeybindingCommand } from "@lmcstools/contracts";
-import type { EnvironmentId } from "@lmcstools/contracts";
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
-import { DEFAULT_KEYBINDINGS } from "@lmcstools/shared/keybindings";
+import { STATIC_KEYBINDING_COMMANDS, type KeybindingCommand } from "@lmcstools/core";
+import type { EnvironmentId } from "@lmcstools/core";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
+import { DEFAULT_KEYBINDINGS } from "@lmcstools/core/keybindings";
 import { commandLabel } from "./KeybindingsSettings.logic";
 import {
   validateSettingsScopeSearch,

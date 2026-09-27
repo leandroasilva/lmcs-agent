@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ProviderInstanceId, type ModelCapabilities } from "@lmcstools/contracts";
+import { ProviderInstanceId, type ModelCapabilities } from "@lmcstools/core";
 
 import {
   applyClaudePromptEffortPrefix,

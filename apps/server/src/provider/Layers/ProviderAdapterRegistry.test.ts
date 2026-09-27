@@ -3,7 +3,7 @@ import {
   ProviderDriverKind,
   ThreadId,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { it, assert, vi } from "@effect/vitest";
 
 import * as Effect from "effect/Effect";

@@ -1,5 +1,5 @@
-import { scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import { scopedThreadKey } from "@lmcstools/client/environment";
+import type { ScopedThreadRef } from "@lmcstools/core";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 

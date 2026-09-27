@@ -23,8 +23,8 @@ import {
   ThreadId,
   TurnId,
   type ProviderRuntimeEvent,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 import { ServerConfig } from "../../config.ts";
 import { execScriptSource, writeFakeCli } from "../../testUtils/fakeCli.ts";

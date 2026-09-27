@@ -1,12 +1,12 @@
-import * as NetService from "@lmcstools/shared/Net";
+import * as NetService from "@lmcstools/core/Net";
 import {
   OtlpHeadersFromString,
   OtlpProtocol,
   type SignalExport,
-} from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
-import { parsePersistedServerObservabilitySettings } from "@lmcstools/shared/serverSettings";
-import { DesktopBackendBootstrap, PortSchema } from "@lmcstools/contracts";
+} from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
+import { parsePersistedServerObservabilitySettings } from "@lmcstools/core/serverSettings";
+import { DesktopBackendBootstrap, PortSchema } from "@lmcstools/core";
 import * as Config from "effect/Config";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

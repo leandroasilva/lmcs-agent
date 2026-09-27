@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
-import type { MediaActionId } from "@lmcstools/client-runtime/media-actions";
-import type { MediaReference } from "@lmcstools/client-runtime/media-reference";
-import type { AssetResource, EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { MediaActionId } from "@lmcstools/client/media-actions";
+import type { MediaReference } from "@lmcstools/client/media-reference";
+import type { AssetResource, EnvironmentId, ThreadId } from "@lmcstools/core";
 import { normalizeNativeMarkdownUrl } from "@lmcstools/mobile-markdown-text/links";
 import { useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";

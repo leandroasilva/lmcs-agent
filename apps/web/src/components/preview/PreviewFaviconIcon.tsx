@@ -1,4 +1,4 @@
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import type { ScopedThreadRef } from "@lmcstools/core";
 import { type ReactNode, useState } from "react";
 
 import { useFaviconForThreadUrl } from "~/browserFaviconStore";

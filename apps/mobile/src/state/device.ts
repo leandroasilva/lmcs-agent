@@ -1,6 +1,6 @@
-import { createDeviceEnvironmentAtoms } from "@lmcstools/client-runtime/state/device";
-import { resolveDeviceHubAccess } from "@lmcstools/client-runtime/state/deviceHubAccess";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import { createDeviceEnvironmentAtoms } from "@lmcstools/client/state/device";
+import { resolveDeviceHubAccess } from "@lmcstools/client/state/deviceHubAccess";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { Atom } from "effect/unstable/reactivity";

@@ -5,7 +5,7 @@ import {
   AuthRelayWriteScope,
   WS_METHODS,
   WsRpcGroup,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "@effect/vitest";
 
 import {

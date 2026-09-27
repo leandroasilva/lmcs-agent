@@ -4,7 +4,7 @@ import {
   type ProjectListEntriesResult,
   ProjectReadFileError,
   type ProjectReadFileResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -14,7 +14,7 @@ import { useCallback } from "react";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { projectEnvironment } from "~/state/projects";
 import { useProjectPathSearch } from "~/state/queries";
-import { executeAtomQuery } from "@lmcstools/client-runtime/state/runtime";
+import { executeAtomQuery } from "@lmcstools/client/state/runtime";
 
 const EMPTY_PROJECT_FILE_PATH = "";
 const EMPTY_PROJECT_FILE_QUERY_ATOM = Atom.make(

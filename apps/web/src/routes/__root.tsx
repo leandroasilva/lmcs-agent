@@ -1,6 +1,6 @@
-import { type ServerLifecycleWelcomePayload } from "@lmcstools/contracts";
-import { scopedProjectKey, scopeProjectRef } from "@lmcstools/client-runtime/environment";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+import { type ServerLifecycleWelcomePayload } from "@lmcstools/core";
+import { scopedProjectKey, scopeProjectRef } from "@lmcstools/client/environment";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import {
   Outlet,
   Link,

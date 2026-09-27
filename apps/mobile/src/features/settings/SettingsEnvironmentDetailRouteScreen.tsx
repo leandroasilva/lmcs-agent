@@ -1,7 +1,7 @@
 import { useAtomValue } from "@effect/atom-react";
 import type { StaticScreenProps } from "@react-navigation/native";
-import type { EnvironmentId, ServerProvider } from "@lmcstools/contracts";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+import type { EnvironmentId, ServerProvider } from "@lmcstools/core";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useRef, useState } from "react";
 import { Alert, View } from "react-native";

@@ -6,7 +6,7 @@ import {
   GrokSettings,
   OpenCodeSettings,
   ProviderDriverKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type * as Schema from "effect/Schema";
 import {
   AntigravityIcon,
