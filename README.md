@@ -1,6 +1,6 @@
 # LMCS Code
 
-A coding-agent desktop app based on [T3 Code](https://github.com/pingdotgg/t3code), imported from commit `7a12aff471ffe2b22b9fee495b04b32c43f45a37`. LMCS Code has its own product name and icons while preserving the upstream functionality, provider integrations, internal package names, connection protocols, and MIT attribution.
+A coding-agent desktop app based on [LMCS Code](https://github.com/pingdotgg/t3code), imported from commit `7a12aff471ffe2b22b9fee495b04b32c43f45a37`. LMCS Code has its own product name and icons while preserving the upstream functionality, provider integrations, internal package names, connection protocols, and MIT attribution.
 
 ## Run this checkout
 
@@ -23,7 +23,7 @@ The launcher selects Node 24.18.0 and pnpm 11.10.0 without changing the global t
 
 The application is branded **LMCS Code** across desktop, web, and mobile. Internal `t3code` identifiers and existing data paths remain compatible. Subscriptions and third-party hosted services are not bundled with this checkout.
 
-Local databases, settings, and authentication state live in the ignored `.lmcs-agent/` directory, separate from an existing T3 Code installation. Do not point the development server at `~/.t3/userdata`. Development uses Vite's same-origin proxy; do not set `VITE_HTTP_URL` or `VITE_WS_URL`.
+Local databases, settings, and authentication state live in the ignored `.lmcs-agent/` directory, separate from an existing LMCS Code installation. Do not point the development server at `~/.t3/userdata`. Development uses Vite's same-origin proxy; do not set `VITE_HTTP_URL` or `VITE_WS_URL`.
 
 ### Desktop and production
 
@@ -73,24 +73,24 @@ Interactive browser flows and a live provider conversation have not been verifie
 
 ## Upstream project reference
 
-The original project instructions below describe T3 Code's published distribution, not an LMCS release. Use the source-checkout commands above for LMCS Code. The imported source remains covered by the [MIT license](./LICENSE) and its original attribution.
+The original project instructions below describe LMCS Code's published distribution, not an LMCS release. Use the source-checkout commands above for LMCS Code. The imported source remains covered by the [MIT license](./LICENSE) and its original attribution.
 
-# T3 Code
+# LMCS Code
 
-T3 Code is an "agent harness control surface". It enables control of the agents on your machine with a best-in-class mobile app ([iOS](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824), [Android](https://play.google.com/store/apps/details?id=com.t3tools.t3code)), [web app](https://app.t3.codes) and [Electron-based desktop app](https://t3.codes).
+LMCS Code is an "agent harness control surface". It enables control of the agents on your machine with a best-in-class mobile app ([iOS](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824), [Android](https://play.google.com/store/apps/details?id=com.t3tools.t3code)), [web app](https://app.t3.codes) and [Electron-based desktop app](https://t3.codes).
 
-Works with your subscriptions on Claude Code, Codex, Cursor, Grok Build, OpenCode, and Google Antigravity. If they're set up on your computer, T3 Code can control them.
+Works with your subscriptions on Claude Code, Codex, Cursor, Grok Build, OpenCode, and Google Antigravity. If they're set up on your computer, LMCS Code can control them.
 
 ## "Wait, what are you selling me?"
 
-Nothing. We built T3 Code because we wanted the best possible development experience with agents. We were inspired by existing solutions like the Codex desktop app, Conductor, Claude Desktop and Cursor Glass, but none met our bar.
+Nothing. We built LMCS Code because we wanted the best possible development experience with agents. We were inspired by existing solutions like the Codex desktop app, Conductor, Claude Desktop and Cursor Glass, but none met our bar.
 
 We wanted something performant, remote-ready, and truly open. If we ever go the wrong direction, we want you to have everything you need to fork and build the editor that you want.
 
 ## Installation
 
 > [!WARNING]
-> T3 Code currently supports Codex, Claude, Cursor, Grok Build, OpenCode, and Antigravity. Install and authenticate at least one provider before use:
+> LMCS Code currently supports Codex, Claude, Cursor, Grok Build, OpenCode, and Antigravity. Install and authenticate at least one provider before use:
 >
 > - Codex: install [Codex CLI](https://developers.openai.com/codex/cli) and run `codex login`
 > - Claude: install [Claude Code](https://claude.com/product/claude-code) and run `claude auth login`
@@ -173,7 +173,7 @@ Full docs live in [docs/](./docs). There's no docs site yet.
 - [Keeping app and server in sync](./docs/user/updating.md)
 - [Source control integrations](./docs/user/source-control.md)
 - Multiple accounts: [Codex](./docs/user/providers-codex.md) · [Claude](./docs/user/providers-claude.md)
-- [Run T3 Code as a background service](./docs/user/background-service.md)
+- [Run LMCS Code as a background service](./docs/user/background-service.md)
 
 Building from source? Start at [docs/internals/overview.md](./docs/internals/overview.md).
 
@@ -181,7 +181,7 @@ Building from source? Start at [docs/internals/overview.md](./docs/internals/ove
 
 ### Install `vp`
 
-T3 Code uses Vite+ so you'll need to install the global `vp` command-line tool.
+LMCS Code uses Vite+ so you'll need to install the global `vp` command-line tool.
 
 #### macOS / Linux
 

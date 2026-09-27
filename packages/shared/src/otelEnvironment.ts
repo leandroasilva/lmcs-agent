@@ -3,7 +3,7 @@
  * desktop main process so both agree on what turns export off.
  *
  * `T3CODE_OTEL_SDK_DISABLED` is read first, so a machine that sets
- * `OTEL_SDK_DISABLED` for everything else can still opt T3 Code back in.
+ * `OTEL_SDK_DISABLED` for everything else can still opt LMCS Code back in.
  *
  * @module otelEnvironment
  */
