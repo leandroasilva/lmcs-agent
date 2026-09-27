@@ -2,6 +2,10 @@
 
 A coding-agent desktop app based on [LMCS Code](https://github.com/leandroasilva/lmcs-agent), imported from commit `7a12aff471ffe2b22b9fee495b04b32c43f45a37`. LMCS Code has its own product name and icons while preserving the upstream functionality, provider integrations, internal package names, connection protocols, and MIT attribution.
 
+## Quick Start
+
+See [QUICKSTART.md](./QUICKSTART.md) for a 5-minute setup guide.
+
 ## Run this checkout
 
 Prerequisites: Git, Node.js, npm, and an installed, authenticated agent provider. Native desktop and Rust helpers additionally need the platform's build toolchain.

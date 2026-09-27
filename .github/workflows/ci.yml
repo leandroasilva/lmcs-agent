@@ -42,6 +42,11 @@ jobs:
           cache: true
           run-install: true
 
+      - name: Cache build artifacts
+        uses: ./.github/actions/cache-build
+        with:
+          cache-prefix: check
+
       - name: Ensure Electron runtime is installed
         run: vp run --filter @t3tools/desktop ensure:electron
 
@@ -92,6 +97,11 @@ jobs:
           node-version-file: package.json
           cache: true
           run-install: true
+
+      - name: Cache build artifacts
+        uses: ./.github/actions/cache-build
+        with:
+          cache-prefix: test
 
       - name: Ensure Electron runtime is installed
         run: vp run --filter @t3tools/desktop ensure:electron

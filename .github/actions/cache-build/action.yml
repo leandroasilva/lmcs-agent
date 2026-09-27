@@ -1,0 +1,42 @@
+name: Cache Build Artifacts
+description: Cache pnpm store and build artifacts for faster CI
+
+inputs:
+  cache-prefix:
+    description: Prefix for cache keys
+    required: false
+    default: build
+
+runs:
+  using: composite
+  steps:
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: |
+          .pnpm-store
+          node_modules/.pnpm
+        key: ${{ runner.os }}-${{ inputs.cache-prefix }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ inputs.cache-prefix }}-pnpm-
+
+    - name: Cache Vite build cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          .vite-plus
+          apps/*/.vite-plus
+          packages/*/.vite-plus
+        key: ${{ runner.os }}-${{ inputs.cache-prefix }}-vite-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-${{ inputs.cache-prefix }}-vite-
+
+    - name: Cache TypeScript build info
+      uses: actions/cache@v4
+      with:
+        path: |
+          **/tsconfig.tsbuildinfo
+          **/*.tsbuildinfo
+        key: ${{ runner.os }}-${{ inputs.cache-prefix }}-tsc-${{ hashFiles('**/tsconfig.json') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ inputs.cache-prefix }}-tsc-
