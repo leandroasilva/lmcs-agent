@@ -1151,7 +1151,7 @@ export const ServerSettings = Schema.Struct({
    */
   enableAgentDeviceAccess: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   /**
-   * Whether this server may install and run T3's device helper processes.
+   * Whether this server may install and run LMCS Code's device helper processes.
    * Kept separate from agent access so enabling the user's Device panel does
    * not also grant providers control of simulators and emulators.
    */

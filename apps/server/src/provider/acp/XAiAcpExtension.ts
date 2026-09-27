@@ -254,8 +254,8 @@ export interface XAiExitPlanModeResponse {
 }
 
 /**
- * Client captured the plan for T3's proposed-plan card. Abandon the native
- * Grok plan-approval gate so the turn unblocks; the user implements via T3 UI.
+ * Client captured the plan for LMCS Code's proposed-plan card. Abandon the native
+ * Grok plan-approval gate so the turn unblocks; the user implements via LMCS UI.
  */
 export function makeXAiExitPlanModeCapturedResponse(feedback?: string): XAiExitPlanModeResponse {
   return {
@@ -354,7 +354,7 @@ export function isGrokPlanMarkdownPath(
 
 /**
  * Extract plan markdown from a Grok write/edit tool call targeting plan.md.
- * Used so T3 can show the plan while plan mode is still active (before exit).
+ * Used so LMCS can show the plan while plan mode is still active (before exit).
  */
 export function extractGrokPlanMarkdownFromToolCallData(
   data: Record<string, unknown> | undefined,

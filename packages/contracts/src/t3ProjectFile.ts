@@ -5,7 +5,7 @@ import { ThreadEnvMode, WorktreeSubmodules } from "./environment.ts";
 import { ProjectScriptIcon } from "./orchestration.ts";
 import type { ProjectScopedServerSettingKey, ServerSettings } from "./settings.ts";
 
-/** File name of the checked-in T3 project file, resolved at the workspace root. */
+/** File name of the checked-in LMCS project file, resolved at the workspace root. */
 export const T3_PROJECT_FILE_NAME = "t3.json";
 
 /** Public URL of the published JSON Schema for {@link T3ProjectFile}. */
@@ -101,7 +101,7 @@ export const T3ProjectFile = Schema.Struct({
       .check(Schema.isMaxLength(T3_PROJECT_FILE_MAX_SCRIPTS)),
   ),
 }).annotate({
-  title: "T3 project file",
+  title: "LMCS project file",
   description:
     "Checked-in project configuration for LMCS Code (t3.json at the repository root). See https://t3.codes for documentation.",
 });

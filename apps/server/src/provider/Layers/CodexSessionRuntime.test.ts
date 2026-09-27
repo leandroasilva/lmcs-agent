@@ -585,7 +585,7 @@ describe("Codex MCP elicitation approvals", () => {
 });
 
 describe("buildCodexDeveloperInstructions", () => {
-  it("keeps T3 context out of the mode prompt, which the model catalog can replace", () => {
+  it("keeps LMCS context out of the mode prompt, which the model catalog can replace", () => {
     for (const mode of ["default", "plan"] as const) {
       const instructions = buildCodexDeveloperInstructions(mode);
       NodeAssert.match(instructions, /^<collaboration_mode>[\s\S]*<\/collaboration_mode>$/);
@@ -636,7 +636,7 @@ describe("buildCodexAdditionalContext", () => {
   });
 });
 
-describe("T3 tool instructions", () => {
+describe("LMCS tool instructions", () => {
   const runtime = { model: "gpt-5.3-codex", reasoningEffort: "high" };
 
   it("prefers the product-native preview tools when they are attached", () => {

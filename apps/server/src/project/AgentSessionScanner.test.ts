@@ -818,7 +818,7 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
       }),
     );
 
-    it.effect("excludes the home directory, temporary root, and T3 data directory", () =>
+    it.effect("excludes the home directory, temporary root, and LMCS data directory", () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const claudeHomePath = yield* makeTempDir("t3code-claude-home-");
@@ -845,7 +845,7 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
       }),
     );
 
-    it.effect("excludes T3-managed worktree sandboxes", () =>
+    it.effect("excludes LMCS-managed worktree sandboxes", () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const claudeHomePath = yield* makeTempDir("t3code-claude-home-");
@@ -2390,7 +2390,7 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
       }),
     );
 
-    it.effect("does not import sessions from a T3-managed worktree", () =>
+    it.effect("does not import sessions from a LMCS-managed worktree", () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const fileSystem = yield* FileSystem.FileSystem;

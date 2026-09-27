@@ -295,7 +295,7 @@ export function subscribeToCustomThemes(listener: () => void): () => void {
 }
 
 // Earlier builds shipped every maintainer theme under a t3- prefix; only the
-// genuinely T3-branded palette keeps it. Stored preferences and mixes with the
+// genuinely LMCS-branded palette keeps it. Stored preferences and mixes with the
 // old ids stay readable through this alias table.
 const LEGACY_THEME_ID_ALIASES: Readonly<Record<string, string>> = {
   [LEGACY_T3_CHAT_DARK_THEME_ID]: T3_CHAT_THEME_ID,
@@ -322,7 +322,7 @@ function themeIdFromPreference(theme: ThemePreference): string {
   return normalizeThemeId(theme);
 }
 
-// Older builds stored the dark T3 Chat palette as a separate theme. Keep
+// Older builds stored the dark LMCS Chat palette as a separate theme. Keep
 // those preferences readable while mapping them to the dark variant.
 function legacyThemeMode(theme: ThemePreference): ThemeAppearance | null {
   return theme === LEGACY_T3_CHAT_DARK_THEME_ID ? "dark" : null;
@@ -331,7 +331,7 @@ function legacyThemeMode(theme: ThemePreference): ThemeAppearance | null {
 /**
  * The standard LMCS Code look as a theme palette, for seeding a new theme when
  * no theme is installed. Distinct from {@link getDefaultThemeColors}, which
- * carries the flagship T3 Chat palette used to fill roles omitted by theme
+ * carries the flagship LMCS Chat palette used to fill roles omitted by theme
  * files.
  */
 export function getStandardThemeColors(appearance: ThemeAppearance): ThemeColors {

@@ -436,7 +436,7 @@ export function NewTaskDraftScreen(props: {
     isIncomingShareTransferPending || flow.submitting || isImportingContext;
   // Also guard while a submit is in flight: an Android back press or iOS
   // Cancel would otherwise abandon the screen while the task still starts.
-  // T3 owns /usage-limits only where Limits has data for the selected provider.
+  // LMCS owns /usage-limits only where Limits has data for the selected provider.
   const offersUsageLimits =
     flow.selectedProviderStatus !== null &&
     hasProviderUsageLimits(
@@ -1218,7 +1218,7 @@ export function NewTaskDraftScreen(props: {
       );
       return;
     }
-    // T3's own limits command is answered by the thread composer; a new task would
+    // LMCS Code's own limits command is answered by the thread composer; a new task would
     // send it to the agent. A provider's same-named command, or a prompt carrying
     // attachments, goes through as usual.
     if (
