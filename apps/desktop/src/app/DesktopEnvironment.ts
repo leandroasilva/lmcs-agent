@@ -3,7 +3,7 @@ import type {
   DesktopAppStageLabel,
   DesktopRuntimeArch,
   DesktopRuntimeInfo,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -14,9 +14,12 @@ import * as Path from "effect/Path";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopConfig from "./DesktopConfig.ts";
 import { resolveLinuxDesktopEntryName } from "./DesktopEarlyElectronStartup.ts";
-import { resolveDesktopBaseDir, resolveDesktopStateDir } from "./DesktopStatePaths.ts";
+import {
+  resolveDesktopBaseDir,
+  resolveDesktopStateDir,
+} from "./DesktopStatePaths.ts";
 import { isNightlyDesktopVersion } from "../updates/updateChannels.ts";
-import type { OtlpProtocol } from "@t3tools/shared/observability";
+import type { OtlpProtocol } from "@lmcstools/shared/observability";
 
 export interface MakeDesktopEnvironmentInput {
   readonly dirname: string;
@@ -90,10 +93,14 @@ export class DesktopEnvironment extends Context.Service<
     readonly legacyUserDataDirName: string;
     readonly defaultDesktopSettings: DesktopAppSettings.DesktopSettings;
     readonly runtimeInfo: DesktopRuntimeInfo;
-    readonly resolvePickFolderDefaultPath: (rawOptions: unknown) => Option.Option<string>;
-    readonly resolveResourcePathCandidates: (fileName: string) => readonly string[];
+    readonly resolvePickFolderDefaultPath: (
+      rawOptions: unknown,
+    ) => Option.Option<string>;
+    readonly resolveResourcePathCandidates: (
+      fileName: string,
+    ) => readonly string[];
   }
->()("@t3tools/desktop/app/DesktopEnvironment") {}
+>()("@lmcstools/desktop/app/DesktopEnvironment") {}
 
 const APP_BASE_NAME = "LMCS Code";
 
@@ -141,7 +148,10 @@ function resolveDesktopRuntimeInfo(input: {
     };
   }
 
-  const hostArch = appArch === "arm64" || input.runningUnderArm64Translation ? "arm64" : appArch;
+  const hostArch =
+    appArch === "arm64" || input.runningUnderArm64Translation
+      ? "arm64"
+      : appArch;
 
   return {
     hostArch,
@@ -152,7 +162,11 @@ function resolveDesktopRuntimeInfo(input: {
 
 const make = Effect.fn("desktop.environment.make")(function* (
   input: MakeDesktopEnvironmentInput,
-): Effect.fn.Return<DesktopEnvironment["Service"], Config.ConfigError, Path.Path> {
+): Effect.fn.Return<
+  DesktopEnvironment["Service"],
+  Config.ConfigError,
+  Path.Path
+> {
   const path = yield* Path.Path;
   const config = yield* DesktopConfig.DesktopConfig;
   const homeDirectory = input.homeDirectory;
@@ -165,7 +179,9 @@ const make = Effect.fn("desktop.environment.make")(function* (
         )
       : input.platform === "darwin"
         ? path.join(homeDirectory, "Library", "Application Support")
-        : Option.getOrElse(config.xdgConfigHome, () => path.join(homeDirectory, ".config"));
+        : Option.getOrElse(config.xdgConfigHome, () =>
+            path.join(homeDirectory, ".config"),
+          );
   const baseDir = resolveDesktopBaseDir({
     homeDirectory,
     joinPath: path.join,
@@ -189,9 +205,13 @@ const make = Effect.fn("desktop.environment.make")(function* (
     t3Home: config.t3Home,
   });
   const userDataDirName = isDevelopment ? "t3code-dev" : "t3code";
-  const legacyUserDataDirName = isDevelopment ? "T3 Code (Dev)" : "T3 Code (Alpha)";
+  const legacyUserDataDirName = isDevelopment
+    ? "T3 Code (Dev)"
+    : "T3 Code (Alpha)";
   const linuxApplicationsDir = path.join(
-    Option.getOrElse(config.xdgDataHome, () => path.join(homeDirectory, ".local", "share")),
+    Option.getOrElse(config.xdgDataHome, () =>
+      path.join(homeDirectory, ".local", "share"),
+    ),
     "applications",
   );
   const resourcesPath = input.resourcesPath;
@@ -212,7 +232,10 @@ const make = Effect.fn("desktop.environment.make")(function* (
     stateDir,
     desktopSettingsPath: path.join(stateDir, "desktop-settings.json"),
     clientSettingsPath: path.join(stateDir, "client-settings.json"),
-    savedEnvironmentRegistryPath: path.join(stateDir, "saved-environments.json"),
+    savedEnvironmentRegistryPath: path.join(
+      stateDir,
+      "saved-environments.json",
+    ),
     serverSettingsPath: path.join(stateDir, "settings.json"),
     logDir: path.join(stateDir, "logs"),
     browserArtifactsDir: path.join(stateDir, "browser-artifacts"),
@@ -248,7 +271,9 @@ const make = Effect.fn("desktop.environment.make")(function* (
     appImagePath: config.appImagePath,
     userDataDirName,
     legacyUserDataDirName,
-    defaultDesktopSettings: DesktopAppSettings.resolveDefaultDesktopSettings(input.appVersion),
+    defaultDesktopSettings: DesktopAppSettings.resolveDefaultDesktopSettings(
+      input.appVersion,
+    ),
     runtimeInfo: resolveDesktopRuntimeInfo({
       platform: input.platform,
       processArch: input.processArch,

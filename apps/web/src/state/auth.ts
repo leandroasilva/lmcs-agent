@@ -1,4 +1,4 @@
-import { createAuthEnvironmentAtoms } from "@t3tools/client-runtime/state/auth";
+import { createAuthEnvironmentAtoms } from "@lmcstools/client-runtime/state/auth";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

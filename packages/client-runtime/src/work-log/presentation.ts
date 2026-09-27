@@ -5,11 +5,11 @@ import {
   type ThreadId,
   type ToolActivitySource,
   type ToolLifecycleItemType,
-} from "@t3tools/contracts";
-import { classifyMarkdownImageSource } from "@t3tools/client-runtime/markdown-images";
-import { resolveMediaSource } from "@t3tools/client-runtime/media-source";
-import { parseChangeRequestUrl } from "@t3tools/shared/changeRequestUrl";
-import { isWorkspaceImagePreviewPath } from "@t3tools/shared/filePreview";
+} from "@lmcstools/contracts";
+import { classifyMarkdownImageSource } from "@lmcstools/client-runtime/markdown-images";
+import { resolveMediaSource } from "@lmcstools/client-runtime/media-source";
+import { parseChangeRequestUrl } from "@lmcstools/shared/changeRequestUrl";
+import { isWorkspaceImagePreviewPath } from "@lmcstools/shared/filePreview";
 
 /**
  * Activities the worktree setup card already represents. The settled record
@@ -86,13 +86,13 @@ const T3_MCP_TOOL_LABELS: Record<
   list_scheduled_tasks: ["List", "Listing", "Listed", "scheduled tasks"],
   update_scheduled_task: ["Update", "Updating", "Updated", "a scheduled task"],
   delete_scheduled_task: ["Delete", "Deleting", "Deleted", "a scheduled task"],
-  create_threads: ["Create", "Creating", "Created", "T3 threads"],
-  t3_thread_start: ["Start", "Starting", "Started", "a T3 thread"],
-  t3_thread_list: ["List", "Listing", "Listed", "T3 threads"],
-  t3_thread_read: ["Read", "Reading", "Read", "a T3 thread"],
-  t3_thread_send: ["Send", "Sending", "Sent", "to a T3 thread"],
-  t3_thread_wait: ["Wait", "Waiting", "Waited", "for a T3 thread"],
-  t3_thread_interrupt: ["Interrupt", "Interrupting", "Interrupted", "a T3 thread"],
+  create_threads: ["Create", "Creating", "Created", "LMCS threads"],
+  t3_thread_start: ["Start", "Starting", "Started", "a LMCS thread"],
+  t3_thread_list: ["List", "Listing", "Listed", "LMCS threads"],
+  t3_thread_read: ["Read", "Reading", "Read", "a LMCS thread"],
+  t3_thread_send: ["Send", "Sending", "Sent", "to a LMCS thread"],
+  t3_thread_wait: ["Wait", "Waiting", "Waited", "for a LMCS thread"],
+  t3_thread_interrupt: ["Interrupt", "Interrupting", "Interrupted", "a LMCS thread"],
   t3_worktree_handoff: ["Hand off", "Handing off", "Handed off", "thread to a git worktree"],
   t3_worktree_status: ["Get", "Getting", "Got", "thread worktree status"],
   preview_status: ["Get", "Getting", "Got", "preview browser status"],
@@ -138,7 +138,7 @@ function resolveT3McpToolPresentation(
 ) {
   if (!value) return null;
   const name = normalizeCompactToolLabel(value).replace(
-    /^(?:mcp__(?:t3-code|t3_code|t3code)__|(?:t3-code|t3_code|t3code)(?:[.:/]|\s*·\s*))/i,
+    /^(?:mcp__(?:lmcs-code|t3_code|t3code)__|(?:lmcs-code|t3_code|t3code)(?:[.:/]|\s*·\s*))/i,
     "",
   );
   if (!Object.hasOwn(T3_MCP_TOOL_LABELS, name)) return null;
@@ -180,7 +180,7 @@ function resolveT3McpToolPresentation(
           ? ("browser" as const)
           : name.startsWith("device_")
             ? ("device" as const)
-            : ("t3-code" as const),
+            : ("lmcs-code" as const),
     ...(actionKind === undefined ? {} : { action: actionKind }),
   };
 }

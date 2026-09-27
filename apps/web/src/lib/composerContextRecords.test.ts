@@ -5,9 +5,9 @@ import {
   OrchestrationMessageContext,
   ThreadId,
   type PreviewAnnotationPayload,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import * as Schema from "effect/Schema";
-import { upgradeLegacyContextMessage } from "@t3tools/shared/composerContextLegacy";
+import { upgradeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacy";
 
 import {
   formatInlineContextReference,
@@ -324,7 +324,7 @@ describe("composerContextRecords", () => {
       pullRequest: {
         number: 42,
         title: "Improve context chips",
-        url: "https://github.com/pingdotgg/t3code/pull/42",
+        url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
         headBranch: "feat/context-chips",
         baseBranch: "main",
         state: "open" as const,

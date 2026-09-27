@@ -6,7 +6,7 @@ import type {
   ThreadLinkedPullRequest,
   ThreadPullRequestKey,
   ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import {
   isImportedAgentSessionMessageId,
   OrchestrationCheckpointSummary,
@@ -14,13 +14,13 @@ import {
   OrchestrationSession,
   OrchestrationThread,
   WORKTREE_SETUP_ACTIVITY_KIND,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import {
   legacyLinkedPullRequestOf,
   legacyThreadPullRequestKey,
   threadPullRequestKeysEqual,
-} from "@t3tools/shared/threadPullRequests";
-import { compareDateTimeStrings } from "@t3tools/shared/dateTime";
+} from "@lmcstools/shared/threadPullRequests";
+import { compareDateTimeStrings } from "@lmcstools/shared/dateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Predicate from "effect/Predicate";

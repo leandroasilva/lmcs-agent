@@ -1,6 +1,6 @@
 {
-  "name": "@t3tools/contracts",
-  "version": "0.0.42",
+  "name": "@lmcstools/contracts",
+  "version": "0.0.1",
   "private": true,
   "files": [
     "dist"

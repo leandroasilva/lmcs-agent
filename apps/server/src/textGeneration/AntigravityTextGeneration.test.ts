@@ -4,7 +4,7 @@ import {
   ANTIGRAVITY_DEFAULT_MODEL,
   ProviderInstanceId,
   ProviderSetupError,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -492,7 +492,7 @@ it.layer(NodeServices.layer)("AntigravityTextGeneration", (it) => {
     }).pipe(Effect.scoped),
   );
 
-  it.effect("uses the native default without sending T3's default selection as a model ID", () =>
+  it.effect("uses the native default without sending LMCS Code's default selection as a model ID", () =>
     Effect.gen(function* () {
       const fixture = yield* makeFixture();
       const result = yield* fixture.textGeneration.generateThreadTitle({

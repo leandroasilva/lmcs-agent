@@ -4,7 +4,7 @@ import { it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { describe } from "vite-plus/test";
-import { DEFAULT_MODEL, ThreadId } from "@t3tools/contracts";
+import { DEFAULT_MODEL, ThreadId } from "@lmcstools/contracts";
 import * as CodexErrors from "effect-codex-app-server/errors";
 import * as CodexRpc from "effect-codex-app-server/rpc";
 import * as EffectCodexSchema from "effect-codex-app-server/schema";
@@ -585,7 +585,7 @@ describe("Codex MCP elicitation approvals", () => {
 });
 
 describe("buildCodexDeveloperInstructions", () => {
-  it("keeps T3 context out of the mode prompt, which the model catalog can replace", () => {
+  it("keeps LMCS context out of the mode prompt, which the model catalog can replace", () => {
     for (const mode of ["default", "plan"] as const) {
       const instructions = buildCodexDeveloperInstructions(mode);
       NodeAssert.match(instructions, /^<collaboration_mode>[\s\S]*<\/collaboration_mode>$/);
@@ -636,12 +636,12 @@ describe("buildCodexAdditionalContext", () => {
   });
 });
 
-describe("T3 tool instructions", () => {
+describe("LMCS tool instructions", () => {
   const runtime = { model: "gpt-5.3-codex", reasoningEffort: "high" };
 
   it("prefers the product-native preview tools when they are attached", () => {
     const tools = buildCodexAdditionalContext(runtime, true).t3_code_tools?.value ?? "";
-    NodeAssert.match(tools, /t3-code/);
+    NodeAssert.match(tools, /lmcs-code/);
     NodeAssert.match(tools, /preview_status/);
     NodeAssert.match(tools, /preview_open/);
     NodeAssert.match(tools, /Do not switch to global browser skills/);
@@ -669,7 +669,7 @@ describe("hasConfiguredMcpServer", () => {
     NodeAssert.equal(hasConfiguredMcpServer(undefined), false);
     NodeAssert.equal(hasConfiguredMcpServer(["--model", "gpt-5.4"]), false);
     NodeAssert.equal(
-      hasConfiguredMcpServer(["-c", 'mcp_servers.t3-code.url="http://127.0.0.1/mcp"']),
+      hasConfiguredMcpServer(["-c", 'mcp_servers.lmcs-code.url="http://127.0.0.1/mcp"']),
       true,
     );
   });
@@ -826,7 +826,7 @@ describe("codexSessionAppServerArgs", () => {
   it("keeps launch args when explicit app-server args are provided", () => {
     NodeAssert.deepStrictEqual(
       codexSessionAppServerArgs(
-        ["-c", "mcp_servers.t3-code.url=http://127.0.0.1/mcp"],
+        ["-c", "mcp_servers.lmcs-code.url=http://127.0.0.1/mcp"],
         "--strict-config --enable foo",
       ),
       [
@@ -835,7 +835,7 @@ describe("codexSessionAppServerArgs", () => {
         "--enable",
         "foo",
         "-c",
-        "mcp_servers.t3-code.url=http://127.0.0.1/mcp",
+        "mcp_servers.lmcs-code.url=http://127.0.0.1/mcp",
       ],
     );
   });

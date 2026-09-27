@@ -17,9 +17,9 @@ import {
   type ServerProviderModel,
   ThreadId,
   TurnId,
-} from "@t3tools/contracts";
-import { resolveSpawnCommand } from "@t3tools/shared/shell";
-import { normalizeModelSlug } from "@t3tools/shared/model";
+} from "@lmcstools/contracts";
+import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { normalizeModelSlug } from "@lmcstools/shared/model";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
@@ -185,7 +185,7 @@ export interface CodexSessionRuntimeOptions {
   readonly appServerArgs?: ReadonlyArray<string>;
   /** The provider's model list; supplies the display name for runtime info. */
   readonly models?: Effect.Effect<ReadonlyArray<ServerProviderModel>>;
-  /** Capabilities the session's `t3-code` MCP credential grants; drives the prompt blocks. */
+  /** Capabilities the session's `lmcs-code` MCP credential grants; drives the prompt blocks. */
   readonly mcpCapabilities?: ReadonlySet<string>;
 }
 
@@ -428,7 +428,7 @@ export function describeMcpElicitation(
   };
 }
 
-/** Converts a T3 approval decision into the MCP elicitation wire response. */
+/** Converts a LMCS approval decision into the MCP elicitation wire response. */
 export function toMcpElicitationResponse(
   payload: EffectCodexSchema.McpServerElicitationRequestParams,
   decision: ProviderApprovalDecision,
@@ -1875,7 +1875,7 @@ export const makeCodexSessionRuntime = (
     /**
      * Compaction rebuilds history from user messages and Codex's own context,
      * which drops our `additionalContext` messages. Codex only resends an
-     * entry when its value changes, so without this the T3 context would stay
+     * entry when its value changes, so without this the LMCS context would stay
      * lost until the model or effort changed. Awaited so the context is back
      * before later notifications from the same turn are handled. Drop this if
      * Codex enables its `retain_client_developer_messages` feature by default.

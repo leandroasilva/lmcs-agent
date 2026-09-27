@@ -1,5 +1,5 @@
 import { useAuth, useClerk } from "@clerk/react";
-import { readConnectAuthorizeRequest } from "@t3tools/shared/connectAuth";
+import { readConnectAuthorizeRequest } from "@lmcstools/shared/connectAuth";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -97,8 +97,8 @@ export function ConnectCliAuthorizeSurface() {
         title="Connecting your terminal"
         description={
           isSignedIn
-            ? "Redirecting to authorize T3 Connect for your CLI…"
-            : "Sign in to continue authorizing T3 Connect for your CLI."
+            ? "Redirecting to authorize LMCS Connect for your CLI…"
+            : "Sign in to continue authorizing LMCS Connect for your CLI."
         }
       />
       {isLoaded && !isSignedIn ? (

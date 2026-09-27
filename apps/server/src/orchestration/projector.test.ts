@@ -5,7 +5,7 @@ import {
   ProviderDriverKind,
   ThreadId,
   type OrchestrationEvent,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import * as Effect from "effect/Effect";
 import { it as effectIt } from "@effect/vitest";
 import { describe, expect, it } from "vite-plus/test";
@@ -132,13 +132,13 @@ describe("orchestration projector", () => {
               updatedAt: now,
               deletedAt: null,
               repositoryIdentity: {
-                canonicalKey: "github.com/pingdotgg/t3code",
+                canonicalKey: "github.com/leandroasilva/lmcs-agent",
                 provider: "github",
-                displayName: "pingdotgg/t3code",
+                displayName: "leandroasilva/lmcs-agent",
                 locator: {
                   source: "git-remote",
                   remoteName: "origin",
-                  remoteUrl: "https://github.com/pingdotgg/t3code.git",
+                  remoteUrl: "https://github.com/leandroasilva/lmcs-agent.git",
                 },
               },
             },
@@ -163,14 +163,14 @@ describe("orchestration projector", () => {
       );
       const linkedPullRequest = {
         projectId: "project-1",
-        repository: "pingdotgg/t3code",
+        repository: "leandroasilva/lmcs-agent",
         number: 42,
-        url: "https://github.com/pingdotgg/t3code/pull/42",
+        url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
       };
       const branchPullRequest = {
         ...linkedPullRequest,
         number: 43,
-        url: "https://github.com/pingdotgg/t3code/pull/43",
+        url: "https://github.com/leandroasilva/lmcs-agent/pull/43",
       };
       const updates = [
         { payload: { linkedPullRequest, branchPullRequest }, expected: branchPullRequest },

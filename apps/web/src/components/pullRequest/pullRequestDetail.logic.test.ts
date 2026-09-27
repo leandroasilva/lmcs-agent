@@ -1,5 +1,5 @@
 import { resolvePlanFollowUpSubmission } from "../../proposedPlan";
-import { serializeLegacyContextMessage } from "@t3tools/shared/composerContextLegacySend";
+import { serializeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacySend";
 import {
   ProjectId,
   PullRequestAction,
@@ -11,10 +11,13 @@ import {
   type PullRequestReviewThread,
   type RepositoryIdentity,
   type ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import { describe, expect, it } from "vite-plus/test";
 import { formatInlineContextReference } from "~/lib/composerContextReferences";
-import { buildMessageContext, reviewCommentContextReference } from "~/lib/composerContextRecords";
+import {
+  buildMessageContext,
+  reviewCommentContextReference,
+} from "~/lib/composerContextRecords";
 
 import {
   buildAddSelectionToAgentHandoff,
@@ -68,9 +71,14 @@ describe("pull request checkout commands", () => {
       "git clone --single-branch --branch feature/checkout https://bitbucket.org/maria/t3code.git t3code-pr-42",
     ],
     ["unknown", "feature", null, null],
-  ] as const)("builds the %s command", (provider, branch, repository, expected) => {
-    expect(pullRequestCheckoutCommand(provider, 42, branch, repository)).toBe(expected);
-  });
+  ] as const)(
+    "builds the %s command",
+    (provider, branch, repository, expected) => {
+      expect(pullRequestCheckoutCommand(provider, 42, branch, repository)).toBe(
+        expected,
+      );
+    },
+  );
   it("fetches Forgejo pull refs from the actual repository, including a mounted host and port", () => {
     expect(
       pullRequestCheckoutCommand(
@@ -104,7 +112,10 @@ describe("pull request checkout commands", () => {
     repository: "acme/web",
     number: 42,
   });
-  const identity = (provider: string, canonicalKey: string): RepositoryIdentity => ({
+  const identity = (
+    provider: string,
+    canonicalKey: string,
+  ): RepositoryIdentity => ({
     canonicalKey,
     locator: {
       source: "git-remote",
@@ -115,24 +126,31 @@ describe("pull request checkout commands", () => {
   });
 
   it("uses a public host when no repository identity is available", () => {
-    expect(loadingPullRequestCheckoutCommand(reference("github.com"), undefined)).toBe(
-      "gh pr checkout 42",
-    );
-    expect(loadingPullRequestCheckoutCommand(reference("gitlab.com"), null)).toBe(
-      "glab mr checkout 42",
-    );
+    expect(
+      loadingPullRequestCheckoutCommand(reference("github.com"), undefined),
+    ).toBe("gh pr checkout 42");
+    expect(
+      loadingPullRequestCheckoutCommand(reference("gitlab.com"), null),
+    ).toBe("glab mr checkout 42");
   });
 
   it("uses a matching enterprise identity and rejects an explicit host mismatch", () => {
     const enterprise = identity("github", "github.example.test/acme/web");
-    expect(loadingPullRequestCheckoutCommand(reference("github.example.test"), enterprise)).toBe(
-      "gh pr checkout 42",
-    );
-    expect(loadingPullRequestCheckoutCommand(reference("github.com"), enterprise)).toBeNull();
+    expect(
+      loadingPullRequestCheckoutCommand(
+        reference("github.example.test"),
+        enterprise,
+      ),
+    ).toBe("gh pr checkout 42");
+    expect(
+      loadingPullRequestCheckoutCommand(reference("github.com"), enterprise),
+    ).toBeNull();
   });
 
   it("does not infer a number-only command without a trusted provider", () => {
-    expect(loadingPullRequestCheckoutCommand(reference(), undefined)).toBeNull();
+    expect(
+      loadingPullRequestCheckoutCommand(reference(), undefined),
+    ).toBeNull();
     expect(
       loadingPullRequestCheckoutCommand(
         reference("github.com"),
@@ -149,7 +167,11 @@ const TIMELINE_SOURCE: Pick<
   createdAt: "2026-07-01T00:00:00Z",
   author: { login: "octocat", name: null, avatarUrl: null },
   commits: [
-    { oid: "1baf7bdcafe", messageHeadline: "add the page", committedDate: "2026-07-02T00:00:00Z" },
+    {
+      oid: "1baf7bdcafe",
+      messageHeadline: "add the page",
+      committedDate: "2026-07-02T00:00:00Z",
+    },
   ],
   comments: [
     {
@@ -170,15 +192,32 @@ const TIMELINE_SOURCE: Pick<
 describe("pull request merge method", () => {
   it("uses the current choice, then the project default, then the last choice", () => {
     expect(
-      resolvePullRequestMergeMethod(["merge", "squash", "rebase"], null, "squash", "rebase"),
+      resolvePullRequestMergeMethod(
+        ["merge", "squash", "rebase"],
+        null,
+        "squash",
+        "rebase",
+      ),
     ).toBe("squash");
     expect(
-      resolvePullRequestMergeMethod(["merge", "squash", "rebase"], "rebase", "squash", "merge"),
+      resolvePullRequestMergeMethod(
+        ["merge", "squash", "rebase"],
+        "rebase",
+        "squash",
+        "merge",
+      ),
     ).toBe("rebase");
-    expect(resolvePullRequestMergeMethod(["merge", "rebase"], null, "squash", "rebase")).toBe(
-      "rebase",
-    );
-    expect(resolvePullRequestMergeMethod(["squash"], null, "merge", "rebase")).toBe("squash");
+    expect(
+      resolvePullRequestMergeMethod(
+        ["merge", "rebase"],
+        null,
+        "squash",
+        "rebase",
+      ),
+    ).toBe("rebase");
+    expect(
+      resolvePullRequestMergeMethod(["squash"], null, "merge", "rebase"),
+    ).toBe("squash");
   });
 });
 
@@ -261,12 +300,12 @@ describe("pull request primary control", () => {
   };
 
   it("moves pending and failing checks to auto-merge", () => {
-    expect(resolvePullRequestPrimaryControl({ ...open, checksState: "pending" })).toBe(
-      "enable-auto-merge",
-    );
-    expect(resolvePullRequestPrimaryControl({ ...open, checksState: "failing" })).toBe(
-      "enable-auto-merge",
-    );
+    expect(
+      resolvePullRequestPrimaryControl({ ...open, checksState: "pending" }),
+    ).toBe("enable-auto-merge");
+    expect(
+      resolvePullRequestPrimaryControl({ ...open, checksState: "failing" }),
+    ).toBe("enable-auto-merge");
   });
 
   it("does not offer auto-merge while the host state is unknown", () => {
@@ -280,33 +319,51 @@ describe("pull request primary control", () => {
   });
 
   it("keeps armed and terminal states in the merge button slot", () => {
-    expect(resolvePullRequestPrimaryControl({ ...open, autoMergeEnabled: true })).toBe(
-      "auto-merge-armed",
+    expect(
+      resolvePullRequestPrimaryControl({ ...open, autoMergeEnabled: true }),
+    ).toBe("auto-merge-armed");
+    expect(resolvePullRequestPrimaryControl({ ...open, state: "merged" })).toBe(
+      "merged",
     );
-    expect(resolvePullRequestPrimaryControl({ ...open, state: "merged" })).toBe("merged");
-    expect(resolvePullRequestPrimaryControl({ ...open, state: "closed" })).toBe("closed");
+    expect(resolvePullRequestPrimaryControl({ ...open, state: "closed" })).toBe(
+      "closed",
+    );
   });
 
   it("keeps conflicts and drafts actionable before merge", () => {
-    expect(resolvePullRequestPrimaryControl({ ...open, mergeability: "conflicting" })).toBe(
-      "resolve",
+    expect(
+      resolvePullRequestPrimaryControl({
+        ...open,
+        mergeability: "conflicting",
+      }),
+    ).toBe("resolve");
+    expect(resolvePullRequestPrimaryControl({ ...open, isDraft: true })).toBe(
+      "ready",
     );
-    expect(resolvePullRequestPrimaryControl({ ...open, isDraft: true })).toBe("ready");
   });
 });
 
 describe("stacked pull request classification", () => {
   it("requires a known default branch", () => {
-    expect(isStackedPullRequestBase("main", [{ name: "main", isDefault: false }])).toBe(false);
+    expect(
+      isStackedPullRequestBase("main", [{ name: "main", isDefault: false }]),
+    ).toBe(false);
   });
 
   it("recognizes local and remote forms of the default branch", () => {
     expect(
-      isStackedPullRequestBase("main", [{ name: "main", isDefault: true, isRemote: false }]),
+      isStackedPullRequestBase("main", [
+        { name: "main", isDefault: true, isRemote: false },
+      ]),
     ).toBe(false);
     expect(
       isStackedPullRequestBase("main", [
-        { name: "origin/main", isDefault: true, isRemote: true, remoteName: "origin" },
+        {
+          name: "origin/main",
+          isDefault: true,
+          isRemote: true,
+          remoteName: "origin",
+        },
       ]),
     ).toBe(false);
   });
@@ -314,7 +371,12 @@ describe("stacked pull request classification", () => {
   it("classifies a non-default base as stacked once the default is known", () => {
     expect(
       isStackedPullRequestBase("feature-base", [
-        { name: "origin/main", isDefault: true, isRemote: true, remoteName: "origin" },
+        {
+          name: "origin/main",
+          isDefault: true,
+          isRemote: true,
+          remoteName: "origin",
+        },
       ]),
     ).toBe(true);
   });
@@ -331,14 +393,20 @@ describe("stacked pull request classification", () => {
       ]),
     ).toBe(true);
     expect(
-      isStackedPullRequestBase("1.0", [{ name: "release/1.0", isDefault: true, isRemote: false }]),
+      isStackedPullRequestBase("1.0", [
+        { name: "release/1.0", isDefault: true, isRemote: false },
+      ]),
     ).toBe(true);
   });
 });
 
 describe("ordering comments", () => {
   it("reverses the chronological list for newest first, and leaves oldest first alone", () => {
-    const comments = [{ createdAt: "a" }, { createdAt: "b" }, { createdAt: "c" }];
+    const comments = [
+      { createdAt: "a" },
+      { createdAt: "b" },
+      { createdAt: "c" },
+    ];
     expect(orderPullRequestComments(comments, "newest")).toEqual([
       { createdAt: "c" },
       { createdAt: "b" },
@@ -346,7 +414,11 @@ describe("ordering comments", () => {
     ]);
     expect(orderPullRequestComments(comments, "oldest")).toEqual(comments);
     // The source array is chronological input, not a mutation target.
-    expect(comments).toEqual([{ createdAt: "a" }, { createdAt: "b" }, { createdAt: "c" }]);
+    expect(comments).toEqual([
+      { createdAt: "a" },
+      { createdAt: "b" },
+      { createdAt: "c" },
+    ]);
   });
 });
 
@@ -354,8 +426,12 @@ describe("review verdicts", () => {
   it("reads the same three verdicts however a host spells them", () => {
     expect(pullRequestReviewOutcome("APPROVED")).toBe("approved");
     expect(pullRequestReviewOutcome("approved")).toBe("approved");
-    expect(pullRequestReviewOutcome("CHANGES_REQUESTED")).toBe("changes-requested");
-    expect(pullRequestReviewOutcome("changes_requested")).toBe("changes-requested");
+    expect(pullRequestReviewOutcome("CHANGES_REQUESTED")).toBe(
+      "changes-requested",
+    );
+    expect(pullRequestReviewOutcome("changes_requested")).toBe(
+      "changes-requested",
+    );
     expect(pullRequestReviewOutcome("DISMISSED")).toBe("dismissed");
   });
 
@@ -444,7 +520,11 @@ describe("review verdicts", () => {
 
   it("calls a verdict stale once commits land after it, and current before that", () => {
     const commits = [
-      { oid: "c0ffee", messageHeadline: "later work", committedDate: "2026-07-05T00:00:00Z" },
+      {
+        oid: "c0ffee",
+        messageHeadline: "later work",
+        committedDate: "2026-07-05T00:00:00Z",
+      },
     ];
     const review = (createdAt: string): PullRequestComment => ({
       ...TIMELINE_SOURCE.comments[0]!,
@@ -454,22 +534,37 @@ describe("review verdicts", () => {
     });
 
     expect(
-      latestPullRequestReviewOutcomes([review("2026-07-01T00:00:00Z")], commits)[0]?.stale,
+      latestPullRequestReviewOutcomes(
+        [review("2026-07-01T00:00:00Z")],
+        commits,
+      )[0]?.stale,
     ).toBe(true);
     expect(
-      latestPullRequestReviewOutcomes([review("2026-07-06T00:00:00Z")], commits)[0]?.stale,
+      latestPullRequestReviewOutcomes(
+        [review("2026-07-06T00:00:00Z")],
+        commits,
+      )[0]?.stale,
     ).toBe(false);
     // Nothing to be overtaken by, so nothing is stale.
-    expect(latestPullRequestReviewOutcomes([review("2026-07-01T00:00:00Z")], [])[0]?.stale).toBe(
-      false,
-    );
+    expect(
+      latestPullRequestReviewOutcomes([review("2026-07-01T00:00:00Z")], [])[0]
+        ?.stale,
+    ).toBe(false);
   });
 
   it("measures staleness against the newest commit, not the last one listed", () => {
     expect(
       newestPullRequestCommitAt([
-        { oid: "a", messageHeadline: "", committedDate: "2026-07-09T00:00:00Z" },
-        { oid: "b", messageHeadline: "", committedDate: "2026-07-02T00:00:00Z" },
+        {
+          oid: "a",
+          messageHeadline: "",
+          committedDate: "2026-07-09T00:00:00Z",
+        },
+        {
+          oid: "b",
+          messageHeadline: "",
+          committedDate: "2026-07-02T00:00:00Z",
+        },
       ]),
     ).toBe("2026-07-09T00:00:00Z");
     expect(newestPullRequestCommitAt([])).toBeNull();
@@ -480,17 +575,32 @@ describe("review verdicts", () => {
     // it falls well before it.
     expect(
       newestPullRequestCommitAt([
-        { oid: "a", messageHeadline: "", committedDate: "2026-07-05T00:30:00Z" },
-        { oid: "b", messageHeadline: "", committedDate: "2026-07-05T01:00:00+02:00" },
+        {
+          oid: "a",
+          messageHeadline: "",
+          committedDate: "2026-07-05T00:30:00Z",
+        },
+        {
+          oid: "b",
+          messageHeadline: "",
+          committedDate: "2026-07-05T01:00:00+02:00",
+        },
       ]),
     ).toBe("2026-07-05T00:30:00Z");
-    expect(isPullRequestVerdictStale("2026-07-05T00:30:00Z", "2026-07-05T01:00:00+02:00")).toBe(
-      false,
-    );
-    // A timestamp nothing can parse is not a position, so it settles nothing either way.
-    expect(isPullRequestVerdictStale("2026-07-01T00:00:00Z", "not a date")).toBe(false);
     expect(
-      newestPullRequestCommitAt([{ oid: "a", messageHeadline: "", committedDate: "not a date" }]),
+      isPullRequestVerdictStale(
+        "2026-07-05T00:30:00Z",
+        "2026-07-05T01:00:00+02:00",
+      ),
+    ).toBe(false);
+    // A timestamp nothing can parse is not a position, so it settles nothing either way.
+    expect(
+      isPullRequestVerdictStale("2026-07-01T00:00:00Z", "not a date"),
+    ).toBe(false);
+    expect(
+      newestPullRequestCommitAt([
+        { oid: "a", messageHeadline: "", committedDate: "not a date" },
+      ]),
     ).toBeNull();
   });
 
@@ -518,17 +628,20 @@ describe("review verdicts", () => {
 describe("pull request timeline", () => {
   it("orders creation, commits and comments newest first", () => {
     // What happened last is what the reader opening the tab is asking about.
-    expect(buildPullRequestTimeline(TIMELINE_SOURCE).map((event) => event.id)).toEqual([
-      "c1",
-      "1baf7bdcafe",
-      "created",
-    ]);
+    expect(
+      buildPullRequestTimeline(TIMELINE_SOURCE).map((event) => event.id),
+    ).toEqual(["c1", "1baf7bdcafe", "created"]);
   });
 
   it("carries the comment url, and leaves the events the host cannot address without one", () => {
     const events = buildPullRequestTimeline({
       ...TIMELINE_SOURCE,
-      comments: [{ ...TIMELINE_SOURCE.comments[0]!, url: "https://example.test/pull/1#c1" }],
+      comments: [
+        {
+          ...TIMELINE_SOURCE.comments[0]!,
+          url: "https://example.test/pull/1#c1",
+        },
+      ],
     });
     expect(events.map((event) => event.url)).toEqual([
       "https://example.test/pull/1#c1",
@@ -539,7 +652,11 @@ describe("pull request timeline", () => {
 
   it("carries actors and review context into the presentation model", () => {
     const commitAuthors = [
-      { login: "octocat", name: null, avatarUrl: "https://example.test/octocat.png" },
+      {
+        login: "octocat",
+        name: null,
+        avatarUrl: "https://example.test/octocat.png",
+      },
       { login: "pair", name: "Pair Author", avatarUrl: null },
     ];
     const events = buildPullRequestTimeline({
@@ -555,7 +672,9 @@ describe("pull request timeline", () => {
       ],
     });
 
-    expect(events.find((event) => event.kind === "commit")?.commitAuthors).toEqual(commitAuthors);
+    expect(
+      events.find((event) => event.kind === "commit")?.commitAuthors,
+    ).toEqual(commitAuthors);
     expect(events.find((event) => event.kind === "review")).toMatchObject({
       actor: TIMELINE_SOURCE.comments[0]?.author,
       path: "src/app.ts",
@@ -566,7 +685,9 @@ describe("pull request timeline", () => {
   it("carries each commit's line counts into its timeline event", () => {
     const events = buildPullRequestTimeline({
       ...TIMELINE_SOURCE,
-      commits: [{ ...TIMELINE_SOURCE.commits[0]!, additions: 12, deletions: 4 }],
+      commits: [
+        { ...TIMELINE_SOURCE.commits[0]!, additions: 12, deletions: 4 },
+      ],
     });
 
     expect(events.find((event) => event.kind === "commit")).toMatchObject({
@@ -599,9 +720,9 @@ describe("pull request timeline", () => {
   it("calls a comment markdown and a commit headline plain text", () => {
     const events = buildPullRequestTimeline(TIMELINE_SOURCE);
     // A headline reading `fix: drop *legacy* path` is not asking for emphasis.
-    expect(events.map((event) => [event.title.startsWith("Commit"), event.markdown])).toEqual(
-      expect.arrayContaining([[true, false]]),
-    );
+    expect(
+      events.map((event) => [event.title.startsWith("Commit"), event.markdown]),
+    ).toEqual(expect.arrayContaining([[true, false]]));
     expect(events.find((event) => event.id === "c1")?.markdown).toBe(true);
   });
 
@@ -664,7 +785,11 @@ describe("pull request timeline", () => {
     const events = buildPullRequestTimeline({
       ...TIMELINE_SOURCE,
       comments: [
-        { ...TIMELINE_SOURCE.comments[0]!, id: "chatter-1", createdAt: "2026-07-05T00:00:00Z" },
+        {
+          ...TIMELINE_SOURCE.comments[0]!,
+          id: "chatter-1",
+          createdAt: "2026-07-05T00:00:00Z",
+        },
         {
           ...TIMELINE_SOURCE.comments[0]!,
           id: "approval",
@@ -673,7 +798,11 @@ describe("pull request timeline", () => {
           reviewState: "APPROVED",
           createdAt: "2026-07-04T00:00:00Z",
         },
-        { ...TIMELINE_SOURCE.comments[0]!, id: "chatter-2", createdAt: "2026-07-03T00:00:00Z" },
+        {
+          ...TIMELINE_SOURCE.comments[0]!,
+          id: "chatter-2",
+          createdAt: "2026-07-03T00:00:00Z",
+        },
         // A review without a verdict is ordinary conversation and still groups.
         {
           ...TIMELINE_SOURCE.comments[0]!,
@@ -706,7 +835,7 @@ describe("fix findings handoff", () => {
   const base = {
     number: 42,
     title: "Add the pull requests page",
-    url: "https://github.com/pingdotgg/t3code/pull/42",
+    url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
     headBranch: "feat/page",
     baseBranch: "main",
     comments: [] as ReadonlyArray<PullRequestComment>,
@@ -772,10 +901,9 @@ describe("fix findings handoff", () => {
       ],
       checks: [],
     });
-    expect(handoff.reviewComments.map((comment) => comment.rangeLabel)).toEqual([
-      "L12 (before)",
-      "file",
-    ]);
+    expect(handoff.reviewComments.map((comment) => comment.rangeLabel)).toEqual(
+      ["L12 (before)", "file"],
+    );
   });
 
   it("keeps failing checks in the prompt, having no line to attach them to", () => {
@@ -798,12 +926,20 @@ describe("fix findings handoff", () => {
       ],
       checks: [],
     });
-    expect(handoff.reviewComments.map((comment) => comment.text)).toEqual(["reviewer: still open"]);
+    expect(handoff.reviewComments.map((comment) => comment.text)).toEqual([
+      "reviewer: still open",
+    ]);
   });
 
   it("says so plainly when there is nothing actionable", () => {
-    const handoff = buildFixFindingsHandoff({ ...base, reviewThreads: [], checks: [] });
-    expect(handoff.prompt).toContain("No unresolved review findings were returned");
+    const handoff = buildFixFindingsHandoff({
+      ...base,
+      reviewThreads: [],
+      checks: [],
+    });
+    expect(handoff.prompt).toContain(
+      "No unresolved review findings were returned",
+    );
     expect(handoff.reviewComments).toEqual([]);
   });
 
@@ -839,7 +975,7 @@ describe("findings that cannot be attached", () => {
   const base = {
     number: 42,
     title: "Add the pull requests page",
-    url: "https://github.com/pingdotgg/t3code/pull/42",
+    url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
     headBranch: "feat/page",
     baseBranch: "main",
     reviewThreads: [] as ReadonlyArray<PullRequestReviewThread>,
@@ -872,7 +1008,9 @@ describe("findings that cannot be attached", () => {
     // Azure DevOps has no diff to pin a conversation to, so every remark arrives this way.
     const handoff = buildFixFindingsHandoff({
       ...base,
-      comments: [{ ...review, id: "a1", kind: "review-comment", path: "src/app.ts" }],
+      comments: [
+        { ...review, id: "a1", kind: "review-comment", path: "src/app.ts" },
+      ],
     });
 
     expect(handoff.prompt).toContain("src/app.ts");
@@ -902,7 +1040,14 @@ describe("findings that cannot be attached", () => {
           ],
         },
       ],
-      comments: [{ ...review, id: attachedId, kind: "review-comment", body: "rename the helper" }],
+      comments: [
+        {
+          ...review,
+          id: attachedId,
+          kind: "review-comment",
+          body: "rename the helper",
+        },
+      ],
     });
 
     expect(handoff.reviewComments).toHaveLength(1);
@@ -914,7 +1059,7 @@ describe("one finding handed over on its own", () => {
   const base = {
     number: 42,
     title: "Add the pull requests page",
-    url: "https://github.com/pingdotgg/t3code/pull/42",
+    url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
     headBranch: "feat/page",
     baseBranch: "main",
   };
@@ -945,7 +1090,10 @@ describe("one finding handed over on its own", () => {
       finding: { kind: "thread", thread: reviewThread },
     });
     expect(handoff.reviewComments).toEqual([
-      expect.objectContaining({ filePath: "apps/web/src/page.tsx", rangeLabel: "L12" }),
+      expect.objectContaining({
+        filePath: "apps/web/src/page.tsx",
+        rangeLabel: "L12",
+      }),
     ]);
     expect(handoff.prompt).toContain("attached to this message");
     expect(handoff.prompt).not.toContain("rename the helper");
@@ -969,7 +1117,9 @@ describe("one finding handed over on its own", () => {
       },
     });
     expect(handoff.reviewComments).toEqual([]);
-    expect(handoff.prompt).toContain("> julius on `apps/server/src/auth.ts`: this breaks SSO auth");
+    expect(handoff.prompt).toContain(
+      "> julius on `apps/server/src/auth.ts`: this breaks SSO auth",
+    );
   });
 
   it("quotes a failing check with what the host reported about it", () => {
@@ -977,7 +1127,12 @@ describe("one finding handed over on its own", () => {
       ...base,
       finding: {
         kind: "check",
-        check: { name: "typecheck", status: "failure", description: "2 errors", url: null },
+        check: {
+          name: "typecheck",
+          status: "failure",
+          description: "2 errors",
+          url: null,
+        },
       },
     });
     expect(handoff.prompt).toContain("> typecheck — 2 errors");
@@ -986,12 +1141,20 @@ describe("one finding handed over on its own", () => {
 
   it("marks the pull request's own words as untrusted whatever the finding is", () => {
     for (const handoff of [
-      buildFixFindingHandoff({ ...base, finding: { kind: "thread", thread: reviewThread } }),
+      buildFixFindingHandoff({
+        ...base,
+        finding: { kind: "thread", thread: reviewThread },
+      }),
       buildFixFindingHandoff({
         ...base,
         finding: {
           kind: "check",
-          check: { name: "typecheck", status: "failure", description: null, url: null },
+          check: {
+            name: "typecheck",
+            status: "failure",
+            description: null,
+            url: null,
+          },
         },
       }),
     ]) {
@@ -1000,14 +1163,19 @@ describe("one finding handed over on its own", () => {
   });
 
   it("keys each finding by something the surface showing it can produce", () => {
-    expect(pullRequestFindingKey({ kind: "thread", thread: reviewThread })).toBe(
-      "finding:thread:t1",
-    );
+    expect(
+      pullRequestFindingKey({ kind: "thread", thread: reviewThread }),
+    ).toBe("finding:thread:t1");
     // Checks carry no id, so the name and its run stand in for one.
     expect(
       pullRequestFindingKey({
         kind: "check",
-        check: { name: "typecheck", status: "failure", description: null, url: null },
+        check: {
+          name: "typecheck",
+          status: "failure",
+          description: null,
+          url: null,
+        },
       }),
     ).toBe("finding:check:typecheck:");
   });
@@ -1030,7 +1198,9 @@ describe("what to say when an action fails", () => {
   it("falls back to what to check when the host only said that a tool exited", () => {
     expect(
       readableFailure(
-        new Error("Pull request operation runAction failed: GitHub CLI command failed."),
+        new Error(
+          "Pull request operation runAction failed: GitHub CLI command failed.",
+        ),
         hint,
       ),
     ).toBe(hint);
@@ -1067,7 +1237,7 @@ describe("findings that are already on a line", () => {
     const handoff = buildFixFindingsHandoff({
       number: 42,
       title: "Add the pull requests page",
-      url: "https://github.com/pingdotgg/t3code/pull/42",
+      url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
       headBranch: "feat/page",
       baseBranch: "main",
       reviewThreads: [resolved],
@@ -1096,39 +1266,51 @@ describe("asking about a change rather than working on it", () => {
   const base = {
     number: 42,
     title: "Add the pull requests page",
-    url: "https://github.com/pingdotgg/t3code/pull/42",
+    url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
     headBranch: "feat/page",
     baseBranch: "main",
     state: "open" as const,
     isDraft: false,
   };
 
-  it.each(["", "Please consider "])("preserves PR plan feedback with prose %j", (prose) => {
-    const comment = buildPullRequestReferenceContext(base);
-    const draftText = prose + formatInlineContextReference(reviewCommentContextReference(comment));
-    const submission = resolvePlanFollowUpSubmission({ draftText, planMarkdown: "# Plan" });
-    const context = buildMessageContext({
-      terminalContexts: [],
-      previewAnnotations: [],
-      reviewComments: [comment],
-    });
-    expect(submission).toEqual({ text: draftText, interactionMode: "plan" });
-    expect(context?.records[0]).toMatchObject({ pullRequest: base });
-    const legacyText = serializeLegacyContextMessage({
-      text: submission.text,
-      records: context!.records,
-    });
-    expect(legacyText).toContain(base.url);
-    expect(legacyText).toContain(prose);
-    expect(legacyText).not.toContain("PLEASE IMPLEMENT THIS PLAN");
-    expect(legacyText).not.toContain("t3-context://");
-  });
+  it.each(["", "Please consider "])(
+    "preserves PR plan feedback with prose %j",
+    (prose) => {
+      const comment = buildPullRequestReferenceContext(base);
+      const draftText =
+        prose +
+        formatInlineContextReference(reviewCommentContextReference(comment));
+      const submission = resolvePlanFollowUpSubmission({
+        draftText,
+        planMarkdown: "# Plan",
+      });
+      const context = buildMessageContext({
+        terminalContexts: [],
+        previewAnnotations: [],
+        reviewComments: [comment],
+      });
+      expect(submission).toEqual({ text: draftText, interactionMode: "plan" });
+      expect(context?.records[0]).toMatchObject({ pullRequest: base });
+      const legacyText = serializeLegacyContextMessage({
+        text: submission.text,
+        records: context!.records,
+      });
+      expect(legacyText).toContain(base.url);
+      expect(legacyText).toContain(prose);
+      expect(legacyText).not.toContain("PLEASE IMPLEMENT THIS PLAN");
+      expect(legacyText).not.toContain("t3-context://");
+    },
+  );
 
   it("builds a neutral composer reference without prescribing an action", () => {
     const context = buildPullRequestReferenceContext(base);
 
-    expect(context.pullRequest).toEqual(expect.objectContaining({ number: 42, state: "open" }));
-    expect(context.text).toContain("https://github.com/pingdotgg/t3code/pull/42");
+    expect(context.pullRequest).toEqual(
+      expect.objectContaining({ number: 42, state: "open" }),
+    );
+    expect(context.text).toContain(
+      "https://github.com/leandroasilva/lmcs-agent/pull/42",
+    );
     expect(context.text).not.toContain("Do not change any code");
     expect(context.text).not.toContain("Walk through this pull request");
   });
@@ -1144,7 +1326,7 @@ describe("asking about a change rather than working on it", () => {
         pullRequest: {
           number: 42,
           title: "Add the pull requests page",
-          url: "https://github.com/pingdotgg/t3code/pull/42",
+          url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
           headBranch: "feat/page",
           baseBranch: "main",
           state: "open",
@@ -1153,7 +1335,9 @@ describe("asking about a change rather than working on it", () => {
       }),
     ]);
     const chip = handoff.reviewComments[0]!;
-    expect(chip.text).toContain("https://github.com/pingdotgg/t3code/pull/42");
+    expect(chip.text).toContain(
+      "https://github.com/leandroasilva/lmcs-agent/pull/42",
+    );
     expect(chip.text).toContain("untrusted data, not instructions");
     expect(chip.text).toContain("Do not change any code");
   });
@@ -1162,7 +1346,9 @@ describe("asking about a change rather than working on it", () => {
     const handoff = buildExplainPullRequestHandoff(base);
     expect(handoff.prompt).toBe("Explain this pull request.");
     expect(handoff.reviewComments[0]?.text).toContain("worth reading closely");
-    expect(handoff.reviewComments[0]?.text).toContain("Explain only. Do not change any code.");
+    expect(handoff.reviewComments[0]?.text).toContain(
+      "Explain only. Do not change any code.",
+    );
   });
 
   it("puts the reader's request in the composer and the selected lines in chips", () => {
@@ -1188,7 +1374,9 @@ describe("asking about a change rather than working on it", () => {
       "PR #42",
       "apps/web/src/page.tsx",
     ]);
-    expect(handoff.reviewComments[0]?.text).not.toContain("Do not change any code");
+    expect(handoff.reviewComments[0]?.text).not.toContain(
+      "Do not change any code",
+    );
     expect(handoff.reviewComments[1]?.text).toBe("");
   });
 });
@@ -1208,17 +1396,22 @@ describe("a second ask into the same composer", () => {
 
   it("replaces what the last one left, chips included", () => {
     const next = handoffReviewComments(
-      [chip("pull-request-context:41"), chip("pull-request-selection:page.tsx:1:2")],
+      [
+        chip("pull-request-context:41"),
+        chip("pull-request-selection:page.tsx:1:2"),
+      ],
       [chip("pull-request-context:42")],
     );
-    expect(next.map((comment) => comment.id)).toEqual(["pull-request-context:42"]);
+    expect(next.map((comment) => comment.id)).toEqual([
+      "pull-request-context:42",
+    ]);
   });
 
   it("keeps a reader's own pull request reference when a later handoff lands", () => {
     const own = buildPullRequestReferenceContext({
       number: 42,
       title: "Add the pull requests page",
-      url: "https://github.com/pingdotgg/t3code/pull/42",
+      url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
       headBranch: "feature",
       baseBranch: "main",
       state: "open" as const,
@@ -1228,13 +1421,17 @@ describe("a second ask into the same composer", () => {
 
     expect(stripPullRequestHandoffReferences(prompt, [own])).toBe(prompt);
     expect(
-      handoffReviewComments([own], [chip("pull-request-context:42")]).map((comment) => comment.id),
+      handoffReviewComments([own], [chip("pull-request-context:42")]).map(
+        (comment) => comment.id,
+      ),
     ).toEqual([own.id, "pull-request-context:42"]);
   });
 
   it("empties what the last ask left, so the two are never sent as one question", () => {
     const handed = "Explain this pull request.";
-    expect(handoffPrompt({ prompt: handed, lastHandoffPrompt: handed }, "")).toBe("");
+    expect(
+      handoffPrompt({ prompt: handed, lastHandoffPrompt: handed }, ""),
+    ).toBe("");
   });
 
   it("removes the previous handoff chip before replacing its prompt", () => {
@@ -1249,29 +1446,47 @@ describe("a second ask into the same composer", () => {
 
   it("keeps a handoff reference when the next action deliberately repeats it", () => {
     const previous = chip("pull-request-context:42");
-    const prompt = formatInlineContextReference(reviewCommentContextReference(previous));
-    expect(stripPullRequestHandoffReferences(prompt, [previous], new Set([previous.id]))).toBe(
-      prompt,
+    const prompt = formatInlineContextReference(
+      reviewCommentContextReference(previous),
     );
+    expect(
+      stripPullRequestHandoffReferences(
+        prompt,
+        [previous],
+        new Set([previous.id]),
+      ),
+    ).toBe(prompt);
   });
 
   it("replaces the last ask's prompt with this one's", () => {
     const handed = "Explain this pull request.";
-    expect(handoffPrompt({ prompt: handed, lastHandoffPrompt: handed }, "Why the cache key?")).toBe(
-      "Why the cache key?",
-    );
+    expect(
+      handoffPrompt(
+        { prompt: handed, lastHandoffPrompt: handed },
+        "Why the cache key?",
+      ),
+    ).toBe("Why the cache key?");
   });
 
   it("leaves a sentence the reader typed themselves where it is", () => {
     expect(
-      handoffPrompt({ prompt: "check the migration first", lastHandoffPrompt: undefined }, ""),
+      handoffPrompt(
+        { prompt: "check the migration first", lastHandoffPrompt: undefined },
+        "",
+      ),
     ).toBe("check the migration first");
   });
 
   it("keeps what the reader wrote next to the chip an earlier ask left", () => {
     // The chip is still there, but these words are not the ones the hand-off wrote.
     expect(
-      handoffPrompt({ prompt: "why is the cache keyed on the branch?", lastHandoffPrompt: "" }, ""),
+      handoffPrompt(
+        {
+          prompt: "why is the cache keyed on the branch?",
+          lastHandoffPrompt: "",
+        },
+        "",
+      ),
     ).toBe("why is the cache keyed on the branch?");
   });
 
@@ -1346,24 +1561,37 @@ describe("how the branch stands against its base", () => {
     }) as Parameters<typeof resolveBaseFreshness>[0];
 
   it("offers both ways where the host and the reader both allow them", () => {
-    expect(resolveBaseFreshness(detail())).toEqual({ behindBy: 12, methods: ["merge", "rebase"] });
+    expect(resolveBaseFreshness(detail())).toEqual({
+      behindBy: 12,
+      methods: ["merge", "rebase"],
+    });
   });
 
   it("says nothing about a branch that is already current", () => {
-    expect(resolveBaseFreshness(detail({ baseComparison: "up-to-date" }))).toBeNull();
+    expect(
+      resolveBaseFreshness(detail({ baseComparison: "up-to-date" })),
+    ).toBeNull();
   });
 
   it("says nothing where the host could not compare, rather than claiming it is current", () => {
-    expect(resolveBaseFreshness(detail({ baseComparison: "unknown" }))).toBeNull();
-    expect(resolveBaseFreshness(detail({ baseComparison: undefined }))).toBeNull();
+    expect(
+      resolveBaseFreshness(detail({ baseComparison: "unknown" })),
+    ).toBeNull();
+    expect(
+      resolveBaseFreshness(detail({ baseComparison: undefined })),
+    ).toBeNull();
   });
 
   it("leaves a conflicting branch to the conflicts row", () => {
-    expect(resolveBaseFreshness(detail({ mergeability: "conflicting" }))).toBeNull();
+    expect(
+      resolveBaseFreshness(detail({ mergeability: "conflicting" })),
+    ).toBeNull();
   });
 
   it("says nothing where the host has no merge verdict yet", () => {
-    expect(resolveBaseFreshness(detail({ mergeability: "unknown" }))).toBeNull();
+    expect(
+      resolveBaseFreshness(detail({ mergeability: "unknown" })),
+    ).toBeNull();
   });
 
   it("says nothing about a merged or closed pull request", () => {
@@ -1373,7 +1601,9 @@ describe("how the branch stands against its base", () => {
 
   it("narrows to what this reader may actually take", () => {
     expect(
-      resolveBaseFreshness(detail({ viewerPermissions: { updateMethods: ["merge"] } }))?.methods,
+      resolveBaseFreshness(
+        detail({ viewerPermissions: { updateMethods: ["merge"] } }),
+      )?.methods,
     ).toEqual(["merge"]);
   });
 
@@ -1387,7 +1617,9 @@ describe("how the branch stands against its base", () => {
   });
 
   it("reports a count only where the host counted", () => {
-    expect(resolveBaseFreshness(detail({ behindBy: undefined }))?.behindBy).toBeNull();
+    expect(
+      resolveBaseFreshness(detail({ behindBy: undefined }))?.behindBy,
+    ).toBeNull();
   });
 });
 
@@ -1400,9 +1632,9 @@ describe("pull request panel context beside a thread", () => {
     overrides: Partial<ThreadPullRequestLink> = {},
   ): ThreadPullRequestLink => ({
     host: "github.com",
-    repository: "pingdotgg/t3code",
+    repository: "leandroasilva/lmcs-agent",
     number,
-    url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+    url: `https://github.com/leandroasilva/lmcs-agent/pull/${number}`,
     source: "manual",
     linkedAt: "2026-09-09T00:00:00Z",
     snapshot: null,
@@ -1415,7 +1647,7 @@ describe("pull request panel context beside a thread", () => {
   ) => ({
     projectId: "proj-a",
     host: "github.com",
-    repository: "pingdotgg/t3code",
+    repository: "leandroasilva/lmcs-agent",
     number,
     ...overrides,
   });
@@ -1430,15 +1662,18 @@ describe("pull request panel context beside a thread", () => {
     ],
     linkedPullRequest: {
       projectId: "proj-a",
-      repository: "pingdotgg/t3code",
+      repository: "leandroasilva/lmcs-agent",
       number: 10856,
-      url: "https://github.com/pingdotgg/t3code/pull/10856",
+      url: "https://github.com/leandroasilva/lmcs-agent/pull/10856",
     },
   };
 
   it("treats every layer of the thread's stack as its own, not only the one the legacy field names", () => {
     for (const number of [10856, 10832, 10677, 10854, 10855]) {
-      expect(pullRequestPanelContext(stackThread, surface(number)), `#${number}`).toBe("thread");
+      expect(
+        pullRequestPanelContext(stackThread, surface(number)),
+        `#${number}`,
+      ).toBe("thread");
     }
   });
 
@@ -1447,41 +1682,63 @@ describe("pull request panel context beside a thread", () => {
     // resolves to must not turn the thread's own second link into a checkout-able stranger.
     const thread = {
       projectId: "proj-a",
-      pullRequests: [link(11101, { source: "created" }), link(11105, { source: "stack" })],
+      pullRequests: [
+        link(11101, { source: "created" }),
+        link(11105, { source: "stack" }),
+      ],
       linkedPullRequest: {
         projectId: "proj-a",
-        repository: "pingdotgg/t3code",
+        repository: "leandroasilva/lmcs-agent",
         number: 11105,
-        url: "https://github.com/pingdotgg/t3code/pull/11105",
+        url: "https://github.com/leandroasilva/lmcs-agent/pull/11105",
       },
     };
     expect(pullRequestPanelContext(thread, surface(11101))).toBe("thread");
     expect(pullRequestPanelContext(thread, surface(11105))).toBe("thread");
-    expect(pullRequestPanelContext({ ...thread, linkedPullRequest: null }, surface(11101))).toBe(
-      "thread",
-    );
+    expect(
+      pullRequestPanelContext(
+        { ...thread, linkedPullRequest: null },
+        surface(11101),
+      ),
+    ).toBe("thread");
   });
 
   it("is the page for a pull request the thread is not linked to", () => {
     expect(pullRequestPanelContext(stackThread, surface(12320))).toBe("page");
-    expect(pullRequestPanelContext(stackThread, surface(10856, { repository: "acme/web" }))).toBe(
-      "page",
-    );
+    expect(
+      pullRequestPanelContext(
+        stackThread,
+        surface(10856, { repository: "acme/web" }),
+      ),
+    ).toBe("page");
   });
 
   it("is the page under another project's checkout of the same repository", () => {
-    expect(pullRequestPanelContext(stackThread, surface(10856, { projectId: "proj-b" }))).toBe(
-      "page",
-    );
+    expect(
+      pullRequestPanelContext(
+        stackThread,
+        surface(10856, { projectId: "proj-b" }),
+      ),
+    ).toBe("page");
   });
 
   it("recognizes an unsynced manual link, and matches host and repository case-insensitively", () => {
-    const thread = { projectId: "proj-a", pullRequests: [link(7, { host: "GitHub.com" })] };
-    expect(pullRequestPanelContext(thread, surface(7, { repository: "PingDotGG/T3Code" }))).toBe(
-      "thread",
-    );
-    expect(pullRequestPanelContext(thread, surface(7, { host: undefined }))).toBe("thread");
-    expect(pullRequestPanelContext(thread, surface(7, { host: "gitlab.com" }))).toBe("page");
+    const thread = {
+      projectId: "proj-a",
+      pullRequests: [link(7, { host: "GitHub.com" })],
+    };
+    expect(
+      pullRequestPanelContext(
+        thread,
+        surface(7, { repository: "LeandroAsilva/LMCS-Agent" }),
+      ),
+    ).toBe("thread");
+    expect(
+      pullRequestPanelContext(thread, surface(7, { host: undefined })),
+    ).toBe("thread");
+    expect(
+      pullRequestPanelContext(thread, surface(7, { host: "gitlab.com" })),
+    ).toBe("page");
   });
 
   it("ignores a dismissed stack member the reader chose not to see", () => {
@@ -1495,20 +1752,31 @@ describe("pull request panel context beside a thread", () => {
   it("falls back to the legacy fields only for a thread with no link list", () => {
     const legacy = {
       projectId: "proj-a",
-      repository: "pingdotgg/t3code",
+      repository: "leandroasilva/lmcs-agent",
       number: 3,
-      url: "https://github.com/pingdotgg/t3code/pull/3",
+      url: "https://github.com/leandroasilva/lmcs-agent/pull/3",
     };
     expect(
-      pullRequestPanelContext({ projectId: "proj-a", linkedPullRequest: legacy }, surface(3)),
+      pullRequestPanelContext(
+        { projectId: "proj-a", linkedPullRequest: legacy },
+        surface(3),
+      ),
     ).toBe("thread");
     expect(
-      pullRequestPanelContext({ projectId: "proj-a", branchPullRequest: legacy }, surface(3)),
+      pullRequestPanelContext(
+        { projectId: "proj-a", branchPullRequest: legacy },
+        surface(3),
+      ),
     ).toBe("thread");
-    expect(pullRequestPanelContext({ projectId: "proj-a", pullRequests: [] }, surface(3))).toBe(
+    expect(
+      pullRequestPanelContext(
+        { projectId: "proj-a", pullRequests: [] },
+        surface(3),
+      ),
+    ).toBe("page");
+    expect(pullRequestPanelContext({ projectId: null }, surface(3))).toBe(
       "page",
     );
-    expect(pullRequestPanelContext({ projectId: null }, surface(3))).toBe("page");
   });
 });
 
@@ -1516,9 +1784,12 @@ describe("which actions need the host read again after they run", () => {
   it("classifies every action the contract knows about", () => {
     // Imported from the contract rather than hand-listed, so a new PullRequestAction fails this
     // test until somebody decides which side of the diff it belongs on.
-    expect(PullRequestAction.literals.map(pullRequestActionNeedsHostRefresh)).toEqual(
+    expect(
+      PullRequestAction.literals.map(pullRequestActionNeedsHostRefresh),
+    ).toEqual(
       PullRequestAction.literals.map(
-        (action) => action === "update-branch" || action === "approve-workflows",
+        (action) =>
+          action === "update-branch" || action === "approve-workflows",
       ),
     );
   });
@@ -1544,8 +1815,14 @@ describe("which actions need the host read again after they run", () => {
 });
 
 describe("cached pull request detail", () => {
-  const reference = { projectId: ProjectId.make("project-1"), repository: "acme/web", number: 7 };
-  const detail = (overrides: Partial<PullRequestDetail> = {}): PullRequestDetail =>
+  const reference = {
+    projectId: ProjectId.make("project-1"),
+    repository: "acme/web",
+    number: 7,
+  };
+  const detail = (
+    overrides: Partial<PullRequestDetail> = {},
+  ): PullRequestDetail =>
     ({
       provider: "github",
       capabilities: {
@@ -1577,7 +1854,11 @@ describe("cached pull request detail", () => {
       title: "Cache the title",
       body: "who made it",
       url: "https://github.com/acme/web/pull/7",
-      author: { login: "octocat", name: null, avatarUrl: "https://avatars.example/octocat" },
+      author: {
+        login: "octocat",
+        name: null,
+        avatarUrl: "https://avatars.example/octocat",
+      },
       state: "open",
       isDraft: false,
       mergeability: "mergeable",
@@ -1632,9 +1913,9 @@ describe("cached pull request detail", () => {
       },
       provider: "github",
     });
-    expect(readPullRequestDetailSnapshot(storage, "env-1", resolved)?.title).toBe(
-      "Cache the title",
-    );
+    expect(
+      readPullRequestDetailSnapshot(storage, "env-1", resolved)?.title,
+    ).toBe("Cache the title");
     const explicit = { ...reference, host: "github.example.com" };
     expect(
       resolvePullRequestReferenceHost(explicit, {
@@ -1660,14 +1941,19 @@ describe("cached pull request detail", () => {
         provider: "azure-devops",
       }),
     ).toBe(reference);
-    expect(resolvePullRequestReferenceHost(reference, undefined)).toBe(reference);
+    expect(resolvePullRequestReferenceHost(reference, undefined)).toBe(
+      reference,
+    );
   });
 
   it("hydrates legacy hostless snapshots only for the matching host", () => {
     const storage = makeStorage();
     writePullRequestDetailSnapshot(storage, "env-1", reference, detail());
     expect(
-      readPullRequestDetailSnapshot(storage, "env-1", { ...reference, host: "github.com" })?.title,
+      readPullRequestDetailSnapshot(storage, "env-1", {
+        ...reference,
+        host: "github.com",
+      })?.title,
     ).toBe("Cache the title");
     expect(
       readPullRequestDetailSnapshot(storage, "env-1", {
@@ -1685,7 +1971,9 @@ describe("cached pull request detail", () => {
     });
     writePullRequestDetailSnapshot(storage, "env-1", reference, cached);
     const resolved = { ...reference, host: "forge.example:8443" };
-    expect(readPullRequestDetailSnapshot(storage, "env-1", resolved)?.title).toBe(cached.title);
+    expect(
+      readPullRequestDetailSnapshot(storage, "env-1", resolved)?.title,
+    ).toBe(cached.title);
     expect(
       readPullRequestDetailSnapshot(storage, "env-1", {
         ...reference,
@@ -1711,17 +1999,26 @@ describe("cached pull request detail", () => {
         url: `https://${host}:8443/acme/web/${provider === "github" ? "pull" : "-/merge_requests"}/7`,
       });
       writePullRequestDetailSnapshot(storage, "env-1", hosted, cached);
-      expect(readPullRequestDetailSnapshot(storage, "env-1", hosted)?.title).toBe(cached.title);
+      expect(
+        readPullRequestDetailSnapshot(storage, "env-1", hosted)?.title,
+      ).toBe(cached.title);
     },
   );
 
   it("keeps a cached tab painted while the live read replaces the counts", () => {
     const cached = detail();
-    const live = detail({ additions: 40, deletions: 9, title: "Cache the title" });
-    expect(resolveDisplayedPullRequestDetail({ live, cached, reference })?.additions).toBe(40);
-    expect(resolveDisplayedPullRequestDetail({ live: null, cached, reference })?.additions).toBe(
-      12,
-    );
+    const live = detail({
+      additions: 40,
+      deletions: 9,
+      title: "Cache the title",
+    });
+    expect(
+      resolveDisplayedPullRequestDetail({ live, cached, reference })?.additions,
+    ).toBe(40);
+    expect(
+      resolveDisplayedPullRequestDetail({ live: null, cached, reference })
+        ?.additions,
+    ).toBe(12);
   });
 
   it("does not paint another change request's snapshot", () => {
@@ -1732,7 +2029,9 @@ describe("cached pull request detail", () => {
         reference,
       }),
     ).toBeNull();
-    expect(readPullRequestDetailSnapshot(makeStorage(), "env-2", reference)).toBeNull();
+    expect(
+      readPullRequestDetailSnapshot(makeStorage(), "env-2", reference),
+    ).toBeNull();
   });
 
   it("isolates stored and displayed details between hosts with the same repository and number", () => {
@@ -1745,14 +2044,21 @@ describe("cached pull request detail", () => {
       url: "https://ghe.example.com/acme/web/pull/7",
     });
     writePullRequestDetailSnapshot(storage, "env-1", publicRef, publicDetail);
-    expect(readPullRequestDetailSnapshot(storage, "env-1", enterpriseRef)).toBeNull();
-    writePullRequestDetailSnapshot(storage, "env-1", enterpriseRef, enterpriseDetail);
-    expect(readPullRequestDetailSnapshot(storage, "env-1", publicRef)?.title).toBe(
-      publicDetail.title,
+    expect(
+      readPullRequestDetailSnapshot(storage, "env-1", enterpriseRef),
+    ).toBeNull();
+    writePullRequestDetailSnapshot(
+      storage,
+      "env-1",
+      enterpriseRef,
+      enterpriseDetail,
     );
-    expect(readPullRequestDetailSnapshot(storage, "env-1", enterpriseRef)?.title).toBe(
-      enterpriseDetail.title,
-    );
+    expect(
+      readPullRequestDetailSnapshot(storage, "env-1", publicRef)?.title,
+    ).toBe(publicDetail.title);
+    expect(
+      readPullRequestDetailSnapshot(storage, "env-1", enterpriseRef)?.title,
+    ).toBe(enterpriseDetail.title);
     expect(
       resolveDisplayedPullRequestDetail({
         live: null,
@@ -1767,17 +2073,36 @@ describe("cached pull request detail", () => {
         reference: enterpriseRef,
       }),
     ).toBe(enterpriseDetail);
-    writePullRequestDetailSnapshot(storage, "env-1", enterpriseRef, publicDetail);
-    expect(readPullRequestDetailSnapshot(storage, "env-1", enterpriseRef)).toBeNull();
+    writePullRequestDetailSnapshot(
+      storage,
+      "env-1",
+      enterpriseRef,
+      publicDetail,
+    );
+    expect(
+      readPullRequestDetailSnapshot(storage, "env-1", enterpriseRef),
+    ).toBeNull();
   });
 
   it("shrugs off corrupt storage and no storage at all", () => {
     const storage = makeStorage();
-    storage.setItem("t3.pullRequests.detail:env-1:project-1:acme/web#7", "{not json");
-    expect(readPullRequestDetailSnapshot(storage, "env-1", reference)).toBeNull();
-    expect(readPullRequestDetailSnapshot(undefined, "env-1", reference)).toBeNull();
+    storage.setItem(
+      "t3.pullRequests.detail:env-1:project-1:acme/web#7",
+      "{not json",
+    );
+    expect(
+      readPullRequestDetailSnapshot(storage, "env-1", reference),
+    ).toBeNull();
+    expect(
+      readPullRequestDetailSnapshot(undefined, "env-1", reference),
+    ).toBeNull();
     const hosted = { ...reference, host: "github.com" };
-    writePullRequestDetailSnapshot(storage, "env-1", hosted, detail({ url: "invalid url" }));
+    writePullRequestDetailSnapshot(
+      storage,
+      "env-1",
+      hosted,
+      detail({ url: "invalid url" }),
+    );
     expect(readPullRequestDetailSnapshot(storage, "env-1", hosted)).toBeNull();
   });
 });
@@ -1794,7 +2119,12 @@ describe("single-PR merge compatibility during stack discovery", () => {
     "capability=%s stack=%s pending=%s error=%s permits=%s",
     (supportsStackActions, hasStack, stackPending, stackError, allowed) => {
       expect(
-        allowsSinglePullRequestMerge({ supportsStackActions, hasStack, stackPending, stackError }),
+        allowsSinglePullRequestMerge({
+          supportsStackActions,
+          hasStack,
+          stackPending,
+          stackError,
+        }),
       ).toBe(allowed);
     },
   );

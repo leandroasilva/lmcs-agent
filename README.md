@@ -1,6 +1,6 @@
 # LMCS Code
 
-A coding-agent desktop app based on [LMCS Code](https://github.com/pingdotgg/t3code), imported from commit `7a12aff471ffe2b22b9fee495b04b32c43f45a37`. LMCS Code has its own product name and icons while preserving the upstream functionality, provider integrations, internal package names, connection protocols, and MIT attribution.
+A coding-agent desktop app based on [LMCS Code](https://github.com/leandroasilva/lmcs-agent), imported from commit `7a12aff471ffe2b22b9fee495b04b32c43f45a37`. LMCS Code has its own product name and icons while preserving the upstream functionality, provider integrations, internal package names, connection protocols, and MIT attribution.
 
 ## Run this checkout
 
@@ -117,7 +117,7 @@ To try it once without installing, run `npx t3@latest` instead.
 
 ### Desktop app
 
-Install the latest version of the desktop app from [GitHub Releases](https://github.com/pingdotgg/t3code/releases), or from your favorite package registry:
+Install the latest version of the desktop app from [GitHub Releases](https://github.com/leandroasilva/lmcs-agent/releases), or from your favorite package registry:
 
 #### Windows (`winget`)
 
@@ -133,7 +133,7 @@ brew install --cask t3-code
 
 #### Debian, Ubuntu (`.deb`)
 
-Download the `.deb` from [GitHub Releases](https://github.com/pingdotgg/t3code/releases), then:
+Download the `.deb` from [GitHub Releases](https://github.com/leandroasilva/lmcs-agent/releases), then:
 
 ```bash
 sudo apt install ./T3-Code-*.deb
@@ -205,6 +205,6 @@ vp i
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) before reporting a bug or opening a PR.
 
-Have a feature request? Start an [Ideas discussion](https://github.com/pingdotgg/t3code/discussions/categories/ideas).
+Have a feature request? Start an [Ideas discussion](https://github.com/leandroasilva/lmcs-agent/discussions/categories/ideas).
 
 Need support? Join the [Discord](https://discord.gg/jn4EGJjrvv).

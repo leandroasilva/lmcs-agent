@@ -18,7 +18,7 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
         "- fix(opencode): handle child approvals, stops, and model catalogs by @human in #8480",
         "## New Contributors",
         "- @human made their first contribution in #8435",
-        "**Full Changelog**: https://github.com/pingdotgg/t3code/compare/old...new",
+        "**Full Changelog**: https://github.com/leandroasilva/lmcs-agent/compare/old...new",
       ].join("\n"),
       "0.0.36-nightly.20260828.1213",
       "nightly",
@@ -55,13 +55,18 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
     );
 
     expect(result).toEqual({
-      releaseNotes: [{ version: "1.2.3", items: ["Newer fix", "Older fix"], totalItems: 2 }],
+      releaseNotes: [
+        { version: "1.2.3", items: ["Newer fix", "Older fix"], totalItems: 2 },
+      ],
       omittedReleaseCount: 0,
     });
   });
 
   it("does not count Markdown or HTML section headings as changes", () => {
-    const changes = Array.from({ length: 8 }, (_, index) => `Change ${index + 1}`);
+    const changes = Array.from(
+      { length: 8 },
+      (_, index) => `Change ${index + 1}`,
+    );
     const result = normalizeDesktopUpdateReleaseNotes(
       [
         { version: "1.2.4", note: ["### Features", ...changes].join("\n- ") },
@@ -84,7 +89,10 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
     const result = normalizeDesktopUpdateReleaseNotes(
       [
         { version: "1.2.3", note: "- Newer release" },
-        { version: "1.2.2", note: "Full changelog: https://example.com/compare/x...y" },
+        {
+          version: "1.2.2",
+          note: "Full changelog: https://example.com/compare/x...y",
+        },
         { version: "1.2.1", note: "- Older release" },
       ],
       "1.2.3",
@@ -104,8 +112,14 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
     // electron-updater's full changelog is "every version above the running
     // one", and preview sorts above nightly, so the preview cuts come first.
     const releaseNotes = [
-      { version: "0.0.41-preview.20260914.1683", note: "- Maintainer test build" },
-      { version: "0.0.41-preview.20260913.1669", note: "- Maintainer test build" },
+      {
+        version: "0.0.41-preview.20260914.1683",
+        note: "- Maintainer test build",
+      },
+      {
+        version: "0.0.41-preview.20260913.1669",
+        note: "- Maintainer test build",
+      },
       { version: "0.0.41-nightly.20260914.1707", note: "- Nightly change 2" },
       { version: "0.0.41-nightly.20260914.1700", note: "- Nightly change 1" },
     ];
@@ -126,20 +140,25 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
   it("keeps only stable releases on the latest channel", () => {
     const result = normalizeDesktopUpdateReleaseNotes(
       [
-        { version: "0.0.42", note: "- Stable change" },
-        { version: "0.0.42-nightly.20260915.1710", note: "- Nightly change" },
+        { version: "0.0.1", note: "- Stable change" },
+        { version: "0.0.1-nightly.20260915.1710", note: "- Nightly change" },
       ],
-      "0.0.42",
+      "0.0.1",
       "latest",
     );
 
-    expect(result.releaseNotes.map(({ version }) => version)).toEqual(["0.0.42"]);
+    expect(result.releaseNotes.map(({ version }) => version)).toEqual([
+      "0.0.1",
+    ]);
   });
 
   it("counts valid groups before applying the six-release limit", () => {
     const releaseNotes = [
       { version: "1.3.9", note: "- Change 9" },
-      { version: "1.3.8", note: "Full changelog: https://example.com/compare/x...y" },
+      {
+        version: "1.3.8",
+        note: "Full changelog: https://example.com/compare/x...y",
+      },
       { version: "1.3.7", note: "- Change 7" },
       { version: "1.3.6", note: "- Change 6" },
       { version: "1.3.5", note: "- Change 5" },
@@ -148,7 +167,11 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
       { version: "1.3.2", note: "- Change 2" },
     ];
 
-    const result = normalizeDesktopUpdateReleaseNotes(releaseNotes, "1.3.9", "latest");
+    const result = normalizeDesktopUpdateReleaseNotes(
+      releaseNotes,
+      "1.3.9",
+      "latest",
+    );
 
     expect(result.releaseNotes.map(({ version }) => version)).toEqual([
       "1.3.9",
@@ -168,7 +191,9 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
       "latest",
     );
     expect(result).toEqual({
-      releaseNotes: [{ version: "1.0.0", items: ["Fix & polish 😀"], totalItems: 1 }],
+      releaseNotes: [
+        { version: "1.0.0", items: ["Fix & polish 😀"], totalItems: 1 },
+      ],
       omittedReleaseCount: 0,
     });
   });
@@ -188,13 +213,21 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
     );
 
     expect(result).toEqual({
-      releaseNotes: [{ version: "1.2.3", items: ["Valid change"], totalItems: 1 }],
+      releaseNotes: [
+        { version: "1.2.3", items: ["Valid change"], totalItems: 1 },
+      ],
       omittedReleaseCount: 0,
     });
   });
 
   it("returns an empty result for an invalid payload", () => {
-    expect(normalizeDesktopUpdateReleaseNotes({ note: "- Invalid" }, "1.0.0", "latest")).toEqual({
+    expect(
+      normalizeDesktopUpdateReleaseNotes(
+        { note: "- Invalid" },
+        "1.0.0",
+        "latest",
+      ),
+    ).toEqual({
       releaseNotes: [],
       omittedReleaseCount: 0,
     });
@@ -207,7 +240,13 @@ describe("normalizeDesktopUpdateReleaseNotes", () => {
       "latest",
     );
     expect(result).toEqual({
-      releaseNotes: [{ version: "1.0.0", items: ["Broken entity &#9999999999;"], totalItems: 1 }],
+      releaseNotes: [
+        {
+          version: "1.0.0",
+          items: ["Broken entity &#9999999999;"],
+          totalItems: 1,
+        },
+      ],
       omittedReleaseCount: 0,
     });
   });

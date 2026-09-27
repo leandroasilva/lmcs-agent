@@ -1,11 +1,11 @@
-import { EventId, ProjectId, TurnId, type OrchestrationThreadActivity } from "@t3tools/contracts";
+import { EventId, ProjectId, TurnId, type OrchestrationThreadActivity } from "@lmcstools/contracts";
 import {
   getLatestThreadForProject,
   sortActiveThreadsByOrderKey,
   sortPinnedThreadsByOrderKey,
   sortThreads,
-} from "@t3tools/client-runtime/state/thread-sort";
-import { formatHourShort, formatRelativeHourShort } from "@t3tools/shared/usageFormat";
+} from "@lmcstools/client-runtime/state/thread-sort";
+import { formatHourShort, formatRelativeHourShort } from "@lmcstools/shared/usageFormat";
 import { bench, describe } from "vite-plus/test";
 
 import { deriveActivePlanState } from "./session-logic";

@@ -22,8 +22,8 @@ import {
   type RuntimeMode,
   ThreadId,
   ProviderInstanceId,
-} from "@t3tools/contracts";
-import { createModelSelection } from "@t3tools/shared/model";
+} from "@lmcstools/contracts";
+import { createModelSelection } from "@lmcstools/shared/model";
 import { assert, describe, it } from "@effect/vitest";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
@@ -4352,8 +4352,8 @@ describe("ClaudeAdapterLive", () => {
           type: "system",
           subtype: "code_change_published",
           provider: "github",
-          url: "https://github.com/pingdotgg/t3code/pull/1",
-          repo: "pingdotgg/t3code",
+          url: "https://github.com/leandroasilva/lmcs-agent/pull/1",
+          repo: "leandroasilva/lmcs-agent",
           identifier: "1",
           session_id: "session",
           uuid: "ccp",

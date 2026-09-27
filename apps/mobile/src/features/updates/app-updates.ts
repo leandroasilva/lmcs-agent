@@ -6,7 +6,7 @@ import {
   reportAtomCommandResult,
   settlePromise,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@lmcstools/client-runtime/state/runtime";
 
 export type AppUpdateCheckState =
   | "idle"

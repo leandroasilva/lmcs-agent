@@ -1,4 +1,4 @@
-import { ProviderDriverKind } from "@t3tools/contracts";
+import { ProviderDriverKind } from "@lmcstools/contracts";
 import {
   AntigravityIcon,
   ClaudeAI,

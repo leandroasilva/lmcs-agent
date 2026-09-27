@@ -1,11 +1,11 @@
-import type { ArchivedSnapshotEntry } from "@t3tools/client-runtime/state/threads";
+import type { ArchivedSnapshotEntry } from "@lmcstools/client-runtime/state/threads";
 import {
   scopeProject,
   scopeThreadShell,
   type EnvironmentProject,
   type EnvironmentThreadShell,
-} from "@t3tools/client-runtime/state/shell";
-import type { EnvironmentId } from "@t3tools/contracts";
+} from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentId } from "@lmcstools/contracts";
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
 

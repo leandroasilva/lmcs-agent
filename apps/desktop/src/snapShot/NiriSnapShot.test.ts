@@ -129,19 +129,19 @@ it("selects the native adapter without needing a portal or GNOME extension", asy
   expect(await NodeFSP.stat(NodePath.dirname(capturePath!)).catch(() => undefined)).toBeUndefined();
 });
 
-it("does not activate T3 until requested, then matches PID and title", async () => {
+it("does not activate LMCS until requested, then matches PID and title", async () => {
   const snapshot = await captureNiriWindow(socketPath);
   expect(calls.some((call) => typeof call !== "string" && call.Action.FocusWindow)).toBe(false);
   windows = [
     { ...window, id: 1, pid: 999, title: "LMCS Code" },
-    { ...window, id: 2, pid: process.pid, title: "Other T3" },
+    { ...window, id: 2, pid: process.pid, title: "Other LMCS Code" },
     { ...window, id: 3, pid: process.pid, title: "LMCS Code" },
   ];
   await snapshot.feedback!.activate("LMCS Code");
   expect(calls).toContainEqual({ Action: { FocusWindow: { id: 3 } } });
 });
 
-it("waits for the restored T3 window to map instead of polling", async () => {
+it("waits for the restored LMCS window to map instead of polling", async () => {
   const snapshot = await captureNiriWindow(socketPath);
   const original = handler;
   handler = async (request, socket) => {

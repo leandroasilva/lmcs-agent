@@ -12,7 +12,7 @@ import {
   EnvironmentHttpInternalServerError,
   EnvironmentHttpUnauthorizedError,
   DESKTOP_UPDATE_RESTART_MARKER_FILE,
-} from "@t3tools/contracts";
+} from "@lmcstools/contracts";
 import {
   RelayCloudEnvironmentHealthProofPayload,
   RelayCloudEnvironmentHealthRequest,
@@ -34,8 +34,8 @@ import {
   RelayManagedEndpointRecoveryResponse,
   type RelayManagedEndpointRuntimeConfig,
   RelayOkResponse,
-} from "@t3tools/contracts/relay";
-import { withRelayClientTracing } from "@t3tools/shared/relayTracing";
+} from "@lmcstools/contracts/relay";
+import { withRelayClientTracing } from "@lmcstools/shared/relayTracing";
 import {
   normalizeRelayIssuer,
   RELAY_HEALTH_REQUEST_TYP,
@@ -46,8 +46,8 @@ import {
   RELAY_MINT_RESPONSE_TYP,
   signRelayJwt,
   verifyRelayJwt,
-} from "@t3tools/shared/relayJwt";
-import { isSecureRelayUrl } from "@t3tools/shared/relayUrl";
+} from "@lmcstools/shared/relayJwt";
+import { isSecureRelayUrl } from "@lmcstools/shared/relayUrl";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
 import * as Crypto from "effect/Crypto";
@@ -859,7 +859,7 @@ const reconcileDesiredCloudLinkWith = Effect.fn("environment.cloud.reconcileDesi
   },
   Effect.catchIf(
     ServerSecretStore.isSecretStoreError,
-    failEnvironmentCloudInternalError("Could not persist desired T3 Connect link state."),
+    failEnvironmentCloudInternalError("Could not persist desired LMCS Connect link state."),
   ),
   Effect.catchTags({
     CloudCliCredentialRemovalError: failCloudCliTokenManagerError,
@@ -1089,7 +1089,7 @@ export const recoverManagedCloudTunnel = Effect.fn("environment.cloud.recoverMan
     });
     if (recovered.endpointRuntime.providerKind !== "cloudflare_tunnel") {
       return yield* new EnvironmentHttpInternalServerError({
-        message: "T3 Connect returned an unsupported managed tunnel configuration.",
+        message: "LMCS Connect returned an unsupported managed tunnel configuration.",
       });
     }
 
@@ -1540,7 +1540,7 @@ const cloudMintCredentialHandler = Effect.fn("environment.cloud.mintCredential")
       scopes: AuthStandardClientScopes,
       subject: "cloud-connect",
       ttl: Duration.minutes(2),
-      label: "T3 Connect connect",
+      label: "LMCS Connect connect",
       proofKeyThumbprint: proof.clientProofKeyThumbprint,
     });
     const responsePayload = {

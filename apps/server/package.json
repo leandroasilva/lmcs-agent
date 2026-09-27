@@ -1,6 +1,6 @@
 {
   "name": "t3",
-  "version": "0.0.42",
+  "version": "0.0.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -39,11 +39,11 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@t3tools/contracts": "workspace:*",
-    "@t3tools/shared": "workspace:*",
-    "@t3tools/ssh": "workspace:*",
-    "@t3tools/tailscale": "workspace:*",
-    "@t3tools/web": "workspace:*",
+    "@lmcstools/contracts": "workspace:*",
+    "@lmcstools/shared": "workspace:*",
+    "@lmcstools/ssh": "workspace:*",
+    "@lmcstools/tailscale": "workspace:*",
+    "@lmcstools/web": "workspace:*",
     "@types/node": "catalog:",
     "@types/yauzl": "^3.4.0",
     "effect-acp": "workspace:*",

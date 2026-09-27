@@ -4,8 +4,8 @@ import {
   ProviderInstanceId,
   type ServerProvider,
   type ServerProviderUpdateState,
-} from "@t3tools/contracts";
-import { ServerProviderUpdateError } from "@t3tools/contracts";
+} from "@lmcstools/contracts";
+import { ServerProviderUpdateError } from "@lmcstools/contracts";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -17,10 +17,16 @@ import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { ChildProcessSpawner } from "effect/unstable/process";
-import { HostProcessEnvironment, HostProcessPlatform } from "@t3tools/shared/hostProcess";
-import { SpawnExecutableResolution } from "@t3tools/shared/shell";
+import {
+  HostProcessEnvironment,
+  HostProcessPlatform,
+} from "@lmcstools/shared/hostProcess";
+import { SpawnExecutableResolution } from "@lmcstools/shared/shell";
 
-import { ProviderRegistry, type ProviderRegistryShape } from "./Services/ProviderRegistry.ts";
+import {
+  ProviderRegistry,
+  type ProviderRegistryShape,
+} from "./Services/ProviderRegistry.ts";
 import * as ModelManifest from "./ModelManifest.ts";
 import * as ProviderMaintenanceRunner from "./providerMaintenanceRunner.ts";
 import {
@@ -44,7 +50,9 @@ const encoder = new TextEncoder();
 // win32 case at the end of this suite.
 const NonWindowsPlatform = Layer.succeed(HostProcessPlatform, "linux");
 
-function lifecycleFor(provider: ProviderDriverKind): ProviderMaintenanceCapabilities {
+function lifecycleFor(
+  provider: ProviderDriverKind,
+): ProviderMaintenanceCapabilities {
   if (provider === CURSOR_DRIVER) {
     return makeProviderMaintenanceCapabilities({
       provider,
@@ -99,7 +107,10 @@ const latestVersionHttpClient = (version: string) =>
       Effect.succeed(
         HttpClientResponse.fromWeb(
           request,
-          Response.json({ version }, { headers: { "content-type": "application/json" } }),
+          Response.json(
+            { version },
+            { headers: { "content-type": "application/json" } },
+          ),
         ),
       ),
     ),
@@ -113,7 +124,9 @@ function mockHandle(result: {
 }) {
   return ChildProcessSpawner.makeHandle({
     pid: ChildProcessSpawner.ProcessId(1),
-    exitCode: result.exitCode ?? Effect.succeed(ChildProcessSpawner.ExitCode(result.code ?? 0)),
+    exitCode:
+      result.exitCode ??
+      Effect.succeed(ChildProcessSpawner.ExitCode(result.code ?? 0)),
     isRunning: Effect.succeed(false),
     kill: () => Effect.void,
     unref: Effect.succeed(Effect.void),
@@ -147,20 +160,30 @@ function mockSpawnerLayer(
         readonly options: { readonly env?: NodeJS.ProcessEnv | undefined };
       };
       return Effect.succeed(
-        mockHandle(handler(childProcess.command, childProcess.args, childProcess.options)),
+        mockHandle(
+          handler(
+            childProcess.command,
+            childProcess.args,
+            childProcess.options,
+          ),
+        ),
       );
     }),
   );
 }
 
 function makeRegistry(
-  initialProviders: ServerProvider | ReadonlyArray<ServerProvider> = baseProvider,
+  initialProviders:
+    | ServerProvider
+    | ReadonlyArray<ServerProvider> = baseProvider,
 ) {
   return Effect.gen(function* () {
     const providersRef = yield* Ref.make<ReadonlyArray<ServerProvider>>(
       Array.isArray(initialProviders) ? initialProviders : [initialProviders],
     );
-    const updateStatesRef = yield* Ref.make<ReadonlyArray<ServerProviderUpdateState>>([]);
+    const updateStatesRef = yield* Ref.make<
+      ReadonlyArray<ServerProviderUpdateState>
+    >([]);
 
     const setProviderMaintenanceActionState = Effect.fn(
       "providerMaintenanceRunner.test.setProviderMaintenanceActionState",
@@ -171,7 +194,10 @@ function makeRegistry(
     }) {
       const updateState = input.state;
       if (updateState) {
-        yield* Ref.update(updateStatesRef, (states) => [...states, updateState]);
+        yield* Ref.update(updateStatesRef, (states) => [
+          ...states,
+          updateState,
+        ]);
       }
       return yield* Ref.updateAndGet(providersRef, (providers) =>
         providers.map((candidate) => {
@@ -179,7 +205,8 @@ function makeRegistry(
             return candidate;
           }
           if (!updateState) {
-            const { updateState: _updateState, ...providerWithoutUpdateState } = candidate;
+            const { updateState: _updateState, ...providerWithoutUpdateState } =
+              candidate;
             return providerWithoutUpdateState;
           }
           return {
@@ -216,7 +243,9 @@ const makeTestRunner = (
   manifest: ModelManifest.ModelManifestData = {
     version: 1,
     currentModels: {},
-    compatibility: [{ driver: CODEX_DRIVER, t3CodeRange: ">=0.0.42", ranges: [] }],
+    compatibility: [
+      { driver: CODEX_DRIVER, t3CodeRange: ">=0.0.1", ranges: [] },
+    ],
   },
 ) =>
   Effect.service(ProviderMaintenanceRunner.ProviderMaintenanceRunner).pipe(
@@ -240,81 +269,72 @@ const makeTestRunner = (
   );
 
 describe("providerMaintenanceRunner", () => {
-  it.effect("runs the allowlisted provider update command and records success", () => {
-    const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
-    return Effect.gen(function* () {
-      const { registry, updateStatesRef } = yield* makeRegistry(baseCursorProvider);
-      const updater = yield* makeTestRunner(registry);
+  it.effect(
+    "runs the allowlisted provider update command and records success",
+    () => {
+      const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
+      return Effect.gen(function* () {
+        const { registry, updateStatesRef } =
+          yield* makeRegistry(baseCursorProvider);
+        const updater = yield* makeTestRunner(registry);
 
-      const result = yield* updater.updateProvider(CURSOR_DRIVER);
-      assert.deepStrictEqual(calls, [
-        {
-          command: "cursor-agent",
-          args: ["update"],
-        },
-      ]);
-      assert.strictEqual(result.providers[0]?.updateState?.status, "succeeded");
-      assert.deepStrictEqual(
-        (yield* Ref.get(updateStatesRef)).map((state) => state.status),
-        ["queued", "running", "succeeded"],
-      );
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("0.0.0"),
-          mockSpawnerLayer((command, args) => {
-            calls.push({ command, args });
-            return { stdout: "updated" };
-          }),
-        ),
-      ),
-    );
-  });
-
-  it.effect("reports unchanged when the updater exits 0 but the provider is gone", () => {
-    return Effect.gen(function* () {
-      const { registry, providersRef } = yield* makeRegistry(baseProvider);
-      // After the update, the refreshed snapshot no longer sees an install.
-      const updater = yield* makeTestRunner({
-        ...registry,
-        refreshInstance: () =>
-          Ref.updateAndGet(providersRef, (providers) =>
-            providers.map((provider) => ({ ...provider, installed: false, version: null })),
+        const result = yield* updater.updateProvider(CURSOR_DRIVER);
+        assert.deepStrictEqual(calls, [
+          {
+            command: "cursor-agent",
+            args: ["update"],
+          },
+        ]);
+        assert.strictEqual(
+          result.providers[0]?.updateState?.status,
+          "succeeded",
+        );
+        assert.deepStrictEqual(
+          (yield* Ref.get(updateStatesRef)).map((state) => state.status),
+          ["queued", "running", "succeeded"],
+        );
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("0.0.0"),
+            mockSpawnerLayer((command, args) => {
+              calls.push({ command, args });
+              return { stdout: "updated" };
+            }),
           ),
-      });
-
-      const result = yield* updater.updateProvider(CODEX_DRIVER);
-      assert.strictEqual(result.providers[0]?.updateState?.status, "unchanged");
-      assert.match(result.providers[0]?.updateState?.message ?? "", /could not verify/);
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("0.0.0"),
-          mockSpawnerLayer(() => ({ stdout: "updated" })),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
   it.effect(
-    "keeps a successful update when the binary is present but its version is unreadable",
+    "reports unchanged when the updater exits 0 but the provider is gone",
     () => {
       return Effect.gen(function* () {
-        const { registry, providersRef } = yield* makeRegistry(baseCursorProvider);
-        // Cursor's `agent about` probe can fail right after an update while the
-        // new binary is perfectly fine.
+        const { registry, providersRef } = yield* makeRegistry(baseProvider);
+        // After the update, the refreshed snapshot no longer sees an install.
         const updater = yield* makeTestRunner({
           ...registry,
           refreshInstance: () =>
             Ref.updateAndGet(providersRef, (providers) =>
-              providers.map((provider) => ({ ...provider, installed: true, version: null })),
+              providers.map((provider) => ({
+                ...provider,
+                installed: false,
+                version: null,
+              })),
             ),
         });
 
-        const result = yield* updater.updateProvider(CURSOR_DRIVER);
-        assert.strictEqual(result.providers[0]?.updateState?.status, "succeeded");
+        const result = yield* updater.updateProvider(CODEX_DRIVER);
+        assert.strictEqual(
+          result.providers[0]?.updateState?.status,
+          "unchanged",
+        );
+        assert.match(
+          result.providers[0]?.updateState?.message ?? "",
+          /could not verify/,
+        );
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
@@ -327,176 +347,241 @@ describe("providerMaintenanceRunner", () => {
     },
   );
 
-  it.effect("spawns the updater with the environment its capabilities declare", () => {
-    const seen: Array<NodeJS.ProcessEnv | undefined> = [];
-    return Effect.gen(function* () {
-      const { registry } = yield* makeRegistry(baseProvider);
-      const updater = yield* makeTestRunner({
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: (_instanceId, provider) =>
-          Effect.succeed({
-            ...lifecycleFor(provider),
-            update: {
-              command: "codex update",
-              executable: "/work/codex-home/packages/standalone/bin/codex",
-              args: ["update"],
-              lockKey: "codex-native",
-              env: { CODEX_HOME: "/work/codex-home" },
-            },
-          }),
-      });
+  it.effect(
+    "keeps a successful update when the binary is present but its version is unreadable",
+    () => {
+      return Effect.gen(function* () {
+        const { registry, providersRef } =
+          yield* makeRegistry(baseCursorProvider);
+        // Cursor's `agent about` probe can fail right after an update while the
+        // new binary is perfectly fine.
+        const updater = yield* makeTestRunner({
+          ...registry,
+          refreshInstance: () =>
+            Ref.updateAndGet(providersRef, (providers) =>
+              providers.map((provider) => ({
+                ...provider,
+                installed: true,
+                version: null,
+              })),
+            ),
+        });
 
-      yield* updater.updateProvider(CODEX_DRIVER);
-      assert.deepStrictEqual(seen, [{ CODEX_HOME: "/work/codex-home" }]);
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("0.0.0"),
-          mockSpawnerLayer((_command, _args, options) => {
-            seen.push(options.env);
-            return { stdout: "updated" };
-          }),
-        ),
-      ),
-    );
-  });
-
-  it.effect("re-resolves ownership before running and executes the fresh command", () => {
-    const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
-    const fresh: Array<boolean> = [];
-    return Effect.gen(function* () {
-      const { registry } = yield* makeRegistry(baseProvider);
-      const updater = yield* makeTestRunner({
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: (_instanceId, provider, options) => {
-          fresh.push(options?.fresh === true);
-          return Effect.succeed(
-            makeProviderMaintenanceCapabilities({
-              provider,
-              packageName: "@openai/codex",
-              updateExecutable: options?.fresh ? "/opt/homebrew/bin/brew" : "brew",
-              updateArgs: ["upgrade", "--cask", "codex"],
-              updateLockKey: "homebrew",
-            }),
-          );
-        },
-      });
-
-      yield* updater.updateProvider(CODEX_DRIVER);
-      // Cached read picks the lock; the two fresh reads bracket the command.
-      assert.deepStrictEqual(fresh, [false, true, true]);
-      assert.deepStrictEqual(calls, [
-        { command: "/opt/homebrew/bin/brew", args: ["upgrade", "--cask", "codex"] },
-      ]);
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("0.0.0"),
-          mockSpawnerLayer((command, args) => {
-            calls.push({ command, args });
-            return { stdout: "updated" };
-          }),
-        ),
-      ),
-    );
-  });
-
-  it.effect("aborts without running when the installation changed since the advisory", () => {
-    const calls: Array<string> = [];
-    return Effect.gen(function* () {
-      const { registry, updateStatesRef } = yield* makeRegistry(baseProvider);
-      const updater = yield* makeTestRunner({
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: (_instanceId, provider, options) =>
-          Effect.succeed(
-            options?.fresh
-              ? makeProviderMaintenanceCapabilities({
-                  provider,
-                  packageName: "@openai/codex",
-                  updateExecutable: null,
-                  updateArgs: [],
-                  updateLockKey: null,
-                })
-              : lifecycleFor(provider),
+        const result = yield* updater.updateProvider(CURSOR_DRIVER);
+        assert.strictEqual(
+          result.providers[0]?.updateState?.status,
+          "succeeded",
+        );
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("0.0.0"),
+            mockSpawnerLayer(() => ({ stdout: "updated" })),
           ),
-      });
-
-      const result = yield* updater.updateProvider(CODEX_DRIVER);
-      assert.deepStrictEqual(calls, []);
-      assert.strictEqual(result.providers[0]?.updateState?.status, "failed");
-      assert.strictEqual(
-        result.providers[0]?.updateState?.message,
-        "Provider installation changed. Refresh and try again.",
-      );
-      assert.deepStrictEqual(
-        (yield* Ref.get(updateStatesRef)).map((state) => state.status),
-        ["queued", "running", "failed"],
-      );
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("0.0.0"),
-          mockSpawnerLayer((command) => {
-            calls.push(command);
-            return { stdout: "updated" };
-          }),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
-  it.effect("uses the resolved provider capabilities when choosing the update executable", () => {
-    const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
-    return Effect.gen(function* () {
-      const { registry } = yield* makeRegistry({
-        ...baseProvider,
-        versionAdvisory: {
-          status: "behind_latest",
-          currentVersion: "2.0.14",
-          latestVersion: "2.1.123",
-          updateCommand: "bun i -g @anthropic-ai/claude-code@latest",
-          canUpdate: true,
-          checkedAt: "2026-04-30T12:00:00.000Z",
-          message: "Update available.",
-        },
-      });
-      const updater = yield* makeTestRunner({
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: () =>
-          Effect.succeed(
-            makeProviderMaintenanceCapabilities({
-              provider: CODEX_DRIVER,
-              packageName: "@openai/codex",
-              updateExecutable: "bun",
-              updateArgs: ["i", "-g", "@openai/codex@latest"],
-              updateLockKey: "bun-global",
+  it.effect(
+    "spawns the updater with the environment its capabilities declare",
+    () => {
+      const seen: Array<NodeJS.ProcessEnv | undefined> = [];
+      return Effect.gen(function* () {
+        const { registry } = yield* makeRegistry(baseProvider);
+        const updater = yield* makeTestRunner({
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: (
+            _instanceId,
+            provider,
+          ) =>
+            Effect.succeed({
+              ...lifecycleFor(provider),
+              update: {
+                command: "codex update",
+                executable: "/work/codex-home/packages/standalone/bin/codex",
+                args: ["update"],
+                lockKey: "codex-native",
+                env: { CODEX_HOME: "/work/codex-home" },
+              },
+            }),
+        });
+
+        yield* updater.updateProvider(CODEX_DRIVER);
+        assert.deepStrictEqual(seen, [{ CODEX_HOME: "/work/codex-home" }]);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("0.0.0"),
+            mockSpawnerLayer((_command, _args, options) => {
+              seen.push(options.env);
+              return { stdout: "updated" };
             }),
           ),
-      });
-
-      yield* updater.updateProvider(CODEX_DRIVER);
-      assert.deepStrictEqual(calls, [
-        {
-          command: "bun",
-          args: ["i", "-g", "@openai/codex@latest"],
-        },
-      ]);
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("0.0.0"),
-          mockSpawnerLayer((command, args) => {
-            calls.push({ command, args });
-            return { stdout: "updated" };
-          }),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
+
+  it.effect(
+    "re-resolves ownership before running and executes the fresh command",
+    () => {
+      const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
+      const fresh: Array<boolean> = [];
+      return Effect.gen(function* () {
+        const { registry } = yield* makeRegistry(baseProvider);
+        const updater = yield* makeTestRunner({
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: (
+            _instanceId,
+            provider,
+            options,
+          ) => {
+            fresh.push(options?.fresh === true);
+            return Effect.succeed(
+              makeProviderMaintenanceCapabilities({
+                provider,
+                packageName: "@openai/codex",
+                updateExecutable: options?.fresh
+                  ? "/opt/homebrew/bin/brew"
+                  : "brew",
+                updateArgs: ["upgrade", "--cask", "codex"],
+                updateLockKey: "homebrew",
+              }),
+            );
+          },
+        });
+
+        yield* updater.updateProvider(CODEX_DRIVER);
+        // Cached read picks the lock; the two fresh reads bracket the command.
+        assert.deepStrictEqual(fresh, [false, true, true]);
+        assert.deepStrictEqual(calls, [
+          {
+            command: "/opt/homebrew/bin/brew",
+            args: ["upgrade", "--cask", "codex"],
+          },
+        ]);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("0.0.0"),
+            mockSpawnerLayer((command, args) => {
+              calls.push({ command, args });
+              return { stdout: "updated" };
+            }),
+          ),
+        ),
+      );
+    },
+  );
+
+  it.effect(
+    "aborts without running when the installation changed since the advisory",
+    () => {
+      const calls: Array<string> = [];
+      return Effect.gen(function* () {
+        const { registry, updateStatesRef } = yield* makeRegistry(baseProvider);
+        const updater = yield* makeTestRunner({
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: (
+            _instanceId,
+            provider,
+            options,
+          ) =>
+            Effect.succeed(
+              options?.fresh
+                ? makeProviderMaintenanceCapabilities({
+                    provider,
+                    packageName: "@openai/codex",
+                    updateExecutable: null,
+                    updateArgs: [],
+                    updateLockKey: null,
+                  })
+                : lifecycleFor(provider),
+            ),
+        });
+
+        const result = yield* updater.updateProvider(CODEX_DRIVER);
+        assert.deepStrictEqual(calls, []);
+        assert.strictEqual(result.providers[0]?.updateState?.status, "failed");
+        assert.strictEqual(
+          result.providers[0]?.updateState?.message,
+          "Provider installation changed. Refresh and try again.",
+        );
+        assert.deepStrictEqual(
+          (yield* Ref.get(updateStatesRef)).map((state) => state.status),
+          ["queued", "running", "failed"],
+        );
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("0.0.0"),
+            mockSpawnerLayer((command) => {
+              calls.push(command);
+              return { stdout: "updated" };
+            }),
+          ),
+        ),
+      );
+    },
+  );
+
+  it.effect(
+    "uses the resolved provider capabilities when choosing the update executable",
+    () => {
+      const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
+      return Effect.gen(function* () {
+        const { registry } = yield* makeRegistry({
+          ...baseProvider,
+          versionAdvisory: {
+            status: "behind_latest",
+            currentVersion: "2.0.14",
+            latestVersion: "2.1.123",
+            updateCommand: "bun i -g @anthropic-ai/claude-code@latest",
+            canUpdate: true,
+            checkedAt: "2026-04-30T12:00:00.000Z",
+            message: "Update available.",
+          },
+        });
+        const updater = yield* makeTestRunner({
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: () =>
+            Effect.succeed(
+              makeProviderMaintenanceCapabilities({
+                provider: CODEX_DRIVER,
+                packageName: "@openai/codex",
+                updateExecutable: "bun",
+                updateArgs: ["i", "-g", "@openai/codex@latest"],
+                updateLockKey: "bun-global",
+              }),
+            ),
+        });
+
+        yield* updater.updateProvider(CODEX_DRIVER);
+        assert.deepStrictEqual(calls, [
+          {
+            command: "bun",
+            args: ["i", "-g", "@openai/codex@latest"],
+          },
+        ]);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("0.0.0"),
+            mockSpawnerLayer((command, args) => {
+              calls.push({ command, args });
+              return { stdout: "updated" };
+            }),
+          ),
+        ),
+      );
+    },
+  );
 
   it.effect(
     "runs update commands through Effect ChildProcess when no test runner is injected",
@@ -514,7 +599,10 @@ describe("providerMaintenanceRunner", () => {
             args: ["install", "-g", "@openai/codex@latest"],
           },
         ]);
-        assert.strictEqual(result.providers[0]?.updateState?.status, "succeeded");
+        assert.strictEqual(
+          result.providers[0]?.updateState?.status,
+          "succeeded",
+        );
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
@@ -530,77 +618,90 @@ describe("providerMaintenanceRunner", () => {
     },
   );
 
-  it.effect("updates a single provider instance without touching sibling instances", () => {
-    const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
-    return Effect.gen(function* () {
-      const personalInstanceId = ProviderInstanceId.make("codex_personal");
-      const workInstanceId = ProviderInstanceId.make("codex_work");
-      const refreshedInstanceIds: Array<ProviderInstanceId> = [];
-      const { registry } = yield* makeRegistry([
-        {
-          ...baseProvider,
-          instanceId: personalInstanceId,
-          version: "0.124.0-alpha.3",
-        },
-        {
-          ...baseProvider,
-          instanceId: workInstanceId,
-          version: "0.124.0-alpha.3",
-        },
-      ]);
-      const updater = yield* makeTestRunner({
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: (instanceId, provider) =>
-          Effect.succeed(
-            makeProviderMaintenanceCapabilities({
-              provider,
-              packageName: "@openai/codex-instance-test",
-              updateExecutable: "vp",
-              updateArgs: ["i", "-g", "@openai/codex"],
-              updateLockKey: "vite-plus-global",
-            }),
-          ).pipe(
-            Effect.tap(() => Effect.sync(() => assert.strictEqual(instanceId, personalInstanceId))),
-          ),
-        refreshInstance: (instanceId) =>
-          registry.refreshInstance(instanceId).pipe(
-            Effect.tap(() =>
-              Effect.sync(() => {
-                refreshedInstanceIds.push(instanceId);
+  it.effect(
+    "updates a single provider instance without touching sibling instances",
+    () => {
+      const calls: Array<{ command: string; args: ReadonlyArray<string> }> = [];
+      return Effect.gen(function* () {
+        const personalInstanceId = ProviderInstanceId.make("codex_personal");
+        const workInstanceId = ProviderInstanceId.make("codex_work");
+        const refreshedInstanceIds: Array<ProviderInstanceId> = [];
+        const { registry } = yield* makeRegistry([
+          {
+            ...baseProvider,
+            instanceId: personalInstanceId,
+            version: "0.124.0-alpha.3",
+          },
+          {
+            ...baseProvider,
+            instanceId: workInstanceId,
+            version: "0.124.0-alpha.3",
+          },
+        ]);
+        const updater = yield* makeTestRunner({
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: (
+            instanceId,
+            provider,
+          ) =>
+            Effect.succeed(
+              makeProviderMaintenanceCapabilities({
+                provider,
+                packageName: "@openai/codex-instance-test",
+                updateExecutable: "vp",
+                updateArgs: ["i", "-g", "@openai/codex"],
+                updateLockKey: "vite-plus-global",
               }),
+            ).pipe(
+              Effect.tap(() =>
+                Effect.sync(() =>
+                  assert.strictEqual(instanceId, personalInstanceId),
+                ),
+              ),
             ),
+          refreshInstance: (instanceId) =>
+            registry.refreshInstance(instanceId).pipe(
+              Effect.tap(() =>
+                Effect.sync(() => {
+                  refreshedInstanceIds.push(instanceId);
+                }),
+              ),
+            ),
+        });
+
+        const result = yield* updater.updateProvider({
+          provider: CODEX_DRIVER,
+          instanceId: personalInstanceId,
+        });
+
+        assert.deepStrictEqual(calls, [
+          {
+            command: "vp",
+            args: ["i", "-g", "@openai/codex"],
+          },
+        ]);
+        assert.deepStrictEqual(refreshedInstanceIds, [personalInstanceId]);
+        assert.strictEqual(result.providers[0]?.instanceId, personalInstanceId);
+        assert.strictEqual(
+          result.providers[0]?.updateState?.status,
+          "succeeded",
+        );
+        assert.strictEqual(result.providers[1]?.instanceId, workInstanceId);
+        assert.strictEqual(result.providers[1]?.updateState, undefined);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("0.124.0-alpha.3"),
+            mockSpawnerLayer((command, args) => {
+              calls.push({ command, args });
+              return { stdout: "updated" };
+            }),
           ),
-      });
-
-      const result = yield* updater.updateProvider({
-        provider: CODEX_DRIVER,
-        instanceId: personalInstanceId,
-      });
-
-      assert.deepStrictEqual(calls, [
-        {
-          command: "vp",
-          args: ["i", "-g", "@openai/codex"],
-        },
-      ]);
-      assert.deepStrictEqual(refreshedInstanceIds, [personalInstanceId]);
-      assert.strictEqual(result.providers[0]?.instanceId, personalInstanceId);
-      assert.strictEqual(result.providers[0]?.updateState?.status, "succeeded");
-      assert.strictEqual(result.providers[1]?.instanceId, workInstanceId);
-      assert.strictEqual(result.providers[1]?.updateState, undefined);
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("0.124.0-alpha.3"),
-          mockSpawnerLayer((command, args) => {
-            calls.push({ command, args });
-            return { stdout: "updated" };
-          }),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
   it.effect("records command failure output in provider update state", () =>
     Effect.gen(function* () {
@@ -611,7 +712,10 @@ describe("providerMaintenanceRunner", () => {
       const updateState = result.providers[0]?.updateState;
 
       assert.strictEqual(updateState?.status, "failed");
-      assert.strictEqual(updateState?.message, "Update command exited with code 1.");
+      assert.strictEqual(
+        updateState?.message,
+        "Update command exited with code 1.",
+      );
       assert.include(updateState?.output ?? "", "permission denied");
     }).pipe(
       Effect.provide(
@@ -637,8 +741,14 @@ describe("providerMaintenanceRunner", () => {
 
         const result = yield* updater.updateProvider(CODEX_DRIVER);
 
-        assert.strictEqual(result.providers[0]?.updateState?.status, "unchanged");
-        assert.include(result.providers[0]?.updateState?.message ?? "", "still detects");
+        assert.strictEqual(
+          result.providers[0]?.updateState?.status,
+          "unchanged",
+        );
+        assert.include(
+          result.providers[0]?.updateState?.message ?? "",
+          "still detects",
+        );
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
@@ -663,10 +773,14 @@ describe("providerMaintenanceRunner", () => {
       const { registry } = yield* makeRegistry();
       const updater = yield* makeTestRunner(registry);
 
-      const first = yield* updater.updateProvider(CODEX_DRIVER).pipe(Effect.forkScoped);
+      const first = yield* updater
+        .updateProvider(CODEX_DRIVER)
+        .pipe(Effect.forkScoped);
       yield* Effect.promise(() => started);
 
-      const second = yield* updater.updateProvider(CODEX_DRIVER).pipe(Effect.exit);
+      const second = yield* updater
+        .updateProvider(CODEX_DRIVER)
+        .pipe(Effect.exit);
       assert.strictEqual(Exit.isFailure(second), true);
       if (Exit.isFailure(second)) {
         const error = Cause.squash(second.cause);
@@ -697,86 +811,103 @@ describe("providerMaintenanceRunner", () => {
     );
   });
 
-  it.effect("serializes different providers that share the same update lock key", () => {
-    const firstStartedLatch: { resolve: () => void } = { resolve: () => {} };
-    const releaseFirstLatch: { resolve: () => void } = { resolve: () => {} };
-    const firstStarted = new Promise<void>((resolve) => {
-      firstStartedLatch.resolve = resolve;
-    });
-    const releaseFirst = new Promise<void>((resolve) => {
-      releaseFirstLatch.resolve = resolve;
-    });
-    const calls: Array<string> = [];
-    return Effect.gen(function* () {
-      const { registry } = yield* makeRegistry([baseProvider, baseOpenCodeProvider]);
-      const updater = yield* makeTestRunner({
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: (_instanceId, provider) =>
-          Effect.succeed(
-            makeProviderMaintenanceCapabilities({
-              provider,
-              packageName: provider === OPENCODE_DRIVER ? "opencode-ai" : "@openai/codex",
-              updateExecutable: "npm",
-              updateArgs:
-                provider === OPENCODE_DRIVER
-                  ? ["install", "-g", "opencode-ai@latest"]
-                  : ["install", "-g", "@openai/codex@latest"],
-              updateLockKey: "npm-global",
+  it.effect(
+    "serializes different providers that share the same update lock key",
+    () => {
+      const firstStartedLatch: { resolve: () => void } = { resolve: () => {} };
+      const releaseFirstLatch: { resolve: () => void } = { resolve: () => {} };
+      const firstStarted = new Promise<void>((resolve) => {
+        firstStartedLatch.resolve = resolve;
+      });
+      const releaseFirst = new Promise<void>((resolve) => {
+        releaseFirstLatch.resolve = resolve;
+      });
+      const calls: Array<string> = [];
+      return Effect.gen(function* () {
+        const { registry } = yield* makeRegistry([
+          baseProvider,
+          baseOpenCodeProvider,
+        ]);
+        const updater = yield* makeTestRunner({
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: (
+            _instanceId,
+            provider,
+          ) =>
+            Effect.succeed(
+              makeProviderMaintenanceCapabilities({
+                provider,
+                packageName:
+                  provider === OPENCODE_DRIVER
+                    ? "opencode-ai"
+                    : "@openai/codex",
+                updateExecutable: "npm",
+                updateArgs:
+                  provider === OPENCODE_DRIVER
+                    ? ["install", "-g", "opencode-ai@latest"]
+                    : ["install", "-g", "@openai/codex@latest"],
+                updateLockKey: "npm-global",
+              }),
+            ),
+        });
+
+        const first = yield* updater
+          .updateProvider(CODEX_DRIVER)
+          .pipe(Effect.forkScoped);
+        yield* Effect.promise(() => firstStarted);
+
+        const second = yield* updater
+          .updateProvider(OPENCODE_DRIVER)
+          .pipe(Effect.forkScoped);
+        let providersWhileQueued: ReadonlyArray<ServerProvider> = [];
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          providersWhileQueued = yield* registry.getProviders;
+          const queuedStatus = providersWhileQueued.find(
+            (provider) => provider.instanceId === OPENCODE_INSTANCE_ID,
+          )?.updateState?.status;
+          if (queuedStatus === "queued") {
+            break;
+          }
+          yield* Effect.yieldNow;
+        }
+        assert.deepStrictEqual(calls, ["install -g @openai/codex@latest"]);
+        assert.strictEqual(
+          providersWhileQueued.find(
+            (provider) => provider.instanceId === OPENCODE_INSTANCE_ID,
+          )?.updateState?.status,
+          "queued",
+        );
+
+        releaseFirstLatch.resolve();
+        yield* Fiber.join(first);
+        yield* Fiber.join(second);
+        assert.deepStrictEqual(calls, [
+          "install -g @openai/codex@latest",
+          "install -g opencode-ai@latest",
+        ]);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            NonWindowsPlatform,
+            latestVersionHttpClient("2.0.0"),
+            mockSpawnerLayer((_command, args) => {
+              calls.push(args.join(" "));
+              if (calls.length === 1) {
+                firstStartedLatch.resolve();
+                return {
+                  stdout: "updated",
+                  exitCode: Effect.promise(() => releaseFirst).pipe(
+                    Effect.as(ChildProcessSpawner.ExitCode(0)),
+                  ),
+                };
+              }
+              return { stdout: "updated" };
             }),
           ),
-      });
-
-      const first = yield* updater.updateProvider(CODEX_DRIVER).pipe(Effect.forkScoped);
-      yield* Effect.promise(() => firstStarted);
-
-      const second = yield* updater.updateProvider(OPENCODE_DRIVER).pipe(Effect.forkScoped);
-      let providersWhileQueued: ReadonlyArray<ServerProvider> = [];
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        providersWhileQueued = yield* registry.getProviders;
-        const queuedStatus = providersWhileQueued.find(
-          (provider) => provider.instanceId === OPENCODE_INSTANCE_ID,
-        )?.updateState?.status;
-        if (queuedStatus === "queued") {
-          break;
-        }
-        yield* Effect.yieldNow;
-      }
-      assert.deepStrictEqual(calls, ["install -g @openai/codex@latest"]);
-      assert.strictEqual(
-        providersWhileQueued.find((provider) => provider.instanceId === OPENCODE_INSTANCE_ID)
-          ?.updateState?.status,
-        "queued",
-      );
-
-      releaseFirstLatch.resolve();
-      yield* Fiber.join(first);
-      yield* Fiber.join(second);
-      assert.deepStrictEqual(calls, [
-        "install -g @openai/codex@latest",
-        "install -g opencode-ai@latest",
-      ]);
-    }).pipe(
-      Effect.provide(
-        Layer.mergeAll(
-          NonWindowsPlatform,
-          latestVersionHttpClient("2.0.0"),
-          mockSpawnerLayer((_command, args) => {
-            calls.push(args.join(" "));
-            if (calls.length === 1) {
-              firstStartedLatch.resolve();
-              return {
-                stdout: "updated",
-                exitCode: Effect.promise(() => releaseFirst).pipe(
-                  Effect.as(ChildProcessSpawner.ExitCode(0)),
-                ),
-              };
-            }
-            return { stdout: "updated" };
-          }),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
   it.effect("accepts arbitrary driver-provided update lock keys", () => {
     const calls: Array<string> = [];
@@ -784,7 +915,10 @@ describe("providerMaintenanceRunner", () => {
       const { registry } = yield* makeRegistry(baseProvider);
       const updater = yield* makeTestRunner({
         ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: (_instanceId, provider) =>
+        getProviderMaintenanceCapabilitiesForInstance: (
+          _instanceId,
+          provider,
+        ) =>
           Effect.succeed(
             makeProviderMaintenanceCapabilities({
               provider,
@@ -819,8 +953,12 @@ describe("providerMaintenanceRunner", () => {
       Effect.gen(function* () {
         const { registry } = yield* makeRegistry(baseProvider);
         let blockQueuedState = true;
-        const queuedStateWrittenLatch: { resolve: () => void } = { resolve: () => {} };
-        const releaseQueuedStateLatch: { resolve: () => void } = { resolve: () => {} };
+        const queuedStateWrittenLatch: { resolve: () => void } = {
+          resolve: () => {},
+        };
+        const releaseQueuedStateLatch: { resolve: () => void } = {
+          resolve: () => {},
+        };
         const queuedStateWritten = new Promise<void>((resolve) => {
           queuedStateWrittenLatch.resolve = resolve;
         });
@@ -833,7 +971,8 @@ describe("providerMaintenanceRunner", () => {
           setProviderMaintenanceActionState: Effect.fn(
             "providerMaintenanceRunner.test.blockQueuedState",
           )(function* (input) {
-            const providers = yield* registry.setProviderMaintenanceActionState(input);
+            const providers =
+              yield* registry.setProviderMaintenanceActionState(input);
             if (input.state?.status === "queued" && blockQueuedState) {
               queuedStateWrittenLatch.resolve();
               yield* Effect.promise(() => releaseQueuedState);
@@ -842,17 +981,24 @@ describe("providerMaintenanceRunner", () => {
           }),
         });
 
-        const first = yield* updater.updateProvider(CODEX_DRIVER).pipe(Effect.forkScoped);
+        const first = yield* updater
+          .updateProvider(CODEX_DRIVER)
+          .pipe(Effect.forkScoped);
         yield* Effect.promise(() => queuedStateWritten);
         blockQueuedState = false;
 
         yield* Fiber.interrupt(first);
         releaseQueuedStateLatch.resolve();
 
-        const second = yield* updater.updateProvider(CODEX_DRIVER).pipe(Effect.exit);
+        const second = yield* updater
+          .updateProvider(CODEX_DRIVER)
+          .pipe(Effect.exit);
         assert.strictEqual(Exit.isSuccess(second), true);
         if (Exit.isSuccess(second)) {
-          assert.strictEqual(second.value.providers[0]?.updateState?.status, "succeeded");
+          assert.strictEqual(
+            second.value.providers[0]?.updateState?.status,
+            "succeeded",
+          );
         }
       }).pipe(
         Effect.provide(
@@ -865,154 +1011,180 @@ describe("providerMaintenanceRunner", () => {
       ),
   );
 
-  it.effect("resolves npm to a .cmd shim and routes through the shell on win32", () => {
-    const captured: Array<{
-      readonly command: string;
-      readonly args: ReadonlyArray<string>;
-      readonly shell: boolean | string | undefined;
-    }> = [];
+  it.effect(
+    "resolves npm to a .cmd shim and routes through the shell on win32",
+    () => {
+      const captured: Array<{
+        readonly command: string;
+        readonly args: ReadonlyArray<string>;
+        readonly shell: boolean | string | undefined;
+      }> = [];
+      return Effect.gen(function* () {
+        const { registry } = yield* makeRegistry(baseProvider);
+        const runner = yield* makeTestRunner(registry);
+
+        const result = yield* runner.updateProvider(CODEX_DRIVER);
+
+        // On win32, resolveSpawnCommand resolves `npm` to the `.cmd` shim and
+        // routes the spawn through cmd.exe (shell: true), escaping every arg.
+        assert.strictEqual(captured.length, 1);
+        const call = captured[0];
+        assert.ok(call, "expected the spawner to be invoked once");
+        // The resolved command is the escaped `.cmd` path. Asserting the precise
+        // escaped string is brittle, so verify it carries the resolved shim and
+        // that shell mode was used.
+        assert.match(call.command, /npm\.cmd/i);
+        assert.strictEqual(call.shell, true);
+        // Args are escaped for cmd.exe shell mode (each quoted) but still carry
+        // the original install command (`install -g @openai/codex@latest`) in order.
+        assert.strictEqual(call.args.length, 3);
+        assert.match(call.args[0] ?? "", /install/);
+        assert.match(call.args[1] ?? "", /-g/);
+        assert.match(call.args[2] ?? "", /@openai\/codex@latest/);
+        assert.strictEqual(
+          result.providers[0]?.updateState?.status,
+          "succeeded",
+        );
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            Layer.succeed(HostProcessPlatform, "win32"),
+            Layer.succeed(HostProcessEnvironment, {
+              PATH: "C:\\fake\\npm",
+              PATHEXT: ".COM;.EXE;.BAT;.CMD",
+            }),
+            Layer.succeed(SpawnExecutableResolution, (command) =>
+              command === "npm" ? "C:\\fake\\npm\\npm.cmd" : undefined,
+            ),
+            latestVersionHttpClient("0.0.0"),
+            Layer.succeed(
+              ChildProcessSpawner.ChildProcessSpawner,
+              ChildProcessSpawner.make((command) => {
+                const childProcess = command as unknown as {
+                  readonly command: string;
+                  readonly args: ReadonlyArray<string>;
+                  readonly options: {
+                    readonly shell?: boolean | string | undefined;
+                  };
+                };
+                captured.push({
+                  command: childProcess.command,
+                  args: childProcess.args,
+                  shell: childProcess.options.shell,
+                });
+                return Effect.succeed(mockHandle({ stdout: "updated" }));
+              }),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+});
+
+it.effect(
+  "refuses incompatible latest versions and unapproved or unpinnable targets",
+  () => {
+    const calls: string[] = [];
+    const manifest: ModelManifest.ModelManifestData = {
+      version: 1,
+      currentModels: {},
+      compatibility: [
+        {
+          driver: "codex",
+          t3CodeRange: ">=0.0.1",
+          recommendedVersion: "2.0.0",
+          ranges: [
+            { range: "=2.0.0", status: "supported" },
+            { range: ">2.0.0", status: "broken" },
+          ],
+        },
+      ],
+    };
     return Effect.gen(function* () {
-      const { registry } = yield* makeRegistry(baseProvider);
-      const runner = yield* makeTestRunner(registry);
-
-      const result = yield* runner.updateProvider(CODEX_DRIVER);
-
-      // On win32, resolveSpawnCommand resolves `npm` to the `.cmd` shim and
-      // routes the spawn through cmd.exe (shell: true), escaping every arg.
-      assert.strictEqual(captured.length, 1);
-      const call = captured[0];
-      assert.ok(call, "expected the spawner to be invoked once");
-      // The resolved command is the escaped `.cmd` path. Asserting the precise
-      // escaped string is brittle, so verify it carries the resolved shim and
-      // that shell mode was used.
-      assert.match(call.command, /npm\.cmd/i);
-      assert.strictEqual(call.shell, true);
-      // Args are escaped for cmd.exe shell mode (each quoted) but still carry
-      // the original install command (`install -g @openai/codex@latest`) in order.
-      assert.strictEqual(call.args.length, 3);
-      assert.match(call.args[0] ?? "", /install/);
-      assert.match(call.args[1] ?? "", /-g/);
-      assert.match(call.args[2] ?? "", /@openai\/codex@latest/);
-      assert.strictEqual(result.providers[0]?.updateState?.status, "succeeded");
+      const { registry, providersRef } = yield* makeRegistry();
+      const pinnedCapabilities = makeProviderMaintenanceCapabilities({
+        provider: CODEX_DRIVER,
+        packageName: "@openai/codex",
+        updateExecutable: "npm",
+        updateArgs: ["install", "-g", "@openai/codex@latest"],
+        updateLockKey: "npm-global:/fixture",
+      });
+      const updater = yield* makeTestRunner(
+        {
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: () =>
+            Effect.succeed(pinnedCapabilities),
+        },
+        manifest,
+      );
+      for (const targetVersion of [
+        undefined,
+        "",
+        "1.0.0",
+        "2.0.0; echo unsafe",
+      ]) {
+        const result = yield* updater.updateProvider({
+          provider: CODEX_DRIVER,
+          ...(targetVersion !== undefined ? { targetVersion } : {}),
+        });
+        assert.strictEqual(result.providers[0]?.updateState?.status, "failed");
+      }
+      assert.deepStrictEqual(calls, []);
+      yield* Ref.update(providersRef, (providers) =>
+        providers.map((entry) => ({ ...entry, version: "2.0.0" })),
+      );
+      const installed = yield* updater.updateProvider({
+        provider: CODEX_DRIVER,
+        targetVersion: "2.0.0",
+      });
+      assert.deepStrictEqual(calls, ["install -g @openai/codex@2.0.0"]);
+      assert.strictEqual(
+        installed.providers[0]?.updateState?.status,
+        "succeeded",
+      );
+      yield* Ref.update(providersRef, (providers) =>
+        providers.map((entry) => ({ ...entry, version: "1.0.0" })),
+      );
+      const unchanged = yield* updater.updateProvider({
+        provider: CODEX_DRIVER,
+        targetVersion: "2.0.0",
+      });
+      assert.strictEqual(
+        unchanged.providers[0]?.updateState?.status,
+        "unchanged",
+      );
+      const nativeUpdater = yield* makeTestRunner(
+        {
+          ...registry,
+          getProviderMaintenanceCapabilitiesForInstance: () =>
+            Effect.succeed({
+              ...pinnedCapabilities,
+              update: {
+                ...pinnedCapabilities.update!,
+                lockKey: "codex-native",
+              },
+            }),
+        },
+        manifest,
+      );
+      const refused = yield* nativeUpdater.updateProvider({
+        provider: CODEX_DRIVER,
+        targetVersion: "2.0.0",
+      });
+      assert.strictEqual(refused.providers[0]?.updateState?.status, "failed");
+      assert.strictEqual(calls.length, 2);
     }).pipe(
       Effect.provide(
         Layer.mergeAll(
-          Layer.succeed(HostProcessPlatform, "win32"),
-          Layer.succeed(HostProcessEnvironment, {
-            PATH: "C:\\fake\\npm",
-            PATHEXT: ".COM;.EXE;.BAT;.CMD",
+          NonWindowsPlatform,
+          latestVersionHttpClient("3.0.0"),
+          mockSpawnerLayer((_command, args) => {
+            calls.push(args.join(" "));
+            return { stdout: "installed" };
           }),
-          Layer.succeed(SpawnExecutableResolution, (command) =>
-            command === "npm" ? "C:\\fake\\npm\\npm.cmd" : undefined,
-          ),
-          latestVersionHttpClient("0.0.0"),
-          Layer.succeed(
-            ChildProcessSpawner.ChildProcessSpawner,
-            ChildProcessSpawner.make((command) => {
-              const childProcess = command as unknown as {
-                readonly command: string;
-                readonly args: ReadonlyArray<string>;
-                readonly options: { readonly shell?: boolean | string | undefined };
-              };
-              captured.push({
-                command: childProcess.command,
-                args: childProcess.args,
-                shell: childProcess.options.shell,
-              });
-              return Effect.succeed(mockHandle({ stdout: "updated" }));
-            }),
-          ),
         ),
       ),
     );
-  });
-});
-
-it.effect("refuses incompatible latest versions and unapproved or unpinnable targets", () => {
-  const calls: string[] = [];
-  const manifest: ModelManifest.ModelManifestData = {
-    version: 1,
-    currentModels: {},
-    compatibility: [
-      {
-        driver: "codex",
-        t3CodeRange: ">=0.0.42",
-        recommendedVersion: "2.0.0",
-        ranges: [
-          { range: "=2.0.0", status: "supported" },
-          { range: ">2.0.0", status: "broken" },
-        ],
-      },
-    ],
-  };
-  return Effect.gen(function* () {
-    const { registry, providersRef } = yield* makeRegistry();
-    const pinnedCapabilities = makeProviderMaintenanceCapabilities({
-      provider: CODEX_DRIVER,
-      packageName: "@openai/codex",
-      updateExecutable: "npm",
-      updateArgs: ["install", "-g", "@openai/codex@latest"],
-      updateLockKey: "npm-global:/fixture",
-    });
-    const updater = yield* makeTestRunner(
-      {
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: () => Effect.succeed(pinnedCapabilities),
-      },
-      manifest,
-    );
-    for (const targetVersion of [undefined, "", "1.0.0", "2.0.0; echo unsafe"]) {
-      const result = yield* updater.updateProvider({
-        provider: CODEX_DRIVER,
-        ...(targetVersion !== undefined ? { targetVersion } : {}),
-      });
-      assert.strictEqual(result.providers[0]?.updateState?.status, "failed");
-    }
-    assert.deepStrictEqual(calls, []);
-    yield* Ref.update(providersRef, (providers) =>
-      providers.map((entry) => ({ ...entry, version: "2.0.0" })),
-    );
-    const installed = yield* updater.updateProvider({
-      provider: CODEX_DRIVER,
-      targetVersion: "2.0.0",
-    });
-    assert.deepStrictEqual(calls, ["install -g @openai/codex@2.0.0"]);
-    assert.strictEqual(installed.providers[0]?.updateState?.status, "succeeded");
-    yield* Ref.update(providersRef, (providers) =>
-      providers.map((entry) => ({ ...entry, version: "1.0.0" })),
-    );
-    const unchanged = yield* updater.updateProvider({
-      provider: CODEX_DRIVER,
-      targetVersion: "2.0.0",
-    });
-    assert.strictEqual(unchanged.providers[0]?.updateState?.status, "unchanged");
-    const nativeUpdater = yield* makeTestRunner(
-      {
-        ...registry,
-        getProviderMaintenanceCapabilitiesForInstance: () =>
-          Effect.succeed({
-            ...pinnedCapabilities,
-            update: { ...pinnedCapabilities.update!, lockKey: "codex-native" },
-          }),
-      },
-      manifest,
-    );
-    const refused = yield* nativeUpdater.updateProvider({
-      provider: CODEX_DRIVER,
-      targetVersion: "2.0.0",
-    });
-    assert.strictEqual(refused.providers[0]?.updateState?.status, "failed");
-    assert.strictEqual(calls.length, 2);
-  }).pipe(
-    Effect.provide(
-      Layer.mergeAll(
-        NonWindowsPlatform,
-        latestVersionHttpClient("3.0.0"),
-        mockSpawnerLayer((_command, args) => {
-          calls.push(args.join(" "));
-          return { stdout: "installed" };
-        }),
-      ),
-    ),
-  );
-});
+  },
+);
