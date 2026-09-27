@@ -22,8 +22,8 @@ irm https://t3.codes/install.ps1 | iex
 
 This puts `t3` in `~/.local/bin`. If your shell reports `command not found`
 afterwards, that directory is not on your `PATH` yet; the installer prints the
-line to add. Set `T3CODE_CHANNEL=nightly` to install the nightly train, or
-`T3CODE_VERSION` to pin an exact version.
+line to add. Set `LMCS_CHANNEL=nightly` to install the nightly train, or
+`LMCS_VERSION` to pin an exact version.
 
 | Task                                             | Command                                                   |
 | ------------------------------------------------ | --------------------------------------------------------- |
@@ -118,7 +118,7 @@ computer.
 | Cursor      | Install [Cursor CLI](https://cursor.com/cli), then run `agent login`.                        |
 | Grok Build  | Install [Grok Build CLI](https://x.ai/cli), then run `grok login`.                           |
 | OpenCode    | Install [OpenCode](https://opencode.ai), then run `opencode auth login`.                     |
-| Antigravity | Install and sign in with Google from LMCS Code's provider settings.                            |
+| Antigravity | Install and sign in with Google from LMCS Code's provider settings.                          |
 
 Provider CLIs must be on the server's `PATH`. If LMCS Code cannot find one, set its
 **Binary path** in provider settings, especially when using a version manager.
