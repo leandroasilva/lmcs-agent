@@ -29,7 +29,7 @@
     "./types": "./src/SelectableMarkdownText.types.ts"
   },
   "peerDependencies": {
-    "@lmcstools/client-runtime": "*",
+    "@lmcstools/client": "*",
     "@lmcstools/core": "*",
     "expo": "*",
     "expo-asset": "*",
