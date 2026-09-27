@@ -4,7 +4,7 @@ import * as Layer from "effect/Layer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 
-import * as AcpAgent from "../../src/agent.ts";
+import * as AcpAgent from "../../../src/acp/agent.ts";
 
 if (process.env.ACP_MOCK_STDOUT_PREFIX !== undefined) {
   process.stdout.write(process.env.ACP_MOCK_STDOUT_PREFIX);

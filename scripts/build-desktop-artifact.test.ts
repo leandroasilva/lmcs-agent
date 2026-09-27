@@ -395,7 +395,6 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
           "@effect/platform-node": "catalog:",
           "@napi-rs/keyring": "^1.3.0",
           "@lmcstools/core": "workspace:*",
-          "@lmcstools/core": "workspace:*",
           "dbus-next": "0.10.2",
           effect: "catalog:",
           electron: "41.5.0",

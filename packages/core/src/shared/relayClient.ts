@@ -132,7 +132,7 @@ export interface RelayClientShape {
 }
 
 export class RelayClient extends Context.Service<RelayClient, RelayClientShape>()(
-  "@lmcstools/core/relayClient",
+  "@lmcstools/core/shared/relayClient",
 ) {}
 
 function executableFileName(platform: NodeJS.Platform): string {
