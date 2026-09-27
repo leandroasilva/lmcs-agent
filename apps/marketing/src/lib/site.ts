@@ -1,4 +1,4 @@
-export const GITHUB_REPOSITORY_URL = "https://github.com/pingdotgg/t3code";
+export const GITHUB_REPOSITORY_URL = "https://github.com/leandroasilva/lmcs-agent";
 
 export const IOS_APP_STORE_URL =
   "https://apps.apple.com/us/app/lmcs-code-remote-claude-more/id6787819824";

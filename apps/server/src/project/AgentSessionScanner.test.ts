@@ -928,7 +928,7 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
         yield* fileSystem.makeDirectory(path.join(repo, ".git"));
         yield* fileSystem.writeFileString(
           path.join(repo, ".git", "config"),
-          '[core]\n\tbare = false\n[remote "origin"]\n\turl = git@github.com:pingdotgg/t3code.git\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n',
+          '[core]\n\tbare = false\n[remote "origin"]\n\turl = git@github.com:leandroasilva/lmcs-agent.git\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n',
         );
         yield* fileSystem.writeFileString(
           path.join(worktree, ".git"),
@@ -969,7 +969,7 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
           { path: plain, git: null },
           {
             path: repo,
-            git: { remoteKey: "github.com/pingdotgg/t3code", repository: "pingdotgg/t3code" },
+            git: { remoteKey: "github.com/leandroasilva/lmcs-agent", repository: "leandroasilva/lmcs-agent" },
           },
         ]);
       }),

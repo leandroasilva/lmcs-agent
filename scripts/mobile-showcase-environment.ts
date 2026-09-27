@@ -124,7 +124,7 @@ export const SHOWCASE_PROJECTS = [
     id: "t3code",
     title: "LMCS Code",
     directory: "t3code",
-    repositoryUrl: "https://github.com/pingdotgg/t3code.git",
+    repositoryUrl: "https://github.com/leandroasilva/lmcs-agent.git",
     favicon: PROJECT_FAVICONS.t3code,
   },
   {
@@ -312,7 +312,7 @@ async function seedT3CodeWorkspace(workspaceRoot: string): Promise<void> {
   );
   await initializeRepository({
     workspaceRoot,
-    repositoryUrl: "https://github.com/pingdotgg/t3code.git",
+    repositoryUrl: "https://github.com/leandroasilva/lmcs-agent.git",
     commitMessage: "Show connected environments",
   });
   await runGit(workspaceRoot, ["checkout", "-b", "feat/remote-command-center"]);

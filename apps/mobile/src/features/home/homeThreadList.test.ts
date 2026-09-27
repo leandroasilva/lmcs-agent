@@ -52,11 +52,11 @@ describe("home project scopes", () => {
     const localEnvironmentId = EnvironmentId.make("environment-local");
     const remoteEnvironmentId = EnvironmentId.make("environment-remote");
     const repositoryIdentity = {
-      canonicalKey: "github.com/pingdotgg/t3code",
+      canonicalKey: "github.com/leandroasilva/lmcs-agent",
       locator: {
         source: "git-remote" as const,
         remoteName: "origin",
-        remoteUrl: "git@github.com:pingdotgg/t3code.git",
+        remoteUrl: "git@github.com:leandroasilva/lmcs-agent.git",
       },
     };
     const projects = [
@@ -95,11 +95,11 @@ describe("home project scopes", () => {
     const localEnvironmentId = EnvironmentId.make("environment-local");
     const remoteEnvironmentId = EnvironmentId.make("environment-remote");
     const repositoryIdentity = {
-      canonicalKey: "github.com/pingdotgg/t3code",
+      canonicalKey: "github.com/leandroasilva/lmcs-agent",
       locator: {
         source: "git-remote" as const,
         remoteName: "origin",
-        remoteUrl: "git@github.com:pingdotgg/t3code.git",
+        remoteUrl: "git@github.com:leandroasilva/lmcs-agent.git",
       },
     };
     const projects = [
@@ -217,11 +217,11 @@ describe("home project scopes", () => {
     const localEnvironmentId = EnvironmentId.make("environment-local");
     const remoteEnvironmentId = EnvironmentId.make("environment-remote");
     const repositoryIdentity = {
-      canonicalKey: "github.com/pingdotgg/t3code",
+      canonicalKey: "github.com/leandroasilva/lmcs-agent",
       locator: {
         source: "git-remote" as const,
         remoteName: "origin",
-        remoteUrl: "git@github.com:pingdotgg/t3code.git",
+        remoteUrl: "git@github.com:leandroasilva/lmcs-agent.git",
       },
     };
     const olderMember = makeProject({

@@ -70,9 +70,9 @@ function makeThread(
 const NOW = "2026-06-02T00:00:00.000Z";
 const linkedPullRequest = {
   projectId: ProjectId.make("project-1"),
-  repository: "pingdotgg/t3code",
+  repository: "leandroasilva/lmcs-agent",
   number: 42,
-  url: "https://github.com/pingdotgg/t3code/pull/42",
+  url: "https://github.com/leandroasilva/lmcs-agent/pull/42",
 };
 
 describe("resolveThreadListV2SnoozeMenuSelection", () => {
