@@ -397,7 +397,7 @@ describe("proactive panels", () => {
       id: "pull-request:previous",
       kind: "pull-request",
       projectId: previous.projectId,
-      repository: "some-other/repo",
+      repository: "leandroasilva/lmcs-agent",
       number: previous.number,
     } satisfies RightPanelSurface;
 
