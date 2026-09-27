@@ -69,8 +69,8 @@ export function RelayClientInstallDialog() {
           </DialogTitle>
           <DialogDescription>
             {isInstalling
-              ? "LMCS Code is preparing this environment for secure access through T3 Connect."
-              : "LMCS Code needs the relay client to make this environment available through T3 Connect."}
+              ? "LMCS Code is preparing this environment for secure access through LMCS Connect."
+              : "LMCS Code needs the relay client to make this environment available through LMCS Connect."}
           </DialogDescription>
         </DialogHeader>
         <DialogPanel scrollFade={false}>

@@ -211,7 +211,7 @@ const sharingPlugin: NonNullable<ExpoConfig["plugins"]>[number] = [
 
 const config: ExpoConfig = {
   name: variant.appName,
-  slug: "t3-code",
+  slug: "lmcs-code",
   platforms: ["ios", "android"],
   scheme: variant.scheme,
   version: "1.3.1",
