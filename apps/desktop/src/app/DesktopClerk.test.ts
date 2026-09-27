@@ -4,15 +4,17 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { beforeEach, vi } from "vite-plus/test";
 
-const { createClerkBridgeMock, storageAdapter, storageMock } = vi.hoisted(() => ({
-  createClerkBridgeMock: vi.fn(),
-  storageAdapter: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-  },
-  storageMock: vi.fn(),
-}));
+const { createClerkBridgeMock, storageAdapter, storageMock } = vi.hoisted(
+  () => ({
+    createClerkBridgeMock: vi.fn(),
+    storageAdapter: {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    },
+    storageMock: vi.fn(),
+  }),
+);
 
 vi.mock("@clerk/electron", () => ({
   createClerkBridge: createClerkBridgeMock,
@@ -35,7 +37,7 @@ const makeDesktopClerkLayer = (isDevelopment = true, events: string[] = []) => {
     isDevelopment,
     appDataDirectory: "/tmp/app-data",
     userDataDirName: isDevelopment ? "t3code-dev" : "t3code",
-    legacyUserDataDirName: isDevelopment ? "LMCS Code (Dev)" : "LMCS Code (Alpha)",
+    legacyUserDataDirName: isDevelopment ? "T3 Code (Dev)" : "T3 Code (Alpha)",
     path: { join: (...parts: ReadonlyArray<string>) => parts.join("/") },
   } as unknown as DesktopEnvironment.DesktopEnvironment["Service"]);
 
@@ -88,7 +90,10 @@ describe("DesktopClerk", () => {
       // The bridge acquires Electron's single-instance lock at creation, and
       // the lock both lives in and creates the userData directory — so the
       // real path must be set before the bridge exists.
-      assert.deepEqual(events, ["setPath:userData:/tmp/app-data/t3code-dev", "createClerkBridge"]);
+      assert.deepEqual(events, [
+        "setPath:userData:/tmp/app-data/t3code-dev",
+        "createClerkBridge",
+      ]);
       storageMock.mockClear();
       createClerkBridgeMock.mockClear();
     });
@@ -102,9 +107,14 @@ describe("DesktopClerk", () => {
     });
 
     return Effect.gen(function* () {
-      const error = yield* Effect.scoped(Layer.build(makeDesktopClerkLayer())).pipe(Effect.flip);
+      const error = yield* Effect.scoped(
+        Layer.build(makeDesktopClerkLayer()),
+      ).pipe(Effect.flip);
 
-      assert.instanceOf(error, DesktopClerk.DesktopClerkBridgeInitializationError);
+      assert.instanceOf(
+        error,
+        DesktopClerk.DesktopClerkBridgeInitializationError,
+      );
       assert.equal(error.stateDir, "/tmp/t3-state");
       assert.equal(error.isDevelopment, true);
       assert.strictEqual(error.cause, cause);
@@ -125,7 +135,9 @@ describe("DesktopClerk", () => {
     });
 
     return Effect.gen(function* () {
-      const exit = yield* Effect.exit(Effect.scoped(Layer.build(makeDesktopClerkLayer(false))));
+      const exit = yield* Effect.exit(
+        Effect.scoped(Layer.build(makeDesktopClerkLayer(false))),
+      );
 
       assert.equal(exit._tag, "Failure");
       if (exit._tag === "Failure") {
@@ -142,37 +154,46 @@ describe("DesktopClerk", () => {
     });
   });
 
-  it.effect("registers the second-instance handler in the primary instance", () => {
-    storageMock.mockReturnValue(storageAdapter);
-    createClerkBridgeMock.mockReturnValue({ cleanup: vi.fn(), isPrimaryInstance: true });
-    const quit = vi.fn();
-    const registeredEvents: string[] = [];
-    const electronApp = {
-      quit: Effect.sync(quit),
-      on: (eventName: string) =>
-        Effect.sync(() => {
-          registeredEvents.push(eventName);
-        }),
-    } as unknown as ElectronApp.ElectronApp["Service"];
-    const electronWindow = {} as ElectronWindow.ElectronWindow["Service"];
+  it.effect(
+    "registers the second-instance handler in the primary instance",
+    () => {
+      storageMock.mockReturnValue(storageAdapter);
+      createClerkBridgeMock.mockReturnValue({
+        cleanup: vi.fn(),
+        isPrimaryInstance: true,
+      });
+      const quit = vi.fn();
+      const registeredEvents: string[] = [];
+      const electronApp = {
+        quit: Effect.sync(quit),
+        on: (eventName: string) =>
+          Effect.sync(() => {
+            registeredEvents.push(eventName);
+          }),
+      } as unknown as ElectronApp.ElectronApp["Service"];
+      const electronWindow = {} as ElectronWindow.ElectronWindow["Service"];
 
-    return Effect.gen(function* () {
-      const clerk = yield* DesktopClerk.DesktopClerk;
-      const exit = yield* Effect.exit(Effect.scoped(clerk.configure));
+      return Effect.gen(function* () {
+        const clerk = yield* DesktopClerk.DesktopClerk;
+        const exit = yield* Effect.exit(Effect.scoped(clerk.configure));
 
-      assert.isTrue(Exit.isSuccess(exit));
-      assert.equal(quit.mock.calls.length, 0);
-      assert.deepEqual(registeredEvents, ["second-instance"]);
-    }).pipe(
-      Effect.provide(makeDesktopClerkLayer()),
-      Effect.provideService(ElectronApp.ElectronApp, electronApp),
-      Effect.provideService(ElectronWindow.ElectronWindow, electronWindow),
-    );
-  });
+        assert.isTrue(Exit.isSuccess(exit));
+        assert.equal(quit.mock.calls.length, 0);
+        assert.deepEqual(registeredEvents, ["second-instance"]);
+      }).pipe(
+        Effect.provide(makeDesktopClerkLayer()),
+        Effect.provideService(ElectronApp.ElectronApp, electronApp),
+        Effect.provideService(ElectronWindow.ElectronWindow, electronWindow),
+      );
+    },
+  );
 
   it.effect("quits and interrupts startup in a secondary instance", () => {
     storageMock.mockReturnValue(storageAdapter);
-    createClerkBridgeMock.mockReturnValue({ cleanup: vi.fn(), isPrimaryInstance: false });
+    createClerkBridgeMock.mockReturnValue({
+      cleanup: vi.fn(),
+      isPrimaryInstance: false,
+    });
     const quit = vi.fn();
     const registeredEvents: string[] = [];
     const electronApp = {

@@ -27,9 +27,10 @@ const defaultEnvironmentInput = {
   runningUnderArm64Translation: false,
 } satisfies DesktopEnvironment.MakeDesktopEnvironmentInput;
 
-type TestEnvironmentInput = Partial<DesktopEnvironment.MakeDesktopEnvironmentInput> & {
-  readonly env?: Record<string, string | undefined>;
-};
+type TestEnvironmentInput =
+  Partial<DesktopEnvironment.MakeDesktopEnvironmentInput> & {
+    readonly env?: Record<string, string | undefined>;
+  };
 
 interface ElectronAppCalls {
   readonly setAboutPanelOptions: Array<Electron.AboutPanelOptionsOptions>;
@@ -130,10 +131,13 @@ const withIdentity = <A, E, R>(
               input.legacyPathProbeError
                 ? Effect.fail(input.legacyPathProbeError)
                 : Effect.succeed(
-                    input.legacyPathExists === true && path.includes("LMCS Code (Alpha)"),
+                    input.legacyPathExists === true &&
+                      path.includes("T3 Code (Alpha)"),
                   ),
             readFileString: () =>
-              Effect.succeed(input.packageJson ?? '{"t3codeCommitHash":"abcdef1234567890"}'),
+              Effect.succeed(
+                input.packageJson ?? '{"t3codeCommitHash":"abcdef1234567890"}',
+              ),
           }),
         ),
         Layer.provideMerge(makeAssetsLayer(input.pngIconPath ?? Option.none())),
@@ -151,70 +155,89 @@ describe("DesktopAppIdentity", () => {
         const identity = yield* DesktopAppIdentity.DesktopAppIdentity;
         const userDataPath = yield* identity.resolveUserDataPath;
 
-        assert.equal(userDataPath, "/Users/alice/Library/Application Support/T3 Code (Alpha)");
+        assert.equal(
+          userDataPath,
+          "/Users/alice/Library/Application Support/T3 Code (Alpha)",
+        );
       }),
       { legacyPathExists: true },
     ),
   );
 
-  it.effect("preserves failures while inspecting the legacy userData path", () => {
-    const legacyPath = "/Users/alice/Library/Application Support/T3 Code (Alpha)";
-    const cause = PlatformError.systemError({
-      _tag: "PermissionDenied",
-      module: "FileSystem",
-      method: "exists",
-      description: "permission denied",
-      pathOrDescriptor: legacyPath,
-    });
+  it.effect(
+    "preserves failures while inspecting the legacy userData path",
+    () => {
+      const legacyPath =
+        "/Users/alice/Library/Application Support/T3 Code (Alpha)";
+      const cause = PlatformError.systemError({
+        _tag: "PermissionDenied",
+        module: "FileSystem",
+        method: "exists",
+        description: "permission denied",
+        pathOrDescriptor: legacyPath,
+      });
 
-    return withIdentity(
-      Effect.gen(function* () {
-        const identity = yield* DesktopAppIdentity.DesktopAppIdentity;
-        const error = yield* identity.resolveUserDataPath.pipe(Effect.flip);
+      return withIdentity(
+        Effect.gen(function* () {
+          const identity = yield* DesktopAppIdentity.DesktopAppIdentity;
+          const error = yield* identity.resolveUserDataPath.pipe(Effect.flip);
 
-        assert.instanceOf(error, DesktopAppIdentity.DesktopUserDataPathResolutionError);
-        assert.equal(error.legacyPath, legacyPath);
-        assert.strictEqual(error.cause, cause);
-        assert.equal(
-          error.message,
-          `Failed to inspect legacy desktop user-data path at "${legacyPath}".`,
-        );
-      }),
-      { legacyPathProbeError: cause },
-    );
-  });
+          assert.instanceOf(
+            error,
+            DesktopAppIdentity.DesktopUserDataPathResolutionError,
+          );
+          assert.equal(error.legacyPath, legacyPath);
+          assert.strictEqual(error.cause, cause);
+          assert.equal(
+            error.message,
+            `Failed to inspect legacy desktop user-data path at "${legacyPath}".`,
+          );
+        }),
+        { legacyPathProbeError: cause },
+      );
+    },
+  );
 
-  it.effect("configures app identity from the environment commit override", () => {
-    const calls: ElectronAppCalls = {
-      setAboutPanelOptions: [],
-      setDockIcon: [],
-      setName: [],
-    };
+  it.effect(
+    "configures app identity from the environment commit override",
+    () => {
+      const calls: ElectronAppCalls = {
+        setAboutPanelOptions: [],
+        setDockIcon: [],
+        setName: [],
+      };
 
-    return withIdentity(
-      Effect.gen(function* () {
-        const identity = yield* DesktopAppIdentity.DesktopAppIdentity;
-        yield* identity.configure;
+      return withIdentity(
+        Effect.gen(function* () {
+          const identity = yield* DesktopAppIdentity.DesktopAppIdentity;
+          yield* identity.configure;
 
-        assert.deepEqual(calls.setName, ["LMCS Code (Alpha)"]);
-        assert.equal(calls.setAboutPanelOptions[0]?.applicationName, "LMCS Code (Alpha)");
-        assert.equal(calls.setAboutPanelOptions[0]?.applicationVersion, "1.2.3");
-        assert.equal(calls.setAboutPanelOptions[0]?.version, "0123456789ab");
-        // Packaged: the bundle's own icon stands, so a custom one the user
-        // attached survives.
-        assert.deepEqual(calls.setDockIcon, []);
-      }),
-      {
-        calls,
-        environment: {
-          env: {
-            T3CODE_COMMIT_HASH: "0123456789abcdef",
+          assert.deepEqual(calls.setName, ["LMCS Code (Alpha)"]);
+          assert.equal(
+            calls.setAboutPanelOptions[0]?.applicationName,
+            "LMCS Code (Alpha)",
+          );
+          assert.equal(
+            calls.setAboutPanelOptions[0]?.applicationVersion,
+            "1.2.3",
+          );
+          assert.equal(calls.setAboutPanelOptions[0]?.version, "0123456789ab");
+          // Packaged: the bundle's own icon stands, so a custom one the user
+          // attached survives.
+          assert.deepEqual(calls.setDockIcon, []);
+        }),
+        {
+          calls,
+          environment: {
+            env: {
+              T3CODE_COMMIT_HASH: "0123456789abcdef",
+            },
           },
+          pngIconPath: Option.some("/icon.png"),
         },
-        pngIconPath: Option.some("/icon.png"),
-      },
-    );
-  });
+      );
+    },
+  );
 
   it.effect("sets the dock icon only when running unpackaged", () => {
     const calls: ElectronAppCalls = {

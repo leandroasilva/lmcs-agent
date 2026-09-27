@@ -206,8 +206,8 @@ const make = Effect.fn("desktop.environment.make")(function* (
   });
   const userDataDirName = isDevelopment ? "t3code-dev" : "t3code";
   const legacyUserDataDirName = isDevelopment
-    ? "LMCS Code (Dev)"
-    : "LMCS Code (Alpha)";
+    ? "T3 Code (Dev)"
+    : "T3 Code (Alpha)";
   const linuxApplicationsDir = path.join(
     Option.getOrElse(config.xdgDataHome, () =>
       path.join(homeDirectory, ".local", "share"),
