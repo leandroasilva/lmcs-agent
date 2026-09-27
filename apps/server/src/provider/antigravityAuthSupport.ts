@@ -14,7 +14,7 @@ import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as ChildProcess from "effect/unstable/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as AcpErrors from "effect-acp/errors";
+import * as AcpErrors from "@lmcstools/providers/acp/errors";
 
 import { collectUint8StreamText } from "../stream/collectUint8StreamText.ts";
 import type { AcpSpawnInput } from "./acp/AcpSessionRuntime.ts";

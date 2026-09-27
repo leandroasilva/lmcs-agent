@@ -3,7 +3,7 @@
  * Additional reference provided by the Cursor team: https://anysphere.enterprise.slack.com/files/U068SSJE141/F0APT1HSZRP/cursor-acp-extension-method-schemas.md
  */
 import type { UserInputQuestion } from "@lmcstools/core";
-import * as AcpSchema from "effect-acp/schema";
+import * as AcpSchema from "@lmcstools/providers/acp/schema";
 import * as Schema from "effect/Schema";
 
 const CursorAskQuestionOption = Schema.Struct({

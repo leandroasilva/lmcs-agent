@@ -75,7 +75,7 @@ export class CodexAppServerClient extends Context.Service<
       ) => Effect.Effect<void, CodexError.CodexAppServerError>,
     ) => Effect.Effect<void>;
   }
->()("effect-codex-app-server/client/CodexAppServerClient") {}
+>()("@lmcstools/providers/codex/client/CodexAppServerClient") {}
 
 type ServerRequestHandler = (
   payload: unknown,
@@ -84,7 +84,7 @@ type ServerNotificationHandler = (
   payload: unknown,
 ) => Effect.Effect<void, CodexError.CodexAppServerError>;
 
-const make = Effect.fn("effect-codex-app-server/CodexAppServerClient.make")(function* (
+const make = Effect.fn("@lmcstools/providers/codex/CodexAppServerClient.make")(function* (
   stdio: Stdio.Stdio,
   options: CodexAppServerClientOptions = {},
   terminationError?: Effect.Effect<CodexError.CodexAppServerError>,
@@ -255,7 +255,7 @@ export const layerChildProcess = (
   Layer.effect(CodexAppServerClient, makeChildProcessClient(handle, options));
 
 const makeChildProcessClient = Effect.fn(
-  "effect-codex-app-server/CodexAppServerClient.makeChildProcessClient",
+  "@lmcstools/providers/codex/CodexAppServerClient.makeChildProcessClient",
 )(function* (handle: ChildProcessSpawner.ChildProcessHandle, options: CodexAppServerClientOptions) {
   yield* Stream.runDrain(handle.stderr).pipe(Effect.ignore, Effect.forkScoped);
   return yield* make(makeChildStdio(handle), options, makeTerminationError(handle));

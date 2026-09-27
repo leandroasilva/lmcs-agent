@@ -8,9 +8,9 @@ import * as Deferred from "effect/Deferred";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 
-import * as EffectAcpAgent from "effect-acp/agent";
-import * as AcpError from "effect-acp/errors";
-import type * as AcpSchema from "effect-acp/schema";
+import * as EffectAcpAgent from "@lmcstools/providers/acp/agent";
+import * as AcpError from "@lmcstools/providers/acp/errors";
+import type * as AcpSchema from "@lmcstools/providers/acp/schema";
 
 const requestLogPath = process.env.T3_ACP_REQUEST_LOG_PATH;
 const exitLogPath = process.env.T3_ACP_EXIT_LOG_PATH;

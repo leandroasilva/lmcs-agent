@@ -4,7 +4,7 @@ import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import { ChildProcessSpawner } from "effect/unstable/process";
-import type * as EffectAcpErrors from "effect-acp/errors";
+import type * as EffectAcpErrors from "@lmcstools/providers/acp/errors";
 
 import { type GrokSettings, type ModelSelection } from "@lmcstools/core";
 import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";

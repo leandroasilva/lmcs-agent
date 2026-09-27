@@ -15,8 +15,8 @@ import * as Predicate from "effect/Predicate";
 import * as Result from "effect/Result";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
-import type * as EffectAcpErrors from "effect-acp/errors";
-import type * as EffectAcpSchema from "effect-acp/schema";
+import type * as EffectAcpErrors from "@lmcstools/providers/acp/errors";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
 
 import type { AcpSessionRuntimeStartResult } from "../acp/AcpSessionRuntime.ts";
 import { makeManagedServerProvider } from "../makeManagedServerProvider.ts";

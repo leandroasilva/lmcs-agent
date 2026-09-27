@@ -32,10 +32,10 @@ import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import * as CodexClient from "effect-codex-app-server/client";
-import * as CodexErrors from "effect-codex-app-server/errors";
-import * as CodexRpc from "effect-codex-app-server/rpc";
-import * as EffectCodexSchema from "effect-codex-app-server/schema";
+import * as CodexClient from "@lmcstools/providers/codex/client";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
+import * as CodexRpc from "@lmcstools/providers/codex/rpc";
+import * as EffectCodexSchema from "@lmcstools/providers/codex/schema";
 
 import { buildCodexInitializeParams } from "./CodexProvider.ts";
 import { codexSessionAppServerArgs } from "./codexLaunchArgs.ts";

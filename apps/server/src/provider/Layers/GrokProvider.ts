@@ -7,7 +7,7 @@ import {
   type ServerProviderModel,
   type ServerProviderSlashCommand,
 } from "@lmcstools/core";
-import * as EffectAcpSchema from "effect-acp/schema";
+import * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
 import { causeErrorTag } from "@lmcstools/core/observability";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";

@@ -12,8 +12,8 @@ import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
-import { type AcpError, AcpRequestError } from "effect-acp/errors";
-import type * as AcpSchema from "effect-acp/schema";
+import { type AcpError, AcpRequestError } from "@lmcstools/providers/acp/errors";
+import type * as AcpSchema from "@lmcstools/providers/acp/schema";
 import { expect } from "vite-plus/test";
 
 import type { AcpSessionRuntimeEvent } from "../provider/acp/AcpSessionRuntime.ts";

@@ -1,5 +1,5 @@
 import type { ProviderInteractionMode } from "@lmcstools/core";
-import type { V2TurnStartParams__AdditionalContextEntry } from "effect-codex-app-server/schema";
+import type { V2TurnStartParams__AdditionalContextEntry } from "@lmcstools/providers/codex/schema";
 import { buildRuntimeInstructions } from "./RuntimeInstructions.ts";
 
 const T3_CODE_BROWSER_TOOL_INSTRUCTIONS = `## LMCS Code collaborative browser

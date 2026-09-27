@@ -8,7 +8,7 @@ import type {
   ServerProviderModel,
   ServerProviderState,
 } from "@lmcstools/core";
-import type * as EffectAcpSchema from "effect-acp/schema";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
 import { causeErrorTag } from "@lmcstools/core/observability";
 import * as Cache from "effect/Cache";
 import * as Duration from "effect/Duration";

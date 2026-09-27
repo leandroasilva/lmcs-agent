@@ -21,7 +21,7 @@ import * as Stream from "effect/Stream";
 import * as Ndjson from "effect/unstable/encoding/Ndjson";
 import * as ChildProcess from "effect/unstable/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as AcpErrors from "effect-acp/errors";
+import * as AcpErrors from "@lmcstools/providers/acp/errors";
 import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 import {

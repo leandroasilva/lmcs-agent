@@ -19,8 +19,8 @@ import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as AcpErrors from "effect-acp/errors";
-import type * as AcpSchema from "effect-acp/schema";
+import * as AcpErrors from "@lmcstools/providers/acp/errors";
+import type * as AcpSchema from "@lmcstools/providers/acp/schema";
 
 import { ServerConfig } from "../../config.ts";
 import { ANTIGRAVITY_SIGN_IN_REQUIRED_MESSAGE } from "../antigravityAuthSupport.ts";

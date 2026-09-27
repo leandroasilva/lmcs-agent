@@ -14,7 +14,7 @@ import * as Scope from "effect/Scope";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
-import * as CodexErrors from "effect-codex-app-server/errors";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
 import {
   ClaudeSettings,
   CodexSettings,

@@ -9,7 +9,7 @@ import * as Path from "effect/Path";
 import * as Stream from "effect/Stream";
 import type * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
 import { describe, expect, it } from "vite-plus/test";
-import type * as EffectAcpSchema from "effect-acp/schema";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
 import { ProviderDriverKind, ProviderInstanceId, type CursorSettings } from "@lmcstools/core";
 import { createModelCapabilities } from "@lmcstools/core/model";
 

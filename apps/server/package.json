@@ -41,10 +41,9 @@
     "@effect/vitest": "catalog:",
     "@lmcstools/core": "workspace:*",
     "@lmcstools/network": "workspace:*",
+    "@lmcstools/providers": "workspace:*",
     "@types/node": "catalog:",
     "@types/yauzl": "^3.4.0",
-    "effect-acp": "workspace:*",
-    "effect-codex-app-server": "workspace:*",
     "vite-plus": "catalog:"
   },
   "engines": {

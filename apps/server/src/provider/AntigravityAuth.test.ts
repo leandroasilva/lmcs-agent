@@ -9,8 +9,8 @@ import * as Option from "effect/Option";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
-import * as AcpErrors from "effect-acp/errors";
-import type * as AcpSchema from "effect-acp/schema";
+import * as AcpErrors from "@lmcstools/providers/acp/errors";
+import type * as AcpSchema from "@lmcstools/providers/acp/schema";
 
 import {
   makeAntigravityAuth,

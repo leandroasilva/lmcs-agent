@@ -275,7 +275,7 @@ export class AcpClient extends Context.Service<
       handler: (payload: A) => Effect.Effect<void, AcpError.AcpError>,
     ) => Effect.Effect<void>;
   }
->()("effect-acp/client/AcpClient") {}
+>()("@lmcstools/providers/acp/client/AcpClient") {}
 
 interface AcpCoreRequestHandlers {
   requestPermission?: (
@@ -317,7 +317,7 @@ interface BufferedNotificationHandler<A> {
   readonly pending: Array<A>;
 }
 
-export const make = Effect.fn("effect-acp/AcpClient.make")(function* (
+export const make = Effect.fn("@lmcstools/providers/acp/AcpClient.make")(function* (
   stdio: AcpProtocol.AcpStdio,
   options: AcpClientOptions = {},
   terminationError?: Effect.Effect<AcpError.AcpError>,
