@@ -50,7 +50,7 @@ export const releasePackageFiles = [
   "apps/server/package.json",
   "apps/desktop/package.json",
   "apps/web/package.json",
-  "packages/contracts/package.json",
+  "packages/core/package.json",
 ] as const;
 
 interface UpdateReleasePackageVersionsOptions {
@@ -97,7 +97,10 @@ export const updateReleasePackageVersions = Effect.fn("updateReleasePackageVersi
       continue;
     }
 
-    const packageJsonString = yield* encodePackageJson({ ...packageJson, version }).pipe(
+    const packageJsonString = yield* encodePackageJson({
+      ...packageJson,
+      version,
+    }).pipe(
       Effect.mapError(
         (cause) =>
           new ReleasePackageManifestError({

@@ -23,13 +23,10 @@ const workspaceFiles = [
   "apps/marketing/package.json",
   "infra/relay/package.json",
   "oxlint-plugin-t3code/package.json",
-  "packages/client-runtime/package.json",
-  "packages/contracts/package.json",
-  "packages/shared/package.json",
-  "packages/ssh/package.json",
-  "packages/tailscale/package.json",
-  "packages/effect-acp/package.json",
-  "packages/effect-codex-app-server/package.json",
+  "packages/client/package.json",
+  "packages/core/package.json",
+  "packages/network/package.json",
+  "packages/providers/package.json",
   "scripts/package.json",
 ] as const;
 
@@ -43,11 +40,16 @@ function copyWorkspaceManifestFixture(targetRoot: string): void {
 
   const patchesDirectory = NodePath.resolve(repoRoot, "patches");
   if (NodeFS.existsSync(patchesDirectory)) {
-    NodeFS.cpSync(patchesDirectory, NodePath.resolve(targetRoot, "patches"), { recursive: true });
+    NodeFS.cpSync(patchesDirectory, NodePath.resolve(targetRoot, "patches"), {
+      recursive: true,
+    });
   }
 }
 
-function writeMacManifestFixtures(targetRoot: string): { arm64Path: string; x64Path: string } {
+function writeMacManifestFixtures(targetRoot: string): {
+  arm64Path: string;
+  x64Path: string;
+} {
   const assetDirectory = NodePath.resolve(targetRoot, "release-assets");
   NodeFS.mkdirSync(assetDirectory, { recursive: true });
 
@@ -223,7 +225,7 @@ try {
     "apps/server/package.json",
     "apps/desktop/package.json",
     "apps/web/package.json",
-    "packages/contracts/package.json",
+    "packages/core/package.json",
   ]) {
     assertPackageVersion(NodePath.resolve(tempRoot, relativePath), "9.9.9-smoke.0");
   }
