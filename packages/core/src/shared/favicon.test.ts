@@ -28,9 +28,9 @@ describe("faviconUrlForOrigin", () => {
   });
 
   it("keeps the public origin, port and requested size", () => {
-    expect(faviconUrlForOrigin("https://github.com:8443/leandroasilva/lmcs-agent?private=query", 64)).toBe(
-      "https://www.google.com/s2/favicons?domain=github.com%3A8443&sz=64",
-    );
+    expect(
+      faviconUrlForOrigin("https://github.com:8443/leandroasilva/lmcs-agent?private=query", 64),
+    ).toBe("https://www.google.com/s2/favicons?domain=github.com%3A8443&sz=64");
   });
 
   it.each([null, undefined, "", "invalid URL", "file:///tmp/private", "data:text/plain,private"])(

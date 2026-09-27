@@ -26,15 +26,12 @@ beforeEach(() => {
   return () => {
     for (const [index, method] of methods.entries()) {
       const descriptor = descriptors[index];
-      if (descriptor)
-        Reflect.defineProperty(Array.prototype, method, descriptor);
+      if (descriptor) Reflect.defineProperty(Array.prototype, method, descriptor);
     }
   };
 });
 
-function snapshot(
-  input: Partial<ThreadPullRequestSnapshot> = {},
-): ThreadPullRequestSnapshot {
+function snapshot(input: Partial<ThreadPullRequestSnapshot> = {}): ThreadPullRequestSnapshot {
   return {
     state: "open",
     title: "Change",
@@ -71,9 +68,7 @@ describe("threadPullRequestKeysEqual", () => {
       repository: "team/repo",
       url: "http://forge.example:3000/team/repo/pulls/1",
     });
-    expect(
-      threadPullRequestKeysEqual(old, { ...old, host: "forge.example:3000" }),
-    ).toBe(true);
+    expect(threadPullRequestKeysEqual(old, { ...old, host: "forge.example:3000" })).toBe(true);
     expect(
       threadPullRequestKeysEqual(old, {
         host: "forge.example:3000",
@@ -124,9 +119,7 @@ describe("threadPullRequestKeysEqual", () => {
 describe("resolveThreadCurrentPullRequest", () => {
   it("returns null with no visible links", () => {
     expect(resolveThreadCurrentPullRequest([])).toBeNull();
-    expect(
-      resolveThreadCurrentPullRequest([link(1, { source: "stack-dismissed" })]),
-    ).toBeNull();
+    expect(resolveThreadCurrentPullRequest([link(1, { source: "stack-dismissed" })])).toBeNull();
   });
 
   it("treats an unsynced link as open", () => {
@@ -203,17 +196,13 @@ describe("legacyLinkedPullRequestOf", () => {
     },
   };
   it("projects only links the owning project can route without a host", () => {
-    expect(
-      legacyLinkedPullRequestOf([link(7)], "project-1" as never, identity),
-    ).toEqual({
+    expect(legacyLinkedPullRequestOf([link(7)], "project-1" as never, identity)).toEqual({
       projectId: "project-1",
       repository: "leandroasilva/lmcs-agent",
       number: 7,
       url: "https://github.com/leandroasilva/lmcs-agent/pull/7",
     });
-    expect(
-      legacyLinkedPullRequestOf([], "project-1" as never, identity),
-    ).toBeNull();
+    expect(legacyLinkedPullRequestOf([], "project-1" as never, identity)).toBeNull();
   });
   it.each([
     {
@@ -223,86 +212,66 @@ describe("legacyLinkedPullRequestOf", () => {
     { repository: "acme/other", url: "https://github.com/acme/other/pull/7" },
   ])("omits an unsafe legacy route %j", (foreign) => {
     expect(
-      legacyLinkedPullRequestOf(
-        [link(7, foreign)],
-        "project-1" as never,
-        identity,
-      ),
+      legacyLinkedPullRequestOf([link(7, foreign)], "project-1" as never, identity),
     ).toBeNull();
     expect(
-      legacyLinkedPullRequestOf(
-        [link(7, foreign), link(8)],
-        "project-1" as never,
-        identity,
-      )?.number,
+      legacyLinkedPullRequestOf([link(7, foreign), link(8)], "project-1" as never, identity)
+        ?.number,
     ).toBe(8);
   });
   it.each([
     "dev.azure.com/org-a/project/_git/web",
     "ssh.dev.azure.com/v3/org-a/project/web",
     "org-a.visualstudio.com/DefaultCollection/project/_git/web",
-  ])(
-    "projects Azure links through the legacy selector for %s",
-    (canonicalKey) => {
-      const azureIdentity = {
-        ...identity,
-        provider: "azure-devops",
-        canonicalKey,
-        displayName: canonicalKey.slice(canonicalKey.indexOf("/") + 1),
-        name: "web",
-      };
-      const own = link(7, {
-        host: "dev.azure.com",
-        repository: "org-a/project/_git/web",
-        url: "https://dev.azure.com/org-a/project/_git/web/pullrequest/7",
-      });
-      const foreign = link(7, {
-        host: "dev.azure.com",
-        repository: "web",
-        url: "https://dev.azure.com/org-b/project/_git/web/pullrequest/7",
-        linkedAt: "2026-01-02T00:00:00.000Z",
-      });
-      for (const repository of ["web", "org-a/project/_git/web"]) {
-        expect(
-          legacyLinkedPullRequestOf(
-            [{ ...own, repository }, foreign],
-            "project-1" as never,
-            azureIdentity,
-          ),
-        ).toEqual({
-          projectId: "project-1",
-          repository: "web",
-          number: 7,
-          url: own.url,
-        });
-      }
+  ])("projects Azure links through the legacy selector for %s", (canonicalKey) => {
+    const azureIdentity = {
+      ...identity,
+      provider: "azure-devops",
+      canonicalKey,
+      displayName: canonicalKey.slice(canonicalKey.indexOf("/") + 1),
+      name: "web",
+    };
+    const own = link(7, {
+      host: "dev.azure.com",
+      repository: "org-a/project/_git/web",
+      url: "https://dev.azure.com/org-a/project/_git/web/pullrequest/7",
+    });
+    const foreign = link(7, {
+      host: "dev.azure.com",
+      repository: "web",
+      url: "https://dev.azure.com/org-b/project/_git/web/pullrequest/7",
+      linkedAt: "2026-01-02T00:00:00.000Z",
+    });
+    for (const repository of ["web", "org-a/project/_git/web"]) {
       expect(
         legacyLinkedPullRequestOf(
-          [foreign],
+          [{ ...own, repository }, foreign],
           "project-1" as never,
           azureIdentity,
         ),
-      ).toBeNull();
-      expect(legacyThreadPullRequestKey({ ...own, repository: "web" })).toEqual(
-        {
-          host: "dev.azure.com",
-          repository: "org-a/project/_git/web",
-          number: 7,
-        },
-      );
-      expect(
-        threadPullRequestKeysEqual(own, {
-          host: "org-a.visualstudio.com",
-          repository: "DefaultCollection/project/_git/web",
-          number: 7,
-        }),
-      ).toBe(true);
-    },
-  );
-  it("does not guess when the project identity is unavailable", () => {
+      ).toEqual({
+        projectId: "project-1",
+        repository: "web",
+        number: 7,
+        url: own.url,
+      });
+    }
+    expect(legacyLinkedPullRequestOf([foreign], "project-1" as never, azureIdentity)).toBeNull();
+    expect(legacyThreadPullRequestKey({ ...own, repository: "web" })).toEqual({
+      host: "dev.azure.com",
+      repository: "org-a/project/_git/web",
+      number: 7,
+    });
     expect(
-      legacyLinkedPullRequestOf([link(7)], "project-1" as never, null),
-    ).toBeNull();
+      threadPullRequestKeysEqual(own, {
+        host: "org-a.visualstudio.com",
+        repository: "DefaultCollection/project/_git/web",
+        number: 7,
+      }),
+    ).toBe(true);
+  });
+  it("does not guess when the project identity is unavailable", () => {
+    expect(legacyLinkedPullRequestOf([link(7)], "project-1" as never, null)).toBeNull();
   });
 });
 
@@ -316,12 +285,7 @@ describe("resolveThreadPullRequestChains", () => {
         snapshot: snapshot({ headBranch: "solo", baseBranch: "main" }),
       }),
     ]);
-    expect(
-      chains.map((chain) => [
-        chain.kind,
-        chain.layers.map((layer) => layer.number),
-      ]),
-    ).toEqual([
+    expect(chains.map((chain) => [chain.kind, chain.layers.map((layer) => layer.number)])).toEqual([
       ["derived", [1, 2, 3]],
       ["derived", [9]],
     ]);
@@ -354,12 +318,7 @@ describe("resolveThreadPullRequestChains", () => {
       }),
       link(8),
     ]);
-    expect(
-      chains.map((chain) => [
-        chain.kind,
-        chain.layers.map((layer) => layer.number),
-      ]),
-    ).toEqual([
+    expect(chains.map((chain) => [chain.kind, chain.layers.map((layer) => layer.number)])).toEqual([
       ["native", [5, 6]],
       ["derived", [8]],
     ]);
@@ -455,9 +414,7 @@ describe("chain selection and badge state", () => {
       kind: "single",
       link: { number: 1 },
     });
-    expect(
-      resolveThreadPullRequestBadge([bottom, { ...top, snapshot: null }]),
-    ).toEqual({
+    expect(resolveThreadPullRequestBadge([bottom, { ...top, snapshot: null }])).toEqual({
       kind: "stack",
       layers: 2,
       state: "open",
@@ -481,9 +438,7 @@ describe("chain selection and badge state", () => {
       others: 2,
       state: "open",
     });
-    expect(
-      resolveThreadPullRequestBadge([link(3, { source: "stack-dismissed" })]),
-    ).toBeNull();
+    expect(resolveThreadPullRequestBadge([link(3, { source: "stack-dismissed" })])).toBeNull();
   });
 
   it("keeps branch matching case-sensitive while ignoring repository case", () => {
@@ -503,10 +458,7 @@ describe("chain selection and badge state", () => {
           snapshot: snapshot({ headBranch: "top", baseBranch: "Base" }),
         },
       ])[0]?.layers,
-    ).toEqual([
-      bottom,
-      { ...top, snapshot: snapshot({ headBranch: "top", baseBranch: "Base" }) },
-    ]);
+    ).toEqual([bottom, { ...top, snapshot: snapshot({ headBranch: "top", baseBranch: "Base" }) }]);
   });
 
   it("preserves cyclic links without presenting a guessed stack order", () => {
@@ -514,9 +466,9 @@ describe("chain selection and badge state", () => {
       link(1, { snapshot: snapshot({ headBranch: "a", baseBranch: "b" }) }),
       link(2, { snapshot: snapshot({ headBranch: "b", baseBranch: "a" }) }),
     ];
-    expect(
-      resolveThreadPullRequestChains(links).map((chain) => chain.layers),
-    ).toEqual(links.map((entry) => [entry]));
+    expect(resolveThreadPullRequestChains(links).map((chain) => chain.layers)).toEqual(
+      links.map((entry) => [entry]),
+    );
     expect(resolveThreadCurrentPullRequest(links)).toMatchObject({
       kind: "stack",
       top: { number: 2 },
@@ -538,9 +490,9 @@ describe("chain selection and badge state", () => {
         snapshot: snapshot({ headBranch: "top", baseBranch: "reused" }),
       }),
     ];
-    expect(
-      resolveThreadPullRequestChains(links).map((chain) => chain.layers),
-    ).toEqual(links.map((entry) => [entry]));
+    expect(resolveThreadPullRequestChains(links).map((chain) => chain.layers)).toEqual(
+      links.map((entry) => [entry]),
+    );
   });
 });
 
@@ -557,9 +509,7 @@ describe("threadPullRequestSearchTerms", () => {
     });
     expect(terms).toContain("#12");
     expect(terms).toContain("leandroasilva/lmcs-agent#12");
-    expect(terms).toContain(
-      "https://github.com/leandroasilva/lmcs-agent/pull/12",
-    );
+    expect(terms).toContain("https://github.com/leandroasilva/lmcs-agent/pull/12");
     expect(terms).toContain("Fix login");
     expect(terms).toContain("#34");
     expect(terms.join(" ")).not.toContain("56");
@@ -573,9 +523,7 @@ it("searches the legacy projection when old environments decode to an empty link
     number: 12,
     url: "https://github.com/leandroasilva/lmcs-agent/pull/12",
   };
-  expect(
-    threadPullRequestSearchTerms({ pullRequests: [], linkedPullRequest }),
-  ).toContain("#12");
+  expect(threadPullRequestSearchTerms({ pullRequests: [], linkedPullRequest })).toContain("#12");
   expect(
     threadPullRequestSearchTerms({
       pullRequests: [link(34)],
