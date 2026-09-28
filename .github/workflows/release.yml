@@ -251,7 +251,7 @@ jobs:
           run-install: true
 
       - name: Ensure Electron runtime is installed
-        run: vp run --filter @t3tools/desktop ensure:electron
+        run: vp run --filter @lmcstools/desktop ensure:electron
 
       - name: Check
         run: vp check
@@ -285,7 +285,7 @@ jobs:
           run-install: true
 
       - name: Ensure Electron runtime is installed
-        run: vp run --filter @t3tools/desktop ensure:electron
+        run: vp run --filter @lmcstools/desktop ensure:electron
 
       - uses: ./.github/actions/setup-apt-mirrors
 
@@ -326,7 +326,7 @@ jobs:
 
       # No Electron setup here: `t3` (apps/server) has no Electron dependency
       # and none of its tests touch the runtime. Only the non-server `test`
-      # job, which covers @t3tools/desktop, needs the download.
+      # job, which covers @lmcstools/desktop, needs the download.
       - name: Test
         run: vp run --filter t3 test --shard ${{ matrix.shard }}/${{ strategy.job-total }}
 
@@ -395,9 +395,9 @@ jobs:
           token="$(field clientTracingToken)"
           echo "::add-mask::$token"
           {
-            echo "T3CODE_RELAY_CLIENT_OTLP_TRACES_URL=$url"
-            echo "T3CODE_RELAY_CLIENT_OTLP_TRACES_DATASET=$dataset"
-            echo "T3CODE_RELAY_CLIENT_OTLP_TRACES_TOKEN=$token"
+            echo "LMCS_RELAY_CLIENT_OTLP_TRACES_URL=$url"
+            echo "LMCS_RELAY_CLIENT_OTLP_TRACES_DATASET=$dataset"
+            echo "LMCS_RELAY_CLIENT_OTLP_TRACES_TOKEN=$token"
           } > "$RUNNER_TEMP/relay-client-tracing.env"
 
       - name: Upload relay client tracing config
@@ -453,10 +453,10 @@ jobs:
     runs-on: blacksmith-32vcpu-ubuntu-2404
     timeout-minutes: 30
     env:
-      T3CODE_CLERK_PUBLISHABLE_KEY: ${{ needs.relay_public_config.outputs.clerk_publishable_key }}
-      T3CODE_CLERK_JWT_TEMPLATE: ${{ needs.relay_public_config.outputs.clerk_jwt_template }}
-      T3CODE_CLERK_CLI_OAUTH_CLIENT_ID: ${{ needs.relay_public_config.outputs.clerk_cli_oauth_client_id }}
-      T3CODE_RELAY_URL: ${{ needs.relay_public_config.outputs.relay_url }}
+      LMCS_CLERK_PUBLISHABLE_KEY: ${{ needs.relay_public_config.outputs.clerk_publishable_key }}
+      LMCS_CLERK_JWT_TEMPLATE: ${{ needs.relay_public_config.outputs.clerk_jwt_template }}
+      LMCS_CLERK_CLI_OAUTH_CLIENT_ID: ${{ needs.relay_public_config.outputs.clerk_cli_oauth_client_id }}
+      LMCS_RELAY_URL: ${{ needs.relay_public_config.outputs.relay_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -486,7 +486,7 @@ jobs:
       - name: Install bundle dependencies
         env:
           pnpm_config_cache_dir: ${{ runner.temp }}/pnpm-metadata
-        run: vp install --filter=t3... --filter=@t3tools/web... --filter=@t3tools/desktop... --filter=@t3tools/scripts...
+        run: vp install --filter=t3... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
 
       - name: Download relay client tracing config
         uses: actions/download-artifact@v8
@@ -498,7 +498,7 @@ jobs:
         shell: bash
         run: |
           config_path="$RUNNER_TEMP/relay-client-tracing/relay-client-tracing.env"
-          tracing_token="$(sed -n 's/^T3CODE_RELAY_CLIENT_OTLP_TRACES_TOKEN=//p' "$config_path")"
+          tracing_token="$(sed -n 's/^LMCS_RELAY_CLIENT_OTLP_TRACES_TOKEN=//p' "$config_path")"
           echo "::add-mask::$tracing_token"
           cat "$config_path" >> "$GITHUB_ENV"
 
@@ -507,13 +507,13 @@ jobs:
 
       - uses: ./.github/actions/setup-apt-mirrors
 
-      # @t3tools/desktop#build compiles the Linux browser secret helper on a
+      # @lmcstools/desktop#build compiles the Linux browser secret helper on a
       # Linux host before packing, and that needs libsecret headers.
       - name: Install browser secret helper build libraries
         run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config
 
-      # Runs t3#build (which depends on @t3tools/web#build) and
-      # @t3tools/desktop#build, so apps/server/dist holds the server bundle
+      # Runs t3#build (which depends on @lmcstools/web#build) and
+      # @lmcstools/desktop#build, so apps/server/dist holds the server bundle
       # plus the web client and apps/desktop/dist-electron the Electron main.
       - name: Build JS bundle
         run: vp run build:desktop
@@ -725,7 +725,7 @@ jobs:
           run-install: |
             args:
               - --filter=t3...
-              - --filter=@t3tools/scripts...
+              - --filter=@lmcstools/scripts...
 
       - name: Download all CLI archives
         uses: actions/download-artifact@v8
@@ -785,7 +785,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
+              - --filter=@lmcstools/scripts...
 
       - name: Download all desktop artifacts
         uses: actions/download-artifact@v8
@@ -952,10 +952,10 @@ jobs:
     runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 10
     env:
-      T3CODE_CLERK_PUBLISHABLE_KEY: ${{ needs.relay_public_config.outputs.clerk_publishable_key }}
-      T3CODE_CLERK_JWT_TEMPLATE: ${{ needs.relay_public_config.outputs.clerk_jwt_template }}
-      T3CODE_CLERK_CLI_OAUTH_CLIENT_ID: ${{ needs.relay_public_config.outputs.clerk_cli_oauth_client_id }}
-      T3CODE_RELAY_URL: ${{ needs.relay_public_config.outputs.relay_url }}
+      LMCS_CLERK_PUBLISHABLE_KEY: ${{ needs.relay_public_config.outputs.clerk_publishable_key }}
+      LMCS_CLERK_JWT_TEMPLATE: ${{ needs.relay_public_config.outputs.clerk_jwt_template }}
+      LMCS_CLERK_CLI_OAUTH_CLIENT_ID: ${{ needs.relay_public_config.outputs.clerk_cli_oauth_client_id }}
+      LMCS_RELAY_URL: ${{ needs.relay_public_config.outputs.relay_url }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -980,8 +980,8 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
-              - --filter=@t3tools/web...
+              - --filter=@lmcstools/scripts...
+              - --filter=@lmcstools/web...
 
       - name: Download relay client tracing config
         uses: actions/download-artifact@v8
@@ -993,7 +993,7 @@ jobs:
         shell: bash
         run: |
           config_path="$RUNNER_TEMP/relay-client-tracing/relay-client-tracing.env"
-          tracing_token="$(sed -n 's/^T3CODE_RELAY_CLIENT_OTLP_TRACES_TOKEN=//p' "$config_path")"
+          tracing_token="$(sed -n 's/^LMCS_RELAY_CLIENT_OTLP_TRACES_TOKEN=//p' "$config_path")"
           echo "::add-mask::$tracing_token"
           cat "$config_path" >> "$GITHUB_ENV"
 
@@ -1041,13 +1041,13 @@ jobs:
               --token "$VERCEL_TOKEN" \
               "${vercel_scope_args[@]}" \
               --build-env "APP_VERSION=${{ needs.preflight.outputs.version }}" \
-              --build-env "T3CODE_CLERK_PUBLISHABLE_KEY=${T3CODE_CLERK_PUBLISHABLE_KEY:-}" \
-              --build-env "T3CODE_CLERK_JWT_TEMPLATE=${T3CODE_CLERK_JWT_TEMPLATE:-}" \
-              --build-env "T3CODE_CLERK_CLI_OAUTH_CLIENT_ID=${T3CODE_CLERK_CLI_OAUTH_CLIENT_ID:-}" \
-              --build-env "T3CODE_RELAY_URL=${T3CODE_RELAY_URL:-}" \
-              --build-env "T3CODE_RELAY_CLIENT_OTLP_TRACES_URL=${T3CODE_RELAY_CLIENT_OTLP_TRACES_URL:-}" \
-              --build-env "T3CODE_RELAY_CLIENT_OTLP_TRACES_DATASET=${T3CODE_RELAY_CLIENT_OTLP_TRACES_DATASET:-}" \
-              --build-env "T3CODE_RELAY_CLIENT_OTLP_TRACES_TOKEN=${T3CODE_RELAY_CLIENT_OTLP_TRACES_TOKEN:-}" \
+              --build-env "LMCS_CLERK_PUBLISHABLE_KEY=${LMCS_CLERK_PUBLISHABLE_KEY:-}" \
+              --build-env "LMCS_CLERK_JWT_TEMPLATE=${LMCS_CLERK_JWT_TEMPLATE:-}" \
+              --build-env "LMCS_CLERK_CLI_OAUTH_CLIENT_ID=${LMCS_CLERK_CLI_OAUTH_CLIENT_ID:-}" \
+              --build-env "LMCS_RELAY_URL=${LMCS_RELAY_URL:-}" \
+              --build-env "LMCS_RELAY_CLIENT_OTLP_TRACES_URL=${LMCS_RELAY_CLIENT_OTLP_TRACES_URL:-}" \
+              --build-env "LMCS_RELAY_CLIENT_OTLP_TRACES_DATASET=${LMCS_RELAY_CLIENT_OTLP_TRACES_DATASET:-}" \
+              --build-env "LMCS_RELAY_CLIENT_OTLP_TRACES_TOKEN=${LMCS_RELAY_CLIENT_OTLP_TRACES_TOKEN:-}" \
               --build-env "VITE_HOSTED_APP_URL=$router_url" \
               --build-env "VITE_HOSTED_APP_CHANNEL=$channel_name"
           )"
@@ -1091,7 +1091,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/marketing...
+              - --filter=@lmcstools/marketing...
 
       - name: Deploy marketing site to Vercel
         shell: bash
@@ -1162,8 +1162,8 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
-              - --filter=@t3tools/oxlint-plugin-t3code...
+              - --filter=@lmcstools/scripts...
+              - --filter=@lmcstools/oxlint-plugin-t3code...
 
       - id: update_versions
         name: Update version strings
@@ -1173,7 +1173,7 @@ jobs:
 
       - name: Format package.json files
         if: steps.update_versions.outputs.changed == 'true'
-        run: vp fmt apps/server/package.json apps/desktop/package.json apps/web/package.json packages/contracts/package.json
+        run: vp fmt apps/server/package.json apps/desktop/package.json apps/web/package.json packages/core/package.json
 
       - name: Refresh lockfile
         if: steps.update_versions.outputs.changed == 'true'
@@ -1185,7 +1185,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.preflight.outputs.tag }}
         run: |
-          if git diff --quiet -- apps/server/package.json apps/desktop/package.json apps/web/package.json packages/contracts/package.json pnpm-lock.yaml; then
+          if git diff --quiet -- apps/server/package.json apps/desktop/package.json apps/web/package.json packages/core/package.json pnpm-lock.yaml; then
             echo "No version changes to commit."
             exit 0
           fi
@@ -1193,7 +1193,7 @@ jobs:
           git config user.name "${{ steps.app_bot.outputs.name }}"
           git config user.email "${{ steps.app_bot.outputs.email }}"
 
-          git add apps/server/package.json apps/desktop/package.json apps/web/package.json packages/contracts/package.json pnpm-lock.yaml
+          git add apps/server/package.json apps/desktop/package.json apps/web/package.json packages/core/package.json pnpm-lock.yaml
           git commit -m "chore(release): prepare $RELEASE_TAG"
           git push origin HEAD:main
 
@@ -1227,7 +1227,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=@t3tools/scripts...
+              - --filter=@lmcstools/scripts...
 
       - name: Announce prerelease on Discord
         if: needs.preflight.outputs.is_prerelease == 'true'

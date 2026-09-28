@@ -6,7 +6,12 @@ machine. That machine must stay running and reachable while you work.
 ## LMCS Connect
 
 LMCS Connect makes an environment available to your other devices without setting
-up router forwarding. In the desktop app on the host, open **Settings →
+up router forwarding. It requires a relay: the build must be configured with
+`LMCS_RELAY_URL` and Clerk public keys, otherwise the sign-in controls stay
+hidden. The [Connect setup runbook](../operations/connect-setup.md) covers
+deploying your own.
+
+In the desktop app on the host, open **Settings →
 Connections**, sign in, and enable **LMCS Connect** for that environment.
 
 For a command-line host, run:
@@ -108,11 +113,12 @@ tailscale serve --https=443 off
 If that port is already in use, choose another with
 `--tailscale-serve-port`. See `t3 pair --help` for other pairing options.
 
-### Hosted web app
+### Browsers outside your network
 
-[app.t3.codes](https://app.t3.codes) needs an HTTPS endpoint. It connects directly
-to your server; a hosted pairing link does not make an unreachable backend
-reachable or convert HTTP to HTTPS.
+A browser that cannot reach your server's LAN address needs an HTTPS endpoint,
+such as the Tailscale one above. The browser connects directly to your server;
+a pairing link does not make an unreachable backend reachable or convert HTTP
+to HTTPS.
 
 For a plain HTTP LAN endpoint, use the direct pairing URL in a browser that can
 open it, or pair from the desktop app. On mobile, an IP address entered without a
@@ -180,9 +186,9 @@ when SSH closes, see [background-service troubleshooting](./background-service.m
 
 | Error                                                     | Recovery                                                                                                                                    |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `environment_link_limit_exceeded` or managed tunnel limit | Deregister an unused environment, then restart LMCS Code on the host.                                                                         |
+| `environment_link_limit_exceeded` or managed tunnel limit | Deregister an unused environment, then restart LMCS Code on the host.                                                                       |
 | `auth_invalid` or `invalid_bearer`                        | Run `t3 connect login`. If credentials were revoked, run `t3 connect logout`, then `t3 connect` again. Restart the server after signing in. |
-| Expired or invalid link proof                             | Check the host's date and time, update LMCS Code, then restart it.                                                                            |
+| Expired or invalid link proof                             | Check the host's date and time, update LMCS Code, then restart it.                                                                          |
 | HTTP 403 without a recognized error                       | Check relay access, proxies, and firewall rules. Keep any Cloudflare Ray ID for a bug report.                                               |
 | HTTP 408, 429, or 5xx                                     | Check network and relay availability. Startup retries temporary failures for up to ten minutes.                                             |
 

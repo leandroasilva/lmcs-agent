@@ -30,6 +30,15 @@ on macOS and Ctrl on Windows and Linux, including GNOME, KDE Plasma, Niri, and
 Hyprland. If a custom desktop shortcut takes the same keys, choose another binding
 in Settings.
 
+## Focus behavior
+
+The command palette keeps focus while open. Closing it returns focus to the composer.
+While the palette or model picker is open, number shortcuts select its entries instead of
+switching threads. Model shortcuts work in Settings as well as the composer.
+
+If you return to typing while a terminal is starting, the composer keeps focus when the terminal
+becomes ready. Opening or switching to a terminal explicitly still focuses it.
+
 ## Copy pull request references
 
 With a PR open in the right panel or on the Pull Requests page, use `mod+shift+c`

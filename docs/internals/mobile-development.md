@@ -11,7 +11,7 @@ When the registry or managed-runtime module itself changes, normal Metro propaga
 disposes its old resources. This boundary does not make arbitrary module-level atom
 families safe to hot-swap. Production uses an ordinary atom runtime.
 
-[Environment supervisor scopes](../../packages/client-runtime/src/connection/registry.ts)
+[Environment supervisor scopes](../../packages/client/src/connection/registry.ts)
 are children of the registry scope. The per-environment map supports targeted
 shutdown, but a supervisor created after its cleanup runs would escape it. A closed
 parent scope also closes late arrivals, preventing interrupted startup or runtime

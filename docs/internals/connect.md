@@ -116,7 +116,7 @@ The CLI is a public OAuth client using PKCE and stores no client secret.
 Loopback CLI authorization starts on the hosted `/connect` page so sign-in
 completes before entering Clerk's authorize endpoint. Sending a signed-out
 browser straight to that endpoint loses the authorize parameters during the
-sign-in redirect. The [shared flow](../../packages/shared/src/connectAuth.ts)
+sign-in redirect. The [shared flow](../../packages/core/src/shared/connectAuth.ts)
 preserves PKCE and state for the loopback callback.
 
 SSH and headless sessions use Clerk's OAuth device authorization grant because

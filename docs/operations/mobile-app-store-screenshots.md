@@ -102,10 +102,10 @@ The generated tree is deliberately aligned with the store upload fields:
 A light-only run writes the same tree under `light/`; `--appearance both` writes both appearance
 folders, and each requested theme adds a sibling folder next to `t3-code/`.
 
-Edit [mobile-showcase.config.ts](../../apps/mobile/scripts/mobile-showcase.config.ts) to change simulator or AVD
+Edit [mobile-showcase.config.ts](../../scripts/mobile-showcase.config.ts) to change simulator or AVD
 names, light/dark appearance, default palette, iOS orientation, scenes, output directory, capture
 delay, Android ABI, or viewport. The selectable palette ids come from `MOBILE_THEME_IDS` in
-[themePalettes.ts](../../packages/shared/src/themePalettes.ts), so the harness and the app's
+[themePalettes.ts](../../packages/core/src/shared/themePalettes.ts), so the harness and the app's
 appearance settings can never drift apart.
 
 ## Capture in GitHub Actions
@@ -175,11 +175,11 @@ Validate existing files without starting Metro, servers, simulators, or emulator
 ## Customize the seeded environment
 
 - Project repository, thread projections, conversation, terminal transcript, and Git changes:
-  [mobile-showcase-environment.ts](../../apps/mobile/scripts/mobile-showcase-environment.ts)
+  [mobile-showcase-environment.ts](../../scripts/mobile-showcase-environment.ts)
 - Device and capture matrix:
-  [mobile-showcase.config.ts](../../apps/mobile/scripts/mobile-showcase.config.ts)
+  [mobile-showcase.config.ts](../../scripts/mobile-showcase.config.ts)
 - Simulator/emulator orchestration:
-  [mobile-showcase.ts](../../apps/mobile/scripts/mobile-showcase.ts)
+  [mobile-showcase.ts](../../scripts/mobile-showcase.ts)
 
 Fixture timestamps are generated relative to capture startup so every route shows stable relative
 labels while the server still receives valid current data. The same deterministic three-environment

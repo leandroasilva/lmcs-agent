@@ -54,7 +54,7 @@ Important fields common to both record types:
 records instead carry OTLP resource, scope, and optional status fields.
 
 The `TraceRecord`, `EffectTraceRecord`, and `OtlpTraceRecord` schemas live in
-`packages/shared/src/observability.ts`.
+`packages/core/src/shared/observability.ts`.
 
 DPoP proof failures include the safe `environment.dpop.failure_code` span
 attribute. A `time_window` failure means that a signed proof was too old or too
@@ -92,7 +92,7 @@ You do not need any extra env vars. Just run the app normally and inspect `serve
 Examples:
 
 ```bash
-npx t3
+t3
 ```
 
 ```bash
@@ -144,7 +144,7 @@ export LMCS_TRACE_TIMING_ENABLED=true
 CLI:
 
 ```bash
-npx t3
+t3
 ```
 
 Monorepo web/server dev:

@@ -3,6 +3,10 @@
 LMCS Code runs coding agents on your computer and lets you control them from its
 desktop, web, or mobile app. Set up the machine where the agents will work first.
 
+LMCS Code is a fork of T3 Code distributed as source and through
+[GitHub Releases](https://github.com/leandroasilva/lmcs-agent/releases). There
+are no app-store or system package-manager channels.
+
 ## Requirements
 
 You need an installed, authenticated provider before starting a thread. You can
@@ -10,20 +14,23 @@ launch LMCS Code and configure providers afterwards.
 
 ## Command line
 
+The installer downloads a `t3` CLI archive from this repository's GitHub
+Releases:
+
 ```bash
-curl -fsSL https://t3.codes/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/leandroasilva/lmcs-agent/main/scripts/install.sh | sh
 ```
 
 On Windows, in PowerShell:
 
 ```powershell
-irm https://t3.codes/install.ps1 | iex
+irm https://raw.githubusercontent.com/leandroasilva/lmcs-agent/main/scripts/install.ps1 | iex
 ```
 
 This puts `t3` in `~/.local/bin`. If your shell reports `command not found`
 afterwards, that directory is not on your `PATH` yet; the installer prints the
-line to add. Set `LMCS_CHANNEL=nightly` to install the nightly train, or
-`LMCS_VERSION` to pin an exact version.
+line to add. Set `LMCS_CHANNEL` to follow another release train, `LMCS_VERSION`
+to pin an exact version, or `LMCS_RELEASE_BASE_URL` to install from a mirror.
 
 | Task                                             | Command                                                   |
 | ------------------------------------------------ | --------------------------------------------------------- |
@@ -35,18 +42,19 @@ line to add. Set `LMCS_CHANNEL=nightly` to install the nightly train, or
 
 Run `t3 --help` for the full reference.
 
-To try LMCS Code once without installing it, run `npx t3@latest` instead (needs
-Node.js for `npx`).
+To work from a source checkout instead — for development or for a platform
+without a published archive — follow the [README](../../README.md#getting-started).
 
 ### Intel Macs
 
-There is no `t3` executable for Intel Macs (the desktop app is available). To
-run a server there, build it from source with Node.js 24 and `vp`
-([Install vp](https://github.com/leandroasilva/lmcs-agent#install-vp)):
+There is no prebuilt `t3` archive for Intel Macs. To run a server there, build
+it from source with Node.js 24:
 
 ```bash
 git clone https://github.com/leandroasilva/lmcs-agent
-cd t3code && vp i && vp run build:desktop
+cd lmcs-agent
+npm run setup
+npm run build:desktop
 node apps/server/dist/bin.mjs
 ```
 
@@ -55,20 +63,10 @@ update it with `git pull` and a rebuild.
 
 ## Desktop app
 
-Download a release from [GitHub Releases](https://github.com/leandroasilva/lmcs-agent/releases),
-or use a package manager:
-
-| Platform           | Install                            |
-| ------------------ | ---------------------------------- |
-| Windows            | `winget install T3Tools.T3Code`    |
-| macOS              | `brew install --cask t3-code`      |
-| Debian, Ubuntu     | `sudo apt install ./T3-Code-*.deb` |
-| Arch Linux         | `yay -S t3code-bin`                |
-| Arch Linux nightly | `yay -S t3code-nightly-bin`        |
-
-The `.deb` updates itself like the other desktop builds. It asks for your
-password to install each update. If your desktop has no password prompt, the
-update fails. Download the new `.deb` and install it the same way.
+Download the latest release for your platform from
+[GitHub Releases](https://github.com/leandroasilva/lmcs-agent/releases). The
+desktop app bundles its own server and updates itself from newer releases on
+this repository.
 
 ### Windows Subsystem for Linux
 
@@ -92,9 +90,13 @@ command cannot reach the app, start or update the desktop app and try again.
 
 ## Mobile app
 
-Install LMCS Code from the
-[App Store](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824) or
-[Google Play](https://play.google.com/store/apps/details?id=com.t3tools.t3code).
+The mobile app is not published to app stores; build it from source:
+
+- iOS: [sideload the IPA with AltStore](./ios-sideload.md).
+- Android: build and install from `apps/mobile` with `vp run android:dev`, or
+  produce an APK through EAS. Push delivery additionally needs the Firebase and
+  relay setup in [Android notifications](../operations/android-notifications.md).
+
 The phone connects to a server on another machine. Follow
 [remote access](./remote-access.md) to link it through LMCS Connect or a pairing URL.
 

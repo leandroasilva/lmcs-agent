@@ -1,8 +1,8 @@
 #!/bin/sh
-# Installs the T3 Code CLI from a GitHub Release archive. Needs only sh, tar,
+# Installs the LMCS Code CLI from a GitHub Release archive. Needs only sh, tar,
 # sha256sum or shasum, and curl or wget; no Node, npm, or compiler.
 #
-#   curl -fsSL https://t3.codes/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/leandroasilva/lmcs-agent/main/scripts/install.sh | sh
 #
 # Environment:
 #   LMCS_CHANNEL           release train to follow: stable, nightly, or preview
@@ -17,7 +17,7 @@
 # instead of fetching the release again.
 set -eu
 
-repo="pingdotgg/t3code"
+repo="leandroasilva/lmcs-agent"
 base_url="${LMCS_RELEASE_BASE_URL:-https://github.com/${repo}/releases/download}"
 t3_home="${LMCS_HOME:-$HOME/.t3}"
 bin_dir="${LMCS_INSTALL_BIN_DIR:-$HOME/.local/bin}"
@@ -42,7 +42,7 @@ step() {
 if "$interactive"; then
   printf '\n%s' "$bold" >&2
   printf '  %s\n' '██████████ ████████ ' >&2
-  printf '  %s\n' '    ███       ▄██▀       T3 Code' >&2
+  printf '  %s\n' '    ███       ▄██▀       LMCS Code' >&2
   printf '  %s%s     %sCLI installer%s\n' '    ███       ████▄ ' "$reset" "$muted" "$reset$bold" >&2
   printf '  %s\n' '    ███    ▄     ███' >&2
   printf '  %s\n' '    ███    ███████▀ ' >&2

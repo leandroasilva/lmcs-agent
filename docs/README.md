@@ -3,6 +3,7 @@
 ## Using LMCS Code
 
 - [Install LMCS Code](./user/install.md)
+- [First run](./user/welcome-wizard.md)
 - [Messages and context](./user/composer.md)
 - [Working with threads](./user/thread-sidebar.md)
 - [Permission modes](./user/permission-modes.md)
@@ -15,6 +16,8 @@
 - [Import browser sessions](./user/browser-import.md)
 - [Devices](./user/devices.md)
 - [Usage and limits](./user/usage.md)
+- [Mobile notifications](./user/mobile-notifications.md)
+- [Sideloading the iOS app](./user/ios-sideload.md)
 - [Product usage data](./user/telemetry.md)
 - [Remote access](./user/remote-access.md)
 - [Running in the background](./user/background-service.md)
@@ -43,7 +46,7 @@ source alone does not explain. Most code changes do not need an internal documen
 - [Resource telemetry](./internals/resource-telemetry.md)
 - [Product analytics](./internals/product-analytics.md)
 - [Environment auth](./internals/environment-auth.md)
-- [LMCS Connect](./internals/t3-connect.md)
+- [LMCS Connect](./internals/connect.md)
 - [Assistant citations](./internals/assistant-citations.md)
 - [Mobile navigation](./internals/mobile-navigation.md)
 - [Mobile development lifecycle](./internals/mobile-development.md)
@@ -54,6 +57,7 @@ source alone does not explain. Most code changes do not need an internal documen
 ### Runbooks
 
 - [Development and local builds](./operations/development.md)
+- [Dev container](./operations/devcontainer.md)
 - [LMCS Connect setup](./operations/connect-setup.md)
 - [Release](./operations/release.md)
 - [Observability](./operations/observability.md)

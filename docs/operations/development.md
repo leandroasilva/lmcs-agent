@@ -2,7 +2,10 @@
 
 ## First checkout
 
-Install `vp` using the [root README](../../README.md#install-vp). The checkout requires Node 24;
+The checkout requires Node 24 and pnpm 11. The launcher in the
+[root README](../../README.md#getting-started) (`npm run setup`, then `npm run lmcs -- dev`) pins
+both and needs no global tools. The direct commands below use the `vp` CLI, either installed
+globally (`curl -fsSL https://vite.plus | bash`) or resolved from the installed dependencies.
 Bun is optional. From the repository root:
 
 ```sh
@@ -13,7 +16,7 @@ vp run dev
 Open the pairing URL printed by the dev runner. The bare origin does not authenticate
 a new browser.
 
-Prefer a container? See [Dev container](../internals/devcontainer.md) for VS Code and Codespaces setup.
+Prefer a container? See [Dev container](./devcontainer.md) for VS Code and Codespaces setup.
 
 ## Choosing a dev process
 
@@ -108,8 +111,6 @@ vp run --filter <package> typecheck
 
 Use `vp run lint:mobile` for native mobile changes. CI owns the full suite; see
 [ci.yml](../../.github/workflows/ci.yml) for its current jobs.
-The [manual Windows lane](../../.github/workflows/windows-tests.yml) is available for focused
-Windows investigation while that suite is not a required gate.
 
 ### Unused code
 

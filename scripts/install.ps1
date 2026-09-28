@@ -1,7 +1,7 @@
-# Installs the T3 Code CLI from a GitHub Release archive on Windows. Needs
+# Installs the LMCS Code CLI from a GitHub Release archive on Windows. Needs
 # only PowerShell 5.1+; no Node, npm, or compiler.
 #
-#   irm https://t3.codes/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/leandroasilva/lmcs-agent/main/scripts/install.ps1 | iex
 #
 # Environment:
 #   LMCS_CHANNEL           release train to follow: stable, nightly, or preview
@@ -16,7 +16,7 @@
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$repo = "pingdotgg/t3code"
+$repo = "leandroasilva/lmcs-agent"
 $baseUrl = if ($env:LMCS_RELEASE_BASE_URL) { $env:LMCS_RELEASE_BASE_URL.TrimEnd("/") } else { "https://github.com/$repo/releases/download" }
 $t3Home = if ($env:LMCS_HOME) { $env:LMCS_HOME } else { Join-Path $HOME ".t3" }
 $binDir = if ($env:LMCS_INSTALL_BIN_DIR) { $env:LMCS_INSTALL_BIN_DIR } else { Join-Path $HOME ".local\bin" }

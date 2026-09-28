@@ -4,6 +4,12 @@
 
 This document covers the unified release workflow for stable and nightly desktop releases.
 
+> The workflow retains upstream T3 Code publishing destinations: the `t3` and `@t3code/*` npm
+> packages, the `t3code-bin` AUR names, the `app.t3.codes` Vercel domains, and the `T3CODE_*`
+> Actions variables below. These belong to infrastructure the fork does not control. Publishing
+> LMCS releases requires reconfiguring each destination and its credentials first; treat the
+> sections below as the inherited automation map, not as ready-to-run LMCS channels.
+
 ## What the workflow does
 
 - Workflow: `.github/workflows/release.yml`
@@ -38,7 +44,7 @@ This document covers the unified release workflow for stable and nightly desktop
   - Automatically generated release notes are pinned to the previous tag in the same channel, so stable compares to the previous stable tag and nightly compares to the previous nightly tag.
 - Includes Electron auto-update metadata (for example `latest*.yml`, `nightly*.yml`, and `*.blockmap`) in release assets.
 - Builds a self-contained CLI archive per platform (`t3-<version>-<platform>-<arch>.tar.gz`, `.zip` on Windows) in the same job as that target's desktop artifact and attaches them to the GitHub Release with a `SHA256SUMS` file, on every channel, for five targets: macOS arm64, Linux x64 and arm64, Windows x64 and arm64. Every archive is built, signed, and smoke-tested on hardware of its own architecture. There is no macOS x64 archive: Node single-executables are unsupported on x64 macOS (the SEA docs list macOS as arm64 only) and the binary segfaults on start; the x64 desktop app is Electron and unaffected.
-  - The archive holds the server as a Node single-executable (`scripts/build-cli-archive.ts`), so unpacking it needs neither Node, npm, nor a compiler. It is the only form in which LMCS Code manages a runtime: the desktop's SSH environments, the boot service, `t3 update`, and the install scripts all download and verify this archive against `SHA256SUMS`. The npm packages exist for people who run `npx t3` or `npm install -g t3` themselves and carry the same archive contents; nothing in the product installs from npm. The `curl | sh` installers are `scripts/install.sh` and `scripts/install.ps1`; the marketing site copies them into its `public/` at build time (`apps/marketing/scripts/stage-install-scripts.mjs`) and serves them at `t3.codes/install.sh` and `/install.ps1`.
+  - The archive holds the server as a Node single-executable (`scripts/build-cli-archive.ts`), so unpacking it needs neither Node, npm, nor a compiler. It is the only form in which LMCS Code manages a runtime: the desktop's SSH environments, the boot service, `t3 update`, and the install scripts all download and verify this archive against `SHA256SUMS`. The npm packages exist for people who run `npx t3` or `npm install -g t3` themselves and carry the same archive contents; nothing in the product installs from npm. The `curl | sh` installers are `scripts/install.sh` and `scripts/install.ps1`, fetched straight from the repository at the URLs documented in [install.md](../user/install.md).
   - The executable is built with a Node that supports `--build-sea` (`VP_NODE_VERSION=26.8.2`, kept in step with `SEA_NODE_VERSION` in `apps/server/vite.config.ts`), while the repo stays on `engines.node`.
   - macOS archives are signed with the Developer ID certificate and notarized when the Apple secrets are present (ad hoc otherwise, which still runs from `curl`/`tar` installs). Windows executables use the same Azure Trusted Signing setup as the installer. Every native addon in the macOS archive is signed too, since the hardened runtime refuses unsigned libraries.
   - Each archive is extracted and executed on its build runner (`scripts/smoke-cli-archive.ts`) before it is uploaded.
@@ -51,35 +57,6 @@ This document covers the unified release workflow for stable and nightly desktop
   - stable releases are aliased to the `latest` hosted app channel
   - nightly releases are aliased to the `nightly` hosted app channel
 - Signing is optional and auto-detected per platform from secrets.
-
-## Pull request macOS previews
-
-Labeling a PR `preview:mac` publishes a signed, notarized Apple Silicon DMG with LMCS Connect enabled
-to the rolling `desktop-preview` prerelease, and works for fork PRs. The label is a one-shot request
-for the commit it is applied to: the trusted workflow removes it once the build is in hand, and later
-pushes do not build until a maintainer applies it again. Every signed preview is therefore a
-per-commit maintainer decision, which matters because the result carries the Developer ID signature.
-Vouching a contributor lets their labeled commits be signed; it is not a standing grant. The build is
-split so the Developer ID certificate never shares a job with PR code:
-
-- `.github/workflows/desktop-macos-preview.yml` runs on `pull_request` with no secrets and builds
-  only the JS bundle from the PR (the same `js-bundle` artifact `release.yml` produces).
-- `.github/workflows/desktop-macos-preview-publish.yml` runs on `workflow_run` from `main`. It
-  refuses unless the PR is open, still labeled, its head is the built commit, and the author is a
-  bot, a collaborator, or listed in `.github/VOUCHED.td` (read from the default branch, so a PR cannot vouch
-  for itself). It then packages and signs the bundle through `release-desktop.yml` checked out at
-  `main`, so packaging, native helpers, and the Electron/desktop dependencies come from `main`, not
-  the PR. Only the version and the public LMCS Connect identifiers in `.env.example` are read from the
-  PR commit, as data, so the signed app's passkey entitlement matches the bundle. A PR that changes
-  packaging must use the `channel=preview` release train above instead.
-
-Before handing the bundle to the signing runner, the trusted workflow validates its ZIP entries
-and accepts only regular files under `server/dist` and `desktop/dist-electron`, plus the directory
-entries that lead to those roots. The artifact cannot
-overwrite packaging code or installed dependencies. The bundle is copied into the app, never executed,
-on the signing runner. The
-`pull_request_target` cleanup job in the publish workflow removes the download when the PR closes, or
-when the label is removed by hand before a build consumed it, and never checks out PR code.
 
 ## Required release credentials
 
@@ -209,17 +186,6 @@ stage, test Cloudflare account, disposable host, and disposable T3 home. Keep pr
 8. Resume the legacy child with `kill -CONT <legacy-pid>` and confirm its tunnel reconnects.
 9. Repeat with a physical sleep and wake cycle on a disposable laptop before broad rollout.
 
-## Marketing site deployment
-
-After a nightly release is published, the release workflow deploys the same commit
-to the marketing site's Vercel production project. Stable releases do not deploy
-the marketing site because they can promote an older nightly commit.
-
-The job looks up the `t3code-marketing` project using the existing `VERCEL_TOKEN`
-and `VERCEL_ORG_ID` secrets. It also respects the optional `VERCEL_TEAM_SLUG`
-variable. The Vercel project's root directory must be `apps/marketing`.
-Git deployments remain disabled in `apps/marketing/vercel.ts`.
-
 ## Hosted web app release deployment
 
 The hosted app is intentionally not deployed by Vercel's Git integration. The
@@ -236,9 +202,9 @@ Required GitHub Actions secrets:
 Optional GitHub Actions variables:
 
 - `VERCEL_TEAM_SLUG`: overrides the Vercel CLI scope when the team slug is preferred over the `VERCEL_ORG_ID` secret.
-- `LMCS_WEB_ROUTER_URL`: defaults to `https://app.t3.codes`.
-- `LMCS_WEB_LATEST_DOMAIN`: defaults to `latest.app.t3.codes`.
-- `LMCS_WEB_NIGHTLY_DOMAIN`: defaults to `nightly.app.t3.codes`.
+- `T3CODE_WEB_ROUTER_URL`: defaults to `https://app.t3.codes`.
+- `T3CODE_WEB_LATEST_DOMAIN`: defaults to `latest.app.t3.codes`.
+- `T3CODE_WEB_NIGHTLY_DOMAIN`: defaults to `nightly.app.t3.codes`.
 
 Required Vercel domains:
 

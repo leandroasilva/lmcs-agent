@@ -1,0 +1,4 @@
+interface:
+  display_name: "LMCS Agent App Testing"
+  short_description: "Test web and desktop in LMCS Agent's Browser panel"
+  default_prompt: "Use $test-lmcs-agent-app to verify the affected web or desktop flow through LMCS Agent's Browser panel."
