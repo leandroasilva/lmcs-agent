@@ -8,6 +8,10 @@
     "close": "Fechar",
     "tryAgain": "Tente novamente.",
     "save": "Salvar",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "saving": "Salvando…",
+    "advanced": "Avançado",
     "colorPicker": {
       "instructions": "Use as setas para ajustar o valor em foco. Segure Shift para passos maiores. Use Home e End para o mínimo e o máximo. Pressione Tab para alternar entre saturação e brilho.",
       "planeAria": "saturação e brilho de {{label}}",
@@ -1006,6 +1010,179 @@
         "restartToFinish": "Reinicie o LMCS Code para concluir a configuração de captura.",
         "verifyAccess": "Não foi possível verificar o acesso de captura",
         "closeSetup": "Não foi possível fechar a configuração de captura"
+      },
+      "recorder": {
+        "errorStart": "Não foi possível iniciar a gravação do atalho.",
+        "errorModifierOnly": "Adicione uma letra, número ou tecla de função ao seu atalho.",
+        "recordAria": "Gravar atalho de snapshot, atualmente {{shortcut}}",
+        "changeAria": "Alterar atalho de snapshot",
+        "press": "Pressione o atalho…",
+        "change": "Alterar atalho",
+        "choose": "Escolher atalho"
+      },
+      "config": {
+        "errorPrepare": "Não foi possível preparar as alterações. Consulte Avançado para obter ajuda.",
+        "errorSave": "Não foi possível salvar seu atalho. Revise as alterações e tente novamente.",
+        "shortcutLabel": "Atalho",
+        "pressHint": "Pressione seu atalho. Esc cancela.",
+        "savedWithWarning": "Salvo, mas o atalho precisa de atenção. Consulte Avançado para obter ajuda.",
+        "removed": "Atalho removido.",
+        "savedUse": "Use {{shortcut}} em outro app para capturar uma janela.",
+        "reviewRemove": "Revise a alteração abaixo para remover seu atalho.",
+        "reviewSave": "Revise a alteração abaixo e salve seu atalho.",
+        "nothingToRemove": "Não há atalho de captura para remover.",
+        "alreadySetUp": "Este atalho já está configurado.",
+        "changesAria": "Alterações do atalho",
+        "onlyChanges": "Somente estas alterações serão salvas. Manteremos um backup.",
+        "saveShortcut": "Salvar atalho",
+        "removeShortcut": "Remover atalho",
+        "intro": "Permita que o LMCS Code leia as configurações da sua área de trabalho. Você revisará as alterações aqui antes de salvar.",
+        "preparing": "Preparando alterações…",
+        "reviewChanges": "Revisar alterações",
+        "updateRequired": "Atualize o LMCS Code para concluir a configuração do seu atalho.",
+        "connecting": "Conectando à sua área de trabalho…",
+        "restartRequired": "Reinicie o LMCS Code para concluir a conexão do seu atalho.",
+        "troubleshooting": "Solução de problemas",
+        "settingsFile": "Arquivo de configurações",
+        "includedFilesNote": "O LMCS Code também lê os arquivos incluídos por este arquivo.",
+        "linkedTo": "Vinculado a {{path}}. O vínculo será mantido.",
+        "chooseDifferentFile": "Escolher outro arquivo…",
+        "removeShortcutEllipsis": "Remover atalho…",
+        "useDesktopFile": "Use o arquivo de configurações de atalhos da sua área de trabalho.",
+        "customConfigNote": "Um --config ou NIRI_CONFIG personalizado pode mudar a localização dele.",
+        "omarchyNote": "No Omarchy, use seu próprio arquivo de bindings, não os padrões dele.",
+        "backupLine": "Backup: {{path}}",
+        "manualSetup": "Configuração manual",
+        "manualNiri": "Cole isto dentro de binds { … } na sua config do Niri e salve.",
+        "manualHyprland": "Adicione este binding à sua config do Hyprland e salve.",
+        "manualChangeKeys": "Altere as teclas se necessário.",
+        "copied": "Copiado",
+        "copyShortcut": "Copiar atalho",
+        "turnOffNote": "Desative a captura no LMCS Code para interrompê-la. Remova o atalho do {{desktop}} para liberar as teclas.",
+        "addedShortcut": "Adicionei o atalho"
+      },
+      "setup": {
+        "check": {
+          "unable": "Ainda não foi possível verificar o acesso. Consulte Avançado para obter ajuda.",
+          "readyPicker": "Pronto. Você escolherá uma janela a cada vez.",
+          "waitingSignOut": "Ainda aguardando você sair e entrar novamente.",
+          "readyContinue": "Pronto. Continue para escolher seu atalho.",
+          "notReady": "Ainda não está pronto. Conclua a etapa acima."
+        },
+        "steps": {
+          "access": "Acesso",
+          "shortcut": "Atalho"
+        },
+        "header": "Configurar snapshots",
+        "headerForDesktop": "Configurar snapshots para {{desktop}}",
+        "gnome": {
+          "not-installed": {
+            "title": "Instale a extensão",
+            "description": "A extensão GNOME do LMCS Code permite capturar outras janelas e trazê-las para o seu rascunho. Saia da sessão uma vez após instalar."
+          },
+          "restart-required": {
+            "title": "Extensão instalada",
+            "description": "Salve seu trabalho, depois saia e entre novamente. Sua configuração estará esperando aqui."
+          },
+          "update-required": {
+            "title": "Atualize a extensão",
+            "description": "Instale a atualização, depois saia e entre novamente."
+          },
+          "extensions-disabled": {
+            "title": "Permita extensões do GNOME",
+            "description": "Abra o GNOME Extensions e ative as extensões, depois verifique novamente."
+          },
+          "disabled": {
+            "title": "Ative a extensão",
+            "description": "Ative o LMCS Code SnapShots para começar a capturar janelas."
+          },
+          "enabled": {
+            "title": "Captura pronta",
+            "description": "Agora, escolha seu atalho."
+          },
+          "unsupported": {
+            "title": "Captura automática indisponível",
+            "description": "Use Tirar snapshot na paleta de comandos para escolher uma janela."
+          },
+          "error": {
+            "title": "Não foi possível configurar a extensão",
+            "description": "Verifique o LMCS Code SnapShots no GNOME Extensions e tente novamente."
+          }
+        },
+        "access": {
+          "retry": {
+            "title": "Vamos tentar novamente",
+            "description": "Não foi possível verificar os snapshots. Tente novamente para continuar."
+          },
+          "extensionNotReady": {
+            "title": "Verifique o acesso de captura",
+            "description": "A extensão ainda não está pronta. Tente novamente em instantes."
+          },
+          "helperError": {
+            "title": "Vamos corrigir o acesso de captura",
+            "description": "Tente reinstalar o assistente de captura e verifique novamente."
+          },
+          "helperUpdate": {
+            "title": "Atualize o assistente de captura"
+          },
+          "allowHelper": {
+            "title": "Permitir snapshots",
+            "description": "O assistente de captura do LMCS Code permite capturar outros apps e voltar ao seu rascunho. Ele vem incluído no LMCS Code."
+          },
+          "ready": {
+            "title": "Captura pronta",
+            "description": "Agora, escolha seu atalho."
+          },
+          "picker": {
+            "title": "Escolha uma janela a cada vez",
+            "description": "Sua área de trabalho não oferece captura automática. Em vez disso, você escolherá a janela a capturar."
+          },
+          "allow": {
+            "title": "Permitir snapshots",
+            "description": "Permita o acesso quando solicitado para começar a capturar janelas.",
+            "descriptionPortal": "Sua área de trabalho pode pedir permissão na primeira captura.",
+            "descriptionMacReady": "Teste um snapshot da janela atual. Se o macOS pedir para ignorar o seletor de janelas, escolha Permitir. A imagem de teste é descartada.",
+            "descriptionMacPending": "Permita cada permissão e continue."
+          }
+        },
+        "shortcut": {
+          "title": "Escolha seu atalho",
+          "descriptionConfig": "Clique no atalho e pressione as teclas desejadas.",
+          "descriptionPortal": "Escolha suas teclas e aprove o pedido de permissão, se solicitado.",
+          "descriptionDirect": "Use as duas teclas Shift ou grave um atalho diferente."
+        },
+        "permissions": {
+          "screenRecording": {
+            "title": "Gravação de Tela",
+            "description": "Capture a janela que você está usando."
+          },
+          "accessibility": {
+            "title": "Acessibilidade",
+            "description": "Inclua texto e controles do app capturado.",
+            "descriptionOptional": "Opcional. Inclua texto e controles do app capturado."
+          }
+        },
+        "helperReinstall": "Reinstalar assistente",
+        "tryAgain": "Tentar novamente",
+        "needsAttention": "A captura precisa de atenção. Volte para verificar o acesso.",
+        "stepFailed": "Não foi possível concluir esta etapa. Tente novamente ou consulte Avançado para obter ajuda.",
+        "includedNote": "Incluído com o LMCS Code. Nenhum download necessário.",
+        "disableExtension": "Desativar extensão",
+        "removeHelper": "Remover assistente de captura",
+        "finishLater": "Concluir depois",
+        "checking": "Verificando…",
+        "installing": "Instalando…",
+        "enabling": "Ativando…",
+        "working": "Trabalhando…",
+        "checkAgain": "Verificar novamente",
+        "updateHelper": "Atualizar assistente",
+        "installHelper": "Instalar assistente",
+        "updateExtension": "Atualizar extensão",
+        "installExtension": "Instalar extensão",
+        "enableExtension": "Ativar extensão",
+        "testCaptureContinue": "Testar captura e continuar",
+        "allowCapture": "Permitir captura",
+        "saveAndFinish": "Salvar e concluir"
       }
     },
     "providers": {
