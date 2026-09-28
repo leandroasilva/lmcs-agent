@@ -23,13 +23,21 @@ vi.mock("react/compiler-runtime", async () => {
   const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
+  ...(await import("../../../test/reactI18nextMock")).reactI18nextMock(),
+}));
 const bridge = vi.hoisted(() => ({
   previewSnapShotConfig: vi.fn(),
   applySnapShotConfig: vi.fn(),
   setSnapShotShortcutSuppressed: vi.fn(),
 }));
-vi.mock("../../../lib/desktopSnapShot", () => ({ getDesktopSnapShotBridge: () => bridge }));
-vi.mock("../../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "light" }) }));
+vi.mock("../../../lib/desktopSnapShot", () => ({
+  getDesktopSnapShotBridge: () => bridge,
+}));
+vi.mock("../../../hooks/useTheme", () => ({
+  useTheme: () => ({ resolvedTheme: "light" }),
+}));
 vi.mock("../../../hooks/useCopyToClipboard", () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(), isCopied: false }),
 }));
@@ -171,12 +179,17 @@ it.each(["niri", "hyprland"] as const)(
     await finish(bridge.applySnapShotConfig.mock.results[0]!.value);
     expect(bridge.applySnapShotConfig).toHaveBeenCalledExactlyOnceWith(custom.id);
     expect(toastManager.add).toHaveBeenCalledWith(
-      expect.objectContaining({ description: "Use Ctrl+Alt+Y from another app." }),
+      expect.objectContaining({
+        description: "Use Ctrl+Alt+Y from another app.",
+      }),
     );
   },
 );
 it("uses the existing config keys when no replacement was chosen", async () => {
-  bridge.previewSnapShotConfig.mockResolvedValue({ ...preview, shortcut: "Super+F8" });
+  bridge.previewSnapShotConfig.mockResolvedValue({
+    ...preview,
+    shortcut: "Super+F8",
+  });
   button(render(), "Review changes").onClick();
   await finish(bridge.previewSnapShotConfig.mock.results[0]!.value);
   expect(bridge.previewSnapShotConfig).toHaveBeenCalledExactlyOnceWith({
@@ -188,7 +201,13 @@ it("uses the existing config keys when no replacement was chosen", async () => {
 it("requires a new diff after changing keys during review", async () => {
   button(render(), "Review changes").onClick();
   await finish(bridge.previewSnapShotConfig.mock.results[0]!.value);
-  await recordKeys("niri", { key: "F8", code: "F8", ctrlKey: false, altKey: false, metaKey: true });
+  await recordKeys("niri", {
+    key: "F8",
+    code: "F8",
+    ctrlKey: false,
+    altKey: false,
+    metaKey: true,
+  });
   expect(visitElements(render(), (element) => "fileDiff" in element.props)).toBeNull();
   expect(bridge.applySnapShotConfig).not.toHaveBeenCalled();
   const replacement = { ...preview, id: "replacement", shortcut: "Super+F8" };

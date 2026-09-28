@@ -20,6 +20,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import "../../../i18n";
 
 import {
   keybindingValueForCommand,
@@ -52,13 +54,13 @@ import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
 import { Switch } from "../../ui/switch";
 import { Textarea } from "../../ui/textarea";
 
-const SCRIPT_ICONS: Array<{ id: ProjectScriptIcon; label: string }> = [
-  { id: "play", label: "Play" },
-  { id: "test", label: "Test" },
-  { id: "lint", label: "Lint" },
-  { id: "configure", label: "Configure" },
-  { id: "build", label: "Build" },
-  { id: "debug", label: "Debug" },
+const SCRIPT_ICONS: ReadonlyArray<ProjectScriptIcon> = [
+  "play",
+  "test",
+  "lint",
+  "configure",
+  "build",
+  "debug",
 ];
 
 export function ScriptIcon({
@@ -153,6 +155,7 @@ export function ProjectScriptEditorDialog({
   onClose: () => void;
 }) {
   const formId = React.useId();
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [command, setCommand] = useState("");
   const [icon, setIcon] = useState<ProjectScriptIcon>("play");
@@ -165,7 +168,9 @@ export function ProjectScriptEditorDialog({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [savingRequest, setSavingRequest] = useState<ProjectScriptEditorRequest | null>(null);
-  const pendingSubmissionRef = useRef<{ request: ProjectScriptEditorRequest } | null>(null);
+  const pendingSubmissionRef = useRef<{
+    request: ProjectScriptEditorRequest;
+  } | null>(null);
 
   const isOpen = request !== null;
   const isEditing = request?.scriptId != null;
@@ -222,11 +227,11 @@ export function ProjectScriptEditorDialog({
     const trimmedName = name.trim();
     const trimmedCommand = command.trim();
     if (trimmedName.length === 0) {
-      setValidationError("Name is required.");
+      setValidationError(t("settings.projects.scriptEditor.errorNameRequired"));
       return;
     }
     if (trimmedCommand.length === 0) {
-      setValidationError("Command is required.");
+      setValidationError(t("settings.projects.scriptEditor.errorCommandRequired"));
       return;
     }
 
@@ -255,7 +260,11 @@ export function ProjectScriptEditorDialog({
         autoOpenPreview: trimmedPreviewUrl.length > 0 ? autoOpenPreview : false,
       } satisfies NewProjectScriptInput;
     } catch (error) {
-      setValidationError(error instanceof Error ? error.message : "Failed to save action.");
+      setValidationError(
+        error instanceof Error
+          ? error.message
+          : t("settings.projects.scriptEditor.errorSaveFailed"),
+      );
       return;
     }
 
@@ -269,7 +278,11 @@ export function ProjectScriptEditorDialog({
         if (result._tag === "Failure") {
           if (!isAtomCommandInterrupted(result)) {
             const error = squashAtomCommandFailure(result);
-            setValidationError(error instanceof Error ? error.message : "Failed to save action.");
+            setValidationError(
+              error instanceof Error
+                ? error.message
+                : t("settings.projects.scriptEditor.errorSaveFailed"),
+            );
           }
         } else {
           close();
@@ -277,7 +290,11 @@ export function ProjectScriptEditorDialog({
       }
     } catch (error) {
       if (pendingSubmissionRef.current === submission) {
-        setValidationError(error instanceof Error ? error.message : "Failed to save action.");
+        setValidationError(
+          error instanceof Error
+            ? error.message
+            : t("settings.projects.scriptEditor.errorSaveFailed"),
+        );
       }
     }
     if (pendingSubmissionRef.current === submission) {
@@ -298,16 +315,20 @@ export function ProjectScriptEditorDialog({
       >
         <DialogPopup>
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit Action" : "Add Action"}</DialogTitle>
-            <DialogDescription>
-              Actions are project-scoped commands you can run from the top bar or keybindings.
-            </DialogDescription>
+            <DialogTitle>
+              {isEditing
+                ? t("settings.projects.scriptEditor.titleEdit")
+                : t("settings.projects.scriptEditor.titleAdd")}
+            </DialogTitle>
+            <DialogDescription>{t("settings.projects.scriptEditor.description")}</DialogDescription>
           </DialogHeader>
           <DialogPanel>
             <form id={formId} onSubmit={submit}>
               <fieldset className="space-y-4" disabled={isSaving}>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-name">Name</Label>
+                  <Label htmlFor="script-name">
+                    {t("settings.projects.scriptEditor.nameLabel")}
+                  </Label>
                   <div className="flex items-center gap-2">
                     <Popover onOpenChange={setIconPickerOpen} open={iconPickerOpen}>
                       <PopoverTrigger
@@ -316,7 +337,7 @@ export function ProjectScriptEditorDialog({
                             type="button"
                             variant="outline"
                             className="size-9 shrink-0"
-                            aria-label="Choose icon"
+                            aria-label={t("settings.projects.scriptEditor.chooseIconAria")}
                           />
                         }
                       >
@@ -324,11 +345,11 @@ export function ProjectScriptEditorDialog({
                       </PopoverTrigger>
                       <PopoverPopup align="start">
                         <div className="grid grid-cols-3 gap-2">
-                          {SCRIPT_ICONS.map((entry) => {
-                            const isSelected = entry.id === icon;
+                          {SCRIPT_ICONS.map((iconId) => {
+                            const isSelected = iconId === icon;
                             return (
                               <button
-                                key={entry.id}
+                                key={iconId}
                                 type="button"
                                 className={`relative flex flex-col items-center gap-2 rounded-md border px-2 py-2 text-xs dark:border-transparent ${
                                   isSelected
@@ -336,12 +357,12 @@ export function ProjectScriptEditorDialog({
                                     : "border-border/70 hover:bg-accent/60 dark:bg-white/[0.035]"
                                 }`}
                                 onClick={() => {
-                                  setIcon(entry.id);
+                                  setIcon(iconId);
                                   setIconPickerOpen(false);
                                 }}
                               >
-                                <ScriptIcon icon={entry.id} className="size-4" />
-                                <span>{entry.label}</span>
+                                <ScriptIcon icon={iconId} className="size-4" />
+                                <span>{t(`settings.projects.scriptEditor.icons.${iconId}`)}</span>
                               </button>
                             );
                           })}
@@ -358,21 +379,27 @@ export function ProjectScriptEditorDialog({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-keybinding">Keybinding</Label>
+                  <Label htmlFor="script-keybinding">
+                    {t("settings.projects.scriptEditor.keybindingLabel")}
+                  </Label>
                   <Input
                     id="script-keybinding"
-                    placeholder="Press shortcut"
+                    placeholder={t("settings.projects.scriptEditor.keybindingPlaceholder")}
                     value={keybinding}
                     readOnly
                     onKeyDown={captureKeybinding}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Press a shortcut. Use <code>Backspace</code> to clear. Shortcuts are
-                    environment-wide. Projects using the same action share its shortcut.
+                    <Trans
+                      i18nKey="settings.projects.scriptEditor.keybindingHelp"
+                      components={{ code: <code /> }}
+                    />
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-command">Command</Label>
+                  <Label htmlFor="script-command">
+                    {t("settings.projects.scriptEditor.commandLabel")}
+                  </Label>
                   <Textarea
                     id="script-command"
                     placeholder="bun test"
@@ -381,7 +408,9 @@ export function ProjectScriptEditorDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-preview-url">Preview URL (optional)</Label>
+                  <Label htmlFor="script-preview-url">
+                    {t("settings.projects.scriptEditor.previewUrlLabel")}
+                  </Label>
                   <Input
                     id="script-preview-url"
                     placeholder="http://localhost:5173"
@@ -389,11 +418,11 @@ export function ProjectScriptEditorDialog({
                     onChange={(event) => setPreviewUrl(event.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Open this URL in the in-app preview when this action runs.
+                    {t("settings.projects.scriptEditor.previewUrlHelp")}
                   </p>
                 </div>
                 <label className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-3 py-2 text-sm dark:border-transparent dark:bg-white/[0.035]">
-                  <span>Run automatically on worktree creation</span>
+                  <span>{t("settings.projects.scriptEditor.runOnWorktreeCreate")}</span>
                   <Switch
                     checked={runOnWorktreeCreate}
                     onCheckedChange={(checked) => setRunOnWorktreeCreate(Boolean(checked))}
@@ -404,7 +433,7 @@ export function ProjectScriptEditorDialog({
                     runOnWorktreeCreate ? "" : "opacity-60"
                   }`}
                 >
-                  <span>Wait for it to finish before the agent starts</span>
+                  <span>{t("settings.projects.scriptEditor.waitForSetup")}</span>
                   <Switch
                     checked={waitForSetup}
                     disabled={!runOnWorktreeCreate}
@@ -416,7 +445,7 @@ export function ProjectScriptEditorDialog({
                     previewUrl.trim().length === 0 ? "opacity-60" : ""
                   }`}
                 >
-                  <span>Open preview automatically when this action runs</span>
+                  <span>{t("settings.projects.scriptEditor.autoOpenPreview")}</span>
                   <Switch
                     checked={autoOpenPreview}
                     disabled={previewUrl.trim().length === 0}
@@ -436,14 +465,18 @@ export function ProjectScriptEditorDialog({
                 disabled={isSaving}
                 onClick={() => setDeleteConfirmOpen(true)}
               >
-                Delete
+                {t("settings.projects.scriptEditor.delete")}
               </Button>
             )}
             <Button type="button" variant="outline" onClick={close}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button form={formId} type="submit" disabled={isSaving}>
-              {isSaving ? "Saving…" : isEditing ? "Save changes" : "Save action"}
+              {isSaving
+                ? t("settings.projects.scriptEditor.saving")
+                : isEditing
+                  ? t("settings.projects.scriptEditor.saveChanges")
+                  : t("settings.projects.scriptEditor.saveAction")}
             </Button>
           </DialogFooter>
         </DialogPopup>
@@ -452,11 +485,17 @@ export function ProjectScriptEditorDialog({
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogPopup>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete action "{name}"?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>
+              {t("settings.projects.scriptEditor.deleteConfirmTitle", { name })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("settings.projects.scriptEditor.deleteConfirmDescription")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+            <AlertDialogClose render={<Button variant="outline" />}>
+              {t("common.cancel")}
+            </AlertDialogClose>
             <Button
               variant="destructive"
               disabled={isSaving}
@@ -467,7 +506,7 @@ export function ProjectScriptEditorDialog({
                 onDelete(request.scriptId);
               }}
             >
-              Delete action
+              {t("settings.projects.scriptEditor.deleteConfirmAction")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogPopup>

@@ -23,6 +23,11 @@ vi.mock("react/compiler-runtime", async () => {
   return { c: reactHookHarness.useMemoCache };
 });
 
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
+  ...(await import("../../../test/reactI18nextMock")).reactI18nextMock(),
+}));
+
 vi.mock("../../../hooks/useSettings", () => ({
   useEnvironmentSettings: settingsHooks.read,
   useUpdateEnvironmentSettings: settingsHooks.update,

@@ -24,10 +24,18 @@ vi.mock("react/compiler-runtime", async () => {
   const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
+  ...(await import("../../../test/reactI18nextMock")).reactI18nextMock(),
+}));
 vi.mock("@effect/atom-react", () => ({ useAtomValue: () => [] }));
 vi.mock("../../../state/server", () => ({ primaryServerKeybindingsAtom: {} }));
-vi.mock("./SettingsScopeContext", () => ({ useOptionalSettingsScope: () => null }));
-vi.mock("./SettingsScopeSentence", () => ({ SettingsScopeSentence: () => null }));
+vi.mock("./SettingsScopeContext", () => ({
+  useOptionalSettingsScope: () => null,
+}));
+vi.mock("./SettingsScopeSentence", () => ({
+  SettingsScopeSentence: () => null,
+}));
 const bridge = vi.hoisted(() => ({
   getSnapShotState: vi.fn<() => Promise<DesktopSnapShotState>>(),
   setSnapShotShortcutSuppressed: vi.fn(),
@@ -41,7 +49,9 @@ const bridge = vi.hoisted(() => ({
 }));
 const toastManager = vi.hoisted(() => ({ add: vi.fn() }));
 vi.mock("../../ui/toast", () => ({ toastManager }));
-vi.mock("../../../lib/desktopSnapShot", () => ({ getDesktopSnapShotBridge: () => bridge }));
+vi.mock("../../../lib/desktopSnapShot", () => ({
+  getDesktopSnapShotBridge: () => bridge,
+}));
 const settingsStore = vi.hoisted(() => ({
   current: {} as typeof DEFAULT_CLIENT_SETTINGS,
   update: vi.fn<(patch: ClientSettingsPatch) => Promise<void>>(),
@@ -93,7 +103,10 @@ beforeEach(() => {
   effects.length = 0;
   vi.clearAllMocks();
   vi.stubGlobal("navigator", { platform: "Linux" });
-  vi.stubGlobal("window", { addEventListener: vi.fn(), removeEventListener: vi.fn() });
+  vi.stubGlobal("window", {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  });
   settingsStore.current = { ...DEFAULT_CLIENT_SETTINGS, snapShotEnabled: true };
   state = {
     mode: "portal",
@@ -107,7 +120,10 @@ beforeEach(() => {
   };
   bridge.getSnapShotState.mockImplementation(async () => state);
   bridge.setSnapShotShortcutSuppressed.mockResolvedValue(undefined);
-  bridge.checkSnapShotShortcut.mockResolvedValue({ available: true, message: null });
+  bridge.checkSnapShotShortcut.mockResolvedValue({
+    available: true,
+    message: null,
+  });
   bridge.setupSnapShot.mockReset().mockResolvedValue(undefined);
   settingsStore.update.mockImplementation(async (patch) => {
     settingsStore.current = { ...settingsStore.current, ...patch };
@@ -138,7 +154,10 @@ it.each(["niri", "hyprland"] as const)(
 );
 it("returns to Access if the Hyprland helper needs attention before changing keys", async () => {
   const tree = await mount();
-  state = { ...state, hyprlandHelper: { status: "not-installed", message: "Install helper" } };
+  state = {
+    ...state,
+    hyprlandHelper: { status: "not-installed", message: "Install helper" },
+  };
   button(tree, "Change shortcut").onClick();
   await finish(bridge.getSnapShotState.mock.results[1]!.value);
   expect(wizard(render())?.props.initialStep).toBe("access");
@@ -164,7 +183,11 @@ it.each(["direct", "gnome-extension", "kde"] as const)(
     if (backend !== "direct") {
       expect(recorder(tree)["aria-label"]).toBe("Record snapshot shortcut, currently Ctrl+Shift+2");
       const keycaps = visitElements(tree, (element) => element.type === SnapShotShortcutKeys);
-      expect(keycaps?.props.shortcut).toMatchObject({ key: "2", ctrlKey: true, shiftKey: true });
+      expect(keycaps?.props.shortcut).toMatchObject({
+        key: "2",
+        ctrlKey: true,
+        shiftKey: true,
+      });
       expect(
         visitElements(tree, (element) => element.props.id === "snap-shot-shortcut")?.props.status,
       ).toBeNull();
@@ -188,7 +211,11 @@ it.each(["direct", "gnome-extension", "kde"] as const)(
     button(render(), "Save").onClick();
     await finish(settingsStore.update.mock.results[0]!.value);
     expect(settingsStore.update).toHaveBeenCalledWith({
-      snapShotShortcut: expect.objectContaining({ key: "y", modKey: true, altKey: true }),
+      snapShotShortcut: expect.objectContaining({
+        key: "y",
+        modKey: true,
+        altKey: true,
+      }),
     });
     expect(wizard(render())).toBeNull();
     expect(bridge.previewSnapShotConfig).not.toHaveBeenCalled();
@@ -255,7 +282,10 @@ function usePortalShortcut(shortcutCanRetry: boolean) {
     shiftKey: true,
     metaKey: false,
   };
-  settingsStore.current = { ...settingsStore.current, snapShotShortcut: shortcut };
+  settingsStore.current = {
+    ...settingsStore.current,
+    snapShotShortcut: shortcut,
+  };
   state = {
     ...state,
     linuxBackend: "gnome-extension",
@@ -309,7 +339,10 @@ it("keeps a failed preference unchanged and reports the save error in a toast", 
       (element) => element.props["aria-label"] === "Flash captured window",
     );
     if (!control) throw new Error("Missing flash control");
-    return control.props as { onCheckedChange: (checked: boolean) => void; checked: boolean };
+    return control.props as {
+      onCheckedChange: (checked: boolean) => void;
+      checked: boolean;
+    };
   };
   settingsStore.update.mockRejectedValueOnce(new Error("The settings file is read-only."));
   flash(await mount()).onCheckedChange(false);
@@ -353,7 +386,10 @@ it.each([false, true])(
         removeItem: (key: string) => values.delete(key),
       },
     });
-    settingsStore.current = { ...settingsStore.current, snapShotEnabled: false };
+    settingsStore.current = {
+      ...settingsStore.current,
+      snapShotEnabled: false,
+    };
     state = {
       mode: "direct",
       shortcut: DEFAULT_CLIENT_SETTINGS.snapShotShortcut,
@@ -379,7 +415,10 @@ it.each([false, true])(
     hooks.reset();
     effects.length = 0;
     bridge.getSnapShotState.mockClear();
-    state = { ...state, macPermissions: { screenRecording: true, accessibility: true } };
+    state = {
+      ...state,
+      macPermissions: { screenRecording: true, accessibility: true },
+    };
     const resumed = wizard(await mount());
     expect(resumed).not.toBeNull();
     expect(resumed!.props.initialStep).toBe("access");
@@ -391,7 +430,10 @@ it.each([false, true])(
 );
 
 it("requires a successful macOS test capture before enabling and allows retry", async () => {
-  settingsStore.current = { ...DEFAULT_CLIENT_SETTINGS, snapShotEnabled: false };
+  settingsStore.current = {
+    ...DEFAULT_CLIENT_SETTINGS,
+    snapShotEnabled: false,
+  };
   state = {
     mode: "direct",
     shortcut: DEFAULT_CLIENT_SETTINGS.snapShotShortcut,

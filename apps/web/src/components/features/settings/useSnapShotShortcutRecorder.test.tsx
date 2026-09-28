@@ -19,6 +19,10 @@ vi.mock("react/compiler-runtime", async () => {
   const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
+  ...(await import("../../../test/reactI18nextMock")).reactI18nextMock(),
+}));
 const suppress = vi.hoisted(() => vi.fn<(_: boolean) => Promise<void>>());
 vi.mock("../../../lib/desktopSnapShot", () => ({
   getDesktopSnapShotBridge: () => ({ setSnapShotShortcutSuppressed: suppress }),

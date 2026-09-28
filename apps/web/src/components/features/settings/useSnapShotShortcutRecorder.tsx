@@ -5,6 +5,8 @@ import {
 } from "@lmcstools/core";
 import { parseKeybindingShortcut } from "@lmcstools/core/keybindings";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
+import "../../../i18n";
 import { getDesktopSnapShotBridge } from "../../../lib/desktopSnapShot";
 import {
   formatSnapShotShortcutLabel,
@@ -48,6 +50,7 @@ export function useSnapShotShortcutRecorder({
   onStart?: () => void;
   onError: (message: string) => void;
 }) {
+  const { t } = useTranslation();
   const bridge = getDesktopSnapShotBridge();
   const displayShortcut = shortcutLabel ? parseDesktopSnapShotShortcut(shortcutLabel) : shortcut;
   const [recording, setRecording] = useState(false);
@@ -71,7 +74,7 @@ export function useSnapShotShortcutRecorder({
     } catch (error) {
       if (!requests.owns(request)) return;
       requests.clear();
-      onError(error instanceof Error ? error.message : "Could not start shortcut recording.");
+      onError(error instanceof Error ? error.message : t("settings.snapshot.recorder.errorStart"));
     }
   };
   useEffect(
@@ -96,7 +99,7 @@ export function useSnapShotShortcutRecorder({
       const [left, right] = MODIFIER_CODES[modifier];
       if (held.has(left) && held.has(right)) {
         if (!allowModifierPairs) {
-          onError("Add a letter, number, or function key to your shortcut.");
+          onError(t("settings.snapshot.recorder.errorModifierOnly"));
           return;
         }
         stopRecording();
@@ -125,8 +128,10 @@ export function useSnapShotShortcutRecorder({
         disabled={disabled}
         aria-label={
           displayShortcut
-            ? `Record snapshot shortcut, currently ${formatSnapShotShortcutLabel(displayShortcut)}`
-            : "Change snapshot shortcut"
+            ? t("settings.snapshot.recorder.recordAria", {
+                shortcut: formatSnapShotShortcutLabel(displayShortcut),
+              })
+            : t("settings.snapshot.recorder.changeAria")
         }
         aria-pressed={recording}
         data-keybinding-capture=""
@@ -136,11 +141,11 @@ export function useSnapShotShortcutRecorder({
         onBlur={stopRecording}
       >
         {recording ? (
-          "Press shortcut…"
+          t("settings.snapshot.recorder.press")
         ) : !displayShortcut ? (
-          "Change shortcut"
+          t("settings.snapshot.recorder.change")
         ) : !allowModifierPairs && isModifierPairShortcut(displayShortcut) ? (
-          "Choose shortcut"
+          t("settings.snapshot.recorder.choose")
         ) : (
           <SnapShotShortcutKeys shortcut={displayShortcut} />
         )}

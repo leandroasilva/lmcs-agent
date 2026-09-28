@@ -58,11 +58,18 @@ vi.mock("./settingsLayout", async (importOriginal) => {
   };
 });
 
-vi.mock("./SettingsScopeSentence", () => ({ SettingsScopeSentence: () => null }));
+vi.mock("./SettingsScopeSentence", () => ({
+  SettingsScopeSentence: () => null,
+}));
 vi.mock("react/compiler-runtime", async () => {
   const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
+
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
+  ...(await import("../../../test/reactI18nextMock")).reactI18nextMock(),
+}));
 
 vi.mock("@effect/atom-react", () => ({
   useAtomValue: () => atoms.providers,
@@ -92,11 +99,20 @@ vi.mock("../../../hooks/useSettings", () => ({
 }));
 
 vi.mock("../../../environments/primary", () => ({
-  usePrimarySessionState: () => ({ data: null, error: null, isPending: false, refresh: vi.fn() }),
+  usePrimarySessionState: () => ({
+    data: null,
+    error: null,
+    isPending: false,
+    refresh: vi.fn(),
+  }),
 }));
 
 vi.mock("../../../state/session", () => ({
-  useEnvironmentSessionState: () => ({ data: null, hasError: false, isPending: true }),
+  useEnvironmentSessionState: () => ({
+    data: null,
+    hasError: false,
+    isPending: true,
+  }),
 }));
 
 import { EnvironmentProviderSettings } from "./ProviderSettingsPanel";
@@ -213,7 +229,10 @@ describe("EnvironmentProviderSettings routing", () => {
 
     expect(commands.updateProvider).toHaveBeenCalledWith({
       environmentId,
-      input: { provider: ProviderDriverKind.make("codex"), instanceId: codexId },
+      input: {
+        provider: ProviderDriverKind.make("codex"),
+        instanceId: codexId,
+      },
     });
   });
 
@@ -234,11 +253,19 @@ describe("EnvironmentProviderSettings routing", () => {
     ["onFavoriteModelsChange", { favorites: [{ provider: codexId, model: "chosen" }] }],
     [
       "onHiddenModelsChange",
-      { providerModelPreferences: { [codexId]: { hiddenModels: ["chosen"], modelOrder: [] } } },
+      {
+        providerModelPreferences: {
+          [codexId]: { hiddenModels: ["chosen"], modelOrder: [] },
+        },
+      },
     ],
     [
       "onModelOrderChange",
-      { providerModelPreferences: { [codexId]: { hiddenModels: [], modelOrder: ["chosen"] } } },
+      {
+        providerModelPreferences: {
+          [codexId]: { hiddenModels: [], modelOrder: ["chosen"] },
+        },
+      },
     ],
   ])("saves %s on this device without changing the selected server", (action, expected) => {
     atoms.providers = [provider()];
