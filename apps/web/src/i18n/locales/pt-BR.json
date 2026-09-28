@@ -915,7 +915,40 @@
       "scan": "Verificar",
       "rescanAria": "Verificar ambiente do servidor novamente",
       "rescanTooltip": "Verificar Git e integrações de hospedagem novamente",
-      "connectPrompt": "Conecte um ambiente para inspecionar suas ferramentas de controle de versão e integrações de hospedagem."
+      "connectPrompt": "Conecte um ambiente para inspecionar suas ferramentas de controle de versão e integrações de hospedagem.",
+      "writing": {
+        "sectionTitle": "Geração de texto",
+        "modes": {
+          "repo_conventions": {
+            "label": "Convenções do repositório",
+            "description": "Em cada projeto, segue as descrições de mudanças recentes e os títulos de change requests."
+          },
+          "conventional_commits": {
+            "label": "Conventional Commits",
+            "description": "Usa prefixos de Conventional Commit e mantém o texto do change request conciso."
+          },
+          "custom": {
+            "label": "Instruções personalizadas",
+            "description": "Usa suas instruções para descrições de mudanças e change requests em todos os projetos."
+          }
+        },
+        "resetStyleLabel": "estilo de escrita do controle de versão",
+        "styleAria": "Estilo de escrita do controle de versão",
+        "allInstructionsAria": "Instruções personalizadas de controle de versão para todos os ambientes selecionados",
+        "allInstructionsPlaceholder": "Escreva as instruções que cada ambiente selecionado deve usar.",
+        "applyToAll": "Aplicar instruções a todos",
+        "writeForAll": "Escrever instruções personalizadas para todos",
+        "customPlaceholder": "Mantenha os títulos concisos. Use tópicos curtos nas descrições.",
+        "customAria": "Instruções personalizadas de escrita do controle de versão",
+        "templatesDescription": "Usa o template do repositório para descrições de change request quando disponível.",
+        "resetTemplatesLabel": "templates de change request",
+        "templatesAria": "Seguir templates de change request",
+        "writerModelDescription": "Modelo para texto de controle de versão e nomes de branches ou bookmarks. Desligado, usa o modelo de geração de texto do ambiente.",
+        "connectPrompt": "Conecte um ambiente para escolher seu modelo de escrita do controle de versão.",
+        "noProviders": "Nenhum provedor de geração de texto disponível.",
+        "writerModelAria": "Modelo de escrita do controle de versão",
+        "dedicatedModelAria": "Usar um modelo de escrita do controle de versão separado"
+      }
     },
     "snapshot": {
       "updating": "Atualizando configurações de captura…",
@@ -1183,6 +1216,147 @@
         "testCaptureContinue": "Testar captura e continuar",
         "allowCapture": "Permitir captura",
         "saveAndFinish": "Salvar e concluir"
+      }
+    },
+    "theme": {
+      "colorRoles": {
+        "canvas": "Plano de fundo",
+        "toolbar": "Fundo da barra de ferramentas",
+        "toolbarForeground": "Texto da barra de ferramentas",
+        "toolbarBorder": "Borda da barra de ferramentas",
+        "toolbarControl": "Controle da barra de ferramentas",
+        "toolbarControlForeground": "Texto do controle da barra de ferramentas",
+        "toolbarControlHover": "Hover do controle da barra de ferramentas",
+        "accent": "Cor de destaque",
+        "errorForeground": "Texto de erro",
+        "errorSurface": "Fundo de erro",
+        "warningForeground": "Texto de aviso",
+        "warningSurface": "Fundo de aviso",
+        "updateForeground": "Texto de atualização",
+        "updateSurface": "Fundo de atualização"
+      },
+      "colorPicker": {
+        "chooseColor": "Escolha uma cor",
+        "chooseFor": "Escolha a cor de {{label}}",
+        "hue": "Matiz de {{label}}",
+        "hexAria": "Valor hexadecimal do seletor de {{label}}",
+        "rgbAria": "Valor RGB do seletor de {{label}}",
+        "hexValueAria": "Valor hexadecimal de {{label}}",
+        "showUsageAria": "Mostrar uso de {{label}}",
+        "hideUsageAria": "Ocultar uso de {{label}}",
+        "showUsageTooltip": "Mostrar onde {{label}} é usado",
+        "hideUsageTooltip": "Ocultar onde {{label}} é usado"
+      },
+      "previewCircles": {
+        "useLightAria": "Usar {{label}} no modo claro",
+        "useDarkAria": "Usar {{label}} no modo escuro",
+        "lightOnly": "Usar apenas no modo claro",
+        "darkOnly": "Usar apenas no modo escuro"
+      },
+      "search": {
+        "heading": "Buscar temas da comunidade",
+        "subheading": "Encontre temas open-source no Open VSX.",
+        "inputAria": "Buscar temas do Open VSX",
+        "placeholder": "Buscar temas...",
+        "popular": "Populares",
+        "sortLabel": "Ordenar",
+        "sortAria": "Ordenar temas",
+        "sort": {
+          "downloadCount": "Mais baixados",
+          "rating": "Melhor avaliados",
+          "timestamp": "Mais recentes",
+          "relevance": "Mais relevantes"
+        },
+        "searching": "Buscando temas...",
+        "resultsCount_one": "{{count}} tema compatível encontrado.",
+        "resultsCount_other": "{{count}} temas compatíveis encontrados.",
+        "emptyTitle": "Nenhum tema open-source compatível encontrado",
+        "emptyHint": "Tente uma busca mais ampla.",
+        "defaultDescription": "Um tema de cores da comunidade para o seu editor.",
+        "downloads": "downloads",
+        "install": "Instalar",
+        "update": "Atualizar",
+        "installing": "Instalando",
+        "updating": "Atualizando",
+        "installAria": "Instalar {{name}}",
+        "updateAria": "Atualizar {{name}}",
+        "installingAria": "Instalando {{name}}",
+        "updatingAria": "Atualizando {{name}}",
+        "viewSourceAria": "Ver código-fonte de {{name}}",
+        "errorSearch": "A busca no Open VSX falhou.",
+        "errorReadInstalled": "Não foi possível ler os temas instalados.",
+        "errorAdd": "Não foi possível adicionar esse tema.",
+        "updateTitle": "Atualizar “{{name}}”?",
+        "updateDescription": "Isso substitui as variantes instaladas, incluindo edições locais. Variantes que não estiverem mais na extensão serão removidas.",
+        "updateConfirm": "Atualizar tema"
+      },
+      "import": {
+        "oversized": "Esse arquivo tem {{size}}. Arquivos de tema têm só alguns KB, então ele não foi lido (limite de {{limit}}).",
+        "errorRead": "Não foi possível ler esse arquivo. Cole o JSON abaixo.",
+        "errorTooLarge": "{{name}}: grande demais",
+        "errorNotTheme": "não é um arquivo de tema",
+        "errorInstall": "não foi possível instalar",
+        "errorFailed": "falhou",
+        "errorTooManyCopies": "Cópias demais de \"{{label}}\".",
+        "errorSelect": "Tema adicionado, mas não foi possível selecioná-lo. Tente novamente.",
+        "errorInvalid": "Esse arquivo de tema é inválido.",
+        "title": "Adicionar um tema",
+        "importDivider": "ou importe um arquivo",
+        "chooseFiles": "Escolher arquivos",
+        "reading": "Lendo…",
+        "jsonLabel": "JSON do tema",
+        "conflictTitle": "Já instalado",
+        "updateExisting": "Atualizar existente",
+        "keepBoth": "Manter ambos",
+        "fileLabel": "Arquivo de tema",
+        "dropHint": "Solte arquivos .json do LMCS Code ou do VS Code",
+        "addTheme": "Adicionar tema"
+      },
+      "library": {
+        "variantGroup": "Variantes de tema claro e escuro",
+        "mode": {
+          "system": "Sistema",
+          "light": "Claro",
+          "dark": "Escuro"
+        },
+        "modeInline": {
+          "light": "claro",
+          "dark": "escuro"
+        },
+        "variantTooltip": "{{mode}}: {{label}}",
+        "chooseVariant": "Escolher variante do modo {{mode}}, {{count}} opções, atualmente {{label}}",
+        "useVariant": "Usar variante do modo {{mode}}, atualmente {{label}}",
+        "useOptionForMode": "Usar {{label}} no modo {{mode}}",
+        "useOptionForModeActive": "Usar {{label}} no modo {{mode}}, em uso",
+        "useCollectionVariant": "Usar {{collection}}, variante {{label}}",
+        "useCollectionVariantActive": "Usar {{collection}}, variante {{label}}, em uso",
+        "useTheme": "Usar tema {{label}}",
+        "useThemeActive": "Usar tema {{label}}, em uso",
+        "duplicateTheme": "Duplicar {{label}}",
+        "duplicateTooltip": "Duplicar tema",
+        "editTheme": "Editar {{label}}",
+        "editTooltip": "Editar tema",
+        "exportTheme": "Exportar {{label}}",
+        "exportTooltip": "Exportar arquivo de tema",
+        "removeFromCollection": "Remover temas de {{collection}}",
+        "removeTheme": "Remover {{label}}",
+        "removeTooltip": "Remover tema",
+        "removeTooltipPlural": "Remover temas",
+        "cardUseFirstVariants": "Usar as primeiras variantes para claro e escuro",
+        "cardUseBoth": "Usar para claro e escuro",
+        "cardUseOneMode": "Usar apenas no modo {{mode}}",
+        "appearanceModeGroup": "Modo de aparência",
+        "followSystem": "Seguir a aparência do sistema",
+        "useMode": "Usar modo {{mode}}",
+        "createTheme": "Criar tema",
+        "addTheme": "Adicionar tema",
+        "copyName": "Cópia de {{label}}",
+        "removeDialogTitleCollection": "Remover temas de “{{collection}}”?",
+        "removeDialogTitle": "Remover “{{label}}”?",
+        "removeDialogDescriptionCollection": "Selecione as variantes que deseja remover. Você pode restaurá-las importando a extensão novamente.",
+        "removeDialogDescription": "Você pode trazê-lo de volta a qualquer momento importando o arquivo JSON dele.",
+        "removeSelected": "Remover selecionados",
+        "removeDialogConfirm": "Remover tema"
       }
     },
     "providers": {

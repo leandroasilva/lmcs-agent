@@ -915,7 +915,40 @@
       "scan": "Scan",
       "rescanAria": "Rescan server environment",
       "rescanTooltip": "Rescan Git and hosting integrations",
-      "connectPrompt": "Connect an environment to inspect its version control tools and hosting integrations."
+      "connectPrompt": "Connect an environment to inspect its version control tools and hosting integrations.",
+      "writing": {
+        "sectionTitle": "Text generation",
+        "modes": {
+          "repo_conventions": {
+            "label": "Repository conventions",
+            "description": "In each project, matches recent change descriptions and change request titles."
+          },
+          "conventional_commits": {
+            "label": "Conventional Commits",
+            "description": "Use Conventional Commit prefixes and keep change request text concise."
+          },
+          "custom": {
+            "label": "Custom instructions",
+            "description": "Use your instructions for change descriptions and change requests in every project."
+          }
+        },
+        "resetStyleLabel": "source control writing style",
+        "styleAria": "Source control writing style",
+        "allInstructionsAria": "Custom source control instructions for all selected environments",
+        "allInstructionsPlaceholder": "Write the instructions each selected environment should use.",
+        "applyToAll": "Apply instructions to all",
+        "writeForAll": "Write custom instructions for all",
+        "customPlaceholder": "Keep titles concise. Use short bullet points in descriptions.",
+        "customAria": "Custom source control writing instructions",
+        "templatesDescription": "Use the repository's template for change request descriptions when available.",
+        "resetTemplatesLabel": "change request templates",
+        "templatesAria": "Follow change request templates",
+        "writerModelDescription": "Model for source control text and branch or bookmark names. Off uses the environment's text generation model.",
+        "connectPrompt": "Connect an environment to choose its source control writer model.",
+        "noProviders": "No text generation providers available.",
+        "writerModelAria": "Source control writer model",
+        "dedicatedModelAria": "Use a separate source control writer model"
+      }
     },
     "snapshot": {
       "updating": "Updating capture settings…",
@@ -1183,6 +1216,147 @@
         "testCaptureContinue": "Test capture and continue",
         "allowCapture": "Allow capture",
         "saveAndFinish": "Save and finish"
+      }
+    },
+    "theme": {
+      "colorRoles": {
+        "canvas": "Background",
+        "toolbar": "Toolbar background",
+        "toolbarForeground": "Toolbar text",
+        "toolbarBorder": "Toolbar border",
+        "toolbarControl": "Toolbar control",
+        "toolbarControlForeground": "Toolbar control text",
+        "toolbarControlHover": "Toolbar control hover",
+        "accent": "Accent color",
+        "errorForeground": "Error text",
+        "errorSurface": "Error background",
+        "warningForeground": "Warning text",
+        "warningSurface": "Warning background",
+        "updateForeground": "Update text",
+        "updateSurface": "Update background"
+      },
+      "colorPicker": {
+        "chooseColor": "Choose a color",
+        "chooseFor": "Choose {{label}} color",
+        "hue": "{{label}} hue",
+        "hexAria": "{{label}} picker hex value",
+        "rgbAria": "{{label}} picker RGB value",
+        "hexValueAria": "{{label}} hex value",
+        "showUsageAria": "Show {{label}} usage",
+        "hideUsageAria": "Hide {{label}} usage",
+        "showUsageTooltip": "Show where {{label}} is used",
+        "hideUsageTooltip": "Hide where {{label}} is used"
+      },
+      "previewCircles": {
+        "useLightAria": "Use {{label}} light mode",
+        "useDarkAria": "Use {{label}} dark mode",
+        "lightOnly": "Use for light mode only",
+        "darkOnly": "Use for dark mode only"
+      },
+      "search": {
+        "heading": "Search community themes",
+        "subheading": "Find open-source themes from Open VSX.",
+        "inputAria": "Search Open VSX themes",
+        "placeholder": "Search themes...",
+        "popular": "Popular",
+        "sortLabel": "Sort",
+        "sortAria": "Sort themes",
+        "sort": {
+          "downloadCount": "Most downloaded",
+          "rating": "Best rated",
+          "timestamp": "Newest",
+          "relevance": "Most relevant"
+        },
+        "searching": "Searching themes...",
+        "resultsCount_one": "{{count}} supported theme found.",
+        "resultsCount_other": "{{count}} supported themes found.",
+        "emptyTitle": "No supported open-source themes found",
+        "emptyHint": "Try a broader search.",
+        "defaultDescription": "A community color theme for your editor.",
+        "downloads": "downloads",
+        "install": "Install",
+        "update": "Update",
+        "installing": "Installing",
+        "updating": "Updating",
+        "installAria": "Install {{name}}",
+        "updateAria": "Update {{name}}",
+        "installingAria": "Installing {{name}}",
+        "updatingAria": "Updating {{name}}",
+        "viewSourceAria": "View source for {{name}}",
+        "errorSearch": "Open VSX search failed.",
+        "errorReadInstalled": "Installed themes could not be read.",
+        "errorAdd": "That theme could not be added.",
+        "updateTitle": "Update “{{name}}”?",
+        "updateDescription": "This replaces its installed variants, including any local edits. Variants no longer in the extension will be removed.",
+        "updateConfirm": "Update theme"
+      },
+      "import": {
+        "oversized": "That file is {{size}}. Theme files are only a few KB, so this one was not read (limit {{limit}}).",
+        "errorRead": "Could not read that file. Paste the JSON below instead.",
+        "errorTooLarge": "{{name}}: too large",
+        "errorNotTheme": "not a theme file",
+        "errorInstall": "could not install",
+        "errorFailed": "failed",
+        "errorTooManyCopies": "Too many copies of \"{{label}}\".",
+        "errorSelect": "Theme added, but it could not be selected. Try again.",
+        "errorInvalid": "That theme file is invalid.",
+        "title": "Add a theme",
+        "importDivider": "or import a file",
+        "chooseFiles": "Choose files",
+        "reading": "Reading…",
+        "jsonLabel": "Theme JSON",
+        "conflictTitle": "Already installed",
+        "updateExisting": "Update existing",
+        "keepBoth": "Keep both",
+        "fileLabel": "Theme file",
+        "dropHint": "Drop LMCS Code or VS Code .json files",
+        "addTheme": "Add theme"
+      },
+      "library": {
+        "variantGroup": "Light and dark theme variants",
+        "mode": {
+          "system": "System",
+          "light": "Light",
+          "dark": "Dark"
+        },
+        "modeInline": {
+          "light": "light",
+          "dark": "dark"
+        },
+        "variantTooltip": "{{mode}}: {{label}}",
+        "chooseVariant": "Choose {{mode}} variant, {{count}} options, currently {{label}}",
+        "useVariant": "Use {{mode}} variant, currently {{label}}",
+        "useOptionForMode": "Use {{label}} for {{mode}} mode",
+        "useOptionForModeActive": "Use {{label}} for {{mode}} mode, currently active",
+        "useCollectionVariant": "Use {{collection}}, {{label}} variant",
+        "useCollectionVariantActive": "Use {{collection}}, {{label}} variant, currently active",
+        "useTheme": "Use {{label}} theme",
+        "useThemeActive": "Use {{label}} theme, currently active",
+        "duplicateTheme": "Duplicate {{label}}",
+        "duplicateTooltip": "Duplicate theme",
+        "editTheme": "Edit {{label}}",
+        "editTooltip": "Edit theme",
+        "exportTheme": "Export {{label}}",
+        "exportTooltip": "Export theme file",
+        "removeFromCollection": "Remove themes from {{collection}}",
+        "removeTheme": "Remove {{label}}",
+        "removeTooltip": "Remove theme",
+        "removeTooltipPlural": "Remove themes",
+        "cardUseFirstVariants": "Use the first variants for light and dark",
+        "cardUseBoth": "Use for both light and dark",
+        "cardUseOneMode": "Use for {{mode}} mode only",
+        "appearanceModeGroup": "Appearance mode",
+        "followSystem": "Follow the system appearance",
+        "useMode": "Use {{mode}} mode",
+        "createTheme": "Create theme",
+        "addTheme": "Add theme",
+        "copyName": "{{label}} copy",
+        "removeDialogTitleCollection": "Remove themes from “{{collection}}”?",
+        "removeDialogTitle": "Remove “{{label}}”?",
+        "removeDialogDescriptionCollection": "Select the variants you want to remove. You can restore them by importing the extension again.",
+        "removeDialogDescription": "You can bring it back anytime by importing its JSON file.",
+        "removeSelected": "Remove selected",
+        "removeDialogConfirm": "Remove theme"
       }
     },
     "providers": {
