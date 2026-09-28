@@ -6,6 +6,8 @@ import {
 } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
+import { translateDynamic } from "../../../i18n";
+
 export interface DeviceHostCheckTarget {
   environmentId: EnvironmentId;
   label: string;
@@ -46,7 +48,13 @@ export async function checkDeviceHostConnections(
     targets.map(async (target) => {
       report(target.environmentId, { status: "pending" });
       try {
-        if (!target.connected) throw new Error("Environment disconnected");
+        if (!target.connected)
+          throw new Error(
+            translateDynamic(
+              "settings.integrations.deviceHosts.environmentDisconnected",
+              "Environment disconnected",
+            ),
+          );
         const result = await probe(target.environmentId, host);
         report(
           target.environmentId,

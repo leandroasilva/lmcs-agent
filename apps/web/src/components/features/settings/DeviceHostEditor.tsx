@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import * as Option from "effect/Option";
 import type { SshDeviceHostConfig } from "@lmcstools/core";
 import { CheckIcon, MonitorIcon, XIcon } from "lucide-react";
@@ -37,11 +38,15 @@ export function DeviceHostEditor({
   onSave: (host: SshDeviceHostConfig) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState(host);
   const { checks, testConnection } = useHostConnectionChecks(targets);
   const results = checks[deviceHostConnectionKey(draft)];
   const checking = Object.values(results ?? {}).some((check) => check.status === "pending");
-  const input = parseDeviceHostDraft({ ...draft, label: draft.label.trim() || draft.target });
+  const input = parseDeviceHostDraft({
+    ...draft,
+    label: draft.label.trim() || draft.target,
+  });
   const valid = Option.isSome(input);
   const failed = Object.values(results ?? {}).filter((check) => check.status === "failed").length;
   return (
@@ -64,17 +69,25 @@ export function DeviceHostEditor({
         }
       >
         <DialogHeader>
-          <DialogTitle>{isNew ? "Add device host" : "Edit device host"}</DialogTitle>
+          <DialogTitle>
+            {isNew
+              ? t("settings.integrations.deviceHosts.editor.addTitle")
+              : t("settings.integrations.deviceHosts.editor.editTitle")}
+          </DialogTitle>
           <DialogDescription>
             {targets.length === 1
-              ? `Connect from ${targets[0]?.label}.`
-              : `Connect from ${targets.length} selected environments.`}{" "}
-            Hosts on the same machine are skipped.
+              ? t("settings.integrations.deviceHosts.editor.connectFromOne", {
+                  label: targets[0]?.label,
+                })
+              : t("settings.integrations.deviceHosts.editor.connectFromMany", {
+                  count: targets.length,
+                })}{" "}
+            {t("settings.integrations.deviceHosts.editor.hostsSkipped")}
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>
           <label className="block space-y-1.5 text-sm">
-            <span>Name</span>
+            <span>{t("settings.integrations.deviceHosts.editor.nameLabel")}</span>
             <Input
               autoFocus
               required
@@ -85,23 +98,25 @@ export function DeviceHostEditor({
             />
           </label>
           <label className="block space-y-1.5 text-sm">
-            <span>SSH target</span>
+            <span>{t("settings.integrations.deviceHosts.editor.targetLabel")}</span>
             <Input
               required
               value={draft.target}
               disabled={busy}
               onChange={(event) => setDraft({ ...draft, target: event.target.value })}
-              placeholder="user@host or SSH alias"
+              placeholder={t("settings.integrations.deviceHosts.editor.targetPlaceholder")}
             />
           </label>
           <details
             open={host.port !== undefined || host.identityFile !== undefined || undefined}
             className="text-sm"
           >
-            <summary className="cursor-pointer text-muted-foreground">SSH options</summary>
+            <summary className="cursor-pointer text-muted-foreground">
+              {t("settings.integrations.deviceHosts.editor.optionsLabel")}
+            </summary>
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
               <label className="block space-y-1.5">
-                <span>Identity file</span>
+                <span>{t("settings.integrations.deviceHosts.editor.identityLabel")}</span>
                 <Input
                   value={draft.identityFile ?? ""}
                   disabled={busy}
@@ -111,11 +126,11 @@ export function DeviceHostEditor({
                       event.target.value ? { ...rest, identityFile: event.target.value } : rest,
                     );
                   }}
-                  placeholder="SSH config default"
+                  placeholder={t("settings.integrations.deviceHosts.editor.identityPlaceholder")}
                 />
               </label>
               <label className="block space-y-1.5">
-                <span>Port</span>
+                <span>{t("settings.integrations.deviceHosts.editor.portLabel")}</span>
                 <Input
                   type="number"
                   min={1}
@@ -128,24 +143,27 @@ export function DeviceHostEditor({
                       event.target.value ? { ...rest, port: Number(event.target.value) } : rest,
                     );
                   }}
-                  placeholder="Default"
+                  placeholder={t("settings.integrations.deviceHosts.editor.portPlaceholder")}
                 />
               </label>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Optional. Resolved separately on each environment.
+              {t("settings.integrations.deviceHosts.editor.optionsHint")}
             </p>
           </details>
           <div className="rounded-lg border border-border/60">
             <div className="flex items-center justify-between gap-3 px-3 py-2.5">
               <p role="status" className="text-xs text-muted-foreground">
                 {checking
-                  ? "Checking environments…"
+                  ? t("settings.integrations.deviceHosts.editor.checkingEnvironments")
                   : results
                     ? failed
-                      ? `${failed} of ${targets.length} failed`
-                      : "Connection checks passed"
-                    : "Check access before saving"}
+                      ? t("settings.integrations.deviceHosts.editor.failedCount", {
+                          count: failed,
+                          total: targets.length,
+                        })
+                      : t("settings.integrations.deviceHosts.editor.checksPassed")
+                    : t("settings.integrations.deviceHosts.editor.checkBeforeSaving")}
               </p>
               <Button
                 type="button"
@@ -156,7 +174,8 @@ export function DeviceHostEditor({
                   if (Option.isSome(input)) void testConnection(input.value);
                 }}
               >
-                {checking ? <Spinner size="xs" /> : null} Test connection
+                {checking ? <Spinner size="xs" /> : null}{" "}
+                {t("settings.integrations.deviceHosts.testConnection")}
               </Button>
             </div>
             {results ? (
@@ -173,19 +192,23 @@ export function DeviceHostEditor({
                         >
                           {result.status === "pending" ? (
                             <>
-                              <Spinner size="xs" /> Checking…
+                              <Spinner size="xs" />{" "}
+                              {t("settings.integrations.deviceHosts.editor.checking")}
                             </>
                           ) : result.status === "local" ? (
                             <>
-                              <MonitorIcon className="size-3" /> Already available locally
+                              <MonitorIcon className="size-3" />{" "}
+                              {t("settings.integrations.deviceHosts.localAvailable")}
                             </>
                           ) : result.status === "failed" ? (
                             <>
-                              <XIcon className="size-3" /> Failed
+                              <XIcon className="size-3" />{" "}
+                              {t("settings.integrations.deviceHosts.editor.failed")}
                             </>
                           ) : (
                             <>
-                              <CheckIcon className="size-3" /> Connected
+                              <CheckIcon className="size-3" />{" "}
+                              {t("settings.integrations.deviceHosts.editor.connected")}
                             </>
                           )}
                         </span>
@@ -197,7 +220,9 @@ export function DeviceHostEditor({
                       ) : null}
                       {result.status === "failed" ? (
                         <details className="mt-1.5 text-muted-foreground">
-                          <summary className="cursor-pointer">Show error</summary>
+                          <summary className="cursor-pointer">
+                            {t("settings.integrations.deviceHosts.editor.showError")}
+                          </summary>
                           <p className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words">
                             {result.error}
                           </p>
@@ -212,10 +237,11 @@ export function DeviceHostEditor({
         </DialogPanel>
         <DialogFooter>
           <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" disabled={busy || checking || !valid || !draft.label.trim()}>
-            {busy ? <Spinner size="xs" /> : null} Save host
+            {busy ? <Spinner size="xs" /> : null}{" "}
+            {t("settings.integrations.deviceHosts.editor.saveHost")}
           </Button>
         </DialogFooter>
       </DialogPopup>

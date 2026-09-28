@@ -20,6 +20,7 @@ import {
 } from "@lmcstools/core/projectSettings";
 import * as Equal from "effect/Equal";
 
+import { translateDynamic } from "../../../i18n";
 import type { ResolvedSettingsScope } from "./settingsScope";
 
 export type ScopedSettingsPatch = ServerSettingsPatch & ClientSettingsPatch;
@@ -31,7 +32,9 @@ interface ScopedSettingsEnvironment {
   readonly serverConfig: {
     readonly settings: ServerSettings;
     readonly environment?: {
-      readonly capabilities: { readonly projectSettingsOverrides?: boolean | undefined };
+      readonly capabilities: {
+        readonly projectSettingsOverrides?: boolean | undefined;
+      };
     };
   } | null;
 }
@@ -297,10 +300,25 @@ export function planScopedSettingsPatch(
       : scope.kind === "unavailable"
         ? scope.message
         : unscopableKeys.length > 0
-          ? "This setting is environment-wide and cannot be overridden by a project."
+          ? translateDynamic(
+              "settings.scoped.reasons.environmentWide",
+              "This setting is environment-wide and cannot be overridden by a project.",
+            )
           : isProjectScope
-            ? "Connect the selected checkouts, or update their environments, to save a project override."
-            : `Connect ${scope.kind === "environment" ? scope.label : "an environment"} to save this setting.`;
+            ? translateDynamic(
+                "settings.scoped.reasons.connectToSaveProjectOverride",
+                "Connect the selected checkouts, or update their environments, to save a project override.",
+              )
+            : translateDynamic(
+                "settings.scoped.reasons.connectToSave",
+                "Connect {{target}} to save this setting.",
+                {
+                  target:
+                    scope.kind === "environment"
+                      ? scope.label
+                      : translateDynamic("settings.scoped.reasons.anEnvironment", "an environment"),
+                },
+              );
   return { clientPatch, hasClientWrite, serverWrites, unavailableReason };
 }
 
@@ -323,7 +341,10 @@ export function planScopedSettingsClear(
     unavailableReason:
       serverWrites.length > 0
         ? null
-        : "Connect the selected checkouts, or update their environments, to reset this override.",
+        : translateDynamic(
+            "settings.scoped.reasons.connectToResetOverride",
+            "Connect the selected checkouts, or update their environments, to reset this override.",
+          ),
   };
 }
 
@@ -348,7 +369,12 @@ export function listProjectOverrides(
     if (!overrides) return [];
     return Object.entries(overrides).flatMap(([projectId, entry]) =>
       scoped.some((key) => Object.hasOwn(entry, key))
-        ? [{ environmentId: environment.environmentId, projectId: projectId as ProjectId }]
+        ? [
+            {
+              environmentId: environment.environmentId,
+              projectId: projectId as ProjectId,
+            },
+          ]
         : [],
     );
   });
@@ -384,7 +410,12 @@ export function planProjectOverridesClear(
     hasClientWrite: false,
     serverWrites,
     unavailableReason:
-      serverWrites.length > 0 ? null : "Connect the environments to reset these overrides.",
+      serverWrites.length > 0
+        ? null
+        : translateDynamic(
+            "settings.scoped.reasons.connectToResetOverrides",
+            "Connect the environments to reset these overrides.",
+          ),
   };
 }
 

@@ -7,6 +7,7 @@ import {
 import { CircleArrowUpIcon } from "lucide-react";
 import { type ComponentProps, useRef, useState } from "react";
 
+import { translateDynamic } from "../../../i18n";
 import { requestConfirmDialog } from "~/confirmDialog";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { useEnvironmentSettings } from "~/hooks/useSettings";
@@ -25,10 +26,18 @@ const UPDATE_STAGE_LABELS: Record<ServerUpdateStage, string> = {
   installing: "Downloading…",
   resuming: "Restarting…",
 };
+const UPDATE_STAGE_KEYS: Record<ServerUpdateStage, "downloading" | "restarting"> = {
+  downloading: "downloading",
+  installing: "downloading",
+  resuming: "restarting",
+};
 const pendingUpdateEnvironmentIds = new Set<EnvironmentId>();
 
 export function serverUpdateStageLabel(stage: ServerUpdateStage): string {
-  return UPDATE_STAGE_LABELS[stage];
+  return translateDynamic(
+    `settings.serverUpdate.stage.${UPDATE_STAGE_KEYS[stage]}`,
+    UPDATE_STAGE_LABELS[stage],
+  );
 }
 
 function updateFailureMessage(error: unknown): string {
@@ -52,7 +61,9 @@ type UpdateButtonProps = Pick<ComponentProps<typeof Button>, "variant" | "size" 
 };
 
 function useServerUpdate() {
-  const updateServer = useAtomCommand(serverEnvironment.updateServer, { reportFailure: false });
+  const updateServer = useAtomCommand(serverEnvironment.updateServer, {
+    reportFailure: false,
+  });
   return async (target: ServerUpdateTarget, failureTitle = "Server update failed") => {
     const { environmentId, serverLabel, selfUpdate, targetVersion } = target;
     if (pendingUpdateEnvironmentIds.has(environmentId)) return;
@@ -94,13 +105,14 @@ function useServerUpdate() {
 /** Updates eligible machines independently; manual paths remain in the machine list. */
 export function ServerUpdatesAction({
   targets,
-  label = "Update all",
+  label,
   variant = "outline",
   size = "xs",
   className,
 }: UpdateButtonProps & {
   readonly targets: ReadonlyArray<ServerUpdateTarget>;
 }) {
+  const resolvedLabel = label ?? translateDynamic("settings.serverUpdate.updateAll", "Update all");
   const update = useServerUpdate();
   const pending = useRef(false);
   const [isPending, setIsPending] = useState(false);
@@ -121,7 +133,13 @@ export function ServerUpdatesAction({
       if (desktopTargets.length > 0) {
         const confirmed =
           (await requestConfirmDialog(
-            `Update the LMCS Code desktop apps on ${desktopTargets.map((target) => target.serverLabel).join(", ")}? They will close and relaunch on those machines.`,
+            translateDynamic(
+              "settings.serverUpdate.confirmDesktopBatch",
+              "Update the LMCS Code desktop apps on {{labels}}? They will close and relaunch on those machines.",
+              {
+                labels: desktopTargets.map((target) => target.serverLabel).join(", "),
+              },
+            ),
           )) ?? true;
         if (!confirmed) return;
       }
@@ -141,7 +159,7 @@ export function ServerUpdatesAction({
       disabled={isPending || eligible.length === 0}
       onClick={() => void handleUpdate()}
     >
-      {label}
+      {resolvedLabel}
     </Button>
   );
 }
@@ -191,12 +209,13 @@ export function ServerUpdateAction({
   desktopAppUpdate = false,
   threadContinuation = false,
   targetVersion,
-  label = "Update",
+  label,
   variant = "outline",
   size = "xs",
   className,
   appearance = "button",
 }: Omit<ServerUpdateTarget, "continueThreadsAfterServerUpdate"> & UpdateButtonProps) {
+  const resolvedLabel = label ?? translateDynamic("settings.serverUpdate.update", "Update");
   const isDesktopAppUpdate = selfUpdate === "desktop-managed";
   const continueThreadsAfterServerUpdate = useEnvironmentSettings(
     environmentId,
@@ -231,7 +250,11 @@ export function ServerUpdateAction({
       // remote machine installs without asking anyone there.
       const confirmed =
         (await requestConfirmDialog(
-          `Update the LMCS Code desktop app that runs the ${serverLabel}? It will close and relaunch on that machine.`,
+          translateDynamic(
+            "settings.serverUpdate.confirmDesktopSingle",
+            "Update the LMCS Code desktop app that runs the {{label}}? It will close and relaunch on that machine.",
+            { label: serverLabel },
+          ),
         )) ?? true;
       if (!confirmed) {
         return;
@@ -251,13 +274,19 @@ export function ServerUpdateAction({
   if (selfUpdate === "desktop-managed" && !desktopAppUpdate) {
     return (
       <span className="text-muted-foreground text-xs">
-        Update the desktop app on that machine to update this server.
+        {translateDynamic(
+          "settings.serverUpdate.desktopRequired",
+          "Update the desktop app on that machine to update this server.",
+        )}
       </span>
     );
   }
 
   const manualCommand = selfUpdate === null ? manualServerUpdateCommand(targetVersion) : null;
-  const actionLabel = manualCommand !== null ? "Copy update command" : label;
+  const actionLabel =
+    manualCommand !== null
+      ? translateDynamic("settings.serverUpdate.copyCommand", "Copy update command")
+      : resolvedLabel;
   const onClick =
     manualCommand !== null
       ? () => copyToClipboard(manualCommand, { command: manualCommand })
@@ -272,7 +301,11 @@ export function ServerUpdateAction({
               size="icon-xs"
               variant="ghost-muted"
               className={className}
-              aria-label={`${actionLabel} for ${serverLabel}`}
+              aria-label={translateDynamic(
+                "settings.serverUpdate.actionForAria",
+                "{{action}} for {{label}}",
+                { action: actionLabel, label: serverLabel },
+              )}
               onClick={onClick}
             />
           }

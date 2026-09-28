@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { Button } from "../../ui/button";
 import { Alert, AlertAction, AlertDescription } from "../../ui/alert";
 import { SettingsPageContainer } from "./settingsLayout";
@@ -20,6 +22,7 @@ export function SettingsScopeNotice({
   targetId?: string;
   eligibleEnvironmentIds?: readonly EnvironmentId[];
 }) {
+  const { t } = useTranslation();
   const { selectScope, search } = useSettingsScope();
   const navigate = useNavigate({ from: "/settings" });
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -31,7 +34,7 @@ export function SettingsScopeNotice({
           .filter((group) => !search.project || group.projectKey === search.project)
           .flatMap((group) =>
             group.memberProjects.map((member) => ({
-              label: `${group.displayName} · ${member.environmentLabel ?? "Environment"} · ${member.workspaceRoot}`,
+              label: `${group.displayName} · ${member.environmentLabel ?? t("settings.scope.environmentFallback")} · ${member.workspaceRoot}`,
               search: {
                 project: group.projectKey,
                 machine: member.environmentId,
@@ -60,7 +63,7 @@ export function SettingsScopeNotice({
                   : entry.label,
                 search: { machine: entry.environmentId },
               }))
-          : [{ label: "Open all environments", search: {} }];
+          : [{ label: t("settings.scope.openAllEnvironments"), search: {} }];
   return (
     <SettingsPageContainer>
       <Alert role="status">
@@ -75,7 +78,11 @@ export function SettingsScopeNotice({
                 className="max-w-full break-all text-left"
                 onClick={() => {
                   if (targetId)
-                    void navigate({ to: pathname, search: () => choice.search, hash: targetId });
+                    void navigate({
+                      to: pathname,
+                      search: () => choice.search,
+                      hash: targetId,
+                    });
                   else selectScope(choice.search);
                 }}
               >

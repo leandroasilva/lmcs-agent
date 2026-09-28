@@ -1,5 +1,7 @@
 import type { ProjectScript, ResolvedKeybindingsConfig } from "@lmcstools/core";
 import { SettingsIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import "../../../i18n";
 import { shortcutLabelForCommand } from "../../../keybindings";
 import { commandForProjectScript } from "../../../projectScripts";
 import { ScriptIcon } from "./projectScriptEditor";
@@ -17,10 +19,11 @@ export function ProjectActionsList({
   disabled: boolean;
   onEdit: (script: ProjectScript) => void;
 }) {
+  const { t } = useTranslation();
   if (scripts.length === 0)
     return (
       <p className="px-3 py-2 text-base text-muted-foreground sm:px-4 sm:text-sm">
-        No actions configured.
+        {t("settings.projects.actions.empty")}
       </p>
     );
   return scripts.map((script) => {
@@ -35,12 +38,12 @@ export function ProjectActionsList({
             <span className="min-w-0 truncate">{script.name}</span>
             {script.runOnWorktreeCreate ? (
               <span className="shrink-0 rounded-sm border border-border/60 px-1.5 py-px text-2xs font-normal text-muted-foreground">
-                setup
+                {t("settings.projects.actions.setupBadge")}
               </span>
             ) : null}
             {script.previewUrl ? (
               <span className="shrink-0 rounded-sm border border-border/60 px-1.5 py-px text-2xs font-normal text-muted-foreground max-sm:hidden">
-                preview · desktop only
+                {t("settings.projects.actions.previewBadge")}
               </span>
             ) : null}
           </span>
@@ -55,7 +58,9 @@ export function ProjectActionsList({
               <Button
                 size="icon-xs"
                 variant="ghost-muted"
-                aria-label={`Edit ${script.name}`}
+                aria-label={t("settings.projects.actions.editAria", {
+                  name: script.name,
+                })}
                 disabled={disabled}
                 onClick={() => onEdit(script)}
               >

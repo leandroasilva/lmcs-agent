@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import "../../../i18n";
 
 import { Button } from "../../ui/button";
 import { Kbd } from "../../ui/kbd";
@@ -105,7 +106,7 @@ function SettingsSectionIcon({ to }: { to: SettingsPath }) {
 }
 
 export function SettingsSidebarNav({ pathname }: { pathname: string }) {
-  useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const currentHash = useLocation({ select: (location) => location.hash });
   const currentSearch = useLocation({ select: (location) => location.search });
@@ -249,8 +250,8 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                   setActiveResultIndex(0);
                 }}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Search"
-                aria-label="Search settings"
+                placeholder={t("settings.search.placeholder")}
+                aria-label={t("settings.search.aria")}
                 role="combobox"
                 aria-autocomplete="list"
                 aria-expanded={isSearching && hasResults}
@@ -268,7 +269,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                   size="icon-micro"
                   variant="ghost-muted"
                   className="shrink-0"
-                  aria-label="Clear settings search"
+                  aria-label={t("settings.search.clearAria")}
                   onClick={() => {
                     clearSearch();
                     searchInputRef.current?.focus();
@@ -285,7 +286,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                 role="status"
                 className="px-2 py-6 text-center text-xs text-sidebar-muted-foreground"
               >
-                No settings found
+                {t("settings.search.empty")}
               </p>
             ) : null}
             {isSearching ? (

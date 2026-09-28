@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AuthAccessReadScope,
   AuthAccessWriteScope,
@@ -50,6 +51,7 @@ import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 
 import { useCopyToClipboard } from "../../../hooks/useCopyToClipboard";
+import { translateDynamic } from "../../../i18n";
 import { cn } from "../../../lib/utils";
 import { isLocalEnvironmentDisabled } from "../../../localEnvironment";
 import { formatElapsedDurationLabel, formatExpiresInLabel } from "../../../timestampFormat";
@@ -205,52 +207,16 @@ function formatAccessTimestamp(value: string): string {
   return accessTimestampFormatter.format(parsed);
 }
 
-const PAIRING_SCOPE_OPTIONS: ReadonlyArray<{
-  readonly scope: AuthEnvironmentScope;
-  readonly title: string;
-  readonly description: string;
-}> = [
-  {
-    scope: AuthOrchestrationReadScope,
-    title: "View environment",
-    description: "Read threads, status, diffs, and configuration.",
-  },
-  {
-    scope: AuthOrchestrationOperateScope,
-    title: "Operate tasks",
-    description: "Start tasks and perform changes in the environment.",
-  },
-  {
-    scope: AuthTerminalOperateScope,
-    title: "Use terminals",
-    description: "Create terminals and send input to running shells.",
-  },
-  {
-    scope: AuthReviewWriteScope,
-    title: "Write reviews",
-    description: "Create comments while reviewing changes.",
-  },
-  {
-    scope: AuthAccessReadScope,
-    title: "View access",
-    description: "Inspect pairing links and authorized clients.",
-  },
-  {
-    scope: AuthAccessWriteScope,
-    title: "Manage access",
-    description: "Issue and revoke credentials for other clients.",
-  },
-  {
-    scope: AuthRelayReadScope,
-    title: "View relay",
-    description: "Inspect managed relay connectivity.",
-  },
-  {
-    scope: AuthRelayWriteScope,
-    title: "Manage relay",
-    description: "Change managed tunnel connectivity.",
-  },
-];
+const PAIRING_SCOPE_OPTIONS = [
+  { scope: AuthOrchestrationReadScope, key: "orchestrationRead" },
+  { scope: AuthOrchestrationOperateScope, key: "orchestrationOperate" },
+  { scope: AuthTerminalOperateScope, key: "terminalOperate" },
+  { scope: AuthReviewWriteScope, key: "reviewWrite" },
+  { scope: AuthAccessReadScope, key: "accessRead" },
+  { scope: AuthAccessWriteScope, key: "accessWrite" },
+  { scope: AuthRelayReadScope, key: "relayRead" },
+  { scope: AuthRelayWriteScope, key: "relayWrite" },
+] as const;
 
 function AccessScopeSummary({
   scopes,
@@ -259,7 +225,10 @@ function AccessScopeSummary({
   readonly scopes: ReadonlyArray<AuthEnvironmentScope>;
   readonly label: string;
 }) {
-  const scopeCountLabel = `${scopes.length} ${scopes.length === 1 ? "scope" : "scopes"}`;
+  const { t } = useTranslation();
+  const scopeCountLabel = t("settings.connections.scopeCount", {
+    count: scopes.length,
+  });
 
   return (
     <Popover>
@@ -270,7 +239,10 @@ function AccessScopeSummary({
         render={
           <button
             type="button"
-            aria-label={`${label}: show ${scopeCountLabel}`}
+            aria-label={t("settings.connections.scopesShowAria", {
+              label,
+              count: scopeCountLabel,
+            })}
             className="cursor-help underline decoration-border underline-offset-2 outline-hidden hover:text-foreground focus-visible:text-foreground"
           />
         }
@@ -283,7 +255,7 @@ function AccessScopeSummary({
         tooltipStyle
         className="w-max max-w-80 whitespace-normal"
       >
-        <p className="mb-1 font-medium">Granted scopes</p>
+        <p className="mb-1 font-medium">{t("settings.connections.grantedScopes")}</p>
         <div className="flex flex-col gap-0.5">
           {scopes.map((scope) => (
             <code key={scope} className="font-mono text-foreground/85">
@@ -303,7 +275,12 @@ function parseManualDesktopSshTarget(input: {
 }): DesktopSshEnvironmentTarget {
   const rawHost = input.host.trim();
   if (rawHost.length === 0) {
-    throw new Error("SSH host or alias is required.");
+    throw new Error(
+      translateDynamic(
+        "settings.connections.environments.sshHostRequired",
+        "SSH host or alias is required.",
+      ),
+    );
   }
 
   let hostname = rawHost;
@@ -339,11 +316,21 @@ function parseManualDesktopSshTarget(input: {
   }
 
   if (hostname.length === 0) {
-    throw new Error("SSH host or alias is required.");
+    throw new Error(
+      translateDynamic(
+        "settings.connections.environments.sshHostRequired",
+        "SSH host or alias is required.",
+      ),
+    );
   }
 
   if (port !== null && (!Number.isInteger(port) || port <= 0 || port > 65_535)) {
-    throw new Error("SSH port must be between 1 and 65535.");
+    throw new Error(
+      translateDynamic(
+        "settings.connections.environments.sshPortRange",
+        "SSH port must be between 1 and 65535.",
+      ),
+    );
   }
 
   return {
@@ -395,16 +382,26 @@ function parseRemotePairingFields(input: { readonly host: string; readonly pairi
   const host = input.host.trim();
   const pairingCode = input.pairingCode.trim();
   if (!host) {
-    throw new Error("Enter a backend host.");
+    throw new Error(
+      translateDynamic("settings.connections.environments.enterHost", "Enter a backend host."),
+    );
   }
   if (!pairingCode) {
-    throw new Error("Enter a pairing code.");
+    throw new Error(
+      translateDynamic(
+        "settings.connections.environments.enterPairingCode",
+        "Enter a pairing code.",
+      ),
+    );
   }
   return { host, pairingCode };
 }
 
 function formatDesktopSshConnectionError(error: unknown): string {
-  const fallback = "Failed to connect SSH host.";
+  const fallback = translateDynamic(
+    "settings.connections.environments.sshConnectFailed",
+    "Failed to connect SSH host.",
+  );
   const rawMessage = error instanceof Error ? error.message : fallback;
   const withoutIpcPrefix = rawMessage.replace(
     /^Error invoking remote method 'desktop:ensure-ssh-environment':\s*/u,
@@ -445,9 +442,17 @@ function summarizeAuthorizedClients(
   links: ReadonlyArray<ServerPairingLinkRecord>,
 ): string {
   const parts = [
-    `${sessions.length} ${sessions.length === 1 ? "client" : "clients"}`,
+    translateDynamic(
+      "settings.connections.pairing.clientCount",
+      `${sessions.length} ${sessions.length === 1 ? "client" : "clients"}`,
+      { count: sessions.length },
+    ),
     links.length > 0
-      ? `${links.length} ${links.length === 1 ? "pairing link" : "pairing links"}`
+      ? translateDynamic(
+          "settings.connections.pairing.linkCount",
+          `${links.length} ${links.length === 1 ? "pairing link" : "pairing links"}`,
+          { count: links.length },
+        )
       : null,
   ];
   return parts.filter((part): part is string => part !== null).join(" · ");
@@ -563,17 +568,32 @@ function isHostedAppPairingUrl(value: string): boolean {
 
 function endpointShareHint(endpoint: AdvertisedEndpoint, url: string): string {
   if (isHostedAppPairingUrl(url)) {
-    return "Opens the hosted app, no install needed";
+    return translateDynamic(
+      "settings.connections.endpoints.shareHintHosted",
+      "Opens the hosted app, no install needed",
+    );
   }
   switch (endpoint.reachability) {
     case "lan":
-      return "Devices on the same network";
+      return translateDynamic(
+        "settings.connections.endpoints.shareHintLan",
+        "Devices on the same network",
+      );
     case "private-network":
-      return "Devices on your private network";
+      return translateDynamic(
+        "settings.connections.endpoints.shareHintPrivateNetwork",
+        "Devices on your private network",
+      );
     case "public":
-      return "Reachable from anywhere";
+      return translateDynamic(
+        "settings.connections.endpoints.shareHintPublic",
+        "Reachable from anywhere",
+      );
     case "loopback":
-      return "Clients on this machine";
+      return translateDynamic(
+        "settings.connections.endpoints.shareHintLoopback",
+        "Clients on this machine",
+      );
   }
 }
 
@@ -598,6 +618,7 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
   revokingPairingLinkId,
   onRevoke,
 }: PairingLinkListRowProps) {
+  const { t } = useTranslation();
   const nowMs = useRelativeTimeTick(1_000);
   const expiresAtMs = useMemo(
     () => new Date(pairingLink.expiresAt).getTime(),
@@ -734,7 +755,7 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
 
   const expiresAbsolute = formatAccessTimestamp(pairingLink.expiresAt);
 
-  const primaryLabel = pairingLink.label ?? "Pairing link";
+  const primaryLabel = pairingLink.label ?? t("settings.connections.pairing.defaultLinkLabel");
   const selectedQrOption = selectQrEndpointOption(
     endpointCopyOptions,
     qrEndpointId,
@@ -755,7 +776,9 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex min-h-5 items-center gap-1.5">
             <ConnectionStatusDot
-              tooltipText={`Link created at ${formatAccessTimestamp(pairingLink.createdAt)}`}
+              tooltipText={t("settings.connections.pairing.linkCreatedAt", {
+                date: formatAccessTimestamp(pairingLink.createdAt),
+              })}
               dotClassName="bg-warning"
             />
             <h3 className="text-sm font-medium text-foreground">{primaryLabel}</h3>
@@ -768,15 +791,18 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
               <TooltipPopup side="top">{expiresAbsolute}</TooltipPopup>
             </Tooltip>
             <span aria-hidden> · </span>
-            <AccessScopeSummary scopes={pairingLink.scopes} label="Pairing link scopes" />
+            <AccessScopeSummary
+              scopes={pairingLink.scopes}
+              label={t("settings.connections.pairingLinkScopesLabel")}
+            />
           </p>
           {!credential ? (
             <p className="text-2xs text-muted-foreground/70">
-              Create a new link to share from this client.
+              {t("settings.connections.pairing.createToShare")}
             </p>
           ) : shareablePairingUrl === null ? (
             <p className="text-2xs text-muted-foreground/70">
-              Copy the token and pair from another client using this backend&apos;s reachable host.
+              {t("settings.connections.pairing.copyTokenHint")}
             </p>
           ) : null}
         </div>
@@ -790,7 +816,7 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
               onClick={() => setIsQrPanelOpen((open) => !open)}
             >
               <QrCodeIcon aria-hidden />
-              Share
+              {t("settings.connections.pairing.share")}
             </Button>
           ) : null}
           <Dialog
@@ -803,12 +829,14 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
             {!credential ? null : canCopyToClipboard ? (
               shareablePairingUrl ? null : (
                 <Button size="xs" variant="outline" onClick={handleCopyCode}>
-                  Copy code
+                  {t("settings.connections.pairing.copyCode")}
                 </Button>
               )
             ) : (
               <DialogTrigger render={<Button size="xs" variant="outline" />}>
-                {shareablePairingUrl ? "Show link" : "Show code"}
+                {shareablePairingUrl
+                  ? t("settings.connections.pairing.showLink")
+                  : t("settings.connections.pairing.showCode")}
               </DialogTrigger>
             )}
             <DialogPopup className="max-w-md">
@@ -816,16 +844,16 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
                 <DialogTitle>
                   {isRevealValueUrl
                     ? isRevealValueHostedAppPairingUrl
-                      ? "Hosted app pairing link"
-                      : "Pairing link"
-                    : "Pairing code"}
+                      ? t("settings.connections.pairing.hostedLinkTitle")
+                      : t("settings.connections.pairing.linkTitle")
+                    : t("settings.connections.pairing.codeTitle")}
                 </DialogTitle>
                 <DialogDescription>
                   {isRevealValueUrl
                     ? isRevealValueHostedAppPairingUrl
-                      ? "Clipboard copy is unavailable here. Open or manually copy this hosted app link on the device you want to connect."
-                      : "Clipboard copy is unavailable here. Open or manually copy this full pairing URL on the device you want to connect."
-                    : "Clipboard copy is unavailable here. Manually copy this code into another client."}
+                      ? t("settings.connections.pairing.hostedLinkDescription")
+                      : t("settings.connections.pairing.linkDescription")
+                    : t("settings.connections.pairing.codeDescription")}
                 </DialogDescription>
               </DialogHeader>
               <DialogPanel>
@@ -843,18 +871,18 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
                       size={132}
                       level="M"
                       marginSize={2}
-                      title="Pairing link — scan to open on another device"
+                      title={t("settings.connections.pairing.qrTitle")}
                     />
                   </div>
                 ) : null}
               </DialogPanel>
               <DialogFooter variant="bare">
                 <Button variant="outline" onClick={() => setIsRevealDialogOpen(false)}>
-                  Done
+                  {t("common.done")}
                 </Button>
                 {canCopyToClipboard ? (
                   <Button variant="outline" onClick={handleCopyCode}>
-                    Copy code
+                    {t("settings.connections.pairing.copyCode")}
                   </Button>
                 ) : null}
               </DialogFooter>
@@ -866,7 +894,9 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
             disabled={revokingPairingLinkId === pairingLink.id}
             onClick={() => void onRevoke(pairingLink.id)}
           >
-            {revokingPairingLinkId === pairingLink.id ? "Revoking…" : "Revoke"}
+            {revokingPairingLinkId === pairingLink.id
+              ? t("settings.connections.pairing.revoking")
+              : t("settings.connections.pairing.revoke")}
           </Button>
         </div>
       </div>
@@ -880,9 +910,11 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
               <div
                 className="space-y-1.5"
                 role="radiogroup"
-                aria-label="Endpoint the pairing QR code and URL use"
+                aria-label={t("settings.connections.pairing.qrEndpointAria")}
               >
-                <p className="text-2xs text-muted-foreground/70">Reach this machine via</p>
+                <p className="text-2xs text-muted-foreground/70">
+                  {t("settings.connections.pairing.reachVia")}
+                </p>
                 {endpointCopyOptions.map((option) => {
                   const isSelected = option.id === selectedQrOption?.id;
                   return (
@@ -932,11 +964,11 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
                 className="shrink-0"
                 onClick={() => copyPairingValue(qrPairingUrl, copyKindForUrl(qrPairingUrl))}
               >
-                Copy link
+                {t("settings.connections.pairing.copyLink")}
               </Button>
             </div>
             <Button size="xs" variant="ghost" onClick={handleCopyCode}>
-              Copy code only
+              {t("settings.connections.pairing.copyCodeOnly")}
             </Button>
           </div>
           {canRenderQrForSelection ? (
@@ -946,14 +978,13 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
                 size={168}
                 level="M"
                 marginSize={1}
-                title="Pairing link — scan to open on another device"
+                title={t("settings.connections.pairing.qrTitle")}
               />
             </div>
           ) : (
             <div className="flex size-[192px] shrink-0 items-center justify-center self-center rounded-xl border border-border/50 p-4 sm:self-start">
               <p className="text-center text-2xs text-muted-foreground/70">
-                No QR for this endpoint. Another device scanning a loopback link would dial itself;
-                copy the URL for use on this machine instead.
+                {t("settings.connections.pairing.noQrLoopback")}
               </p>
             </div>
           )}
@@ -976,16 +1007,21 @@ const ConnectedClientListRow = memo(function ConnectedClientListRow({
   revokingClientSessionId,
   onRevokeSession,
 }: ConnectedClientListRowProps) {
+  const { t } = useTranslation();
   const nowMs = useRelativeTimeTick(1_000);
   const isLive = clientSession.current || clientSession.connected;
   const lastConnectedAt = clientSession.lastConnectedAt;
   const statusTooltip = isLive
     ? lastConnectedAt
-      ? `Connected for ${formatElapsedDurationLabel(lastConnectedAt, nowMs)}`
-      : "Connected"
+      ? t("settings.connections.pairing.connectedFor", {
+          duration: formatElapsedDurationLabel(lastConnectedAt, nowMs),
+        })
+      : t("settings.connections.pairing.connected")
     : lastConnectedAt
-      ? `Last connected at ${formatAccessTimestamp(lastConnectedAt)}`
-      : "Not connected yet.";
+      ? t("settings.connections.pairing.lastConnectedAt", {
+          date: formatAccessTimestamp(lastConnectedAt),
+        })
+      : t("settings.connections.pairing.notConnectedYet");
   const deviceInfoBits = [
     clientSession.client.deviceType !== "unknown"
       ? clientSession.client.deviceType[0]?.toUpperCase() + clientSession.client.deviceType.slice(1)
@@ -1012,7 +1048,7 @@ const ConnectedClientListRow = memo(function ConnectedClientListRow({
             <h3 className="text-sm font-medium text-foreground">{primaryLabel}</h3>
             {clientSession.current ? (
               <span className="text-3xs text-muted-foreground/80 rounded-md border border-border/50 bg-muted/50 px-1 py-0.5">
-                This device
+                {t("settings.connections.pairing.thisDevice")}
               </span>
             ) : null}
           </div>
@@ -1023,7 +1059,10 @@ const ConnectedClientListRow = memo(function ConnectedClientListRow({
                 <span aria-hidden> · </span>
               </>
             ) : null}
-            <AccessScopeSummary scopes={clientSession.scopes} label="Client scopes" />
+            <AccessScopeSummary
+              scopes={clientSession.scopes}
+              label={t("settings.connections.clientScopesLabel")}
+            />
           </p>
         </div>
         <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:justify-end">
@@ -1034,7 +1073,9 @@ const ConnectedClientListRow = memo(function ConnectedClientListRow({
               disabled={revokingClientSessionId === clientSession.sessionId}
               onClick={() => void onRevokeSession(clientSession.sessionId)}
             >
-              {revokingClientSessionId === clientSession.sessionId ? "Revoking…" : "Revoke"}
+              {revokingClientSessionId === clientSession.sessionId
+                ? t("settings.connections.pairing.revoking")
+                : t("settings.connections.pairing.revoke")}
             </Button>
           ) : null}
         </div>
@@ -1056,6 +1097,7 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
   isRevokingOtherClients,
   onRevokeOtherClients,
 }: AuthorizedClientsHeaderActionProps) {
+  const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pairingLabel, setPairingLabel] = useState("");
   const [pairingScopes, setPairingScopes] = useState<ReadonlyArray<AuthEnvironmentScope>>([
@@ -1104,7 +1146,9 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
         }
         onClick={() => void onRevokeOtherClients()}
       >
-        {isRevokingOtherClients ? "Revoking…" : "Revoke others"}
+        {isRevokingOtherClients
+          ? t("settings.connections.pairing.revoking")
+          : t("settings.connections.pairing.revokeOthers")}
       </Button>
       <Dialog
         open={dialogOpen}
@@ -1120,27 +1164,26 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
           render={
             <Button size="xs" variant="default">
               <PlusIcon className="size-3" />
-              Create link
+              {t("settings.connections.pairing.createLink")}
             </Button>
           }
         />
         <DialogPopup className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Create pairing link</DialogTitle>
+            <DialogTitle>{t("settings.connections.pairing.createTitle")}</DialogTitle>
             <DialogDescription>
-              Generate a one-time link that another device can use to pair with this backend as an
-              authorized client.
+              {t("settings.connections.pairing.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <DialogPanel>
             <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-foreground">
-                Client label (optional)
+                {t("settings.connections.pairing.clientLabelOptional")}
               </span>
               <Input
                 value={pairingLabel}
                 onChange={(event) => setPairingLabel(event.target.value)}
-                placeholder="e.g. Living room iPad"
+                placeholder={t("settings.connections.pairing.clientLabelPlaceholder")}
                 disabled={isCreatingPairingLink}
                 autoFocus
               />
@@ -1148,9 +1191,11 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-xs font-medium text-foreground">Permissions</h3>
+                  <h3 className="text-xs font-medium text-foreground">
+                    {t("settings.connections.pairing.permissions")}
+                  </h3>
                   <p className="text-xs text-muted-foreground">
-                    Limit what the paired client can do.
+                    {t("settings.connections.pairing.permissionsHint")}
                   </p>
                 </div>
                 <div className="flex gap-1">
@@ -1160,7 +1205,7 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
                     disabled={isCreatingPairingLink}
                     onClick={() => setPairingScopes([AuthOrchestrationReadScope])}
                   >
-                    Read only
+                    {t("settings.connections.pairing.readOnly")}
                   </Button>
                   <Button
                     size="xs"
@@ -1168,12 +1213,12 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
                     disabled={isCreatingPairingLink}
                     onClick={() => setPairingScopes([...AuthStandardClientScopes])}
                   >
-                    Standard
+                    {t("settings.connections.pairing.standard")}
                   </Button>
                 </div>
               </div>
               <div className="divide-y divide-border/60 rounded-lg border border-input bg-muted/25">
-                {PAIRING_SCOPE_OPTIONS.map(({ scope, title, description }) => (
+                {PAIRING_SCOPE_OPTIONS.map(({ scope, key }) => (
                   <label
                     key={scope}
                     className="flex cursor-pointer items-start gap-3 px-3 py-2.5 transition-colors hover:bg-muted/40"
@@ -1185,19 +1230,23 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
                       onCheckedChange={(checked) => togglePairingScope(scope, checked === true)}
                     />
                     <span className="min-w-0">
-                      <span className="block text-xs font-medium text-foreground">{title}</span>
+                      <span className="block text-xs font-medium text-foreground">
+                        {t(`settings.connections.scopes.${key}.title`)}
+                      </span>
                       <span className="block text-xs leading-snug text-muted-foreground">
-                        {description}
+                        {t(`settings.connections.scopes.${key}.description`)}
                       </span>
                     </span>
                   </label>
                 ))}
               </div>
               {pairingScopes.length === 0 ? (
-                <p className="text-xs text-destructive">Select at least one permission.</p>
+                <p className="text-xs text-destructive">
+                  {t("settings.connections.pairing.selectOnePermission")}
+                </p>
               ) : pairingScopes.includes(AuthAccessWriteScope) ? (
                 <p className="text-xs text-warning">
-                  This client can create or revoke access for other devices.
+                  {t("settings.connections.pairing.adminScopeWarning")}
                 </p>
               ) : null}
             </section>
@@ -1208,13 +1257,15 @@ const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHeaderActio
               disabled={isCreatingPairingLink}
               onClick={() => setDialogOpen(false)}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={isCreatingPairingLink || pairingScopes.length === 0}
               onClick={() => void handleCreatePairingLink()}
             >
-              {isCreatingPairingLink ? "Creating…" : "Create link"}
+              {isCreatingPairingLink
+                ? t("settings.connections.pairing.creating")
+                : t("settings.connections.pairing.createLink")}
             </Button>
           </DialogFooter>
         </DialogPopup>
@@ -1252,6 +1303,7 @@ const PairingClientsList = memo(function PairingClientsList({
   onRevokePairingLink,
   onRevokeClientSession,
 }: PairingClientsListProps) {
+  const { t } = useTranslation();
   return (
     <>
       {pairingLinks.map((pairingLink) => (
@@ -1280,7 +1332,9 @@ const PairingClientsList = memo(function PairingClientsList({
 
       {pairingLinks.length === 0 && clientSessions.length === 0 && !isLoading ? (
         <div className={accessRowClassName(presentation)}>
-          <p className="text-xs text-muted-foreground/60">No pairing links or client sessions.</p>
+          <p className="text-xs text-muted-foreground/60">
+            {t("settings.connections.pairing.noClients")}
+          </p>
         </div>
       ) : null}
     </>
@@ -1306,6 +1360,7 @@ const AdvertisedEndpointListRow = memo(function AdvertisedEndpointListRow({
   onDisableTailscaleServe,
   isUpdatingTailscaleServe,
 }: AdvertisedEndpointListRowProps) {
+  const { t } = useTranslation();
   const isAvailable = endpoint.status === "available";
   const needsTailscaleSetup = isTailscaleHttpsEndpoint(endpoint) && endpoint.status !== "available";
   const canDisableTailscaleServe =
@@ -1336,14 +1391,14 @@ const AdvertisedEndpointListRow = memo(function AdvertisedEndpointListRow({
           ) : null}
           {!isAvailable ? (
             <span className="shrink-0 rounded-md border border-border/70 px-1 py-0.5 text-3xs text-muted-foreground">
-              Setup required
+              {t("settings.connections.endpoints.setupRequired")}
             </span>
           ) : null}
         </div>
         <div className="ml-auto flex min-h-6 shrink-0 items-center justify-end gap-2">
           {isDefault ? (
             <span className="rounded-md border border-primary/30 bg-primary/10 px-1 py-0.5 text-3xs text-primary">
-              Default
+              {t("settings.connections.endpoints.defaultBadge")}
             </span>
           ) : null}
           {needsTailscaleSetup ? (
@@ -1353,7 +1408,9 @@ const AdvertisedEndpointListRow = memo(function AdvertisedEndpointListRow({
               onClick={() => onSetupTailscaleServe(endpoint)}
               disabled={isUpdatingTailscaleServe}
             >
-              {isUpdatingTailscaleServe ? "Restarting…" : "Setup"}
+              {isUpdatingTailscaleServe
+                ? t("settings.connections.endpoints.restarting")
+                : t("settings.connections.endpoints.setup")}
             </Button>
           ) : null}
           {canDisableTailscaleServe ? (
@@ -1363,12 +1420,14 @@ const AdvertisedEndpointListRow = memo(function AdvertisedEndpointListRow({
               onClick={() => onDisableTailscaleServe(endpoint)}
               disabled={isUpdatingTailscaleServe}
             >
-              {isUpdatingTailscaleServe ? "Restarting…" : "Disable"}
+              {isUpdatingTailscaleServe
+                ? t("settings.connections.endpoints.restarting")
+                : t("settings.connections.endpoints.disable")}
             </Button>
           ) : null}
           {!needsTailscaleSetup && !isDefault ? (
             <Button size="xs" variant="outline" onClick={() => onSetDefault(endpoint)}>
-              Set as default
+              {t("settings.connections.endpoints.setAsDefault")}
             </Button>
           ) : null}
         </div>
@@ -1390,6 +1449,7 @@ function NetworkAccessDescription({
   onToggleExpanded: () => void;
   fallback: ReactNode;
 }) {
+  const { t } = useTranslation();
   if (!endpoint) {
     return fallback;
   }
@@ -1399,7 +1459,7 @@ function NetworkAccessDescription({
       <span className="min-w-0 truncate">{endpoint.httpBaseUrl}</span>
       {hiddenEndpointCount > 0 ? (
         <span className="shrink-0 text-xs font-medium">
-          {expanded ? "Hide" : `+${hiddenEndpointCount}`}
+          {expanded ? t("settings.connections.endpoints.hide") : `+${hiddenEndpointCount}`}
         </span>
       ) : null}
     </>
@@ -1407,7 +1467,7 @@ function NetworkAccessDescription({
 
   return (
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1">
-      <span className="shrink-0">Reachable at</span>
+      <span className="shrink-0">{t("settings.connections.endpoints.reachableAt")}</span>
       {hiddenEndpointCount > 0 ? (
         <button
           type="button"
@@ -1440,31 +1500,58 @@ function savedBackendStatus(environment: EnvironmentPresentation): {
   readonly text: string;
   readonly tone: "muted" | "error";
 } {
+  const statusKey = "settings.connections.environments";
   if (!environment.entry.enabled && environment.connection.phase !== "unsupported")
-    return { text: "Off", tone: "muted" };
+    return {
+      text: translateDynamic(`${statusKey}.statusOff`, "Off"),
+      tone: "muted",
+    };
   const { connection } = environment;
   switch (connection.phase) {
     case "connected":
-      return { text: "Connected", tone: "muted" };
+      return {
+        text: translateDynamic(`${statusKey}.statusConnected`, "Connected"),
+        tone: "muted",
+      };
     case "connecting":
-      return { text: "Connecting", tone: "muted" };
+      return {
+        text: translateDynamic(`${statusKey}.statusConnecting`, "Connecting"),
+        tone: "muted",
+      };
     case "reconnecting":
       return {
-        text: connection.error ? `Reconnecting: ${connection.error}` : "Reconnecting",
+        text: connection.error
+          ? translateDynamic(`${statusKey}.statusReconnectingError`, "Reconnecting: {{error}}", {
+              error: connection.error,
+            })
+          : translateDynamic(`${statusKey}.statusReconnecting`, "Reconnecting"),
         tone: "error",
       };
     // Not a failure: the machine is fine, this build just cannot talk to it.
     case "unsupported":
-      return { text: "Client not supported", tone: "muted" };
+      return {
+        text: translateDynamic(`${statusKey}.statusUnsupported`, "Client not supported"),
+        tone: "muted",
+      };
     case "error":
       return {
-        text: connection.error ? `Connection failed: ${connection.error}` : "Connection failed",
+        text: connection.error
+          ? translateDynamic(`${statusKey}.statusErrorDetail`, "Connection failed: {{error}}", {
+              error: connection.error,
+            })
+          : translateDynamic(`${statusKey}.statusError`, "Connection failed"),
         tone: "error",
       };
     case "offline":
-      return { text: "Offline", tone: "muted" };
+      return {
+        text: translateDynamic(`${statusKey}.statusOffline`, "Offline"),
+        tone: "muted",
+      };
     case "available":
-      return { text: "Not connected", tone: "muted" };
+      return {
+        text: translateDynamic(`${statusKey}.statusAvailable`, "Not connected"),
+        tone: "muted",
+      };
   }
 }
 
@@ -1479,13 +1566,16 @@ function SavedBackendListRow({
   onSetEnabled,
   onRemove,
 }: SavedBackendListRowProps) {
+  const { t } = useTranslation();
   const environmentId = environment.environmentId;
   const unsupported = environment.connection.phase === "unsupported";
   const enabled = environment.entry.enabled && !unsupported;
   const isConnected = environment.connection.phase === "connected";
   const isRemoving = removingEnvironmentId === environmentId;
   const errorTraceId = environment.connection.traceId;
-  const { copyToClipboard: copyTraceIdToClipboard } = useCopyToClipboard<{ traceId: string }>({
+  const { copyToClipboard: copyTraceIdToClipboard } = useCopyToClipboard<{
+    traceId: string;
+  }>({
     target: "trace ID",
     onCopy: ({ traceId }) => {
       toastManager.add({
@@ -1535,7 +1625,7 @@ function SavedBackendListRow({
   );
   const subtitleText = [
     environmentTransportLabel(environment),
-    resumingServerUpdate ? "Restarting" : status.text,
+    resumingServerUpdate ? t("settings.connections.environments.statusRestarting") : status.text,
     enabled && versionMismatch ? serverVersion : null,
   ]
     .filter((value): value is string => value !== null)
@@ -1573,9 +1663,12 @@ function SavedBackendListRow({
               ? (environment.connection.error ?? connectionStatusText(environment.connection))
               : enabled
                 ? connectionStatusText(environment.connection)
-                : "Switched off"}
+                : t("settings.connections.environments.switchedOff")}
             {versionMismatch
-              ? `\nUpdate available: ${versionMismatch.serverVersion} → ${versionMismatch.clientVersion}`
+              ? `\n${t("settings.connections.environments.updateAvailable", {
+                  serverVersion: versionMismatch.serverVersion,
+                  clientVersion: versionMismatch.clientVersion,
+                })}`
               : ""}
           </TooltipPopup>
         </Tooltip>
@@ -1591,12 +1684,18 @@ function SavedBackendListRow({
       {showUpdateAction ? (
         <ServerUpdateAction
           environmentId={environmentId}
-          serverLabel={`${environment.label} server`}
+          serverLabel={t("settings.connections.serverLabel", {
+            label: environment.label,
+          })}
           selfUpdate={resolveServerSelfUpdateCapability(environment.serverConfig)}
           desktopAppUpdate={supportsDesktopAppUpdate(environment.serverConfig)}
           threadContinuation={supportsServerUpdateThreadContinuation(environment.serverConfig)}
           targetVersion={versionMismatch.clientVersion}
-          label={serverUpdateState.status === "failed" ? "Retry update" : "Update"}
+          label={
+            serverUpdateState.status === "failed"
+              ? t("settings.connections.retryUpdate")
+              : t("settings.connections.update")
+          }
           appearance="icon"
         />
       ) : null}
@@ -1607,13 +1706,22 @@ function SavedBackendListRow({
               size="sm"
               checked={enabled}
               disabled={isRemoving || unsupported}
-              aria-label={`${enabled ? "Switch off" : "Switch on"} ${environment.label}`}
+              aria-label={t(
+                enabled
+                  ? "settings.connections.environments.switchOffAria"
+                  : "settings.connections.environments.switchOnAria",
+                { label: environment.label },
+              )}
               onCheckedChange={(checked) => onSetEnabled(environmentId, checked)}
             />
           }
         />
         <TooltipPopup side="top">
-          {unsupported ? "Client not supported" : enabled ? "Switch off" : "Switch on"}
+          {unsupported
+            ? t("settings.connections.environments.statusUnsupported")
+            : enabled
+              ? t("settings.connections.environments.switchOff")
+              : t("settings.connections.environments.switchOn")}
         </TooltipPopup>
       </Tooltip>
       <Menu>
@@ -1624,7 +1732,9 @@ function SavedBackendListRow({
               variant="ghost-muted"
               size="icon-xs"
               disabled={isRemoving}
-              aria-label={`More actions for ${environment.label}`}
+              aria-label={t("settings.connections.environments.moreActionsAria", {
+                label: environment.label,
+              })}
             />
           }
         >
@@ -1636,11 +1746,15 @@ function SavedBackendListRow({
             serverConfig={environment.serverConfig}
           />
           {errorTraceId ? (
-            <MenuItem onClick={() => copyTraceId(errorTraceId)}>Copy trace ID</MenuItem>
+            <MenuItem onClick={() => copyTraceId(errorTraceId)}>
+              {t("settings.connections.environments.copyTraceId")}
+            </MenuItem>
           ) : null}
           <MenuSeparator />
           <MenuItem variant="destructive" onClick={() => onRemove(environment)}>
-            {isRemoving ? "Removing…" : "Remove from this device…"}
+            {isRemoving
+              ? t("settings.connections.environments.removing")
+              : t("settings.connections.environments.removeFromDevice")}
           </MenuItem>
         </MenuPopup>
       </Menu>
@@ -1653,7 +1767,7 @@ function CloudLinkSwitch({
   disabled,
   disabledReason,
   onCheckedChange,
-  ariaLabel = "Enable LMCS Connect",
+  ariaLabel,
 }: {
   readonly checked: boolean;
   readonly disabled: boolean;
@@ -1661,9 +1775,10 @@ function CloudLinkSwitch({
   readonly onCheckedChange?: (enabled: boolean) => void;
   readonly ariaLabel?: string;
 }) {
+  const { t } = useTranslation();
   const control = (
     <Switch
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? t("settings.connections.cloud.enableAria")}
       checked={checked}
       disabled={disabled}
       {...(onCheckedChange ? { onCheckedChange } : {})}
@@ -1690,17 +1805,21 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
   } = useCloudLinkController();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
+  const { t } = useTranslation();
 
   const disabledReason = !isSignedIn
-    ? "Sign in to LMCS Connect to manage this environment."
+    ? t("settings.connections.cloud.signInToManage")
     : !canManageRelay
-      ? "Your session does not have permission to manage LMCS Connect access."
+      ? t("settings.connections.cloud.noRelayPermission")
       : null;
   const isBusy = isUpdating || isUpdatingPreference;
 
   const updateManagedTunnel = async (enabled: boolean) => {
     setIsUpdating(true);
-    const ok = await reconcileCloudState({ managedTunnel: enabled, publish: publishAgentActivity });
+    const ok = await reconcileCloudState({
+      managedTunnel: enabled,
+      publish: publishAgentActivity,
+    });
     if (ok) {
       // Turning the tunnel off while publishing stays on downgrades the link
       // rather than removing it — say so instead of claiming an unlink.
@@ -1723,7 +1842,10 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
 
   const updatePublishAgentActivity = async (enabled: boolean) => {
     setIsUpdatingPreference(true);
-    const ok = await reconcileCloudState({ managedTunnel: managedTunnelActive, publish: enabled });
+    const ok = await reconcileCloudState({
+      managedTunnel: managedTunnelActive,
+      publish: enabled,
+    });
     if (ok) {
       toastManager.add({
         type: "success",
@@ -1743,8 +1865,8 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
           title={searchableSetting("t3-connect").title}
           description={
             managedTunnelActive
-              ? "This environment is available to your other devices through LMCS Connect."
-              : "Make this environment available to your other devices through LMCS Connect."
+              ? t("settings.connections.cloud.descriptionActive")
+              : t("settings.connections.cloud.description")
           }
           status={operationError ?? primaryCloudLinkState.error}
           control={
@@ -1759,10 +1881,10 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
       ) : null}
       <SettingsRow
         title={searchableSetting("publish-agent-activity").title}
-        description="Send activity to mobile notifications and Live Activities without LMCS Connect."
+        description={t("settings.connections.cloud.publishDescription")}
         control={
           <CloudLinkSwitch
-            ariaLabel="Publish agent activity to mobile clients"
+            ariaLabel={t("settings.connections.cloud.publishAria")}
             checked={publishAgentActivity}
             disabled={!canManageRelay || !isSignedIn || primaryCloudLinkState.isPending || isBusy}
             disabledReason={disabledReason}
@@ -1779,17 +1901,18 @@ function CloudLinkRow({ canManageRelay }: { readonly canManageRelay: boolean }) 
 }
 
 function EmptyRemoteEnvironments({ cloudEnabled = true }: { readonly cloudEnabled?: boolean }) {
+  const { t } = useTranslation();
   return (
     <Empty className="min-h-52">
       <EmptyMedia variant="icon">
         <ChevronsLeftRightEllipsisIcon />
       </EmptyMedia>
       <EmptyHeader>
-        <EmptyTitle>No saved remote environments</EmptyTitle>
+        <EmptyTitle>{t("settings.connections.environments.noRemoteTitle")}</EmptyTitle>
         <EmptyDescription>
           {cloudEnabled
-            ? "Click “Add environment” to pair another environment, or connect one from LMCS Connect."
-            : "Click “Add environment” to pair another environment."}
+            ? t("settings.connections.environments.noRemoteDescriptionCloud")
+            : t("settings.connections.environments.noRemoteDescription")}
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
@@ -1815,15 +1938,20 @@ function CloudRemoteEnvironmentRows({
 }
 
 export function ConnectionsSettings() {
+  const { t } = useTranslation();
   const desktopBridge = window.desktopBridge;
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
   const { environments } = useEnvironments();
   const primaryEnvironment = usePrimaryEnvironment();
-  const connectPairing = useAtomCommand(connectPairingAtom, { reportFailure: false });
+  const connectPairing = useAtomCommand(connectPairingAtom, {
+    reportFailure: false,
+  });
   const connectSshEnvironment = useAtomCommand(connectSshEnvironmentAtom, {
     reportFailure: false,
   });
-  const removeEnvironment = useAtomCommand(environmentCatalog.remove, { reportFailure: false });
+  const removeEnvironment = useAtomCommand(environmentCatalog.remove, {
+    reportFailure: false,
+  });
   const setEnvironmentEnabled = useAtomCommand(environmentCatalog.setEnabled, {
     reportFailure: false,
   });
@@ -2639,7 +2767,9 @@ export function ConnectionsSettings() {
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-foreground">Host</span>
+          <span className="mb-1.5 block text-xs font-medium text-foreground">
+            {t("settings.connections.environments.host")}
+          </span>
           <Input
             value={savedBackendHost}
             onChange={(event) => handleSavedBackendHostChange(event.target.value)}
@@ -2649,7 +2779,9 @@ export function ConnectionsSettings() {
           />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-foreground">Pairing code</span>
+          <span className="mb-1.5 block text-xs font-medium text-foreground">
+            {t("settings.connections.environments.pairingCode")}
+          </span>
           <Input
             value={savedBackendPairingCode}
             onChange={(event) => setSavedBackendPairingCode(event.target.value)}
@@ -2661,7 +2793,7 @@ export function ConnectionsSettings() {
       </div>
       <div>
         <span className="mt-1 block text-2xs text-muted-foreground">
-          Paste a full pairing URL here to fill both fields automatically.
+          {t("settings.connections.environments.pastePairingUrlHint")}
         </span>
       </div>
     </div>
@@ -2677,7 +2809,9 @@ export function ConnectionsSettings() {
         onClick={() => void handleAddSavedBackend()}
       >
         <PlusIcon className="size-3.5" />
-        {isAddingSavedBackend ? "Adding…" : "Add environment"}
+        {isAddingSavedBackend
+          ? t("settings.connections.environments.adding")
+          : t("settings.connections.environments.addEnvironment")}
       </Button>
     </div>
   );
@@ -2689,7 +2823,7 @@ export function ConnectionsSettings() {
             htmlFor="saved-backend-ssh-host"
             className="mb-1.5 block text-xs font-medium text-foreground"
           >
-            SSH host or alias
+            {t("settings.connections.environments.sshHostLabel")}
           </label>
           <Autocomplete
             items={filteredDiscoveredSshHosts}
@@ -2713,14 +2847,16 @@ export function ConnectionsSettings() {
             <AutocompleteInput
               id="saved-backend-ssh-host"
               onKeyDown={handleSavedBackendSshHostKeyDown}
-              placeholder="Search hosts or type devbox"
+              placeholder={t("settings.connections.environments.sshHostPlaceholder")}
               disabled={isAddingSavedBackend}
               spellCheck={false}
             />
             {hasSshHostSuggestionContent ? (
               <AutocompletePopup>
                 {isLoadingDiscoveredSshHosts ? (
-                  <div className="px-3 py-2 text-xs text-muted-foreground">Loading hosts…</div>
+                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                    {t("settings.connections.environments.loadingHosts")}
+                  </div>
                 ) : filteredDiscoveredSshHosts.length > 0 ? (
                   <AutocompleteList className="max-h-72">
                     {filteredDiscoveredSshHosts.map((target, index) => {
@@ -2754,7 +2890,9 @@ export function ConnectionsSettings() {
                   </AutocompleteList>
                 ) : (
                   <AutocompleteEmpty className="break-all">
-                    No hosts match "{savedBackendSshHost.trim()}".
+                    {t("settings.connections.environments.noHostsMatch", {
+                      query: savedBackendSshHost.trim(),
+                    })}
                   </AutocompleteEmpty>
                 )}
               </AutocompletePopup>
@@ -2763,7 +2901,9 @@ export function ConnectionsSettings() {
         </div>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
           <label className="block">
-            <span className="mb-1.5 block text-xs font-medium text-foreground">Username</span>
+            <span className="mb-1.5 block text-xs font-medium text-foreground">
+              {t("settings.connections.environments.username")}
+            </span>
             <Input
               value={savedBackendSshUsername}
               onChange={(event) => setSavedBackendSshUsername(event.target.value)}
@@ -2774,7 +2914,9 @@ export function ConnectionsSettings() {
             />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-xs font-medium text-foreground">Port</span>
+            <span className="mb-1.5 block text-xs font-medium text-foreground">
+              {t("settings.connections.environments.port")}
+            </span>
             <Input
               value={savedBackendSshPort}
               onChange={(event) => setSavedBackendSshPort(event.target.value)}
@@ -2798,7 +2940,9 @@ export function ConnectionsSettings() {
           onClick={() => void handleAddSavedBackend()}
         >
           <PlusIcon className="size-3.5" />
-          {isAddingSavedBackend ? "Adding…" : "Add environment"}
+          {isAddingSavedBackend
+            ? t("settings.connections.environments.adding")
+            : t("settings.connections.environments.addEnvironment")}
         </Button>
       </div>
     </div>
@@ -2811,7 +2955,7 @@ export function ConnectionsSettings() {
         setPendingDesktopServerExposureMode(checked ? "network-accessible" : "local-only");
         setIsDesktopServerExposureDialogOpen(true);
       }}
-      aria-label="Enable network access"
+      aria-label={t("settings.connections.network.enableAria")}
     />
   );
   const renderEndpointRows = (presentation: AccessSectionPresentation) =>
@@ -3012,7 +3156,7 @@ export function ConnectionsSettings() {
         return (
           <SettingsRow
             {...searchableSetting("wsl-backend")}
-            description="Couldn't load the WSL backend state."
+            description={t("settings.connections.wsl.loadFailed")}
             status={<span className="block text-destructive">{desktopWslError}</span>}
             control={
               <Button
@@ -3021,7 +3165,9 @@ export function ConnectionsSettings() {
                 onClick={loadWslState}
                 disabled={isLoadingWslState}
               >
-                {isLoadingWslState ? "Retrying…" : "Retry"}
+                {isLoadingWslState
+                  ? t("settings.connections.wsl.retrying")
+                  : t("settings.connections.wsl.retry")}
               </Button>
             }
           />
@@ -3036,14 +3182,19 @@ export function ConnectionsSettings() {
     // be stranded on a WSL preference they can't clear, so render a recovery
     // row that switches back to Windows. When WSL is unavailable AND unused,
     // there's nothing to recover — keep the section hidden as before.
-    if (!isWslSettingsRowVisible({ state: desktopWslState, error: desktopWslError })) {
+    if (
+      !isWslSettingsRowVisible({
+        state: desktopWslState,
+        error: desktopWslError,
+      })
+    ) {
       return null;
     }
     if (!desktopWslState.available) {
       return (
         <SettingsRow
           {...searchableSetting("wsl-backend")}
-          description="WSL is unavailable, so Windows is running instead. Turn WSL off to clear this preference."
+          description={t("settings.connections.wsl.unavailableDescription")}
           status={
             desktopWslError ? (
               <span className="block text-destructive">{desktopWslError}</span>
@@ -3056,7 +3207,7 @@ export function ConnectionsSettings() {
               disabled={isUpdatingWslBackend}
               onClick={() => handleSelectWslMode(BACKEND_VALUE_WSL_OFF)}
             >
-              Switch to Windows
+              {t("settings.connections.wsl.switchToWindows")}
             </Button>
           }
         />
@@ -3073,21 +3224,23 @@ export function ConnectionsSettings() {
       : (desktopWslState.distro ?? defaultDistroName ?? BACKEND_VALUE_DEFAULT_WSL);
     const selectLabel =
       selectValue === BACKEND_VALUE_WSL_OFF
-        ? "Off"
+        ? t("settings.connections.wsl.off")
         : selectValue === BACKEND_VALUE_DEFAULT_WSL
-          ? "Default distro"
+          ? t("settings.connections.wsl.defaultDistro")
           : selectValue;
     return (
       <>
         <SettingsRow
           {...searchableSetting("wsl-backend")}
-          description="Run the selected WSL distro alongside Windows. Projects remain on their current filesystem."
+          description={t("settings.connections.wsl.description")}
           status={
             desktopWslError ? (
               <span className="block text-destructive">{desktopWslError}</span>
             ) : desktopWslState.preflightError ? (
               <span className="block text-destructive">
-                WSL backend couldn't start: {desktopWslState.preflightError}
+                {t("settings.connections.wsl.preflightError", {
+                  error: desktopWslState.preflightError,
+                })}
               </span>
             ) : null
           }
@@ -3102,24 +3255,24 @@ export function ConnectionsSettings() {
               <SelectTrigger
                 size="sm"
                 className="w-full sm:w-56"
-                aria-label="WSL backend"
+                aria-label={t("settings.connections.wsl.selectAria")}
                 disabled={isUpdatingWslBackend}
               >
                 <SelectValue>{selectLabel}</SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
                 <SelectItem hideIndicator value={BACKEND_VALUE_WSL_OFF}>
-                  Off
+                  {t("settings.connections.wsl.off")}
                 </SelectItem>
                 {desktopWslState.distros.length === 0 ? (
                   <SelectItem hideIndicator value={BACKEND_VALUE_DEFAULT_WSL}>
-                    Default distro
+                    {t("settings.connections.wsl.defaultDistro")}
                   </SelectItem>
                 ) : (
                   desktopWslState.distros.map((distro) => (
                     <SelectItem hideIndicator key={distro.name} value={distro.name}>
                       {distro.name}
-                      {distro.isDefault ? " (default)" : ""}
+                      {distro.isDefault ? t("settings.connections.wsl.defaultSuffix") : ""}
                     </SelectItem>
                   ))
                 )}
@@ -3129,15 +3282,15 @@ export function ConnectionsSettings() {
         />
         {desktopWslState.enabled ? (
           <SettingsRow
-            title="WSL only"
-            description="Run only the WSL backend. LMCS Code restarts when this changes."
+            title={t("settings.connections.wsl.onlyTitle")}
+            description={t("settings.connections.wsl.onlyDescription")}
             className="bg-muted/20 pl-7 sm:pl-8"
             control={
               <Switch
                 checked={desktopWslState.wslOnly}
                 disabled={isUpdatingWslBackend}
                 onCheckedChange={(checked) => handleToggleWslOnly(checked)}
-                aria-label="Run WSL only"
+                aria-label={t("settings.connections.wsl.onlyAria")}
               />
             }
           />
@@ -3153,8 +3306,8 @@ export function ConnectionsSettings() {
         tailscaleHttpsEndpoint
           ? tailscaleHttpsEndpoint.status === "available"
             ? tailscaleHttpsEndpoint.httpBaseUrl
-            : "Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL."
-          : "Start Tailscale to set up HTTPS access through MagicDNS."
+            : t("settings.connections.tailscale.setupDescription")
+          : t("settings.connections.tailscale.startDescription")
       }
       control={
         tailscaleHttpsEndpoint ? (
@@ -3168,7 +3321,7 @@ export function ConnectionsSettings() {
               }
               handleStartTailscaleServeDisable(tailscaleHttpsEndpoint);
             }}
-            aria-label="Enable Tailscale HTTPS"
+            aria-label={t("settings.connections.tailscale.enableAria")}
           />
         ) : null
       }
@@ -3209,16 +3362,20 @@ export function ConnectionsSettings() {
             onToggleExpanded={() => setIsAdvertisedEndpointListExpanded((expanded) => !expanded)}
             fallback={
               desktopServerExposureState?.endpointUrl
-                ? `Reachable at ${desktopServerExposureState.endpointUrl}`
+                ? t("settings.connections.network.reachableAtUrl", {
+                    url: desktopServerExposureState.endpointUrl,
+                  })
                 : desktopServerExposureState?.advertisedHost
-                  ? `Exposed on all interfaces. Pairing links use ${desktopServerExposureState.advertisedHost}.`
-                  : "Exposed on all interfaces."
+                  ? t("settings.connections.network.exposedWithHost", {
+                      host: desktopServerExposureState.advertisedHost,
+                    })
+                  : t("settings.connections.network.exposedAll")
             }
           />
         ) : desktopServerExposureState ? (
-          "Limited to this machine."
+          t("settings.connections.network.limitedToMachine")
         ) : (
-          "Loading…"
+          t("settings.connections.loading")
         )
       }
       status={
@@ -3234,8 +3391,8 @@ export function ConnectionsSettings() {
       title={searchableSetting("network-access").title}
       description={
         currentAuthPolicy === "remote-reachable"
-          ? "Remote access is already configured. Change network exposure where the server starts."
-          : "Only this machine can connect. Restart with a non-loopback host for remote pairing."
+          ? t("settings.connections.network.managedDescription")
+          : t("settings.connections.network.localDescription")
       }
       control={
         <Tooltip>
@@ -3245,15 +3402,12 @@ export function ConnectionsSettings() {
                 <Switch
                   checked={isLocalBackendNetworkAccessible}
                   disabled
-                  aria-label="Enable network access"
+                  aria-label={t("settings.connections.network.enableAria")}
                 />
               </span>
             }
           />
-          <TooltipPopup side="top">
-            Network exposure changes restart the backend and must be controlled where the server
-            process is launched.
-          </TooltipPopup>
+          <TooltipPopup side="top">{t("settings.connections.network.managedTooltip")}</TooltipPopup>
         </Tooltip>
       }
     />
@@ -3266,7 +3420,10 @@ export function ConnectionsSettings() {
           <SettingsSection
             {...searchableSetting("connections-environment")}
             title={
-              primaryEnvironment?.label ?? (desktopBridge ? "This machine" : "Primary environment")
+              primaryEnvironment?.label ??
+              (desktopBridge
+                ? t("settings.connections.thisMachine")
+                : t("settings.connections.primaryEnvironment"))
             }
             icon={
               <EnvironmentMachineIcon
@@ -3288,7 +3445,7 @@ export function ConnectionsSettings() {
                         type="button"
                         variant="ghost-muted"
                         size="icon-xs"
-                        aria-label="More actions for this machine"
+                        aria-label={t("settings.connections.moreActionsMachineAria")}
                       />
                     }
                   >
@@ -3307,7 +3464,7 @@ export function ConnectionsSettings() {
             <LocalEnvironmentSetting />
             {canManageLocalBackend ? (
               <SettingsRow
-                title="Version"
+                title={t("settings.connections.version")}
                 description={
                   primaryServerUpdateState.status !== "idle" ? (
                     <ServerUpdateProgress state={primaryServerUpdateState} />
@@ -3317,7 +3474,7 @@ export function ConnectionsSettings() {
                       primaryEnvironment?.displayUrl ?? null,
                     ]
                       .filter((value): value is string => value !== null)
-                      .join(" · ") || "Loading…"
+                      .join(" · ") || t("settings.connections.loading")
                   )
                 }
                 control={
@@ -3328,7 +3485,11 @@ export function ConnectionsSettings() {
                       size="sm"
                       environmentId={primaryEnvironmentId}
                       serverLabel={
-                        primaryEnvironment ? `${primaryEnvironment.label} server` : "server"
+                        primaryEnvironment
+                          ? t("settings.connections.serverLabel", {
+                              label: primaryEnvironment.label,
+                            })
+                          : t("settings.connections.serverFallback")
                       }
                       selfUpdate={resolveServerSelfUpdateCapability(primaryServerConfig)}
                       desktopAppUpdate={supportsDesktopAppUpdate(primaryServerConfig)}
@@ -3338,12 +3499,16 @@ export function ConnectionsSettings() {
                       targetVersion={primaryVersionMismatch.clientVersion}
                       label={
                         primaryServerUpdateState.status === "failed"
-                          ? "Retry update"
-                          : `Update to ${primaryVersionMismatch.clientVersion}`
+                          ? t("settings.connections.retryUpdate")
+                          : t("settings.connections.updateToVersion", {
+                              version: primaryVersionMismatch.clientVersion,
+                            })
                       }
                     />
                   ) : primaryServerUpdateState.status === "idle" && primaryServerConfig ? (
-                    <span className="text-xs text-muted-foreground">Up to date</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("settings.connections.upToDate")}
+                    </span>
                   ) : undefined
                 }
               />
@@ -3367,7 +3532,7 @@ export function ConnectionsSettings() {
           {isLocalBackendRemotelyReachable ? (
             <FoldedSettingsSection
               id="authorized-clients"
-              title="Authorized clients"
+              title={t("settings.connections.pairing.authorizedClients")}
               summary={summarizeAuthorizedClients(
                 desktopClientSessions,
                 visibleDesktopPairingLinks,
@@ -3405,13 +3570,13 @@ export function ConnectionsSettings() {
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   {pendingDesktopServerExposureMode === "network-accessible"
-                    ? "Enable network access?"
-                    : "Disable network access?"}
+                    ? t("settings.connections.network.enableTitle")
+                    : t("settings.connections.network.disableTitle")}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {pendingDesktopServerExposureMode === "network-accessible"
-                    ? "Let your other devices connect to LMCS Code over the network. Pair devices to give them access. LMCS Code will restart."
-                    : "Devices connected over your local network will disconnect. Existing tunnels, such as LMCS Connect or Tailscale HTTPS, keep working. LMCS Code will restart."}
+                    ? t("settings.connections.network.enableDescription")
+                    : t("settings.connections.network.disableDescription")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -3419,7 +3584,7 @@ export function ConnectionsSettings() {
                   disabled={isUpdatingDesktopServerExposure}
                   render={<Button variant="outline" disabled={isUpdatingDesktopServerExposure} />}
                 >
-                  <span className="[text-box:trim-both_cap_alphabetic]">Cancel</span>
+                  <span className="[text-box:trim-both_cap_alphabetic]">{t("common.cancel")}</span>
                 </AlertDialogClose>
                 <Button
                   variant="default"
@@ -3431,10 +3596,10 @@ export function ConnectionsSettings() {
                   {isUpdatingDesktopServerExposure && <Spinner size="sm" />}
                   <span className="[text-box:trim-both_cap_alphabetic]">
                     {isUpdatingDesktopServerExposure
-                      ? "Restarting…"
+                      ? t("settings.connections.restarting")
                       : pendingDesktopServerExposureMode === "network-accessible"
-                        ? "Restart and enable"
-                        : "Restart and disable"}
+                        ? t("settings.connections.restartAndEnable")
+                        : t("settings.connections.restartAndDisable")}
                   </span>
                 </Button>
               </AlertDialogFooter>
@@ -3452,28 +3617,28 @@ export function ConnectionsSettings() {
                 <AlertDialogTitle>
                   {pendingWslChange?.kind === "disable"
                     ? pendingWslChange.wasWslOnly
-                      ? "Turn off WSL and switch back to Windows?"
-                      : "Disable WSL backend?"
+                      ? t("settings.connections.wsl.disableWindowsTitle")
+                      : t("settings.connections.wsl.disableTitle")
                     : pendingWslChange?.kind === "distro"
-                      ? "Switch WSL distro?"
+                      ? t("settings.connections.wsl.distroTitle")
                       : pendingWslChange?.kind === "enable"
-                        ? "Start the WSL backend"
+                        ? t("settings.connections.wsl.enableTitle")
                         : pendingWslChange?.nextValue
-                          ? "Run only the WSL backend?"
-                          : "Re-enable the Windows backend?"}
+                          ? t("settings.connections.wsl.onlyEnableTitle")
+                          : t("settings.connections.wsl.onlyDisableTitle")}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {pendingWslChange?.kind === "disable"
                     ? pendingWslChange.wasWslOnly
-                      ? "LMCS Code will restart on the Windows backend. Threads and projects opened against WSL stay safe inside the distro and become available again when you re-enable WSL."
-                      : "The WSL backend will stop. Threads and projects opened against WSL stay safe inside the distro, but they'll be unavailable in LMCS Code until you re-enable WSL."
+                      ? t("settings.connections.wsl.disableWindowsDescription")
+                      : t("settings.connections.wsl.disableDescription")
                     : pendingWslChange?.kind === "distro"
-                      ? "LMCS Code will restart the WSL backend on the new distro. Sessions still running on the current distro will be interrupted."
+                      ? t("settings.connections.wsl.distroDescription")
                       : pendingWslChange?.kind === "enable"
-                        ? "Run the WSL backend alongside the Windows one, or stop the Windows backend and use only WSL? You can change this later from Settings."
+                        ? t("settings.connections.wsl.enableDescription")
                         : pendingWslChange?.nextValue
-                          ? "LMCS Code will restart and start only the WSL backend. Your Windows-side projects won't be accessible until you turn this off again."
-                          : "LMCS Code will restart and bring the Windows backend back up alongside WSL."}
+                          ? t("settings.connections.wsl.onlyEnableDescription")
+                          : t("settings.connections.wsl.onlyDisableDescription")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -3481,7 +3646,7 @@ export function ConnectionsSettings() {
                   disabled={isUpdatingWslBackend}
                   render={<Button variant="outline" disabled={isUpdatingWslBackend} />}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </AlertDialogClose>
                 {pendingWslChange?.kind === "enable" ? (
                   <>
@@ -3493,10 +3658,10 @@ export function ConnectionsSettings() {
                       {isUpdatingWslBackend ? (
                         <>
                           <Spinner size="sm" />
-                          Applying…
+                          {t("settings.connections.wsl.applying")}
                         </>
                       ) : (
-                        "Use only WSL"
+                        t("settings.connections.wsl.useOnlyWsl")
                       )}
                     </Button>
                     <Button
@@ -3507,10 +3672,10 @@ export function ConnectionsSettings() {
                       {isUpdatingWslBackend ? (
                         <>
                           <Spinner size="sm" />
-                          Applying…
+                          {t("settings.connections.wsl.applying")}
                         </>
                       ) : (
-                        "Run both backends"
+                        t("settings.connections.wsl.runBoth")
                       )}
                     </Button>
                   </>
@@ -3532,16 +3697,16 @@ export function ConnectionsSettings() {
                       </>
                     ) : pendingWslChange?.kind === "disable" ? (
                       pendingWslChange.wasWslOnly ? (
-                        "Switch to Windows"
+                        t("settings.connections.wsl.switchToWindows")
                       ) : (
-                        "Disable WSL"
+                        t("settings.connections.wsl.disableAction")
                       )
                     ) : pendingWslChange?.kind === "distro" ? (
-                      "Switch distro"
+                      t("settings.connections.wsl.switchDistro")
                     ) : pendingWslChange?.nextValue ? (
-                      "Restart and enable"
+                      t("settings.connections.restartAndEnable")
                     ) : (
-                      "Restart and disable"
+                      t("settings.connections.restartAndDisable")
                     )}
                   </Button>
                 )}
@@ -3557,9 +3722,11 @@ export function ConnectionsSettings() {
           >
             <AlertDialogPopup>
               <AlertDialogHeader>
-                <AlertDialogTitle>Disable Tailscale HTTPS?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t("settings.connections.tailscale.disableTitle")}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  LMCS Code will restart the local backend without Tailscale Serve.
+                  {t("settings.connections.tailscale.disableDescription")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -3567,7 +3734,7 @@ export function ConnectionsSettings() {
                   disabled={isUpdatingTailscaleServe}
                   render={<Button variant="outline" disabled={isUpdatingTailscaleServe} />}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </AlertDialogClose>
                 <Button
                   variant="destructive"
@@ -3577,10 +3744,10 @@ export function ConnectionsSettings() {
                   {isUpdatingTailscaleServe ? (
                     <>
                       <Spinner size="sm" />
-                      Restarting…
+                      {t("settings.connections.restarting")}
                     </>
                   ) : (
-                    "Restart and disable"
+                    t("settings.connections.restartAndDisable")
                   )}
                 </Button>
               </AlertDialogFooter>
@@ -3595,15 +3762,16 @@ export function ConnectionsSettings() {
           >
             <DialogPopup className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Set up Tailscale HTTPS?</DialogTitle>
+                <DialogTitle>{t("settings.connections.tailscale.setupTitle")}</DialogTitle>
                 <DialogDescription>
-                  LMCS Code will restart the local backend with Tailscale Serve enabled and ask
-                  Tailscale to proxy HTTPS traffic to this backend.
+                  {t("settings.connections.tailscale.setupDialogDescription")}
                 </DialogDescription>
               </DialogHeader>
               <DialogPanel>
                 <label className="block">
-                  <span className="text-sm font-medium text-foreground">HTTPS port</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {t("settings.connections.tailscale.httpsPort")}
+                  </span>
                   <Input
                     className="mt-2"
                     type="number"
@@ -3617,15 +3785,20 @@ export function ConnectionsSettings() {
                   />
                 </label>
                 {!isTailscaleServePortValid ? (
-                  <p className="mt-2 text-xs text-destructive">Enter a port from 1 to 65535.</p>
+                  <p className="mt-2 text-xs text-destructive">
+                    {t("settings.connections.tailscale.portInvalid")}
+                  </p>
                 ) : null}
                 <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
-                  <p className="text-xs font-medium text-muted-foreground">HTTPS endpoint</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t("settings.connections.tailscale.httpsEndpoint")}
+                  </p>
                   <Tooltip>
                     <TooltipTrigger
                       render={
                         <p className="mt-1 truncate text-sm text-foreground">
-                          {pendingTailscaleServeBaseUrl ?? "Pending MagicDNS endpoint"}
+                          {pendingTailscaleServeBaseUrl ??
+                            t("settings.connections.tailscale.pendingEndpoint")}
                         </p>
                       }
                     />
@@ -3640,7 +3813,7 @@ export function ConnectionsSettings() {
                   disabled={isUpdatingTailscaleServe}
                   render={<Button variant="outline" disabled={isUpdatingTailscaleServe} />}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </DialogClose>
                 <Button
                   onClick={() => void handleConfirmTailscaleServeSetup()}
@@ -3649,10 +3822,10 @@ export function ConnectionsSettings() {
                   {isUpdatingTailscaleServe ? (
                     <>
                       <Spinner size="sm" />
-                      Restarting…
+                      {t("settings.connections.restarting")}
                     </>
                   ) : (
-                    "Enable"
+                    t("settings.connections.tailscale.enable")
                   )}
                 </Button>
               </DialogFooter>
@@ -3662,8 +3835,8 @@ export function ConnectionsSettings() {
       ) : (
         <SettingsSection {...searchableSetting("connections-environment")}>
           <SettingsRow
-            title="Administrative access"
-            description="Pairing links and client-session management require the access:write scope for this backend."
+            title={t("settings.connections.adminAccessTitle")}
+            description={t("settings.connections.adminAccessDescription")}
           />
           <CloudLinkRow canManageRelay={canManageRelay} />
         </SettingsSection>
@@ -3676,7 +3849,7 @@ export function ConnectionsSettings() {
       {primarySettings}
       <SettingsSection
         {...searchableSetting("remote-environments")}
-        title="Environments"
+        title={t("settings.connections.environmentsTitle")}
         headerAction={
           <div className="flex items-center gap-1">
             {savedServerUpdateTargets.length > 0 ? (
@@ -3696,36 +3869,43 @@ export function ConnectionsSettings() {
                   render={
                     <DialogTrigger
                       render={
-                        <Button size="xs" variant="ghost-muted" aria-label="Add environment">
+                        <Button
+                          size="xs"
+                          variant="ghost-muted"
+                          aria-label={t("settings.connections.environments.addEnvironment")}
+                        >
                           <PlusIcon className="size-3" />
-                          <span>Add environment</span>
+                          <span>{t("settings.connections.environments.addEnvironment")}</span>
                         </Button>
                       }
                     />
                   }
                 />
-                <TooltipPopup side="top">Add environment</TooltipPopup>
+                <TooltipPopup side="top">
+                  {t("settings.connections.environments.addEnvironment")}
+                </TooltipPopup>
               </Tooltip>
               <DialogPopup className="max-h-[80dvh] sm:max-w-3xl">
                 <DialogHeader>
-                  <DialogTitle>Add Environment</DialogTitle>
-                  <DialogDescription>Pair another environment to this client.</DialogDescription>
+                  <DialogTitle>{t("settings.connections.environments.addDialogTitle")}</DialogTitle>
+                  <DialogDescription>
+                    {t("settings.connections.environments.addDialogDescription")}
+                  </DialogDescription>
                 </DialogHeader>
                 <DialogPanel>
                   <div className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       {renderConnectionModeCard({
                         mode: "remote",
-                        title: "Remote link",
-                        description: "Enter a backend host and pairing code.",
+                        title: t("settings.connections.environments.modeRemoteTitle"),
+                        description: t("settings.connections.environments.modeRemoteDescription"),
                         icon: <ChevronsLeftRightEllipsisIcon aria-hidden className="size-4" />,
                       })}
                       {desktopBridge
                         ? renderConnectionModeCard({
                             mode: "ssh",
                             title: "SSH",
-                            description:
-                              "Use local SSH config, agent, and tunnels for the backend.",
+                            description: t("settings.connections.environments.modeSshDescription"),
                             icon: <TerminalIcon aria-hidden className="size-4" />,
                           })
                         : null}

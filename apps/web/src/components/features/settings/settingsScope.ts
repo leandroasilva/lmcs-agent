@@ -1,5 +1,6 @@
 import type { EnvironmentId } from "@lmcstools/core";
 
+import { translateDynamic } from "../../../i18n";
 import type {
   SidebarProjectGroupMember,
   SidebarProjectSnapshot,
@@ -72,24 +73,43 @@ export function resolveSettingsScope(
   ): ResolvedSettingsScope => ({
     kind: "unavailable",
     reason,
-    label: "Unavailable selection",
+    label: translateDynamic("settings.scope.unavailableSelection", "Unavailable selection"),
     message,
     members: [],
     environmentIds: [],
   });
 
   if (search.checkout && !search.project) {
-    return unavailable("project-required", "Select a project to choose one of its checkouts.");
+    return unavailable(
+      "project-required",
+      translateDynamic(
+        "settings.scope.reasons.projectRequired",
+        "Select a project to choose one of its checkouts.",
+      ),
+    );
   }
 
   const environment = environments.find((candidate) => candidate.environmentId === search.machine);
   if (search.machine && !environment) {
-    return unavailable("environment-missing", "This environment is no longer available.");
+    return unavailable(
+      "environment-missing",
+      translateDynamic(
+        "settings.scope.reasons.environmentMissing",
+        "This environment is no longer available.",
+      ),
+    );
   }
 
   if (search.project) {
     const group = groups.find((candidate) => candidate.projectKey === search.project);
-    if (!group) return unavailable("project-missing", "This project is no longer available.");
+    if (!group)
+      return unavailable(
+        "project-missing",
+        translateDynamic(
+          "settings.scope.reasons.projectMissing",
+          "This project is no longer available.",
+        ),
+      );
     const members = group.memberProjects.filter(
       (member) =>
         (search.machine === undefined || member.environmentId === search.machine) &&
@@ -99,8 +119,14 @@ export function resolveSettingsScope(
       return unavailable(
         "checkout-missing",
         search.checkout
-          ? "This checkout is no longer available in the selected project and environment."
-          : "This project has no checkout on this environment.",
+          ? translateDynamic(
+              "settings.scope.reasons.checkoutMissing",
+              "This checkout is no longer available in the selected project and environment.",
+            )
+          : translateDynamic(
+              "settings.scope.reasons.noCheckoutOnEnvironment",
+              "This project has no checkout on this environment.",
+            ),
       );
     }
     if (search.checkout) {
@@ -111,7 +137,10 @@ export function resolveSettingsScope(
       if (!checkoutEnvironment) {
         return unavailable(
           "environment-missing",
-          "This checkout's environment is no longer available.",
+          translateDynamic(
+            "settings.scope.reasons.checkoutEnvironmentMissing",
+            "This checkout's environment is no longer available.",
+          ),
         );
       }
       const sharesEnvironment = group.memberProjects.some(
@@ -133,7 +162,7 @@ export function resolveSettingsScope(
       kind: "project",
       group,
       environmentId: environment?.environmentId ?? null,
-      label: `${group.displayName} / ${environment?.label ?? "All checkouts"}`,
+      label: `${group.displayName} / ${environment?.label ?? translateDynamic("settings.scope.allCheckouts", "All checkouts")}`,
       members,
       environmentIds: [...new Set(members.map((member) => member.environmentId))],
     };
@@ -149,7 +178,7 @@ export function resolveSettingsScope(
   }
   return {
     kind: "all",
-    label: "All environments",
+    label: translateDynamic("settings.scope.allEnvironments", "All environments"),
     members: [],
     environmentIds: environments.map((candidate) => candidate.environmentId),
   };

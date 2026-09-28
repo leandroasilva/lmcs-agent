@@ -1,5 +1,7 @@
 import { resolveEnvironmentMachineKind } from "@lmcstools/core";
+import { useTranslation } from "react-i18next";
 
+import { translateDynamic } from "../../../i18n";
 import {
   useClientSettings,
   useClientSettingsHydrated,
@@ -13,10 +15,10 @@ import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { searchableSetting } from "./settingsSearch";
 
 const preferences = [
-  { value: 100, label: "Prefer" },
-  { value: 50, label: "Normal" },
-  { value: 25, label: "Less often" },
-  { value: 0, label: "Manual only" },
+  { value: 100, key: "prefer", fallback: "Prefer" },
+  { value: 50, key: "normal", fallback: "Normal" },
+  { value: 25, key: "lessOften", fallback: "Less often" },
+  { value: 0, key: "manualOnly", fallback: "Manual only" },
 ] as const;
 
 type LoadPreference = (typeof preferences)[number]["value"];
@@ -29,7 +31,8 @@ export function loadPreferenceForWeight(weight: number | undefined): LoadPrefere
 }
 
 function preferenceLabel(preference: LoadPreference): string {
-  return preferences.find((entry) => entry.value === preference)!.label;
+  const entry = preferences.find((option) => option.value === preference)!;
+  return translateDynamic(`settings.loadBalancing.preference.${entry.key}`, entry.fallback);
 }
 
 /**
@@ -60,6 +63,7 @@ export function LoadBalancingSettings({
 }: {
   environments: ReadonlyArray<EnvironmentPresentation>;
 }) {
+  const { t } = useTranslation();
   const settings = useClientSettings();
   const settingsHydrated = useClientSettingsHydrated();
   const updateSettings = useUpdateClientSettings();
@@ -74,11 +78,11 @@ export function LoadBalancingSettings({
       summary={
         settings.loadBalancingEnabled
           ? summarizeLoadPreferences(environments, settings.loadBalancingWeights)
-          : "Off"
+          : t("settings.loadBalancing.off")
       }
       control={
         <Switch
-          aria-label="Automatically balance load"
+          aria-label={t("settings.loadBalancing.enableAria")}
           checked={settings.loadBalancingEnabled}
           disabled={!settingsHydrated}
           onCheckedChange={(loadBalancingEnabled) => updateSettings({ loadBalancingEnabled })}
@@ -86,8 +90,7 @@ export function LoadBalancingSettings({
       }
     >
       <p className="px-3 py-2.5 text-xs text-muted-foreground sm:px-4">
-        New threads in shared projects start on the machine with the most free CPU and memory,
-        weighted by each machine's preference.
+        {t("settings.loadBalancing.description")}
       </p>
       {environments.map((environment) => (
         <EnvironmentRow
@@ -97,7 +100,6 @@ export function LoadBalancingSettings({
           subtitle={environmentTransportLabel(environment)}
         >
           <Select
-            items={preferences}
             value={loadPreferenceForWeight(
               settings.loadBalancingWeights[environment.environmentId],
             )}
@@ -115,14 +117,20 @@ export function LoadBalancingSettings({
             <SelectTrigger
               size="xs"
               className="w-32"
-              aria-label={`${environment.label} load preference`}
+              aria-label={t("settings.loadBalancing.preferenceAria", {
+                label: environment.label,
+              })}
             >
-              <SelectValue />
+              <SelectValue>
+                {preferenceLabel(
+                  loadPreferenceForWeight(settings.loadBalancingWeights[environment.environmentId]),
+                )}
+              </SelectValue>
             </SelectTrigger>
             <SelectPopup align="end" alignItemWithTrigger={false}>
-              {preferences.map(({ value, label }) => (
+              {preferences.map(({ value }) => (
                 <SelectItem key={value} value={value}>
-                  {label}
+                  {preferenceLabel(value)}
                 </SelectItem>
               ))}
             </SelectPopup>

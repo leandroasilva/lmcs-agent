@@ -2,9 +2,12 @@
   "common": {
     "cancel": "Cancel",
     "mixed": "Mixed",
+    "remove": "Remove",
+    "done": "Done",
     "errorOccurred": "An error occurred.",
     "tryAgain": "Try again.",
     "save": "Save",
+    "close": "Close",
     "colorPicker": {
       "instructions": "Use arrow keys to adjust the focused value. Hold Shift for larger steps. Use Home and End for the minimum and maximum. Press Tab to move between saturation and brightness.",
       "planeAria": "{{label}} saturation and brightness",
@@ -30,6 +33,161 @@
       "requiresEnvironmentConnect": "{{title}} requires a supporting environment. Connect or update an environment to continue.",
       "notAvailableForTarget": "{{title}} is not available for the selected target. Choose its owning scope to continue.",
       "reconnectToChange": "Reconnect {{label}} to change its settings."
+    },
+    "search": {
+      "placeholder": "Search",
+      "aria": "Search settings",
+      "clearAria": "Clear settings search",
+      "empty": "No settings found"
+    },
+    "scope": {
+      "applyingFor": "Applying settings for",
+      "on": "on",
+      "across": "across",
+      "environmentScopeAria": "Environment scope",
+      "projectScopeAria": "Project scope",
+      "unavailableEnvironment": "Unavailable environment",
+      "allEnvironments": "All environments",
+      "offline": "Offline",
+      "unavailableProject": "Unavailable project",
+      "allProjects": "All projects",
+      "environmentFallback": "Environment",
+      "openAllEnvironments": "Open all environments",
+      "unavailableSelection": "Unavailable selection",
+      "allCheckouts": "All checkouts",
+      "reasons": {
+        "projectRequired": "Select a project to choose one of its checkouts.",
+        "environmentMissing": "This environment is no longer available.",
+        "projectMissing": "This project is no longer available.",
+        "checkoutMissing": "This checkout is no longer available in the selected project and environment.",
+        "noCheckoutOnEnvironment": "This project has no checkout on this environment.",
+        "checkoutEnvironmentMissing": "This checkout's environment is no longer available."
+      }
+    },
+    "scoped": {
+      "reasons": {
+        "environmentWide": "This setting is environment-wide and cannot be overridden by a project.",
+        "connectToSaveProjectOverride": "Connect the selected checkouts, or update their environments, to save a project override.",
+        "connectToSave": "Connect {{target}} to save this setting.",
+        "anEnvironment": "an environment",
+        "connectToResetOverride": "Connect the selected checkouts, or update their environments, to reset this override.",
+        "connectToResetOverrides": "Connect the environments to reset these overrides."
+      }
+    },
+    "scopedModel": {
+      "unavailable": "This model is unavailable on {{label}}. Select that environment to choose its model separately.",
+      "selectedEnvironmentFallback": "a selected environment"
+    },
+    "inheritance": {
+      "writingStyle": {
+        "repoConventions": "Repository conventions",
+        "conventionalCommits": "Conventional Commits",
+        "custom": "Custom instructions"
+      },
+      "value": {
+        "lastSelected": "Last selected",
+        "never": "Never",
+        "automatic": "Automatic",
+        "textGenerationModel": "Text generation model",
+        "inherit": "Inherit",
+        "notSet": "Not set",
+        "on": "On",
+        "off": "Off",
+        "empty": "Empty",
+        "custom": "Custom",
+        "dayCount_one": "{{count}} day",
+        "dayCount_other": "{{count}} days",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items"
+      },
+      "layer": {
+        "project": "Project",
+        "environment": "Environment",
+        "default": "Default"
+      },
+      "inherits": "Inherits",
+      "overrideCount_one": "{{count}} project override",
+      "overrideCount_other": "{{count}} project overrides",
+      "showSourceAria": "{{summary}}. Show where this value comes from",
+      "overriddenBy": "Overridden by",
+      "resetIt": "Reset it",
+      "resetAll": "Reset all"
+    },
+    "loadBalancing": {
+      "off": "Off",
+      "enableAria": "Automatically balance load",
+      "description": "New threads in shared projects start on the machine with the most free CPU and memory, weighted by each machine's preference.",
+      "preferenceAria": "{{label}} load preference",
+      "preference": {
+        "prefer": "Prefer",
+        "normal": "Normal",
+        "lessOften": "Less often",
+        "manualOnly": "Manual only"
+      }
+    },
+    "githubRouting": {
+      "off": "Off",
+      "description": "Machines you trust here can read PR data through each other's GitHub access. Enable both machines. Read and act may use broader permissions than the machine that owns them. This applies only to this device.",
+      "routingAria": "{{label}} GitHub routing",
+      "option": {
+        "off": "Off",
+        "read": "Read PRs",
+        "readWrite": "Read and act"
+      },
+      "summary": {
+        "read": "read PRs",
+        "readWrite": "read and act"
+      }
+    },
+    "localEnvironment": {
+      "errorFallback": "Couldn't change this setting.",
+      "descriptionOn": "Run agents on this computer. Turn off to use LMCS Code only with remote environments.",
+      "descriptionOff": "Turned off. Agents only run in remote environments.",
+      "aria": "Local environment",
+      "confirmOffTitle": "Turn off local environment?",
+      "confirmOnTitle": "Turn on local environment?",
+      "confirmOffDescription": "LMCS Code will restart without running a server on this computer. Any agents and terminals running here will stop, and other devices will no longer be able to connect to this computer. Your projects, history, and remote environments are unaffected.",
+      "confirmOnDescription": "LMCS Code will restart and start running a server on this computer again.",
+      "restarting": "Restarting…",
+      "restartAndTurnOff": "Restart and turn off",
+      "restartAndTurnOn": "Restart and turn on"
+    },
+    "fontPicker": {
+      "default": "default",
+      "searchPlaceholder": "Search fonts…",
+      "empty": "No fonts found."
+    },
+    "environmentIcon": {
+      "submenu": "Icon",
+      "detected": "detected",
+      "default": "default",
+      "lock": {
+        "connect": "Connect to this environment to change its icon.",
+        "tooOld": "This environment's server is too old to keep an icon. Update it to choose one.",
+        "accessDenied": "Your session on this environment cannot change its settings."
+      },
+      "kind": {
+        "server": "Server",
+        "cloud": "Cloud VM",
+        "linux": "Linux/WSL",
+        "desktop": "Desktop",
+        "laptop": "Laptop",
+        "macMini": "Mini PC",
+        "macStudio": "Workstation"
+      }
+    },
+    "serverUpdate": {
+      "update": "Update",
+      "updateAll": "Update all",
+      "copyCommand": "Copy update command",
+      "actionForAria": "{{action}} for {{label}}",
+      "desktopRequired": "Update the desktop app on that machine to update this server.",
+      "confirmDesktopSingle": "Update the LMCS Code desktop app that runs the {{label}}? It will close and relaunch on that machine.",
+      "confirmDesktopBatch": "Update the LMCS Code desktop apps on {{labels}}? They will close and relaunch on those machines.",
+      "stage": {
+        "downloading": "Downloading…",
+        "restarting": "Restarting…"
+      }
     },
     "sections": {
       "projects": "Project",
@@ -403,7 +561,8 @@
       "panelAnimations": {
         "description": "Set how fast panels open and close.",
         "ariaLabel": "Panel animation duration",
-        "resetLabel": "panel animations"
+        "resetLabel": "panel animations",
+        "previewAria": "Replay panel animation preview"
       },
       "typography": {
         "advanced": "Advanced",
@@ -426,7 +585,8 @@
         "wordWrapDescription": "Wrap long lines in code blocks, tables, diffs, and file previews by default.",
         "wordWrapAria": "Wrap code, tables, diffs, and file previews by default",
         "wordWrapResetLabel": "word wrapping",
-        "familyAria": "{{title}} family"
+        "familyAria": "{{title}} family",
+        "terminalPreviewAria": "Terminal font preview"
       }
     },
     "notifications": {
@@ -443,7 +603,109 @@
       }
     },
     "projects": {
-      "chooseProject": "Choose a project to manage its name, icon, checkouts and actions."
+      "chooseProject": "Choose a project to manage its name, icon, checkouts and actions.",
+      "actions": {
+        "sectionTitle": "Actions",
+        "rowTitle": "Actions",
+        "rowDescription": "Commands that run in this project's checkout or its worktree, with optional shortcuts.",
+        "importScripts": "Import scripts",
+        "importGroupLabel": "Import from t3.json",
+        "importHint": "Add actions declared by this checkout without editing them first.",
+        "importFailed": "Failed to import action.",
+        "addAction": "Add action",
+        "mixedTitle": "Different actions across environments",
+        "mixedDescription": "Choose one environment to edit its list. Adding an action here adds it on every selected environment.",
+        "invalidFileTitle": "t3.json is invalid",
+        "invalidFileDescription": "A t3.json exists in this checkout but fails to parse, so every action and icon it declares is ignored. Check the JSON syntax and icon values.",
+        "empty": "No actions configured.",
+        "setupBadge": "setup",
+        "previewBadge": "preview · desktop only",
+        "editAria": "Edit {{name}}"
+      },
+      "faviconPicker": {
+        "aria": "Choose project icon",
+        "selectIcon": "Select icon",
+        "openInManager": "Open in {{manager}}",
+        "searchPlaceholder": "Search image files…",
+        "searchingFiles": "Searching project files…",
+        "indexingFiles": "Indexing project files…",
+        "noMatchingImages": "No matching image files.",
+        "noImages": "No image files found."
+      },
+      "iconPicker": {
+        "title": "Choose project icon",
+        "description": "Choose an icon, emoji, or monogram.",
+        "typeAria": "Icon type",
+        "icons": "Icons",
+        "emoji": "Emoji",
+        "monogram": "Monogram",
+        "colorLabel": "Color",
+        "colorAria": "Icon color",
+        "searchAria": "Search Lucide icons",
+        "searchPlaceholder": "Search all Lucide icons",
+        "empty": "No icons found.",
+        "lettersLabel": "Letters",
+        "monogramHint": "One or two letters or numbers.",
+        "pasteEmojiLabel": "Or paste any emoji",
+        "customEmojiAria": "Custom emoji",
+        "pasteEmojiPlaceholder": "Paste an emoji",
+        "save": "Save icon"
+      },
+      "defaults": {
+        "sectionNewThreads": "New threads",
+        "sectionBrowser": "Browser",
+        "sectionRepositories": "Repositories",
+        "unavailable": "Unavailable",
+        "model": {
+          "title": "Model",
+          "descriptionProject": "Model for new threads in this project.",
+          "descriptionEnvironment": "Default model for new threads. Projects can override it.",
+          "statusAutomatic": "Automatic",
+          "noProviders": "No providers available",
+          "resetLabel": "default model"
+        },
+        "workspace": {
+          "title": "Workspace",
+          "descriptionProject": "Where new threads in this project start.",
+          "descriptionEnvironment": "Where new threads start. Projects and their t3.json can override it.",
+          "aria": "Default workspace",
+          "resetLabel": "default workspace"
+        },
+        "permissions": {
+          "descriptionProject": "Permissions for new threads in this project.",
+          "descriptionEnvironment": "Default permissions for new threads. Projects can override them.",
+          "aria": "Default permissions",
+          "resetLabel": "default permissions"
+        },
+        "submodules": {
+          "descriptionProject": "How new worktrees in this project populate git submodules.",
+          "descriptionEnvironment": "How new worktrees populate git submodules. Projects and their t3.json can override it.",
+          "aria": "Worktree submodules",
+          "resetLabel": "worktree submodules"
+        },
+        "autoPull": {
+          "title": "Automatically pull",
+          "descriptionProject": "Keeps this project's default branch current when the checkout has no local changes or commits.",
+          "descriptionEnvironment": "Keeps the default branch current when the checkout has no local changes or commits. Projects can override it.",
+          "aria": "Default automatic pull",
+          "resetLabel": "default automatic pull",
+          "resetTooltip": "Reset automatic pull to off"
+        },
+        "mergeMethod": {
+          "descriptionProject": "Pull requests in this project start with this method.",
+          "descriptionEnvironment": "Pull requests start with this method. Last selected reuses whatever you chose most recently on this device.",
+          "aria": "Default pull request merge method",
+          "resetLabel": "default merge method",
+          "resetTooltip": "Reset to last selected"
+        },
+        "browserAccess": {
+          "title": "Agent browser access",
+          "descriptionProject": "Allow agents in this project to use the shared browser. Applies when the agent session next starts.",
+          "descriptionEnvironment": "Allow agents to use the shared browser. Projects can override it.",
+          "aria": "Agent browser access",
+          "resetLabel": "default browser access"
+        }
+      }
     },
     "licenses": {
       "sectionTitle": "Third-party notices",
@@ -1021,6 +1283,191 @@
         "clear": "Clear color"
       }
     },
+    "integrations": {
+      "browserTitle": "Browser",
+      "unavailableMessage": "Only available in the desktop app.",
+      "devicesTitle": "Devices",
+      "viewport": {
+        "description": "Tab size for you and agents. Fill fits the panel; other sizes show the device toolbar.",
+        "resetLabel": "default browser viewport",
+        "aria": "Default browser viewport",
+        "fillPanel": "Fill panel",
+        "responsive": "Responsive",
+        "standardGroup": "Standard",
+        "widthAria": "Default viewport width",
+        "heightAria": "Default viewport height",
+        "rotateAriaLandscape": "Rotate to landscape",
+        "rotateAriaPortrait": "Rotate to portrait",
+        "rotateTooltip": "Rotate"
+      },
+      "zoom": {
+        "description": "Page zoom applied to new browser tabs.",
+        "resetLabel": "default browser zoom",
+        "aria": "Default browser zoom"
+      },
+      "appearance": {
+        "description": "The color scheme pages are told to prefer. System follows your OS setting.",
+        "resetLabel": "default browser appearance",
+        "aria": "Default browser appearance",
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "recording": {
+        "keysDescription": "Show pressed keys and shortcuts in new recordings. Password fields are excluded.",
+        "keysAria": "Show key presses in recordings",
+        "mouseDescription": "Highlight mouse presses and held buttons in new recordings.",
+        "mouseAria": "Show mouse presses in recordings",
+        "frameRateDescription": "Maximum recording rate. 30 fps saves CPU and storage; 60 fps is smoother.",
+        "frameRateResetLabel": "browser recording frame rate",
+        "frameRateAria": "Browser recording frame rate"
+      },
+      "linkTarget": {
+        "description": "Where links in the chat and terminal open. Hold ⌘ or Ctrl while clicking a link to open it in your default browser either way.",
+        "resetLabel": "link target",
+        "aria": "Open links in",
+        "system": "Your default browser",
+        "app": "LMCS Code"
+      },
+      "autoShowPreview": {
+        "description": "Show the floating preview when an agent opens a browser or device unless the agent says otherwise.",
+        "resetLabel": "auto-show floating preview",
+        "aria": "Auto-show floating preview"
+      },
+      "profiles": {
+        "description": "Profiles separate cookies and logins. Incognito data is cleared when the app closes.",
+        "addProfile": "Add profile",
+        "blankProfile": "Blank profile",
+        "limitReached": "You've reached the profile limit",
+        "importFrom": "Import from",
+        "lookingForBrowsers": "Looking for browsers…",
+        "noBrowsers": "No supported browsers found",
+        "connectToImport": "Connect to an environment to import cookies",
+        "newProfileName": "New profile",
+        "renameAria": "Rename {{name}}",
+        "defaultBadge": "Default",
+        "optionsAria": "{{name}} options",
+        "setAsDefault": "Set as default",
+        "clearData": "Clear cookies and cache",
+        "removeProfileAndData": "Remove profile and data",
+        "connectToClear": "Connect to an environment to clear profile data",
+        "checkingEnvironments": "Checking environments…",
+        "removeConfirmTitle": "Remove “{{name}}”?",
+        "removeConfirmDescription": "Its cookies and logins are deleted. Tabs already open in this profile stay open until you close them.",
+        "removeConnectHint": "Connect to an environment to remove this profile and its data.",
+        "removeErrorConnect": "Connect to an environment before removing this profile.",
+        "removeErrorData": "Profile data could not be deleted. Try again.",
+        "removing": "Removing…",
+        "removeProfile": "Remove profile"
+      },
+      "devices": {
+        "hubAria": "Device hub",
+        "agentAria": "Agent device access",
+        "platformStatusDescription": "Status for {{label}}. Select an environment to inspect its simulator support.",
+        "checking": "Checking…",
+        "refresh": "Refresh",
+        "checkVersions": "Check versions",
+        "updating": "Updating…",
+        "updateToVersion": "Update to v{{version}}",
+        "updateFailed": "Update failed. Check this host's network connection and try again."
+      },
+      "importWizard": {
+        "quitTitle": "Quit {{name}} to import",
+        "quitDescription": "{{name}} is open, so its cookies can’t be read yet. Quit it, then continue.",
+        "quitConfirm": "I’ve quit it",
+        "noCookies": "no cookies",
+        "cookiesCount_one": "{{formatted}} cookie",
+        "cookiesCount_other": "{{formatted}} cookies",
+        "diskTitle": "Let LMCS Code read {{name}}’s cookies",
+        "diskDescription": "To import cookies from {{name}}, LMCS Code needs Full Disk Access. Turn it on in System Settings, then come back to finish the import — you can revoke it again once the import is done.",
+        "diskItemTitle": "Full Disk Access",
+        "diskItemDescription": "Read {{name}}’s cookies for this import.",
+        "diskOpenError": "Could not open System Settings. Try Allow again.",
+        "diskStillRequired": "Access is still required. Quit and reopen LMCS Code if you just allowed it, then retry the import.",
+        "diskUpdateHint": "If access doesn’t update after you allow it, quit and reopen LMCS Code, then retry the import.",
+        "continue": "Continue",
+        "configureTitle": "Import from {{name}}",
+        "configureDescription": "Choose which cookies to import for {{environment}}.",
+        "fromLabel": "From",
+        "intoLabel": "Into",
+        "newProfileTitle": "New profile",
+        "newProfileSubtitle": "Created for these cookies",
+        "existingProfileSubtitle": "Existing profile",
+        "targetMissing": "That profile is no longer available. Choose where to import these cookies.",
+        "targetUncreatable": "You’ve reached the profile limit. Choose an existing profile to import into.",
+        "import": "Import",
+        "importingTitle": "Importing cookies",
+        "importingDescription": "This may take a moment.",
+        "importing": "Importing…",
+        "checkingTitle": "Checking {{name}}",
+        "checkingDiskDescription": "Checking Full Disk Access.",
+        "checkingBrowserDescription": "Checking whether the browser has closed.",
+        "checkingAccess": "Checking access…",
+        "checking": "Checking…",
+        "importedTitle_one": "Imported {{formatted}} cookie",
+        "importedTitle_other": "Imported {{formatted}} cookies",
+        "skippedTitle_one": "Skipped {{formatted}} cookie",
+        "skippedTitle_other": "Skipped {{formatted}} cookies",
+        "noneFoundTitle": "No cookies found",
+        "addedDescription": "Added to {{target}} for {{environment}}.",
+        "skippedSuffix_one": "{{formatted}} skipped.",
+        "skippedSuffix_other": "{{formatted}} skipped.",
+        "noneImportedDescription": "No cookies were imported for {{environment}}.",
+        "nothingToImportDescription": "There were no cookies to import for {{environment}}.",
+        "skippedLabel": "Skipped",
+        "done": "Done",
+        "blockedTitle": "Couldn’t import from {{name}}",
+        "close": "Close",
+        "tryAgain": "Try again"
+      },
+      "deviceHosts": {
+        "title": "Device hosts",
+        "description": "Add remote machines with simulator or emulator runtimes installed, and the selected environments will connect over SSH and set up device tools automatically.",
+        "addHost": "Add host",
+        "connectHint": "Connect a selected environment to manage device hosts.",
+        "empty": "No device hosts.",
+        "checkingConnection": "Checking connection…",
+        "installingSupport": "Installing device support…",
+        "ambiguousDestination": "Multiple hosts match this SSH destination. Select the environment to edit its hosts.",
+        "environmentDisconnected": "Environment disconnected",
+        "connecting": "Connecting…",
+        "iosAvailable": "iOS available",
+        "androidAvailable": "Android available",
+        "localAvailable": "Already available locally",
+        "connectionFailed": "Connection failed",
+        "optionsAria": "{{label}} options",
+        "edit": "Edit",
+        "remove": "Remove",
+        "retrying": "Retrying…",
+        "retry": "Retry",
+        "testConnection": "Test connection",
+        "editor": {
+          "addTitle": "Add device host",
+          "editTitle": "Edit device host",
+          "connectFromOne": "Connect from {{label}}.",
+          "connectFromMany": "Connect from {{count}} selected environments.",
+          "hostsSkipped": "Hosts on the same machine are skipped.",
+          "nameLabel": "Name",
+          "targetLabel": "SSH target",
+          "targetPlaceholder": "user@host or SSH alias",
+          "optionsLabel": "SSH options",
+          "identityLabel": "Identity file",
+          "identityPlaceholder": "SSH config default",
+          "portLabel": "Port",
+          "portPlaceholder": "Default",
+          "optionsHint": "Optional. Resolved separately on each environment.",
+          "checkingEnvironments": "Checking environments…",
+          "failedCount": "{{count}} of {{total}} failed",
+          "checksPassed": "Connection checks passed",
+          "checkBeforeSaving": "Check access before saving",
+          "checking": "Checking…",
+          "failed": "Failed",
+          "connected": "Connected",
+          "showError": "Show error",
+          "saveHost": "Save host"
+        }
+      }
+    },
     "restore": {
       "confirmTitle": "Restore default settings?",
       "confirmResetList": "This will reset: {{labels}}.",
@@ -1425,6 +1872,285 @@
             "9": "Thread: Jump: 9"
           }
         }
+      },
+      "search": "Search keybindings",
+      "addKeybinding": "Add keybinding",
+      "openFile": "Open keybindings.json",
+      "newKeybinding": "New keybinding",
+      "newKeybindingFallback": "new keybinding",
+      "cancelNew": "Cancel new keybinding",
+      "command": "Command",
+      "when": "When",
+      "whenExpressionAria": "When expression",
+      "always": "Always",
+      "condition": "Condition",
+      "group": "Group",
+      "not": "Not",
+      "negateCondition": "Negate {{identifier}}",
+      "negateGroup": "Negate group",
+      "removeAll": "Clear all conditions",
+      "removeCondition": "Remove condition",
+      "removeGroup": "Remove group and its conditions",
+      "expressionSyntaxHint": "Use variables with !, &&, ||, and parentheses.",
+      "fixExpression": "Fix the expression above to continue editing visually.",
+      "unknownCondition_one": "Unknown condition: {{identifiers}}",
+      "unknownCondition_other": "Unknown conditions: {{identifiers}}",
+      "unknownConditionBody": "LMCS Code does not recognize this condition yet. It can still be saved, but it may not match unless the runtime provides it.",
+      "conflict": "Conflicts with {{labels}}.",
+      "conflictMoreSuffix": ", and more",
+      "conflictBody": "The most recent matching binding wins when both conditions can apply.",
+      "saving": "Saving",
+      "pressShortcut": "Press shortcut",
+      "unassigned": "Unassigned",
+      "editShortcutAria": "Edit shortcut for {{label}}: {{shortcut}}",
+      "keybindingForAria": "Keybinding for {{label}}",
+      "editWhenAria": "Edit when clause for {{label}}",
+      "actionsAria": "Actions for {{label}}",
+      "resetToDefault": "Reset to default",
+      "sourceCustom": "Custom",
+      "sourceProject": "Project",
+      "emptySearch": "No keybindings match your search.",
+      "browserNotice": "Some shortcuts may be claimed by the browser before LMCS Code sees them. Use the desktop app for better keybinding support.",
+      "bindingCount_one": "{{count}} binding",
+      "bindingCount_other": "{{count}} bindings"
+    },
+    "connections": {
+      "serverLabel": "{{label}} server",
+      "serverFallback": "server",
+      "thisMachine": "This machine",
+      "primaryEnvironment": "Primary environment",
+      "version": "Version",
+      "loading": "Loading…",
+      "upToDate": "Up to date",
+      "update": "Update",
+      "retryUpdate": "Retry update",
+      "updateToVersion": "Update to {{version}}",
+      "moreActionsMachineAria": "More actions for this machine",
+      "adminAccessTitle": "Administrative access",
+      "adminAccessDescription": "Pairing links and client-session management require the access:write scope for this backend.",
+      "environmentsTitle": "Environments",
+      "restarting": "Restarting…",
+      "restartAndEnable": "Restart and enable",
+      "restartAndDisable": "Restart and disable",
+      "scopeCount_one": "{{count}} scope",
+      "scopeCount_other": "{{count}} scopes",
+      "scopesShowAria": "{{label}}: show {{count}}",
+      "grantedScopes": "Granted scopes",
+      "pairingLinkScopesLabel": "Pairing link scopes",
+      "clientScopesLabel": "Client scopes",
+      "scopes": {
+        "orchestrationRead": {
+          "title": "View environment",
+          "description": "Read threads, status, diffs, and configuration."
+        },
+        "orchestrationOperate": {
+          "title": "Operate tasks",
+          "description": "Start tasks and perform changes in the environment."
+        },
+        "terminalOperate": {
+          "title": "Use terminals",
+          "description": "Create terminals and send input to running shells."
+        },
+        "reviewWrite": {
+          "title": "Write reviews",
+          "description": "Create comments while reviewing changes."
+        },
+        "accessRead": {
+          "title": "View access",
+          "description": "Inspect pairing links and authorized clients."
+        },
+        "accessWrite": {
+          "title": "Manage access",
+          "description": "Issue and revoke credentials for other clients."
+        },
+        "relayRead": {
+          "title": "View relay",
+          "description": "Inspect managed relay connectivity."
+        },
+        "relayWrite": {
+          "title": "Manage relay",
+          "description": "Change managed tunnel connectivity."
+        }
+      },
+      "pairing": {
+        "authorizedClients": "Authorized clients",
+        "defaultLinkLabel": "Pairing link",
+        "linkCreatedAt": "Link created at {{date}}",
+        "createToShare": "Create a new link to share from this client.",
+        "copyTokenHint": "Copy the token and pair from another client using this backend's reachable host.",
+        "share": "Share",
+        "copyCode": "Copy code",
+        "showLink": "Show link",
+        "showCode": "Show code",
+        "hostedLinkTitle": "Hosted app pairing link",
+        "linkTitle": "Pairing link",
+        "codeTitle": "Pairing code",
+        "hostedLinkDescription": "Clipboard copy is unavailable here. Open or manually copy this hosted app link on the device you want to connect.",
+        "linkDescription": "Clipboard copy is unavailable here. Open or manually copy this full pairing URL on the device you want to connect.",
+        "codeDescription": "Clipboard copy is unavailable here. Manually copy this code into another client.",
+        "qrTitle": "Pairing link — scan to open on another device",
+        "revoking": "Revoking…",
+        "revoke": "Revoke",
+        "qrEndpointAria": "Endpoint the pairing QR code and URL use",
+        "reachVia": "Reach this machine via",
+        "copyLink": "Copy link",
+        "copyCodeOnly": "Copy code only",
+        "noQrLoopback": "No QR for this endpoint. Another device scanning a loopback link would dial itself; copy the URL for use on this machine instead.",
+        "connectedFor": "Connected for {{duration}}",
+        "connected": "Connected",
+        "lastConnectedAt": "Last connected at {{date}}",
+        "notConnectedYet": "Not connected yet.",
+        "thisDevice": "This device",
+        "revokeOthers": "Revoke others",
+        "createLink": "Create link",
+        "createTitle": "Create pairing link",
+        "createDescription": "Generate a one-time link that another device can use to pair with this backend as an authorized client.",
+        "clientLabelOptional": "Client label (optional)",
+        "clientLabelPlaceholder": "e.g. Living room iPad",
+        "permissions": "Permissions",
+        "permissionsHint": "Limit what the paired client can do.",
+        "readOnly": "Read only",
+        "standard": "Standard",
+        "selectOnePermission": "Select at least one permission.",
+        "adminScopeWarning": "This client can create or revoke access for other devices.",
+        "creating": "Creating…",
+        "noClients": "No pairing links or client sessions.",
+        "clientCount_one": "{{count}} client",
+        "clientCount_other": "{{count}} clients",
+        "linkCount_one": "{{count}} pairing link",
+        "linkCount_other": "{{count}} pairing links"
+      },
+      "endpoints": {
+        "setupRequired": "Setup required",
+        "defaultBadge": "Default",
+        "restarting": "Restarting…",
+        "setup": "Setup",
+        "disable": "Disable",
+        "setAsDefault": "Set as default",
+        "hide": "Hide",
+        "reachableAt": "Reachable at",
+        "shareHintHosted": "Opens the hosted app, no install needed",
+        "shareHintLan": "Devices on the same network",
+        "shareHintPrivateNetwork": "Devices on your private network",
+        "shareHintPublic": "Reachable from anywhere",
+        "shareHintLoopback": "Clients on this machine"
+      },
+      "environments": {
+        "statusOff": "Off",
+        "statusConnected": "Connected",
+        "statusConnecting": "Connecting",
+        "statusReconnecting": "Reconnecting",
+        "statusReconnectingError": "Reconnecting: {{error}}",
+        "statusUnsupported": "Client not supported",
+        "statusError": "Connection failed",
+        "statusErrorDetail": "Connection failed: {{error}}",
+        "statusOffline": "Offline",
+        "statusAvailable": "Not connected",
+        "statusRestarting": "Restarting",
+        "switchedOff": "Switched off",
+        "updateAvailable": "Update available: {{serverVersion}} → {{clientVersion}}",
+        "switchOn": "Switch on",
+        "switchOff": "Switch off",
+        "switchOnAria": "Switch on {{label}}",
+        "switchOffAria": "Switch off {{label}}",
+        "moreActionsAria": "More actions for {{label}}",
+        "copyTraceId": "Copy trace ID",
+        "removing": "Removing…",
+        "removeFromDevice": "Remove from this device…",
+        "noRemoteTitle": "No saved remote environments",
+        "noRemoteDescriptionCloud": "Click “Add environment” to pair another environment, or connect one from LMCS Connect.",
+        "noRemoteDescription": "Click “Add environment” to pair another environment.",
+        "addEnvironment": "Add environment",
+        "adding": "Adding…",
+        "addDialogTitle": "Add Environment",
+        "addDialogDescription": "Pair another environment to this client.",
+        "modeRemoteTitle": "Remote link",
+        "modeRemoteDescription": "Enter a backend host and pairing code.",
+        "modeSshDescription": "Use local SSH config, agent, and tunnels for the backend.",
+        "host": "Host",
+        "pairingCode": "Pairing code",
+        "pastePairingUrlHint": "Paste a full pairing URL here to fill both fields automatically.",
+        "sshHostLabel": "SSH host or alias",
+        "sshHostPlaceholder": "Search hosts or type devbox",
+        "loadingHosts": "Loading hosts…",
+        "noHostsMatch": "No hosts match \"{{query}}\".",
+        "username": "Username",
+        "port": "Port",
+        "sshHostRequired": "SSH host or alias is required.",
+        "sshPortRange": "SSH port must be between 1 and 65535.",
+        "sshConnectFailed": "Failed to connect SSH host.",
+        "enterHost": "Enter a backend host.",
+        "enterPairingCode": "Enter a pairing code."
+      },
+      "network": {
+        "enableAria": "Enable network access",
+        "limitedToMachine": "Limited to this machine.",
+        "reachableAtUrl": "Reachable at {{url}}",
+        "exposedWithHost": "Exposed on all interfaces. Pairing links use {{host}}.",
+        "exposedAll": "Exposed on all interfaces.",
+        "managedDescription": "Remote access is already configured. Change network exposure where the server starts.",
+        "localDescription": "Only this machine can connect. Restart with a non-loopback host for remote pairing.",
+        "managedTooltip": "Network exposure changes restart the backend and must be controlled where the server process is launched.",
+        "enableTitle": "Enable network access?",
+        "disableTitle": "Disable network access?",
+        "enableDescription": "Let your other devices connect to LMCS Code over the network. Pair devices to give them access. LMCS Code will restart.",
+        "disableDescription": "Devices connected over your local network will disconnect. Existing tunnels, such as LMCS Connect or Tailscale HTTPS, keep working. LMCS Code will restart."
+      },
+      "wsl": {
+        "loadFailed": "Couldn't load the WSL backend state.",
+        "retrying": "Retrying…",
+        "retry": "Retry",
+        "unavailableDescription": "WSL is unavailable, so Windows is running instead. Turn WSL off to clear this preference.",
+        "switchToWindows": "Switch to Windows",
+        "off": "Off",
+        "defaultDistro": "Default distro",
+        "defaultSuffix": " (default)",
+        "description": "Run the selected WSL distro alongside Windows. Projects remain on their current filesystem.",
+        "preflightError": "WSL backend couldn't start: {{error}}",
+        "selectAria": "WSL backend",
+        "onlyTitle": "WSL only",
+        "onlyDescription": "Run only the WSL backend. LMCS Code restarts when this changes.",
+        "onlyAria": "Run WSL only",
+        "disableWindowsTitle": "Turn off WSL and switch back to Windows?",
+        "disableTitle": "Disable WSL backend?",
+        "distroTitle": "Switch WSL distro?",
+        "enableTitle": "Start the WSL backend",
+        "onlyEnableTitle": "Run only the WSL backend?",
+        "onlyDisableTitle": "Re-enable the Windows backend?",
+        "disableWindowsDescription": "LMCS Code will restart on the Windows backend. Threads and projects opened against WSL stay safe inside the distro and become available again when you re-enable WSL.",
+        "disableDescription": "The WSL backend will stop. Threads and projects opened against WSL stay safe inside the distro, but they'll be unavailable in LMCS Code until you re-enable WSL.",
+        "distroDescription": "LMCS Code will restart the WSL backend on the new distro. Sessions still running on the current distro will be interrupted.",
+        "enableDescription": "Run the WSL backend alongside the Windows one, or stop the Windows backend and use only WSL? You can change this later from Settings.",
+        "onlyEnableDescription": "LMCS Code will restart and start only the WSL backend. Your Windows-side projects won't be accessible until you turn this off again.",
+        "onlyDisableDescription": "LMCS Code will restart and bring the Windows backend back up alongside WSL.",
+        "applying": "Applying…",
+        "useOnlyWsl": "Use only WSL",
+        "runBoth": "Run both backends",
+        "disableAction": "Disable WSL",
+        "switchDistro": "Switch distro"
+      },
+      "tailscale": {
+        "enableAria": "Enable Tailscale HTTPS",
+        "setupDescription": "Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL.",
+        "startDescription": "Start Tailscale to set up HTTPS access through MagicDNS.",
+        "disableTitle": "Disable Tailscale HTTPS?",
+        "disableDescription": "LMCS Code will restart the local backend without Tailscale Serve.",
+        "setupTitle": "Set up Tailscale HTTPS?",
+        "setupDialogDescription": "LMCS Code will restart the local backend with Tailscale Serve enabled and ask Tailscale to proxy HTTPS traffic to this backend.",
+        "httpsPort": "HTTPS port",
+        "portInvalid": "Enter a port from 1 to 65535.",
+        "httpsEndpoint": "HTTPS endpoint",
+        "pendingEndpoint": "Pending MagicDNS endpoint",
+        "enable": "Enable"
+      },
+      "cloud": {
+        "enableAria": "Enable LMCS Connect",
+        "signInToManage": "Sign in to LMCS Connect to manage this environment.",
+        "noRelayPermission": "Your session does not have permission to manage LMCS Connect access.",
+        "descriptionActive": "This environment is available to your other devices through LMCS Connect.",
+        "description": "Make this environment available to your other devices through LMCS Connect.",
+        "publishDescription": "Send activity to mobile notifications and Live Activities without LMCS Connect.",
+        "publishAria": "Publish agent activity to mobile clients"
       }
     }
   }

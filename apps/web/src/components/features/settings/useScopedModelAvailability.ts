@@ -1,5 +1,7 @@
 import type { ProviderInstanceId, UnifiedSettings } from "@lmcstools/core";
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import "../../../i18n";
 
 import { getCustomModelOptionsByInstance } from "../../../modelSelection";
 import {
@@ -20,6 +22,7 @@ export function useScopedModelDisabledReason(
   settings: UnifiedSettings,
   entries: readonly ProviderInstanceEntry[],
 ) {
+  const { t } = useTranslation();
   const { targets } = useSettingsScope();
   const { environments } = useEnvironments();
   return useCallback(
@@ -45,11 +48,13 @@ export function useScopedModelDisabledReason(
           entry.driverKind !== sourceEntry?.driverKind ||
           !options?.some((option) => option.slug === model && !option.isUnavailable)
         ) {
-          return `This model is unavailable on ${environment?.label ?? "a selected environment"}. Select that environment to choose its model separately.`;
+          return t("settings.scopedModel.unavailable", {
+            label: environment?.label ?? t("settings.scopedModel.selectedEnvironmentFallback"),
+          });
         }
       }
       return null;
     },
-    [entries, environments, settings, targets],
+    [entries, environments, settings, targets, t],
   );
 }

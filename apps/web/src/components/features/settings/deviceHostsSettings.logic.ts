@@ -1,5 +1,7 @@
 import type { SshDeviceHostConfig } from "@lmcstools/core";
 
+import { translateDynamic } from "../../../i18n";
+
 /** Apply one host change without replacing another environment's host list. */
 export function updateDeviceHosts(
   hosts: ReadonlyArray<SshDeviceHostConfig>,
@@ -15,7 +17,10 @@ export function updateDeviceHosts(
     const matches = hosts.filter((candidate) => sameDestination(candidate, destination));
     if (matches.length > 1) {
       throw new Error(
-        "Multiple hosts match this SSH destination. Select the environment to edit its hosts.",
+        translateDynamic(
+          "settings.integrations.deviceHosts.ambiguousDestination",
+          "Multiple hosts match this SSH destination. Select the environment to edit its hosts.",
+        ),
       );
     }
     return matches[0];

@@ -6,7 +6,9 @@ import {
   type GitHubRoutingPermission,
 } from "@lmcstools/client/connection";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
+import { translateDynamic } from "../../../i18n";
 import { environmentCatalog } from "~/connection/catalog";
 import type { EnvironmentPresentation } from "~/state/environments";
 import { useAtomCommand } from "~/state/use-atom-command";
@@ -16,26 +18,45 @@ import { EnvironmentRow, environmentTransportLabel } from "./EnvironmentRow";
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { searchableSetting } from "./settingsSearch";
 
-const options: ReadonlyArray<{ value: GitHubRoutingPermission; label: string }> = [
-  { value: "off", label: "Off" },
-  { value: "read", label: "Read PRs" },
-  { value: "read-write", label: "Read and act" },
-];
+const options = [
+  { value: "off", key: "off", fallback: "Off" },
+  { value: "read", key: "read", fallback: "Read PRs" },
+  { value: "read-write", key: "readWrite", fallback: "Read and act" },
+] as const satisfies ReadonlyArray<{
+  value: GitHubRoutingPermission;
+  key: string;
+  fallback: string;
+}>;
 
-const summaryLabels = { "read-write": "read and act", read: "read PRs" } as const;
+function optionLabel(option: (typeof options)[number]): string {
+  return translateDynamic(`settings.githubRouting.option.${option.key}`, option.fallback);
+}
+
+const summaryLabels = {
+  "read-write": { key: "readWrite", fallback: "read and act" },
+  read: { key: "read", fallback: "read PRs" },
+} as const;
+
+function summaryLabel(permission: keyof typeof summaryLabels): string {
+  const entry = summaryLabels[permission];
+  return translateDynamic(`settings.githubRouting.summary.${entry.key}`, entry.fallback);
+}
 
 /**
  * Closed-header summary: the machines that share, grouped by permission.
  * Null when nothing is shared.
  */
 export function summarizeGitHubRouting(
-  entries: ReadonlyArray<{ readonly label: string; readonly permission: GitHubRoutingPermission }>,
+  entries: ReadonlyArray<{
+    readonly label: string;
+    readonly permission: GitHubRoutingPermission;
+  }>,
 ): string | null {
   const groups = (["read-write", "read"] as const).flatMap((permission) => {
     const labels = entries.filter((entry) => entry.permission === permission);
     return labels.length === 0
       ? []
-      : [`${labels.map((entry) => entry.label).join(", ")} ${summaryLabels[permission]}`];
+      : [`${labels.map((entry) => entry.label).join(", ")} ${summaryLabel(permission)}`];
   });
   return groups.length === 0 ? null : groups.join(" · ");
 }
@@ -51,6 +72,7 @@ export function GitHubRoutingSettings({
 }: {
   readonly environments: ReadonlyArray<EnvironmentPresentation>;
 }) {
+  const { t } = useTranslation();
   const permissions = useAtomValue(environmentCatalog.githubRoutingPermissionsValueAtom);
   const catalog = useAtomValue(environmentCatalog.catalogValueAtom);
   const update = useAtomCommand(environmentCatalog.setGitHubRoutingPermission);
@@ -69,13 +91,11 @@ export function GitHubRoutingSettings({
             label: environment.label,
             permission: gitHubRoutingPermissionFor(environment.entry, permissions),
           })),
-        ) ?? "Off"
+        ) ?? t("settings.githubRouting.off")
       }
     >
       <p className="px-3 py-2.5 text-xs text-muted-foreground sm:px-4">
-        Machines you trust here can read PR data through each other's GitHub access. Enable both
-        machines. Read and act may use broader permissions than the machine that owns them. This
-        applies only to this device.
+        {t("settings.githubRouting.description")}
       </p>
       {environments.map((environment) => (
         <EnvironmentRow
@@ -85,7 +105,6 @@ export function GitHubRoutingSettings({
           subtitle={environmentTransportLabel(environment)}
         >
           <Select
-            items={options}
             value={gitHubRoutingPermissionFor(environment.entry, permissions)}
             disabled={
               !catalog.isReady || saving || gitHubRoutingConnectionKey(environment.entry) === null
@@ -93,29 +112,39 @@ export function GitHubRoutingSettings({
             onValueChange={(permission) => {
               if (permission === null) return;
               setSaving(true);
-              void update({ environmentId: environment.environmentId, permission }).then(
-                (result) => {
-                  setSaving(false);
-                  if (result._tag === "Failure")
-                    toastManager.add({
-                      type: "error",
-                      title: "Could not save GitHub routing permission",
-                    });
-                },
-              );
+              void update({
+                environmentId: environment.environmentId,
+                permission,
+              }).then((result) => {
+                setSaving(false);
+                if (result._tag === "Failure")
+                  toastManager.add({
+                    type: "error",
+                    title: "Could not save GitHub routing permission",
+                  });
+              });
             }}
           >
             <SelectTrigger
               size="xs"
               className="w-32"
-              aria-label={`${environment.label} GitHub routing`}
+              aria-label={t("settings.githubRouting.routingAria", {
+                label: environment.label,
+              })}
             >
-              <SelectValue />
+              <SelectValue>
+                {optionLabel(
+                  options.find(
+                    (option) =>
+                      option.value === gitHubRoutingPermissionFor(environment.entry, permissions),
+                  ) ?? options[0],
+                )}
+              </SelectValue>
             </SelectTrigger>
             <SelectPopup align="end" alignItemWithTrigger={false}>
-              {options.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
+              {options.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {optionLabel(option)}
                 </SelectItem>
               ))}
             </SelectPopup>

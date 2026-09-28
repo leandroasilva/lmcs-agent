@@ -78,11 +78,13 @@ export function whenAstToExpression(node: KeybindingWhenNode | undefined): strin
 }
 
 export function whenNodeRemoveLabel(node: KeybindingWhenNode, depth: number): string {
-  if (depth === 0) return "Clear all conditions";
-  if (node.type === "identifier" || (node.type === "not" && node.node.type === "identifier")) {
-    return "Remove condition";
+  if (depth === 0) {
+    return translateDynamic("settings.keybindings.removeAll", "Clear all conditions");
   }
-  return "Remove group and its conditions";
+  if (node.type === "identifier" || (node.type === "not" && node.node.type === "identifier")) {
+    return translateDynamic("settings.keybindings.removeCondition", "Remove condition");
+  }
+  return translateDynamic("settings.keybindings.removeGroup", "Remove group and its conditions");
 }
 
 function wrapWhenExpression(node: KeybindingWhenNode): string {
@@ -100,7 +102,10 @@ export function parseWhenExpressionDraft(
   if (!ast) {
     return {
       ok: false,
-      message: "Use variables with !, &&, ||, and parentheses.",
+      message: translateDynamic(
+        "settings.keybindings.expressionSyntaxHint",
+        "Use variables with !, &&, ||, and parentheses.",
+      ),
     };
   }
 
@@ -169,7 +174,7 @@ export function keybindingConflictLabels(
       candidate.key === input.key &&
       conflictsWithWhen(candidate.when, input.when)
     ) {
-      conflicts.push(commandLabel(candidate.command));
+      conflicts.push(translatedCommandLabel(candidate.command));
     }
   }
   return [...new Set(conflicts)].toSorted();
@@ -224,6 +229,7 @@ export function buildKeybindingRows(
     return (
       row.command.toLowerCase().includes(normalizedQuery) ||
       commandLabel(row.command).toLowerCase().includes(normalizedQuery) ||
+      translatedCommandLabel(row.command).toLowerCase().includes(normalizedQuery) ||
       row.key.toLowerCase().includes(normalizedQuery) ||
       row.when.toLowerCase().includes(normalizedQuery) ||
       row.source.toLowerCase().includes(normalizedQuery)
@@ -285,7 +291,7 @@ export function buildKeybindingCommandOptions(
     commands.add(binding.command);
   }
   return [...commands].toSorted((left, right) =>
-    commandLabel(left).localeCompare(commandLabel(right)),
+    translatedCommandLabel(left).localeCompare(translatedCommandLabel(right)),
   );
 }
 

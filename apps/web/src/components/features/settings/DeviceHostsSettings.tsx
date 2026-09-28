@@ -5,6 +5,7 @@ import { Spinner } from "../../ui/spinner";
 import type { EnvironmentId, SshDeviceHostConfig } from "@lmcstools/core";
 import { randomUUID } from "../../../lib/utils";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { deviceEnvironment, useDeviceState } from "../../../state/device";
 import { serverEnvironment } from "../../../state/server";
 import { useAtomCommand } from "../../../state/use-atom-command";
@@ -21,9 +22,12 @@ import { useHostConnectionChecks } from "./useHostConnectionChecks";
 import { deviceHostConnectionKey } from "./deviceHostConnectionChecks";
 
 export function DeviceHostsSettings(props: { environmentId: EnvironmentId | null }) {
+  const { t } = useTranslation();
   const { scope, environments, connectedEnvironments } = useSettingsScope();
   const projectScope = scope.kind === "project" || scope.kind === "checkout";
-  const update = useAtomCommand(serverEnvironment.updateSettings, { reportFailure: false });
+  const update = useAtomCommand(serverEnvironment.updateSettings, {
+    reportFailure: false,
+  });
   const [editing, setEditing] = useState<SshDeviceHostConfig | null>(null);
   const [originalHost, setOriginalHost] = useState<SshDeviceHostConfig | null>(null);
   const [busy, setBusy] = useState(false);
@@ -77,10 +81,10 @@ export function DeviceHostsSettings(props: { environmentId: EnvironmentId | null
   return (
     <SettingsRow
       id="device-hosts"
-      title="Device hosts"
+      title={t("settings.integrations.deviceHosts.title")}
       serverScoped
       settingKeys={["deviceHosts"]}
-      description="Add remote machines with simulator or emulator runtimes installed, and the selected environments will connect over SSH and set up device tools automatically."
+      description={t("settings.integrations.deviceHosts.description")}
       control={
         <Button
           size="sm"
@@ -91,14 +95,14 @@ export function DeviceHostsSettings(props: { environmentId: EnvironmentId | null
             setEditing({ id: randomUUID(), label: "", target: "" });
           }}
         >
-          <PlusIcon className="size-3.5" /> Add host
+          <PlusIcon className="size-3.5" /> {t("settings.integrations.deviceHosts.addHost")}
         </Button>
       }
     >
       <div className="pt-3 pb-2">
         {!props.environmentId ? (
           <p className="text-sm text-muted-foreground">
-            Connect a selected environment to manage device hosts.
+            {t("settings.integrations.deviceHosts.connectHint")}
           </p>
         ) : (
           <>
@@ -177,13 +181,16 @@ function DeviceHostList({
   checks: ReturnType<typeof useHostConnectionChecks>["checks"];
   testConnection: ReturnType<typeof useHostConnectionChecks>["testConnection"];
 }) {
+  const { t } = useTranslation();
   const { state } = useDeviceState(environmentId);
   const retry = useAtomCommand(deviceEnvironment.list);
   const [retrying, setRetrying] = useState<string | null>(null);
   return (
     <>
       {hosts.length === 0 ? (
-        <p className="py-2 text-sm text-muted-foreground">No device hosts.</p>
+        <p className="py-2 text-sm text-muted-foreground">
+          {t("settings.integrations.deviceHosts.empty")}
+        </p>
       ) : null}
       {hosts.map((host) => {
         const status = state.hostStatuses[host.id];
@@ -194,11 +201,11 @@ function DeviceHostList({
           [];
         const progress =
           check?.status === "pending"
-            ? "Checking connection…"
+            ? t("settings.integrations.deviceHosts.checkingConnection")
             : status?.status === "installing"
-              ? "Installing device support…"
+              ? t("settings.integrations.deviceHosts.installingSupport")
               : status?.status === "starting"
-                ? "Connecting…"
+                ? t("settings.integrations.deviceHosts.connecting")
                 : null;
         const error =
           check?.status === "failed"
@@ -223,7 +230,9 @@ function DeviceHostList({
                             tabIndex={0}
                             role="img"
                             aria-label={
-                              platform.platform === "ios" ? "iOS available" : "Android available"
+                              platform.platform === "ios"
+                                ? t("settings.integrations.deviceHosts.iosAvailable")
+                                : t("settings.integrations.deviceHosts.androidAvailable")
                             }
                             className="shrink-0 text-muted-foreground"
                           />
@@ -236,7 +245,9 @@ function DeviceHostList({
                         )}
                       </TooltipTrigger>
                       <TooltipPopup>
-                        {platform.platform === "ios" ? "iOS available" : "Android available"}
+                        {platform.platform === "ios"
+                          ? t("settings.integrations.deviceHosts.iosAvailable")
+                          : t("settings.integrations.deviceHosts.androidAvailable")}
                       </TooltipPopup>
                     </Tooltip>
                   ))}
@@ -251,12 +262,14 @@ function DeviceHostList({
                 }
               />
               {check?.status === "local" ? (
-                <p className="mt-1 text-xs text-muted-foreground">Already available locally</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("settings.integrations.deviceHosts.localAvailable")}
+                </p>
               ) : null}
               {error ? (
                 <div className="mt-1" role="status">
                   <details className="text-xs text-destructive">
-                    <summary>Connection failed</summary>
+                    <summary>{t("settings.integrations.deviceHosts.connectionFailed")}</summary>
                     <p className="mt-1 whitespace-pre-wrap break-words">{error}</p>
                   </details>
                 </div>
@@ -278,7 +291,9 @@ function DeviceHostList({
                     size="icon-sm"
                     variant="ghost-muted"
                     disabled={busy}
-                    aria-label={host.label + " options"}
+                    aria-label={t("settings.integrations.deviceHosts.optionsAria", {
+                      label: host.label,
+                    })}
                   />
                 }
               >
@@ -290,10 +305,10 @@ function DeviceHostList({
                     onEdit(host);
                   }}
                 >
-                  Edit
+                  {t("settings.integrations.deviceHosts.edit")}
                 </MenuItem>
                 <MenuItem variant="destructive" onClick={() => onRemove(host)}>
-                  Remove
+                  {t("settings.integrations.deviceHosts.remove")}
                 </MenuItem>
               </MenuPopup>
             </Menu>
@@ -306,12 +321,15 @@ function DeviceHostList({
                 disabled={busy || retrying !== null}
                 onClick={() => {
                   setRetrying(host.id);
-                  void retry({ environmentId, input: { retryHostId: host.id } }).finally(() =>
-                    setRetrying(null),
-                  );
+                  void retry({
+                    environmentId,
+                    input: { retryHostId: host.id },
+                  }).finally(() => setRetrying(null));
                 }}
               >
-                {retrying === host.id ? "Retrying…" : "Retry"}
+                {retrying === host.id
+                  ? t("settings.integrations.deviceHosts.retrying")
+                  : t("settings.integrations.deviceHosts.retry")}
               </Button>
             ) : (
               <Button
@@ -320,7 +338,7 @@ function DeviceHostList({
                 disabled={busy || progress !== null}
                 onClick={() => void testConnection(host)}
               >
-                Test connection
+                {t("settings.integrations.deviceHosts.testConnection")}
               </Button>
             )}
           </div>

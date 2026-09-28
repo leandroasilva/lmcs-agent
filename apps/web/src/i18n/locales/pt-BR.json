@@ -2,7 +2,10 @@
   "common": {
     "cancel": "Cancelar",
     "mixed": "Misto",
+    "remove": "Remover",
+    "done": "Concluído",
     "errorOccurred": "Ocorreu um erro.",
+    "close": "Fechar",
     "tryAgain": "Tente novamente.",
     "save": "Salvar",
     "colorPicker": {
@@ -30,6 +33,161 @@
       "requiresEnvironmentConnect": "{{title}} requer um ambiente compatível. Conecte ou atualize um ambiente para continuar.",
       "notAvailableForTarget": "{{title}} não está disponível para o destino selecionado. Escolha o escopo ao qual ele pertence para continuar.",
       "reconnectToChange": "Reconecte {{label}} para alterar suas configurações."
+    },
+    "search": {
+      "placeholder": "Buscar",
+      "aria": "Buscar configurações",
+      "clearAria": "Limpar busca de configurações",
+      "empty": "Nenhuma configuração encontrada"
+    },
+    "scope": {
+      "applyingFor": "Aplicando configurações de",
+      "on": "em",
+      "across": "em",
+      "environmentScopeAria": "Escopo do ambiente",
+      "projectScopeAria": "Escopo do projeto",
+      "unavailableEnvironment": "Ambiente indisponível",
+      "allEnvironments": "Todos os ambientes",
+      "offline": "Offline",
+      "unavailableProject": "Projeto indisponível",
+      "allProjects": "Todos os projetos",
+      "environmentFallback": "Ambiente",
+      "openAllEnvironments": "Abrir todos os ambientes",
+      "unavailableSelection": "Seleção indisponível",
+      "allCheckouts": "Todos os checkouts",
+      "reasons": {
+        "projectRequired": "Selecione um projeto para escolher um de seus checkouts.",
+        "environmentMissing": "Este ambiente não está mais disponível.",
+        "projectMissing": "Este projeto não está mais disponível.",
+        "checkoutMissing": "Este checkout não está mais disponível no projeto e ambiente selecionados.",
+        "noCheckoutOnEnvironment": "Este projeto não tem checkout neste ambiente.",
+        "checkoutEnvironmentMissing": "O ambiente deste checkout não está mais disponível."
+      }
+    },
+    "scoped": {
+      "reasons": {
+        "environmentWide": "Esta configuração abrange o ambiente inteiro e não pode ser substituída por um projeto.",
+        "connectToSaveProjectOverride": "Conecte os checkouts selecionados, ou atualize seus ambientes, para salvar uma substituição de projeto.",
+        "connectToSave": "Conecte {{target}} para salvar esta configuração.",
+        "anEnvironment": "um ambiente",
+        "connectToResetOverride": "Conecte os checkouts selecionados, ou atualize seus ambientes, para redefinir esta substituição.",
+        "connectToResetOverrides": "Conecte os ambientes para redefinir estas substituições."
+      }
+    },
+    "scopedModel": {
+      "unavailable": "Este modelo está indisponível em {{label}}. Selecione esse ambiente para escolher seu modelo separadamente.",
+      "selectedEnvironmentFallback": "um ambiente selecionado"
+    },
+    "inheritance": {
+      "writingStyle": {
+        "repoConventions": "Convenções do repositório",
+        "conventionalCommits": "Conventional Commits",
+        "custom": "Instruções personalizadas"
+      },
+      "value": {
+        "lastSelected": "Última seleção",
+        "never": "Nunca",
+        "automatic": "Automático",
+        "textGenerationModel": "Modelo de geração de texto",
+        "inherit": "Herdar",
+        "notSet": "Não definido",
+        "on": "Ativado",
+        "off": "Desativado",
+        "empty": "Vazio",
+        "custom": "Personalizado",
+        "dayCount_one": "{{count}} dia",
+        "dayCount_other": "{{count}} dias",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} itens"
+      },
+      "layer": {
+        "project": "Projeto",
+        "environment": "Ambiente",
+        "default": "Padrão"
+      },
+      "inherits": "Herda",
+      "overrideCount_one": "{{count}} substituição de projeto",
+      "overrideCount_other": "{{count}} substituições de projeto",
+      "showSourceAria": "{{summary}}. Mostrar de onde este valor vem",
+      "overriddenBy": "Substituído por",
+      "resetIt": "Redefinir",
+      "resetAll": "Redefinir todos"
+    },
+    "loadBalancing": {
+      "off": "Desativado",
+      "enableAria": "Balancear carga automaticamente",
+      "description": "Novas threads em projetos compartilhados começam na máquina com mais CPU e memória livres, ponderadas pela preferência de cada máquina.",
+      "preferenceAria": "Preferência de carga de {{label}}",
+      "preference": {
+        "prefer": "Preferir",
+        "normal": "Normal",
+        "lessOften": "Com menos frequência",
+        "manualOnly": "Somente manual"
+      }
+    },
+    "githubRouting": {
+      "off": "Desativado",
+      "description": "Máquinas em que você confia aqui podem ler dados de PR pelo acesso ao GitHub umas das outras. Ative ambas as máquinas. Ler e agir pode usar permissões mais amplas do que a máquina proprietária. Isso se aplica apenas a este dispositivo.",
+      "routingAria": "Roteamento GitHub de {{label}}",
+      "option": {
+        "off": "Desativado",
+        "read": "Ler PRs",
+        "readWrite": "Ler e agir"
+      },
+      "summary": {
+        "read": "ler PRs",
+        "readWrite": "ler e agir"
+      }
+    },
+    "localEnvironment": {
+      "errorFallback": "Não foi possível alterar esta configuração.",
+      "descriptionOn": "Execute agentes neste computador. Desative para usar o LMCS Code apenas com ambientes remotos.",
+      "descriptionOff": "Desativado. Agentes só executam em ambientes remotos.",
+      "aria": "Ambiente local",
+      "confirmOffTitle": "Desativar ambiente local?",
+      "confirmOnTitle": "Ativar ambiente local?",
+      "confirmOffDescription": "O LMCS Code reiniciará sem executar um servidor neste computador. Agentes e terminais em execução aqui serão interrompidos e outros dispositivos não poderão mais se conectar a este computador. Seus projetos, histórico e ambientes remotos não são afetados.",
+      "confirmOnDescription": "O LMCS Code reiniciará e voltará a executar um servidor neste computador.",
+      "restarting": "Reiniciando…",
+      "restartAndTurnOff": "Reiniciar e desativar",
+      "restartAndTurnOn": "Reiniciar e ativar"
+    },
+    "fontPicker": {
+      "default": "padrão",
+      "searchPlaceholder": "Buscar fontes…",
+      "empty": "Nenhuma fonte encontrada."
+    },
+    "environmentIcon": {
+      "submenu": "Ícone",
+      "detected": "detectado",
+      "default": "padrão",
+      "lock": {
+        "connect": "Conecte-se a este ambiente para alterar seu ícone.",
+        "tooOld": "O servidor deste ambiente é antigo demais para manter um ícone. Atualize-o para escolher um.",
+        "accessDenied": "Sua sessão neste ambiente não pode alterar suas configurações."
+      },
+      "kind": {
+        "server": "Servidor",
+        "cloud": "VM em nuvem",
+        "linux": "Linux/WSL",
+        "desktop": "Desktop",
+        "laptop": "Notebook",
+        "macMini": "Mini PC",
+        "macStudio": "Estação de trabalho"
+      }
+    },
+    "serverUpdate": {
+      "update": "Atualizar",
+      "updateAll": "Atualizar tudo",
+      "copyCommand": "Copiar comando de atualização",
+      "actionForAria": "{{action}} em {{label}}",
+      "desktopRequired": "Atualize o app desktop nessa máquina para atualizar este servidor.",
+      "confirmDesktopSingle": "Atualizar o app LMCS Code desktop que executa {{label}}? Ele fechará e reiniciará nessa máquina.",
+      "confirmDesktopBatch": "Atualizar os apps LMCS Code desktop em {{labels}}? Eles fecharão e reiniciarão nessas máquinas.",
+      "stage": {
+        "downloading": "Baixando…",
+        "restarting": "Reiniciando…"
+      }
     },
     "sections": {
       "projects": "Projeto",
@@ -403,7 +561,8 @@
       "panelAnimations": {
         "description": "Define a velocidade de abertura e fechamento dos painéis.",
         "ariaLabel": "Duração da animação dos painéis",
-        "resetLabel": "animações dos painéis"
+        "resetLabel": "animações dos painéis",
+        "previewAria": "Repetir a prévia da animação dos painéis"
       },
       "typography": {
         "advanced": "Avançado",
@@ -426,7 +585,8 @@
         "wordWrapDescription": "Quebra linhas longas em blocos de código, tabelas, diffs e previews de arquivos por padrão.",
         "wordWrapAria": "Quebrar código, tabelas, diffs e previews de arquivos por padrão",
         "wordWrapResetLabel": "quebra de linha",
-        "familyAria": "Família de {{title}}"
+        "familyAria": "Família de {{title}}",
+        "terminalPreviewAria": "Prévia da fonte do terminal"
       }
     },
     "notifications": {
@@ -443,7 +603,109 @@
       }
     },
     "projects": {
-      "chooseProject": "Escolha um projeto para gerenciar nome, ícone, checkouts e ações."
+      "chooseProject": "Escolha um projeto para gerenciar nome, ícone, checkouts e ações.",
+      "actions": {
+        "sectionTitle": "Ações",
+        "rowTitle": "Ações",
+        "rowDescription": "Comandos executados no checkout deste projeto ou em seu worktree, com atalhos opcionais.",
+        "importScripts": "Importar scripts",
+        "importGroupLabel": "Importar de t3.json",
+        "importHint": "Adicione ações declaradas por este checkout sem editá-las antes.",
+        "importFailed": "Falha ao importar ação.",
+        "addAction": "Adicionar ação",
+        "mixedTitle": "Ações diferentes entre ambientes",
+        "mixedDescription": "Escolha um ambiente para editar sua lista. Adicionar uma ação aqui a adiciona em todos os ambientes selecionados.",
+        "invalidFileTitle": "t3.json é inválido",
+        "invalidFileDescription": "Há um t3.json neste checkout, mas ele falha ao ser analisado, então toda ação e ícone que ele declara é ignorado. Verifique a sintaxe do JSON e os valores de ícone.",
+        "empty": "Nenhuma ação configurada.",
+        "setupBadge": "setup",
+        "previewBadge": "preview · somente desktop",
+        "editAria": "Editar {{name}}"
+      },
+      "faviconPicker": {
+        "aria": "Escolher ícone do projeto",
+        "selectIcon": "Selecionar ícone",
+        "openInManager": "Abrir no {{manager}}",
+        "searchPlaceholder": "Buscar arquivos de imagem…",
+        "searchingFiles": "Buscando arquivos do projeto…",
+        "indexingFiles": "Indexando arquivos do projeto…",
+        "noMatchingImages": "Nenhum arquivo de imagem correspondente.",
+        "noImages": "Nenhum arquivo de imagem encontrado."
+      },
+      "iconPicker": {
+        "title": "Escolher ícone do projeto",
+        "description": "Escolha um ícone, emoji ou monograma.",
+        "typeAria": "Tipo de ícone",
+        "icons": "Ícones",
+        "emoji": "Emoji",
+        "monogram": "Monograma",
+        "colorLabel": "Cor",
+        "colorAria": "Cor do ícone",
+        "searchAria": "Buscar ícones Lucide",
+        "searchPlaceholder": "Buscar todos os ícones Lucide",
+        "empty": "Nenhum ícone encontrado.",
+        "lettersLabel": "Letras",
+        "monogramHint": "Uma ou duas letras ou números.",
+        "pasteEmojiLabel": "Ou cole qualquer emoji",
+        "customEmojiAria": "Emoji personalizado",
+        "pasteEmojiPlaceholder": "Cole um emoji",
+        "save": "Salvar ícone"
+      },
+      "defaults": {
+        "sectionNewThreads": "Novas threads",
+        "sectionBrowser": "Navegador",
+        "sectionRepositories": "Repositórios",
+        "unavailable": "Indisponível",
+        "model": {
+          "title": "Modelo",
+          "descriptionProject": "Modelo para novas threads neste projeto.",
+          "descriptionEnvironment": "Modelo padrão para novas threads. Projetos podem substituí-lo.",
+          "statusAutomatic": "Automático",
+          "noProviders": "Nenhum provedor disponível",
+          "resetLabel": "modelo padrão"
+        },
+        "workspace": {
+          "title": "Workspace",
+          "descriptionProject": "Onde novas threads neste projeto começam.",
+          "descriptionEnvironment": "Onde novas threads começam. Projetos e seus t3.json podem substituí-la.",
+          "aria": "Workspace padrão",
+          "resetLabel": "workspace padrão"
+        },
+        "permissions": {
+          "descriptionProject": "Permissões para novas threads neste projeto.",
+          "descriptionEnvironment": "Permissões padrão para novas threads. Projetos podem substituí-las.",
+          "aria": "Permissões padrão",
+          "resetLabel": "permissões padrão"
+        },
+        "submodules": {
+          "descriptionProject": "Como novos worktrees neste projeto populam submódulos git.",
+          "descriptionEnvironment": "Como novos worktrees populam submódulos git. Projetos e seus t3.json podem substituí-lo.",
+          "aria": "Submódulos do worktree",
+          "resetLabel": "submódulos do worktree"
+        },
+        "autoPull": {
+          "title": "Pull automático",
+          "descriptionProject": "Mantém a branch padrão deste projeto atualizada quando o checkout não tem alterações ou commits locais.",
+          "descriptionEnvironment": "Mantém a branch padrão atualizada quando o checkout não tem alterações ou commits locais. Projetos podem substituí-la.",
+          "aria": "Pull automático padrão",
+          "resetLabel": "pull automático padrão",
+          "resetTooltip": "Redefinir pull automático para desativado"
+        },
+        "mergeMethod": {
+          "descriptionProject": "Pull requests neste projeto começam com este método.",
+          "descriptionEnvironment": "Pull requests começam com este método. Última seleção reutiliza o que você escolheu mais recentemente neste dispositivo.",
+          "aria": "Método de merge padrão de pull requests",
+          "resetLabel": "método de merge padrão",
+          "resetTooltip": "Redefinir para última seleção"
+        },
+        "browserAccess": {
+          "title": "Acesso do agente ao navegador",
+          "descriptionProject": "Permite que agentes neste projeto usem o navegador compartilhado. Aplica-se quando a sessão do agente for iniciada novamente.",
+          "descriptionEnvironment": "Permite que agentes usem o navegador compartilhado. Projetos podem substituí-la.",
+          "aria": "Acesso do agente ao navegador",
+          "resetLabel": "acesso ao navegador padrão"
+        }
+      }
     },
     "licenses": {
       "sectionTitle": "Avisos de terceiros",
@@ -1021,6 +1283,191 @@
         "clear": "Limpar cor"
       }
     },
+    "integrations": {
+      "browserTitle": "Navegador",
+      "unavailableMessage": "Disponível apenas no app de desktop.",
+      "devicesTitle": "Dispositivos",
+      "viewport": {
+        "description": "Tamanho da aba para você e para agentes. Preencher ajusta ao painel; outros tamanhos mostram a barra de dispositivo.",
+        "resetLabel": "viewport padrão do navegador",
+        "aria": "Viewport padrão do navegador",
+        "fillPanel": "Preencher painel",
+        "responsive": "Responsivo",
+        "standardGroup": "Padrão",
+        "widthAria": "Largura padrão do viewport",
+        "heightAria": "Altura padrão do viewport",
+        "rotateAriaLandscape": "Girar para paisagem",
+        "rotateAriaPortrait": "Girar para retrato",
+        "rotateTooltip": "Girar"
+      },
+      "zoom": {
+        "description": "Zoom de página aplicado a novas abas do navegador.",
+        "resetLabel": "zoom padrão do navegador",
+        "aria": "Zoom padrão do navegador"
+      },
+      "appearance": {
+        "description": "O esquema de cores que as páginas devem preferir. Sistema segue a configuração do seu SO.",
+        "resetLabel": "aparência padrão do navegador",
+        "aria": "Aparência padrão do navegador",
+        "system": "Sistema",
+        "light": "Claro",
+        "dark": "Escuro"
+      },
+      "recording": {
+        "keysDescription": "Mostrar teclas pressionadas e atalhos em novas gravações. Campos de senha são excluídos.",
+        "keysAria": "Mostrar teclas pressionadas nas gravações",
+        "mouseDescription": "Destacar cliques do mouse e botões segurados em novas gravações.",
+        "mouseAria": "Mostrar cliques do mouse nas gravações",
+        "frameRateDescription": "Taxa máxima de gravação. 30 fps economiza CPU e armazenamento; 60 fps é mais suave.",
+        "frameRateResetLabel": "taxa de quadros da gravação do navegador",
+        "frameRateAria": "Taxa de quadros da gravação do navegador"
+      },
+      "linkTarget": {
+        "description": "Onde links do chat e do terminal abrem. Segure ⌘ ou Ctrl ao clicar em um link para abri-lo no seu navegador padrão de qualquer forma.",
+        "resetLabel": "destino de links",
+        "aria": "Abrir links em",
+        "system": "Seu navegador padrão",
+        "app": "LMCS Code"
+      },
+      "autoShowPreview": {
+        "description": "Mostrar o preview flutuante quando um agente abrir um navegador ou dispositivo, a menos que o agente diga o contrário.",
+        "resetLabel": "exibição automática do preview flutuante",
+        "aria": "Mostrar preview flutuante automaticamente"
+      },
+      "profiles": {
+        "description": "Perfis separam cookies e logins. Dados de incógnito são apagados quando o app fecha.",
+        "addProfile": "Adicionar perfil",
+        "blankProfile": "Perfil em branco",
+        "limitReached": "Você atingiu o limite de perfis",
+        "importFrom": "Importar de",
+        "lookingForBrowsers": "Procurando navegadores…",
+        "noBrowsers": "Nenhum navegador compatível encontrado",
+        "connectToImport": "Conecte-se a um ambiente para importar cookies",
+        "newProfileName": "Novo perfil",
+        "renameAria": "Renomear {{name}}",
+        "defaultBadge": "Padrão",
+        "optionsAria": "opções de {{name}}",
+        "setAsDefault": "Definir como padrão",
+        "clearData": "Limpar cookies e cache",
+        "removeProfileAndData": "Remover perfil e dados",
+        "connectToClear": "Conecte-se a um ambiente para limpar os dados do perfil",
+        "checkingEnvironments": "Verificando ambientes…",
+        "removeConfirmTitle": "Remover “{{name}}”?",
+        "removeConfirmDescription": "Seus cookies e logins são apagados. Abas já abertas neste perfil permanecem abertas até você fechá-las.",
+        "removeConnectHint": "Conecte-se a um ambiente para remover este perfil e seus dados.",
+        "removeErrorConnect": "Conecte-se a um ambiente antes de remover este perfil.",
+        "removeErrorData": "Os dados do perfil não puderam ser apagados. Tente novamente.",
+        "removing": "Removendo…",
+        "removeProfile": "Remover perfil"
+      },
+      "devices": {
+        "hubAria": "Hub de dispositivos",
+        "agentAria": "Acesso do agente a dispositivos",
+        "platformStatusDescription": "Status de {{label}}. Selecione um ambiente para inspecionar o suporte a simuladores.",
+        "checking": "Verificando…",
+        "refresh": "Atualizar",
+        "checkVersions": "Verificar versões",
+        "updating": "Atualizando…",
+        "updateToVersion": "Atualizar para v{{version}}",
+        "updateFailed": "Falha na atualização. Verifique a conexão de rede deste host e tente novamente."
+      },
+      "importWizard": {
+        "quitTitle": "Feche o {{name}} para importar",
+        "quitDescription": "O {{name}} está aberto, então seus cookies ainda não podem ser lidos. Feche-o e continue.",
+        "quitConfirm": "Já o fechei",
+        "noCookies": "nenhum cookie",
+        "cookiesCount_one": "{{formatted}} cookie",
+        "cookiesCount_other": "{{formatted}} cookies",
+        "diskTitle": "Permitir que o LMCS Code leia os cookies do {{name}}",
+        "diskDescription": "Para importar cookies do {{name}}, o LMCS Code precisa de Acesso Total ao Disco. Ative-o nos Ajustes do Sistema e volte para concluir a importação — você pode revogá-lo depois que a importação terminar.",
+        "diskItemTitle": "Acesso Total ao Disco",
+        "diskItemDescription": "Ler os cookies do {{name}} para esta importação.",
+        "diskOpenError": "Não foi possível abrir os Ajustes do Sistema. Tente Permitir novamente.",
+        "diskStillRequired": "O acesso ainda é necessário. Feche e reabra o LMCS Code se você acabou de permiti-lo, depois tente a importação novamente.",
+        "diskUpdateHint": "Se o acesso não atualizar depois de permiti-lo, feche e reabra o LMCS Code e tente a importação novamente.",
+        "continue": "Continuar",
+        "configureTitle": "Importar do {{name}}",
+        "configureDescription": "Escolha quais cookies importar para {{environment}}.",
+        "fromLabel": "De",
+        "intoLabel": "Para",
+        "newProfileTitle": "Novo perfil",
+        "newProfileSubtitle": "Criado para estes cookies",
+        "existingProfileSubtitle": "Perfil existente",
+        "targetMissing": "Esse perfil não está mais disponível. Escolha onde importar estes cookies.",
+        "targetUncreatable": "Você atingiu o limite de perfis. Escolha um perfil existente para importar.",
+        "import": "Importar",
+        "importingTitle": "Importando cookies",
+        "importingDescription": "Isso pode levar um momento.",
+        "importing": "Importando…",
+        "checkingTitle": "Verificando o {{name}}",
+        "checkingDiskDescription": "Verificando o Acesso Total ao Disco.",
+        "checkingBrowserDescription": "Verificando se o navegador fechou.",
+        "checkingAccess": "Verificando acesso…",
+        "checking": "Verificando…",
+        "importedTitle_one": "{{formatted}} cookie importado",
+        "importedTitle_other": "{{formatted}} cookies importados",
+        "skippedTitle_one": "{{formatted}} cookie ignorado",
+        "skippedTitle_other": "{{formatted}} cookies ignorados",
+        "noneFoundTitle": "Nenhum cookie encontrado",
+        "addedDescription": "Adicionados a {{target}} para {{environment}}.",
+        "skippedSuffix_one": "{{formatted}} ignorado.",
+        "skippedSuffix_other": "{{formatted}} ignorados.",
+        "noneImportedDescription": "Nenhum cookie foi importado para {{environment}}.",
+        "nothingToImportDescription": "Não havia cookies para importar para {{environment}}.",
+        "skippedLabel": "Ignorados",
+        "done": "Concluir",
+        "blockedTitle": "Não foi possível importar do {{name}}",
+        "close": "Fechar",
+        "tryAgain": "Tentar novamente"
+      },
+      "deviceHosts": {
+        "title": "Hosts de dispositivos",
+        "description": "Adicione máquinas remotas com runtimes de simulador ou emulador instalados, e os ambientes selecionados conectarão via SSH e configurarão as ferramentas de dispositivo automaticamente.",
+        "addHost": "Adicionar host",
+        "connectHint": "Conecte um ambiente selecionado para gerenciar hosts de dispositivos.",
+        "empty": "Nenhum host de dispositivos.",
+        "checkingConnection": "Verificando conexão…",
+        "installingSupport": "Instalando suporte a dispositivos…",
+        "ambiguousDestination": "Vários hosts correspondem a este destino SSH. Selecione o ambiente para editar seus hosts.",
+        "environmentDisconnected": "Ambiente desconectado",
+        "connecting": "Conectando…",
+        "iosAvailable": "iOS disponível",
+        "androidAvailable": "Android disponível",
+        "localAvailable": "Já disponível localmente",
+        "connectionFailed": "Falha na conexão",
+        "optionsAria": "Opções de {{label}}",
+        "edit": "Editar",
+        "remove": "Remover",
+        "retrying": "Tentando novamente…",
+        "retry": "Tentar novamente",
+        "testConnection": "Testar conexão",
+        "editor": {
+          "addTitle": "Adicionar host de dispositivos",
+          "editTitle": "Editar host de dispositivos",
+          "connectFromOne": "Conectar a partir de {{label}}.",
+          "connectFromMany": "Conectar a partir de {{count}} ambientes selecionados.",
+          "hostsSkipped": "Hosts na mesma máquina são ignorados.",
+          "nameLabel": "Nome",
+          "targetLabel": "Destino SSH",
+          "targetPlaceholder": "usuário@host ou alias SSH",
+          "optionsLabel": "Opções de SSH",
+          "identityLabel": "Arquivo de identidade",
+          "identityPlaceholder": "Padrão da configuração SSH",
+          "portLabel": "Porta",
+          "portPlaceholder": "Padrão",
+          "optionsHint": "Opcional. Resolvido separadamente em cada ambiente.",
+          "checkingEnvironments": "Verificando ambientes…",
+          "failedCount": "{{count}} de {{total}} falharam",
+          "checksPassed": "Verificações de conexão aprovadas",
+          "checkBeforeSaving": "Verifique o acesso antes de salvar",
+          "checking": "Verificando…",
+          "failed": "Falhou",
+          "connected": "Conectado",
+          "showError": "Mostrar erro",
+          "saveHost": "Salvar host"
+        }
+      }
+    },
     "restore": {
       "confirmTitle": "Restaurar configurações padrão?",
       "confirmResetList": "Isso redefinirá: {{labels}}.",
@@ -1425,6 +1872,285 @@
             "9": "Thread: Ir para: 9"
           }
         }
+      },
+      "search": "Buscar atalhos",
+      "addKeybinding": "Adicionar atalho",
+      "openFile": "Abrir keybindings.json",
+      "newKeybinding": "Novo atalho",
+      "newKeybindingFallback": "novo atalho",
+      "cancelNew": "Cancelar novo atalho",
+      "command": "Comando",
+      "when": "Quando",
+      "whenExpressionAria": "Expressão when",
+      "always": "Sempre",
+      "condition": "Condição",
+      "group": "Grupo",
+      "not": "Não",
+      "negateCondition": "Negar {{identifier}}",
+      "negateGroup": "Negar grupo",
+      "removeAll": "Limpar todas as condições",
+      "removeCondition": "Remover condição",
+      "removeGroup": "Remover grupo e suas condições",
+      "expressionSyntaxHint": "Use variáveis com !, &&, || e parênteses.",
+      "fixExpression": "Corrija a expressão acima para continuar editando visualmente.",
+      "unknownCondition_one": "Condição desconhecida: {{identifiers}}",
+      "unknownCondition_other": "Condições desconhecidas: {{identifiers}}",
+      "unknownConditionBody": "O LMCS Code ainda não reconhece esta condição. Ela ainda pode ser salva, mas pode não corresponder a menos que o runtime a forneça.",
+      "conflict": "Conflita com {{labels}}.",
+      "conflictMoreSuffix": ", e mais",
+      "conflictBody": "A associação correspondente mais recente vence quando ambas as condições podem se aplicar.",
+      "saving": "Salvando",
+      "pressShortcut": "Pressione o atalho",
+      "unassigned": "Não atribuído",
+      "editShortcutAria": "Editar atalho de {{label}}: {{shortcut}}",
+      "keybindingForAria": "Atalho de {{label}}",
+      "editWhenAria": "Editar cláusula when de {{label}}",
+      "actionsAria": "Ações de {{label}}",
+      "resetToDefault": "Redefinir para o padrão",
+      "sourceCustom": "Personalizado",
+      "sourceProject": "Projeto",
+      "emptySearch": "Nenhum atalho corresponde à sua busca.",
+      "browserNotice": "Alguns atalhos podem ser capturados pelo navegador antes que o LMCS Code os veja. Use o app desktop para melhor suporte a atalhos.",
+      "bindingCount_one": "{{count}} atalho",
+      "bindingCount_other": "{{count}} atalhos"
+    },
+    "connections": {
+      "serverLabel": "servidor {{label}}",
+      "serverFallback": "servidor",
+      "thisMachine": "Esta máquina",
+      "primaryEnvironment": "Ambiente principal",
+      "version": "Versão",
+      "loading": "Carregando…",
+      "upToDate": "Atualizado",
+      "update": "Atualizar",
+      "retryUpdate": "Tentar atualizar novamente",
+      "updateToVersion": "Atualizar para {{version}}",
+      "moreActionsMachineAria": "Mais ações para esta máquina",
+      "adminAccessTitle": "Acesso administrativo",
+      "adminAccessDescription": "Links de pareamento e o gerenciamento de sessões de clientes exigem o escopo access:write neste backend.",
+      "environmentsTitle": "Ambientes",
+      "restarting": "Reiniciando…",
+      "restartAndEnable": "Reiniciar e ativar",
+      "restartAndDisable": "Reiniciar e desativar",
+      "scopeCount_one": "{{count}} escopo",
+      "scopeCount_other": "{{count}} escopos",
+      "scopesShowAria": "{{label}}: mostrar {{count}}",
+      "grantedScopes": "Escopos concedidos",
+      "pairingLinkScopesLabel": "Escopos do link de pareamento",
+      "clientScopesLabel": "Escopos do cliente",
+      "scopes": {
+        "orchestrationRead": {
+          "title": "Ver ambiente",
+          "description": "Ler threads, status, diffs e configuração."
+        },
+        "orchestrationOperate": {
+          "title": "Operar tarefas",
+          "description": "Iniciar tarefas e fazer alterações no ambiente."
+        },
+        "terminalOperate": {
+          "title": "Usar terminais",
+          "description": "Criar terminais e enviar entrada para shells em execução."
+        },
+        "reviewWrite": {
+          "title": "Escrever revisões",
+          "description": "Criar comentários ao revisar alterações."
+        },
+        "accessRead": {
+          "title": "Ver acesso",
+          "description": "Inspecionar links de pareamento e clientes autorizados."
+        },
+        "accessWrite": {
+          "title": "Gerenciar acesso",
+          "description": "Emitir e revogar credenciais de outros clientes."
+        },
+        "relayRead": {
+          "title": "Ver relay",
+          "description": "Inspecionar a conectividade de relay gerenciado."
+        },
+        "relayWrite": {
+          "title": "Gerenciar relay",
+          "description": "Alterar a conectividade do túnel gerenciado."
+        }
+      },
+      "pairing": {
+        "authorizedClients": "Clientes autorizados",
+        "defaultLinkLabel": "Link de pareamento",
+        "linkCreatedAt": "Link criado em {{date}}",
+        "createToShare": "Crie um novo link para compartilhar a partir deste cliente.",
+        "copyTokenHint": "Copie o token e pareie a partir de outro cliente usando o host acessível deste backend.",
+        "share": "Compartilhar",
+        "copyCode": "Copiar código",
+        "showLink": "Mostrar link",
+        "showCode": "Mostrar código",
+        "hostedLinkTitle": "Link de pareamento do app hospedado",
+        "linkTitle": "Link de pareamento",
+        "codeTitle": "Código de pareamento",
+        "hostedLinkDescription": "A cópia para a área de transferência não está disponível aqui. Abra ou copie manualmente este link do app hospedado no dispositivo que você quer conectar.",
+        "linkDescription": "A cópia para a área de transferência não está disponível aqui. Abra ou copie manualmente esta URL de pareamento completa no dispositivo que você quer conectar.",
+        "codeDescription": "A cópia para a área de transferência não está disponível aqui. Copie manualmente este código em outro cliente.",
+        "qrTitle": "Link de pareamento — escaneie para abrir em outro dispositivo",
+        "revoking": "Revogando…",
+        "revoke": "Revogar",
+        "qrEndpointAria": "Endpoint usado pelo QR code e pela URL de pareamento",
+        "reachVia": "Acesse esta máquina via",
+        "copyLink": "Copiar link",
+        "copyCodeOnly": "Copiar apenas o código",
+        "noQrLoopback": "Sem QR code para este endpoint. Outro dispositivo que escaneasse um link loopback discaria para si mesmo; copie a URL para usar nesta máquina.",
+        "connectedFor": "Conectado há {{duration}}",
+        "connected": "Conectado",
+        "lastConnectedAt": "Última conexão em {{date}}",
+        "notConnectedYet": "Ainda não conectado.",
+        "thisDevice": "Este dispositivo",
+        "revokeOthers": "Revogar outros",
+        "createLink": "Criar link",
+        "createTitle": "Criar link de pareamento",
+        "createDescription": "Gere um link de uso único que outro dispositivo pode usar para se parear a este backend como cliente autorizado.",
+        "clientLabelOptional": "Rótulo do cliente (opcional)",
+        "clientLabelPlaceholder": "ex.: iPad da sala",
+        "permissions": "Permissões",
+        "permissionsHint": "Limite o que o cliente pareado pode fazer.",
+        "readOnly": "Somente leitura",
+        "standard": "Padrão",
+        "selectOnePermission": "Selecione pelo menos uma permissão.",
+        "adminScopeWarning": "Este cliente pode criar ou revogar acesso de outros dispositivos.",
+        "creating": "Criando…",
+        "noClients": "Nenhum link de pareamento ou sessão de cliente.",
+        "clientCount_one": "{{count}} cliente",
+        "clientCount_other": "{{count}} clientes",
+        "linkCount_one": "{{count}} link de pareamento",
+        "linkCount_other": "{{count}} links de pareamento"
+      },
+      "endpoints": {
+        "setupRequired": "Configuração necessária",
+        "defaultBadge": "Padrão",
+        "restarting": "Reiniciando…",
+        "setup": "Configurar",
+        "disable": "Desativar",
+        "setAsDefault": "Definir como padrão",
+        "hide": "Ocultar",
+        "reachableAt": "Acessível em",
+        "shareHintHosted": "Abre o app hospedado, sem instalação",
+        "shareHintLan": "Dispositivos na mesma rede",
+        "shareHintPrivateNetwork": "Dispositivos na sua rede privada",
+        "shareHintPublic": "Acessível de qualquer lugar",
+        "shareHintLoopback": "Clientes nesta máquina"
+      },
+      "environments": {
+        "statusOff": "Desativado",
+        "statusConnected": "Conectado",
+        "statusConnecting": "Conectando",
+        "statusReconnecting": "Reconectando",
+        "statusReconnectingError": "Reconectando: {{error}}",
+        "statusUnsupported": "Cliente não suportado",
+        "statusError": "Falha na conexão",
+        "statusErrorDetail": "Falha na conexão: {{error}}",
+        "statusOffline": "Offline",
+        "statusAvailable": "Não conectado",
+        "statusRestarting": "Reiniciando",
+        "switchedOff": "Desativado",
+        "updateAvailable": "Atualização disponível: {{serverVersion}} → {{clientVersion}}",
+        "switchOn": "Ativar",
+        "switchOff": "Desativar",
+        "switchOnAria": "Ativar {{label}}",
+        "switchOffAria": "Desativar {{label}}",
+        "moreActionsAria": "Mais ações para {{label}}",
+        "copyTraceId": "Copiar ID de rastreamento",
+        "removing": "Removendo…",
+        "removeFromDevice": "Remover deste dispositivo…",
+        "noRemoteTitle": "Nenhum ambiente remoto salvo",
+        "noRemoteDescriptionCloud": "Clique em “Adicionar ambiente” para parear outro ambiente ou conecte um pelo LMCS Connect.",
+        "noRemoteDescription": "Clique em “Adicionar ambiente” para parear outro ambiente.",
+        "addEnvironment": "Adicionar ambiente",
+        "adding": "Adicionando…",
+        "addDialogTitle": "Adicionar ambiente",
+        "addDialogDescription": "Pareie outro ambiente a este cliente.",
+        "modeRemoteTitle": "Link remoto",
+        "modeRemoteDescription": "Informe um host de backend e um código de pareamento.",
+        "modeSshDescription": "Use config, agent e túneis SSH locais para o backend.",
+        "host": "Host",
+        "pairingCode": "Código de pareamento",
+        "pastePairingUrlHint": "Cole uma URL de pareamento completa aqui para preencher os dois campos automaticamente.",
+        "sshHostLabel": "Host ou alias SSH",
+        "sshHostPlaceholder": "Busque hosts ou digite devbox",
+        "loadingHosts": "Carregando hosts…",
+        "noHostsMatch": "Nenhum host corresponde a \"{{query}}\".",
+        "username": "Usuário",
+        "port": "Porta",
+        "sshHostRequired": "O host ou alias SSH é obrigatório.",
+        "sshPortRange": "A porta SSH deve estar entre 1 e 65535.",
+        "sshConnectFailed": "Falha ao conectar ao host SSH.",
+        "enterHost": "Informe um host de backend.",
+        "enterPairingCode": "Informe um código de pareamento."
+      },
+      "network": {
+        "enableAria": "Ativar acesso à rede",
+        "limitedToMachine": "Limitado a esta máquina.",
+        "reachableAtUrl": "Acessível em {{url}}",
+        "exposedWithHost": "Exposto em todas as interfaces. Links de pareamento usam {{host}}.",
+        "exposedAll": "Exposto em todas as interfaces.",
+        "managedDescription": "O acesso remoto já está configurado. Altere a exposição de rede onde o servidor é iniciado.",
+        "localDescription": "Apenas esta máquina pode se conectar. Reinicie com um host não loopback para pareamento remoto.",
+        "managedTooltip": "Mudanças na exposição de rede reiniciam o backend e devem ser controladas onde o processo do servidor é iniciado.",
+        "enableTitle": "Ativar acesso à rede?",
+        "disableTitle": "Desativar acesso à rede?",
+        "enableDescription": "Permita que seus outros dispositivos se conectem ao LMCS Code pela rede. Pareie dispositivos para dar acesso a eles. O LMCS Code será reiniciado.",
+        "disableDescription": "Dispositivos conectados pela sua rede local serão desconectados. Túneis existentes, como LMCS Connect ou Tailscale HTTPS, continuarão funcionando. O LMCS Code será reiniciado."
+      },
+      "wsl": {
+        "loadFailed": "Não foi possível carregar o estado do backend WSL.",
+        "retrying": "Tentando novamente…",
+        "retry": "Tentar novamente",
+        "unavailableDescription": "O WSL está indisponível, então o Windows está em execução. Desative o WSL para limpar esta preferência.",
+        "switchToWindows": "Mudar para Windows",
+        "off": "Desativado",
+        "defaultDistro": "Distro padrão",
+        "defaultSuffix": " (padrão)",
+        "description": "Execute a distro WSL selecionada junto ao Windows. Os projetos permanecem no sistema de arquivos atual.",
+        "preflightError": "O backend WSL não pôde iniciar: {{error}}",
+        "selectAria": "Backend WSL",
+        "onlyTitle": "Apenas WSL",
+        "onlyDescription": "Execute apenas o backend WSL. O LMCS Code reinicia quando isso muda.",
+        "onlyAria": "Executar apenas WSL",
+        "disableWindowsTitle": "Desativar o WSL e voltar para o Windows?",
+        "disableTitle": "Desativar o backend WSL?",
+        "distroTitle": "Trocar de distro WSL?",
+        "enableTitle": "Iniciar o backend WSL",
+        "onlyEnableTitle": "Executar apenas o backend WSL?",
+        "onlyDisableTitle": "Reativar o backend Windows?",
+        "disableWindowsDescription": "O LMCS Code reiniciará no backend Windows. Threads e projetos abertos no WSL ficam seguros dentro da distro e voltam a ficar disponíveis quando você reativar o WSL.",
+        "disableDescription": "O backend WSL será interrompido. Threads e projetos abertos no WSL ficam seguros dentro da distro, mas ficarão indisponíveis no LMCS Code até você reativar o WSL.",
+        "distroDescription": "O LMCS Code reiniciará o backend WSL na nova distro. Sessões ainda em execução na distro atual serão interrompidas.",
+        "enableDescription": "Executar o backend WSL junto ao Windows, ou parar o backend Windows e usar apenas o WSL? Você pode mudar isso depois em Configurações.",
+        "onlyEnableDescription": "O LMCS Code reiniciará e iniciará apenas o backend WSL. Seus projetos no Windows não ficarão acessíveis até você desativar isso novamente.",
+        "onlyDisableDescription": "O LMCS Code reiniciará e trará o backend Windows de volta junto ao WSL.",
+        "applying": "Aplicando…",
+        "useOnlyWsl": "Usar apenas WSL",
+        "runBoth": "Executar ambos os backends",
+        "disableAction": "Desativar WSL",
+        "switchDistro": "Trocar distro"
+      },
+      "tailscale": {
+        "enableAria": "Ativar Tailscale HTTPS",
+        "setupDescription": "Use o Tailscale Serve para expor este backend através de uma URL HTTPS MagicDNS.",
+        "startDescription": "Inicie o Tailscale para configurar o acesso HTTPS via MagicDNS.",
+        "disableTitle": "Desativar Tailscale HTTPS?",
+        "disableDescription": "O LMCS Code reiniciará o backend local sem o Tailscale Serve.",
+        "setupTitle": "Configurar Tailscale HTTPS?",
+        "setupDialogDescription": "O LMCS Code reiniciará o backend local com o Tailscale Serve ativado e pedirá ao Tailscale para fazer proxy do tráfego HTTPS para este backend.",
+        "httpsPort": "Porta HTTPS",
+        "portInvalid": "Informe uma porta de 1 a 65535.",
+        "httpsEndpoint": "Endpoint HTTPS",
+        "pendingEndpoint": "Endpoint MagicDNS pendente",
+        "enable": "Ativar"
+      },
+      "cloud": {
+        "enableAria": "Ativar o LMCS Connect",
+        "signInToManage": "Entre no LMCS Connect para gerenciar este ambiente.",
+        "noRelayPermission": "Sua sessão não tem permissão para gerenciar o acesso ao LMCS Connect.",
+        "descriptionActive": "Este ambiente está disponível para seus outros dispositivos pelo LMCS Connect.",
+        "description": "Torne este ambiente disponível para seus outros dispositivos pelo LMCS Connect.",
+        "publishDescription": "Envie atividade para notificações móveis e Live Activities sem o LMCS Connect.",
+        "publishAria": "Publicar atividade do agente para clientes móveis"
       }
     }
   }

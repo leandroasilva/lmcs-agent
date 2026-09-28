@@ -6,6 +6,8 @@ import {
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@lmcstools/core/keybindings";
 import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import "../../../i18n";
 import { useT3ProjectFileState } from "../../../hooks/useT3ProjectFileScripts";
 import { useEnvironments } from "../../../state/environments";
 import {
@@ -39,6 +41,7 @@ import { useSettingsScope } from "./SettingsScopeContext";
  * binding on an environment.
  */
 export function ProjectActionsSettings() {
+  const { t } = useTranslation();
   const { scope, targets, target } = useSettingsScope();
   const { environments } = useEnvironments();
   const isProjectScope = scope.kind === "project" || scope.kind === "checkout";
@@ -122,21 +125,22 @@ export function ProjectActionsSettings() {
         setRequest({
           scriptId: null,
           initial: payload,
-          error: error instanceof Error ? error.message : "Failed to import action.",
+          error:
+            error instanceof Error ? error.message : t("settings.projects.actions.importFailed"),
         });
       }
     },
-    [submit],
+    [submit, t],
   );
 
   return (
-    <SettingsSection id="project-actions" title="Actions">
+    <SettingsSection id="project-actions" title={t("settings.projects.actions.sectionTitle")}>
       <SettingsRow
         serverScoped
         settingKeys={["defaultProjectScripts"]}
         mixed={mixed}
-        title="Actions"
-        description="Commands that run in this project's checkout or its worktree, with optional shortcuts."
+        title={t("settings.projects.actions.rowTitle")}
+        description={t("settings.projects.actions.rowDescription")}
         onResetOverride={() => void persist(() => null)}
         control={
           <div className="flex flex-wrap items-center gap-1.5">
@@ -153,14 +157,16 @@ export function ProjectActionsSettings() {
                     />
                   }
                 >
-                  Import scripts
+                  {t("settings.projects.actions.importScripts")}
                   <ChevronDownIcon className="size-3.5" />
                 </MenuTrigger>
                 <MenuPopup align="end">
                   <MenuGroup>
-                    <MenuGroupLabel>Import from t3.json</MenuGroupLabel>
+                    <MenuGroupLabel>
+                      {t("settings.projects.actions.importGroupLabel")}
+                    </MenuGroupLabel>
                     <p className="px-2 pb-2 text-pretty text-sm text-muted-foreground">
-                      Add actions declared by this checkout without editing them first.
+                      {t("settings.projects.actions.importHint")}
                     </p>
                   </MenuGroup>
                   <MenuSeparator />
@@ -185,18 +191,23 @@ export function ProjectActionsSettings() {
               size="xs"
               variant="outline"
               disabled={saving || targets.length === 0}
-              onClick={() => setRequest({ scriptId: null, initial: EMPTY_PROJECT_SCRIPT_INPUT })}
+              onClick={() =>
+                setRequest({
+                  scriptId: null,
+                  initial: EMPTY_PROJECT_SCRIPT_INPUT,
+                })
+              }
             >
               <PlusIcon className="size-3.5" />
-              Add action
+              {t("settings.projects.actions.addAction")}
             </Button>
           </div>
         }
       />
       {mixed ? (
         <SettingsRow
-          title="Different actions across environments"
-          description="Choose one environment to edit its list. Adding an action here adds it on every selected environment."
+          title={t("settings.projects.actions.mixedTitle")}
+          description={t("settings.projects.actions.mixedDescription")}
         />
       ) : (
         <ProjectActionsList
@@ -208,8 +219,8 @@ export function ProjectActionsSettings() {
       )}
       {t3File.status === "invalid" ? (
         <SettingsRow
-          title="t3.json is invalid"
-          description="A t3.json exists in this checkout but fails to parse, so every action and icon it declares is ignored. Check the JSON syntax and icon values."
+          title={t("settings.projects.actions.invalidFileTitle")}
+          description={t("settings.projects.actions.invalidFileDescription")}
           className="text-warning"
         />
       ) : null}

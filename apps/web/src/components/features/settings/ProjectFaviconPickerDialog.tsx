@@ -3,6 +3,7 @@ import type { EnvironmentId } from "@lmcstools/core";
 import { isWindowsAbsolutePath } from "@lmcstools/core/path";
 import { useMemo, useState } from "react";
 
+import { translateDynamic } from "../../../i18n";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 import { useTheme } from "~/hooks/useTheme";
 import { getLocalFileManagerName, isWindowsPlatform } from "~/lib/utils";
@@ -20,8 +21,22 @@ import { toastManager } from "../../ui/toast";
 
 function emptyMessage(query: string, error: string | null, isPending: boolean): string {
   if (error) return error;
-  if (isPending) return query.trim() ? "Searching project files…" : "Indexing project files…";
-  return query.trim() ? "No matching image files." : "No image files found.";
+  if (isPending)
+    return query.trim()
+      ? translateDynamic(
+          "settings.projects.faviconPicker.searchingFiles",
+          "Searching project files…",
+        )
+      : translateDynamic(
+          "settings.projects.faviconPicker.indexingFiles",
+          "Indexing project files…",
+        );
+  return query.trim()
+    ? translateDynamic(
+        "settings.projects.faviconPicker.noMatchingImages",
+        "No matching image files.",
+      )
+    : translateDynamic("settings.projects.faviconPicker.noImages", "No image files found.");
 }
 export function canPickExternalProjectFavicon(cwd: string, platform: string): boolean {
   return !isWindowsPlatform(platform) || isWindowsAbsolutePath(cwd);
@@ -70,15 +85,24 @@ export function ProjectFaviconPickerDialog(props: {
     <CommandDialog open={props.open} onOpenChange={props.onOpenChange}>
       {props.open ? (
         <CommandDialogPopup
-          aria-label="Choose project icon"
+          aria-label={translateDynamic(
+            "settings.projects.faviconPicker.aria",
+            "Choose project icon",
+          )}
           className="overflow-hidden"
           onBackdropPointerDown={() => props.onOpenChange(false)}
         >
           <CommandPaletteContent
-            aria-label="Choose project icon"
+            aria-label={translateDynamic(
+              "settings.projects.faviconPicker.aria",
+              "Choose project icon",
+            )}
             autoHighlight="always"
-            escapeLabel="Close"
-            footerActionLabel="Select icon"
+            escapeLabel={translateDynamic("common.close", "Close")}
+            footerActionLabel={translateDynamic(
+              "settings.projects.faviconPicker.selectIcon",
+              "Select icon",
+            )}
             footerTrailing={
               pickExternal ? (
                 <CommandFooterAction
@@ -102,11 +126,20 @@ export function ProjectFaviconPickerDialog(props: {
                       .finally(() => setIsPickingExternal(false));
                   }}
                 >
-                  {`Open in ${fileManagerName}`}
+                  {translateDynamic(
+                    "settings.projects.faviconPicker.openInManager",
+                    "Open in {{manager}}",
+                    { manager: fileManagerName },
+                  )}
                 </CommandFooterAction>
               ) : null
             }
-            inputProps={{ placeholder: "Search image files…" }}
+            inputProps={{
+              placeholder: translateDynamic(
+                "settings.projects.faviconPicker.searchPlaceholder",
+                "Search image files…",
+              ),
+            }}
             mode="none"
             onItemHighlighted={(value) => {
               setHighlightedItemValue(typeof value === "string" ? value : null);
@@ -122,7 +155,13 @@ export function ProjectFaviconPickerDialog(props: {
             <CommandPaletteResults
               groups={
                 items.length > 0
-                  ? [{ value: "project-favicon-files", label: props.projectName, items }]
+                  ? [
+                      {
+                        value: "project-favicon-files",
+                        label: props.projectName,
+                        items,
+                      },
+                    ]
                   : []
               }
               highlightedItemValue={highlightedItemValue}

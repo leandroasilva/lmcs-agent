@@ -8,7 +8,9 @@ import {
 } from "@lmcstools/core";
 import { CheckIcon, LayersIcon } from "lucide-react";
 import * as Equal from "effect/Equal";
+import { useTranslation } from "react-i18next";
 
+import { translateDynamic } from "../../../i18n";
 import { cn } from "../../../lib/utils";
 import type { EnvironmentPresentation } from "../../../state/environments";
 import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
@@ -28,9 +30,22 @@ interface InheritanceLayer {
   readonly set: boolean;
 }
 
-const WRITING_STYLE_LABELS: Record<string, string> = {
-  repo_conventions: "Repository conventions",
-  conventional_commits: "Conventional Commits",
+const WRITING_STYLE_LABEL_KEYS: Record<string, string> = {
+  repo_conventions: "repoConventions",
+  conventional_commits: "conventionalCommits",
+  custom: "custom",
+};
+
+function writingStyleLabel(mode: string): string {
+  const key = WRITING_STYLE_LABEL_KEYS[mode];
+  return key
+    ? translateDynamic(`settings.inheritance.writingStyle.${key}`, WRITING_STYLE_FALLBACKS[key]!)
+    : mode;
+}
+
+const WRITING_STYLE_FALLBACKS: Record<string, string> = {
+  repoConventions: "Repository conventions",
+  conventionalCommits: "Conventional Commits",
   custom: "Custom instructions",
 };
 
@@ -38,21 +53,31 @@ const WRITING_STYLE_LABELS: Record<string, string> = {
 function formatValue(key: keyof ServerSettings, value: unknown): string {
   if (value === null || value === undefined) {
     return key === "pullRequestMergeMethod"
-      ? "Last selected"
+      ? translateDynamic("settings.inheritance.value.lastSelected", "Last selected")
       : key === "sidebarAutoSettleAfterDays"
-        ? "Never"
+        ? translateDynamic("settings.inheritance.value.never", "Never")
         : key === "defaultModelSelection"
-          ? "Automatic"
+          ? translateDynamic("settings.inheritance.value.automatic", "Automatic")
           : key === "sourceControlWriterModelSelection"
-            ? "Text generation model"
+            ? translateDynamic(
+                "settings.inheritance.value.textGenerationModel",
+                "Text generation model",
+              )
             : key === "defaultThreadEnvMode" || key === "worktreeSubmodules"
-              ? "Inherit"
-              : "Not set";
+              ? translateDynamic("settings.inheritance.value.inherit", "Inherit")
+              : translateDynamic("settings.inheritance.value.notSet", "Not set");
   }
-  if (typeof value === "boolean") return value ? "On" : "Off";
+  if (typeof value === "boolean")
+    return value
+      ? translateDynamic("settings.inheritance.value.on", "On")
+      : translateDynamic("settings.inheritance.value.off", "Off");
   if (typeof value === "number") {
     return key === "sidebarAutoSettleAfterDays"
-      ? `${value} ${value === 1 ? "day" : "days"}`
+      ? translateDynamic(
+          "settings.inheritance.value.dayCount",
+          `${value} ${value === 1 ? "day" : "days"}`,
+          { count: value },
+        )
       : String(value);
   }
   if (typeof value === "string") {
@@ -67,16 +92,21 @@ function formatValue(key: keyof ServerSettings, value: unknown): string {
         value as keyof typeof PULL_REQUEST_MERGE_METHOD_LABELS
       ];
     }
-    return value === "" ? "Empty" : value;
+    return value === "" ? translateDynamic("settings.inheritance.value.empty", "Empty") : value;
   }
-  if (Array.isArray(value)) return `${value.length} ${value.length === 1 ? "item" : "items"}`;
+  if (Array.isArray(value))
+    return translateDynamic(
+      "settings.inheritance.value.itemCount",
+      `${value.length} ${value.length === 1 ? "item" : "items"}`,
+      { count: value.length },
+    );
   if (typeof value === "object") {
     if ("model" in value && typeof value.model === "string") return value.model;
     if ("mode" in value && typeof value.mode === "string") {
-      return WRITING_STYLE_LABELS[value.mode] ?? value.mode;
+      return writingStyleLabel(value.mode);
     }
   }
-  return "Custom";
+  return translateDynamic("settings.inheritance.value.custom", "Custom");
 }
 
 /**
@@ -95,11 +125,12 @@ export function settingInheritanceLayers(
   const environmentSet = !Equal.equals(environmentValue, DEFAULT_SERVER_SETTINGS[key]);
   const fileBacked = isProjectFileBackedSettingKey(key);
   const layers: InheritanceLayer[] = [];
+  const inheritsLabel = translateDynamic("settings.inheritance.inherits", "Inherits");
   if (target.projectId !== null && isProjectScopedSettingKey(key)) {
     layers.push({
       key: "project",
-      label: "Project",
-      value: source === "project" ? formatValue(key, target.settings[key]) : "Inherits",
+      label: translateDynamic("settings.inheritance.layer.project", "Project"),
+      value: source === "project" ? formatValue(key, target.settings[key]) : inheritsLabel,
       effective: source === "project",
       set: source === "project",
     });
@@ -107,7 +138,7 @@ export function settingInheritanceLayers(
   layers.push({
     key: "environment",
     label: target.label,
-    value: environmentSet ? formatValue(key, environmentValue) : "Inherits",
+    value: environmentSet ? formatValue(key, environmentValue) : inheritsLabel,
     effective: source === "environment" && environmentSet,
     set: environmentSet,
   });
@@ -115,7 +146,7 @@ export function settingInheritanceLayers(
     layers.push({
       key: "t3.json",
       label: "t3.json",
-      value: source === "t3.json" ? formatValue(key, target.settings[key]) : "Inherits",
+      value: source === "t3.json" ? formatValue(key, target.settings[key]) : inheritsLabel,
       effective: source === "t3.json",
       set: source === "t3.json",
     });
@@ -127,7 +158,7 @@ export function settingInheritanceLayers(
     : DEFAULT_SERVER_SETTINGS[key];
   layers.push({
     key: "built-in",
-    label: "Default",
+    label: translateDynamic("settings.inheritance.layer.default", "Default"),
     value: formatValue(key, builtIn),
     effective: source === "environment" && !environmentSet,
     set: true,
@@ -177,11 +208,12 @@ export function SettingInheritance({
   overridingProjects?: readonly SettingOverridingProject[];
   onClearOverrides?: (entries: readonly ProjectOverrideEntry[]) => void;
 }) {
+  const { t } = useTranslation();
   const key = keys[0];
   if (!key || targets.length === 0) return null;
   const overrideSummary =
     overridingProjects.length > 0
-      ? `${summary} · ${overridingProjects.length} project ${overridingProjects.length === 1 ? "override" : "overrides"}`
+      ? `${summary} · ${t("settings.inheritance.overrideCount", { count: overridingProjects.length })}`
       : summary;
   const chains = targets.flatMap((target) => {
     const environment = environments.find(
@@ -207,7 +239,9 @@ export function SettingInheritance({
                 <Button
                   size="icon-micro"
                   variant="ghost-muted"
-                  aria-label={`${overrideSummary}. Show where this value comes from`}
+                  aria-label={t("settings.inheritance.showSourceAria", {
+                    summary: overrideSummary,
+                  })}
                 />
               }
             />
@@ -249,7 +283,9 @@ export function SettingInheritance({
                         layer.effective ? "font-medium text-foreground" : "text-muted-foreground",
                       )}
                     >
-                      {layer.key === "environment" ? "Environment" : layer.label}
+                      {layer.key === "environment"
+                        ? t("settings.inheritance.layer.environment")
+                        : layer.label}
                     </span>
                     <span
                       className={cn(
@@ -280,10 +316,12 @@ export function SettingInheritance({
                 return (
                   <div className="mt-2 border-t border-border/60 pt-2">
                     <div className="flex items-center justify-between gap-3 px-2 text-xs text-muted-foreground">
-                      <span>Overridden by</span>
+                      <span>{t("settings.inheritance.overriddenBy")}</span>
                       {onClearOverrides ? (
                         <InlineButton onClick={() => onClearOverrides(overriding)}>
-                          Reset {overriding.length === 1 ? "it" : "all"}
+                          {overriding.length === 1
+                            ? t("settings.inheritance.resetIt")
+                            : t("settings.inheritance.resetAll")}
                         </InlineButton>
                       ) : null}
                     </div>
