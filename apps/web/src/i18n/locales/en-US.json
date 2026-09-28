@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "general": {
+      "language": {
+        "sectionTitle": "Language",
+        "title": "Interface language",
+        "description": "Choose the language used across the interface. Saved on this device."
+      }
+    }
+  }
+}

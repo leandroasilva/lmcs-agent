@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "general": {
+      "language": {
+        "sectionTitle": "Idioma",
+        "title": "Idioma da interface",
+        "description": "Escolha o idioma usado em toda a interface. Salvo neste dispositivo."
+      }
+    }
+  }
+}

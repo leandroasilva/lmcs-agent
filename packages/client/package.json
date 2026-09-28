@@ -123,6 +123,10 @@
       "types": "./src/delayedStatus.ts",
       "default": "./src/delayedStatus.ts"
     },
+    "./i18n": {
+      "types": "./src/i18n/locales.ts",
+      "default": "./src/i18n/locales.ts"
+    },
     "./state/connections": {
       "types": "./src/state/connections.ts",
       "default": "./src/state/connections.ts"

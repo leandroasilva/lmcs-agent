@@ -153,6 +153,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["model workspace environments projects inheritance checkout"],
   },
   {
+    id: "interface-language",
+    title: "Interface language",
+    to: "/settings/general",
+    targetId: "language",
+    searchTerms: ["language locale translation português portuguese idioma"],
+  },
+  {
     id: "project-overview",
     title: "Project overview",
     to: "/settings/projects",

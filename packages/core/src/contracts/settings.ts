@@ -48,6 +48,15 @@ export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"])
 export type TimestampFormat = typeof TimestampFormat.Type;
 const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
 
+/**
+ * UI language. Client-local (per device): a phone and a desktop may prefer
+ * different languages, so it lives in client settings, never on the server.
+ */
+export const SUPPORTED_LOCALES = ["en-US", "pt-BR"] as const;
+export const Locale = Schema.Literals(SUPPORTED_LOCALES);
+export type Locale = typeof Locale.Type;
+export const DEFAULT_LOCALE: Locale = "en-US";
+
 export const DiffLayout = Schema.Literals(["stacked", "split"]);
 export type DiffLayout = typeof DiffLayout.Type;
 const DEFAULT_DIFF_LAYOUT: DiffLayout = "stacked";
@@ -103,7 +112,10 @@ const DEFAULT_GLASS_OPACITY: GlassOpacity = 80;
 export const MIN_APPEARANCE_CONTRAST = 50;
 export const MAX_APPEARANCE_CONTRAST = 200;
 export const AppearanceContrast = Schema.Int.check(
-  Schema.isBetween({ minimum: MIN_APPEARANCE_CONTRAST, maximum: MAX_APPEARANCE_CONTRAST }),
+  Schema.isBetween({
+    minimum: MIN_APPEARANCE_CONTRAST,
+    maximum: MAX_APPEARANCE_CONTRAST,
+  }),
 );
 export type AppearanceContrast = typeof AppearanceContrast.Type;
 const DEFAULT_APPEARANCE_CONTRAST: AppearanceContrast = 100;
@@ -125,7 +137,10 @@ const DEFAULT_PANEL_ANIMATION_DURATION_MS: PanelAnimationDurationMs = 0;
 export const MIN_INTERFACE_FONT_SIZE = 12;
 export const MAX_INTERFACE_FONT_SIZE = 20;
 export const InterfaceFontSize = Schema.Int.check(
-  Schema.isBetween({ minimum: MIN_INTERFACE_FONT_SIZE, maximum: MAX_INTERFACE_FONT_SIZE }),
+  Schema.isBetween({
+    minimum: MIN_INTERFACE_FONT_SIZE,
+    maximum: MAX_INTERFACE_FONT_SIZE,
+  }),
 );
 export type InterfaceFontSize = typeof InterfaceFontSize.Type;
 export const DEFAULT_INTERFACE_FONT_SIZE: InterfaceFontSize = 16;
@@ -133,7 +148,10 @@ export const DEFAULT_INTERFACE_FONT_SIZE: InterfaceFontSize = 16;
 export const MIN_PROMPT_FONT_SIZE = 12;
 export const MAX_PROMPT_FONT_SIZE = 20;
 export const PromptFontSize = Schema.Int.check(
-  Schema.isBetween({ minimum: MIN_PROMPT_FONT_SIZE, maximum: MAX_PROMPT_FONT_SIZE }),
+  Schema.isBetween({
+    minimum: MIN_PROMPT_FONT_SIZE,
+    maximum: MAX_PROMPT_FONT_SIZE,
+  }),
 );
 export type PromptFontSize = typeof PromptFontSize.Type;
 export const DEFAULT_PROMPT_FONT_SIZE: PromptFontSize = 14;
@@ -141,7 +159,10 @@ export const DEFAULT_PROMPT_FONT_SIZE: PromptFontSize = 14;
 export const MIN_CODE_FONT_SIZE = 10;
 export const MAX_CODE_FONT_SIZE = 18;
 export const CodeFontSize = Schema.Int.check(
-  Schema.isBetween({ minimum: MIN_CODE_FONT_SIZE, maximum: MAX_CODE_FONT_SIZE }),
+  Schema.isBetween({
+    minimum: MIN_CODE_FONT_SIZE,
+    maximum: MAX_CODE_FONT_SIZE,
+  }),
 );
 export type CodeFontSize = typeof CodeFontSize.Type;
 export const DEFAULT_CODE_FONT_SIZE: CodeFontSize = 13;
@@ -149,7 +170,10 @@ export const DEFAULT_CODE_FONT_SIZE: CodeFontSize = 13;
 export const MIN_TERMINAL_FONT_SIZE = 8;
 export const MAX_TERMINAL_FONT_SIZE = 20;
 export const TerminalFontSize = Schema.Int.check(
-  Schema.isBetween({ minimum: MIN_TERMINAL_FONT_SIZE, maximum: MAX_TERMINAL_FONT_SIZE }),
+  Schema.isBetween({
+    minimum: MIN_TERMINAL_FONT_SIZE,
+    maximum: MAX_TERMINAL_FONT_SIZE,
+  }),
 );
 export type TerminalFontSize = typeof TerminalFontSize.Type;
 const DEFAULT_TERMINAL_FONT_SIZE: TerminalFontSize = 12;
@@ -175,7 +199,10 @@ export const SnapShotModifier = Schema.Literals(SNAP_SHOT_MODIFIERS);
 export type SnapShotModifier = typeof SnapShotModifier.Type;
 export const SnapShotShortcut = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("both-shift-keys") }),
-  Schema.Struct({ kind: Schema.Literal("modifier-pair"), modifier: SnapShotModifier }),
+  Schema.Struct({
+    kind: Schema.Literal("modifier-pair"),
+    modifier: SnapShotModifier,
+  }),
   SnapShotKeyChord,
 ]);
 export type SnapShotShortcut = typeof SnapShotShortcut.Type;
@@ -474,6 +501,7 @@ export const ClientSettingsSchema = Schema.Struct({
   timestampFormat: TimestampFormat.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_TIMESTAMP_FORMAT)),
   ),
+  locale: Locale.pipe(Schema.withDecodingDefault(Effect.succeed(DEFAULT_LOCALE))),
   snapShotEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   snapShotIncludeAccessibility: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(true)),
@@ -647,7 +675,10 @@ export const ClaudeSettings = makeProviderSettingsSchema(
         title: "CLAUDE_CONFIG_DIR path",
         description:
           "Custom Claude home and config directory. Keeps .claude.json and .claude separate.",
-        providerSettingsForm: { placeholder: "~/.claude", clearWhenEmpty: "omit" },
+        providerSettingsForm: {
+          placeholder: "~/.claude",
+          clearWhenEmpty: "omit",
+        },
       }),
     ),
     customModels: Schema.Array(CustomModelSetting).pipe(
@@ -697,7 +728,10 @@ export const CursorSettings = makeProviderSettingsSchema(
       Schema.annotateKey({
         title: "Binary path",
         description: "Path to the Cursor agent binary.",
-        providerSettingsForm: { placeholder: "cursor-agent", clearWhenEmpty: "omit" },
+        providerSettingsForm: {
+          placeholder: "cursor-agent",
+          clearWhenEmpty: "omit",
+        },
       }),
     ),
     apiEndpoint: TrimmedString.pipe(
@@ -801,7 +835,10 @@ export const AntigravitySettings = makeProviderSettingsSchema(
         title: "GCP project",
         description:
           "Required for Gemini Enterprise. Agent Platform uses it when no API key is set.",
-        providerSettingsForm: { placeholder: "my-project-id", clearWhenEmpty: "omit" },
+        providerSettingsForm: {
+          placeholder: "my-project-id",
+          clearWhenEmpty: "omit",
+        },
       }),
     ),
     gcpLocation: TrimmedString.pipe(
@@ -809,7 +846,10 @@ export const AntigravitySettings = makeProviderSettingsSchema(
       Schema.annotateKey({
         title: "GCP location",
         description: "Region for Gemini Enterprise or Agent Platform.",
-        providerSettingsForm: { placeholder: "us-central1", clearWhenEmpty: "omit" },
+        providerSettingsForm: {
+          placeholder: "us-central1",
+          clearWhenEmpty: "omit",
+        },
       }),
     ),
     binaryPath: TrimmedString.pipe(
@@ -817,7 +857,10 @@ export const AntigravitySettings = makeProviderSettingsSchema(
       Schema.annotateKey({
         title: "Binary path",
         description: "Custom ACP executable. Leave empty to select automatically.",
-        providerSettingsForm: { placeholder: "Automatic", clearWhenEmpty: "persist" },
+        providerSettingsForm: {
+          placeholder: "Automatic",
+          clearWhenEmpty: "persist",
+        },
       }),
     ),
     customModels: Schema.Array(CustomModelSetting).pipe(
@@ -825,7 +868,9 @@ export const AntigravitySettings = makeProviderSettingsSchema(
       Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
     ),
   },
-  { order: ["authMethod", "apiKey", "gcpProject", "gcpLocation", "binaryPath"] },
+  {
+    order: ["authMethod", "apiKey", "gcpProject", "gcpLocation", "binaryPath"],
+  },
 );
 export type AntigravitySettings = typeof AntigravitySettings.Type;
 
@@ -993,7 +1038,10 @@ export type WorktreeCleanupRules = typeof WorktreeCleanupRules.Type;
 export const WorktreeCleanup = Schema.NullOr(
   Schema.Union([
     Schema.Struct({ mode: Schema.Literal("off") }),
-    Schema.Struct({ mode: Schema.Literal("custom"), rules: WorktreeCleanupRules }),
+    Schema.Struct({
+      mode: Schema.Literal("custom"),
+      rules: WorktreeCleanupRules,
+    }),
   ]),
 );
 export type WorktreeCleanup = typeof WorktreeCleanup.Type;
@@ -1640,6 +1688,7 @@ export const ClientSettingsPatch = Schema.Struct({
   sidebarThreadSortOrder: Schema.optionalKey(SidebarThreadSortOrder),
   sidebarThreadPreviewCount: Schema.optionalKey(SidebarThreadPreviewCount),
   timestampFormat: Schema.optionalKey(TimestampFormat),
+  locale: Schema.optionalKey(Locale),
   snapShotEnabled: Schema.optionalKey(Schema.Boolean),
   snapShotIncludeAccessibility: Schema.optionalKey(Schema.Boolean),
   snapShotShortcut: Schema.optionalKey(SnapShotShortcut),

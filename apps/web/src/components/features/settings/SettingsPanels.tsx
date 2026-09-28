@@ -5,6 +5,7 @@ import { ArchiveIcon, ArchiveX, CheckIcon, ChevronRightIcon, SettingsIcon } from
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   type BackgroundActivityProfile,
   type DesktopUpdateChannel,
@@ -14,6 +15,7 @@ import {
   type SidebarProjectGroupingMode,
 } from "@lmcstools/core";
 import { scopeThreadRef } from "@lmcstools/client/environment";
+import { LOCALE_META, SUPPORTED_LOCALES, type Locale } from "@lmcstools/client/i18n";
 import {
   isAtomCommandInterrupted,
   settlePromise,
@@ -400,7 +402,10 @@ function AboutVersionSection() {
       ? !canCheckForUpdate(updateState)
       : isDesktopUpdateButtonDisabled(updateState);
 
-  const actionLabel: Record<string, string> = { download: "Download", install: "Install" };
+  const actionLabel: Record<string, string> = {
+    download: "Download",
+    install: "Install",
+  };
   const statusLabel: Record<string, string> = {
     checking: "Checking…",
     downloading: "Downloading…",
@@ -478,7 +483,9 @@ function AboutVersionSection() {
               onValueChange={(value) => {
                 if (value === selectedHostedAppChannel) return;
                 window.location.assign(
-                  buildHostedChannelSelectionUrl({ channel: value as HostedAppChannel }),
+                  buildHostedChannelSelectionUrl({
+                    channel: value as HostedAppChannel,
+                  }),
                 );
               }}
             >
@@ -1254,7 +1261,9 @@ export function AppearanceSettingsPanel() {
               <SettingResetButton
                 label="glass opacity"
                 onClick={() =>
-                  updateSettings({ glassOpacity: DEFAULT_UNIFIED_SETTINGS.glassOpacity })
+                  updateSettings({
+                    glassOpacity: DEFAULT_UNIFIED_SETTINGS.glassOpacity,
+                  })
                 }
               />
             ) : null
@@ -1345,7 +1354,9 @@ export function AppearanceSettingsPanel() {
               <SettingResetButton
                 label="diff colors"
                 onClick={() =>
-                  updateSettings({ diffColorScheme: DEFAULT_UNIFIED_SETTINGS.diffColorScheme })
+                  updateSettings({
+                    diffColorScheme: DEFAULT_UNIFIED_SETTINGS.diffColorScheme,
+                  })
                 }
               />
             ) : null
@@ -1621,7 +1632,9 @@ function FontSmoothingRow() {
           <SettingResetButton
             label="font smoothing"
             onClick={() =>
-              updateSettings({ fontSmoothing: DEFAULT_UNIFIED_SETTINGS.fontSmoothing })
+              updateSettings({
+                fontSmoothing: DEFAULT_UNIFIED_SETTINGS.fontSmoothing,
+              })
             }
           />
         ) : null
@@ -2073,7 +2086,9 @@ function LegacyFeaturesSection() {
                 <Switch
                   checked={settings.contextWindowMeterEnabled}
                   onCheckedChange={(checked) =>
-                    updateSettings({ contextWindowMeterEnabled: Boolean(checked) })
+                    updateSettings({
+                      contextWindowMeterEnabled: Boolean(checked),
+                    })
                   }
                   aria-label="Context window indicator (legacy)"
                 />
@@ -2100,10 +2115,14 @@ function LegacyFeaturesSection() {
 }
 
 export function GeneralSettingsPanel() {
+  const { t } = useTranslation();
   const modifierLabel = isMacPlatform(navigator.platform) ? "⌘" : "Ctrl";
   const sendShortcutOptions = [
     { value: "enter", label: "Enter" },
-    { value: "mod-enter-multiline", label: `${modifierLabel} + Enter for multiline prompts` },
+    {
+      value: "mod-enter-multiline",
+      label: `${modifierLabel} + Enter for multiline prompts`,
+    },
     { value: "mod-enter", label: `${modifierLabel} + Enter always` },
   ] as const;
   const settings = useScopedSettings();
@@ -2190,6 +2209,34 @@ export function GeneralSettingsPanel() {
   return (
     <SettingsPageContainer>
       <ProjectDefaultsSettings category="general" />
+      <SettingsSection id="language" title={t("settings.general.language.sectionTitle")}>
+        <SettingsRow
+          {...searchableSetting("interface-language")}
+          title={t("settings.general.language.title")}
+          description={t("settings.general.language.description")}
+          control={
+            <Select
+              value={settings.locale}
+              onValueChange={(value) => updateSettings({ locale: value as Locale })}
+            >
+              <SelectTrigger
+                size="sm"
+                className="w-full sm:w-40"
+                aria-label={t("settings.general.language.title")}
+              >
+                <SelectValue>{LOCALE_META[settings.locale].nativeLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectPopup align="end" alignItemWithTrigger={false}>
+                {SUPPORTED_LOCALES.map((localeOption) => (
+                  <SelectItem hideIndicator key={localeOption} value={localeOption}>
+                    {LOCALE_META[localeOption].nativeLabel}
+                  </SelectItem>
+                ))}
+              </SelectPopup>
+            </Select>
+          }
+        />
+      </SettingsSection>
       <SettingsSection id="organization" title="Organization">
         <SettingsRow
           {...searchableSetting("project-grouping")}
@@ -2252,7 +2299,9 @@ export function GeneralSettingsPanel() {
                   settingKeys={["sidebarAutoSettleOnMerge"]}
                   checked={settings.sidebarAutoSettleOnMerge}
                   onCheckedChange={(checked) =>
-                    updateSettings({ sidebarAutoSettleOnMerge: Boolean(checked) })
+                    updateSettings({
+                      sidebarAutoSettleOnMerge: Boolean(checked),
+                    })
                   }
                   aria-label="Auto-settle merged threads"
                 />
@@ -2507,7 +2556,11 @@ export function GeneralSettingsPanel() {
             settings.diffLayout !== DEFAULT_UNIFIED_SETTINGS.diffLayout ? (
               <SettingResetButton
                 label="diff layout"
-                onClick={() => updateSettings({ diffLayout: DEFAULT_UNIFIED_SETTINGS.diffLayout })}
+                onClick={() =>
+                  updateSettings({
+                    diffLayout: DEFAULT_UNIFIED_SETTINGS.diffLayout,
+                  })
+                }
               />
             ) : null
           }
@@ -2649,7 +2702,9 @@ export function GeneralSettingsPanel() {
               <SettingResetButton
                 label="send shortcut"
                 onClick={() =>
-                  updateSettings({ sendShortcut: DEFAULT_UNIFIED_SETTINGS.sendShortcut })
+                  updateSettings({
+                    sendShortcut: DEFAULT_UNIFIED_SETTINGS.sendShortcut,
+                  })
                 }
               />
             ) : null
@@ -2791,7 +2846,9 @@ export function GeneralSettingsPanel() {
               checked={settings.continueThreadsAfterServerUpdate}
               disabled={!supportsRestartContinuation}
               onCheckedChange={(checked) =>
-                updateSettings({ continueThreadsAfterServerUpdate: Boolean(checked) })
+                updateSettings({
+                  continueThreadsAfterServerUpdate: Boolean(checked),
+                })
               }
               aria-label="Continue threads after restarts"
             />
@@ -2917,7 +2974,9 @@ export function GeneralSettingsPanel() {
               settingKeys={["newWorktreesStartFromOrigin"]}
               checked={settings.newWorktreesStartFromOrigin}
               onCheckedChange={(checked) =>
-                updateSettings({ newWorktreesStartFromOrigin: Boolean(checked) })
+                updateSettings({
+                  newWorktreesStartFromOrigin: Boolean(checked),
+                })
               }
               aria-label="Start new worktrees from origin by default"
             />
@@ -3043,7 +3102,9 @@ export function GeneralSettingsPanel() {
                 <SettingResetButton
                   label="quit shortcut behavior"
                   onClick={() =>
-                    updateSettings({ confirmQuit: DEFAULT_UNIFIED_SETTINGS.confirmQuit })
+                    updateSettings({
+                      confirmQuit: DEFAULT_UNIFIED_SETTINGS.confirmQuit,
+                    })
                   }
                 />
               ) : null
