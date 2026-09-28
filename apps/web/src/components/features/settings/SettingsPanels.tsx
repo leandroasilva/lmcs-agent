@@ -94,6 +94,7 @@ import {
   sortProviderInstanceEntries,
 } from "../../../providerInstances";
 import { ensureLocalApi, readLocalApi } from "../../../localApi";
+import { translateDynamic } from "../../../i18n";
 import { isMacPlatform } from "../../../lib/utils";
 import { EMPTY_SERVER_PROVIDERS } from "../../../state/server";
 import { useArchivedThreadSnapshots } from "../../../lib/archivedThreadsState";
@@ -231,6 +232,80 @@ const BACKGROUND_ACTIVITY_PROFILE_DESCRIPTIONS: Record<BackgroundActivityProfile
 
 const ADVANCED_BACKGROUND_ACTIVITY_DESCRIPTION = "Uses custom intervals.";
 
+// Label maps above stay in English as catalog fallbacks; resolvers return the
+// active locale at render time.
+function environmentIdentificationLabel(mode: EnvironmentIdentificationMode): string {
+  return translateDynamic(
+    `settings.appearance.environmentIdentification.options.${mode}`,
+    ENVIRONMENT_IDENTIFICATION_LABELS[mode],
+  );
+}
+
+function responseStreamingModeLabel(mode: ResponseStreamingMode): string {
+  return translateDynamic(
+    `settings.general.responseStreaming.options.${mode}`,
+    RESPONSE_STREAMING_MODE_LABELS[mode],
+  );
+}
+
+function responseStreamingModeDescription(mode: ResponseStreamingMode): string {
+  return translateDynamic(
+    `settings.general.responseStreaming.descriptions.${mode}`,
+    RESPONSE_STREAMING_MODE_DESCRIPTIONS[mode],
+  );
+}
+
+function timestampFormatLabel(format: keyof typeof TIMESTAMP_FORMAT_LABELS): string {
+  return translateDynamic(
+    `settings.general.timeFormat.options.${format}`,
+    TIMESTAMP_FORMAT_LABELS[format],
+  );
+}
+
+function diffLayoutLabel(layout: DiffLayout): string {
+  return translateDynamic(
+    `settings.general.diffLayout.options.${layout}`,
+    DIFF_LAYOUT_LABELS[layout],
+  );
+}
+
+function quitConfirmationModeLabel(mode: QuitConfirmationMode): string {
+  return translateDynamic(
+    `settings.general.quitShortcut.options.${mode}`,
+    QUIT_CONFIRMATION_MODE_LABELS[mode],
+  );
+}
+
+function backgroundActivityProfileOptionLabel(option: BackgroundActivityProfileOption): string {
+  return translateDynamic(
+    `settings.general.backgroundActivity.profiles.${option}`,
+    BACKGROUND_ACTIVITY_PROFILE_OPTION_LABELS[option],
+  );
+}
+
+function backgroundActivityProfileDescription(profile: BackgroundActivityProfile): string {
+  return translateDynamic(
+    `settings.general.backgroundActivity.profileDescriptions.${profile}`,
+    BACKGROUND_ACTIVITY_PROFILE_DESCRIPTIONS[profile],
+  );
+}
+
+function backgroundActivityBooleanOverrideLabel(
+  key: (typeof BACKGROUND_ACTIVITY_BOOLEAN_OVERRIDES)[number]["key"],
+): string {
+  const fallback = BACKGROUND_ACTIVITY_BOOLEAN_OVERRIDES.find(
+    (override) => override.key === key,
+  )!.label;
+  return translateDynamic(`settings.general.backgroundActivity.overrides.${key}`, fallback);
+}
+
+function advancedBackgroundActivityDescription(): string {
+  return translateDynamic(
+    "settings.general.backgroundActivity.advancedDescription",
+    ADVANCED_BACKGROUND_ACTIVITY_DESCRIPTION,
+  );
+}
+
 const DEFAULT_DRIVER_KIND = ProviderDriverKind.make("codex");
 const BACKGROUND_ACTIVITY_BOOLEAN_OVERRIDES: ReadonlyArray<{
   readonly key:
@@ -263,15 +338,17 @@ function backgroundActivityProfileSettings(profile: BackgroundActivityProfile) {
 }
 
 function AboutVersionTitle() {
+  const { t } = useTranslation();
   return (
     <span className="inline-flex items-baseline gap-2">
-      <span>Version</span>
+      <span>{t("settings.general.about.version")}</span>
       <code className="text-2xs font-medium text-muted-foreground">{APP_VERSION}</code>
     </span>
   );
 }
 
 function AboutVersionSection() {
+  const { t } = useTranslation();
   const updateState = useDesktopUpdateState();
   const [isChangingUpdateChannel, setIsChangingUpdateChannel] = useState(false);
   const [isUpdateActionPending, setIsUpdateActionPending] = useState(false);
@@ -298,8 +375,11 @@ function AboutVersionSection() {
           toastManager.add(
             stackedThreadToast({
               type: "error",
-              title: "Could not change update track",
-              description: error instanceof Error ? error.message : "Update track change failed.",
+              title: t("settings.general.about.couldNotChangeTrack"),
+              description:
+                error instanceof Error
+                  ? error.message
+                  : t("settings.general.about.trackChangeFailed"),
             }),
           );
         })
@@ -307,7 +387,7 @@ function AboutVersionSection() {
           setIsChangingUpdateChannel(false);
         });
     },
-    [selectedUpdateChannel],
+    [selectedUpdateChannel, t],
   );
 
   const handleButtonClick = useCallback(async () => {
@@ -321,8 +401,9 @@ function AboutVersionSection() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not download update",
-            description: error instanceof Error ? error.message : "Download failed.",
+            title: t("settings.general.about.couldNotDownload"),
+            description:
+              error instanceof Error ? error.message : t("settings.general.about.downloadFailed"),
           }),
         );
       });
@@ -344,8 +425,9 @@ function AboutVersionSection() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not confirm update",
-            description: error instanceof Error ? error.message : "Update confirmation failed.",
+            title: t("settings.general.about.couldNotConfirm"),
+            description:
+              error instanceof Error ? error.message : t("settings.general.about.confirmFailed"),
           }),
         );
         return;
@@ -360,8 +442,9 @@ function AboutVersionSection() {
           toastManager.add(
             stackedThreadToast({
               type: "error",
-              title: "Could not install update",
-              description: error instanceof Error ? error.message : "Install failed.",
+              title: t("settings.general.about.couldNotInstall"),
+              description:
+                error instanceof Error ? error.message : t("settings.general.about.installFailed"),
             }),
           );
         })
@@ -377,9 +460,9 @@ function AboutVersionSection() {
           toastManager.add(
             stackedThreadToast({
               type: "error",
-              title: "Could not check for updates",
+              title: t("settings.general.about.couldNotCheck"),
               description:
-                result.state.message ?? "Automatic updates are not available in this build.",
+                result.state.message ?? t("settings.general.about.autoUpdatesUnavailable"),
             }),
           );
         }
@@ -388,12 +471,13 @@ function AboutVersionSection() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not check for updates",
-            description: error instanceof Error ? error.message : "Update check failed.",
+            title: t("settings.general.about.couldNotCheck"),
+            description:
+              error instanceof Error ? error.message : t("settings.general.about.checkFailed"),
           }),
         );
       });
-  }, [isUpdateActionPending, updateState]);
+  }, [isUpdateActionPending, updateState, t]);
 
   const action = updateState ? resolveDesktopUpdateButtonAction(updateState) : "none";
   const buttonTooltip = updateState ? getDesktopUpdateButtonTooltip(updateState) : null;
@@ -403,20 +487,22 @@ function AboutVersionSection() {
       : isDesktopUpdateButtonDisabled(updateState);
 
   const actionLabel: Record<string, string> = {
-    download: "Download",
-    install: "Install",
+    download: t("settings.general.about.download"),
+    install: t("settings.general.about.install"),
   };
   const statusLabel: Record<string, string> = {
-    checking: "Checking…",
-    downloading: "Downloading…",
-    "up-to-date": "Up to Date",
+    checking: t("settings.general.about.checking"),
+    downloading: t("settings.general.about.downloading"),
+    "up-to-date": t("settings.general.about.upToDate"),
   };
   const buttonLabel =
-    actionLabel[action] ?? statusLabel[updateState?.status ?? ""] ?? "Check for Updates";
+    actionLabel[action] ??
+    statusLabel[updateState?.status ?? ""] ??
+    t("settings.general.about.checkForUpdates");
   const description =
     action === "download" || action === "install"
-      ? "Update available."
-      : "Current version of the application.";
+      ? t("settings.general.about.updateAvailable")
+      : t("settings.general.about.currentVersion");
 
   return (
     <>
@@ -443,8 +529,8 @@ function AboutVersionSection() {
       />
       {hasDesktopBridge ? (
         <SettingsRow
-          title="Update track"
-          description="Use stable releases or nightly builds. Switch back anytime."
+          title={t("settings.general.about.updateTrack")}
+          description={t("settings.general.about.updateTrackDescription")}
           control={
             <Select
               value={selectedUpdateChannel}
@@ -455,19 +541,21 @@ function AboutVersionSection() {
               <SelectTrigger
                 size="sm"
                 className="w-full sm:w-40"
-                aria-label="Update track"
+                aria-label={t("settings.general.about.updateTrack")}
                 disabled={isChangingUpdateChannel}
               >
                 <SelectValue>
-                  {selectedUpdateChannel === "nightly" ? "Nightly" : "Stable"}
+                  {selectedUpdateChannel === "nightly"
+                    ? t("settings.general.about.channelNightly")
+                    : t("settings.general.about.channelStable")}
                 </SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
                 <SelectItem hideIndicator value="latest">
-                  Stable
+                  {t("settings.general.about.channelStable")}
                 </SelectItem>
                 <SelectItem hideIndicator value="nightly">
-                  Nightly
+                  {t("settings.general.about.channelNightly")}
                 </SelectItem>
               </SelectPopup>
             </Select>
@@ -475,8 +563,8 @@ function AboutVersionSection() {
         />
       ) : selectedHostedAppChannel ? (
         <SettingsRow
-          title="Update track"
-          description="Switches the hosted app release channel."
+          title={t("settings.general.about.updateTrack")}
+          description={t("settings.general.about.updateTrackHostedDescription")}
           control={
             <Select
               value={selectedHostedAppChannel}
@@ -489,15 +577,19 @@ function AboutVersionSection() {
                 );
               }}
             >
-              <SelectTrigger size="sm" className="w-full sm:w-40" aria-label="Update track">
+              <SelectTrigger
+                size="sm"
+                className="w-full sm:w-40"
+                aria-label={t("settings.general.about.updateTrack")}
+              >
                 <SelectValue>{HOSTED_APP_CHANNEL_LABEL}</SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
                 <SelectItem hideIndicator value="latest">
-                  Latest
+                  {t("settings.general.about.channelLatest")}
                 </SelectItem>
                 <SelectItem hideIndicator value="nightly">
-                  Nightly
+                  {t("settings.general.about.channelNightly")}
                 </SelectItem>
               </SelectPopup>
             </Select>
@@ -509,6 +601,7 @@ function AboutVersionSection() {
 }
 
 export function useSettingsRestore(onRestored?: () => void) {
+  const { t } = useTranslation();
   const {
     theme,
     setTheme,
@@ -529,110 +622,120 @@ export function useSettingsRestore(onRestored?: () => void) {
 
   const changedSettingLabels = useMemo(
     () => [
-      ...(theme !== "system" ? ["Theme"] : []),
-      ...(!followSystem ? ["Follow system"] : []),
-      ...(themeHalves !== null ? ["Theme mix"] : []),
+      ...(theme !== "system" ? [t("settings.restore.labels.theme")] : []),
+      ...(!followSystem ? [t("settings.restore.labels.followSystem")] : []),
+      ...(themeHalves !== null ? [t("settings.restore.labels.themeMix")] : []),
       ...(settings.appearanceContrast !== DEFAULT_UNIFIED_SETTINGS.appearanceContrast
-        ? ["Contrast"]
+        ? [t("settings.restore.labels.contrast")]
         : []),
-      ...(settings.glassOpacity !== DEFAULT_UNIFIED_SETTINGS.glassOpacity ? ["Glass opacity"] : []),
+      ...(settings.glassOpacity !== DEFAULT_UNIFIED_SETTINGS.glassOpacity
+        ? [t("settings.restore.labels.glassOpacity")]
+        : []),
       ...(settings.diffColorScheme !== DEFAULT_UNIFIED_SETTINGS.diffColorScheme
-        ? ["Diff colors"]
+        ? [t("settings.restore.labels.diffColors")]
         : []),
       ...(settings.panelAnimationDurationMs !== DEFAULT_UNIFIED_SETTINGS.panelAnimationDurationMs
-        ? ["Panel animations"]
+        ? [t("settings.restore.labels.panelAnimations")]
         : []),
       ...(settings.environmentIdentificationMode !==
       DEFAULT_UNIFIED_SETTINGS.environmentIdentificationMode
-        ? ["Environment identification"]
+        ? [t("settings.restore.labels.environmentIdentification")]
         : []),
       ...(settings.timestampFormat !== DEFAULT_UNIFIED_SETTINGS.timestampFormat
-        ? ["Time format"]
+        ? [t("settings.restore.labels.timeFormat")]
         : []),
       ...(settings.notificationMode !== DEFAULT_UNIFIED_SETTINGS.notificationMode
-        ? ["Thread notifications"]
+        ? [t("settings.restore.labels.threadNotifications")]
         : []),
       ...(settings.inAppNotificationsEnabled !== DEFAULT_UNIFIED_SETTINGS.inAppNotificationsEnabled
-        ? ["In-app notifications"]
+        ? [t("settings.restore.labels.inAppNotifications")]
         : []),
       ...(settings.sidebarThreadPreviewCount !== DEFAULT_UNIFIED_SETTINGS.sidebarThreadPreviewCount
-        ? ["Visible threads"]
+        ? [t("settings.restore.labels.visibleThreads")]
         : []),
       ...(settings.sidebarProjectGroupingMode !==
       DEFAULT_UNIFIED_SETTINGS.sidebarProjectGroupingMode
-        ? ["Project Grouping"]
+        ? [t("settings.restore.labels.projectGrouping")]
         : []),
       ...(settings.sidebarAutoSettleAfterDays !==
       DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleAfterDays
-        ? ["Auto-settle inactive threads"]
+        ? [t("settings.restore.labels.autoSettleInactive")]
         : []),
       ...(settings.sidebarAutoSettleOnMerge !== DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleOnMerge
-        ? ["Auto-settle merged threads"]
+        ? [t("settings.restore.labels.autoSettleMerged")]
         : []),
-      ...(settings.wordWrap !== DEFAULT_UNIFIED_SETTINGS.wordWrap ? ["Word wrap"] : []),
+      ...(settings.wordWrap !== DEFAULT_UNIFIED_SETTINGS.wordWrap
+        ? [t("settings.restore.labels.wordWrap")]
+        : []),
       ...getChangedTypographySettingLabels(settings),
       ...(settings.diffFilesCollapsed !== DEFAULT_UNIFIED_SETTINGS.diffFilesCollapsed
-        ? ["Default diff file state"]
+        ? [t("settings.restore.labels.defaultDiffFileState")]
         : []),
       ...(settings.diffIgnoreWhitespace !== DEFAULT_UNIFIED_SETTINGS.diffIgnoreWhitespace
-        ? ["Diff whitespace changes"]
+        ? [t("settings.restore.labels.diffWhitespace")]
         : []),
-      ...(settings.diffLayout !== DEFAULT_UNIFIED_SETTINGS.diffLayout ? ["Diff layout"] : []),
+      ...(settings.diffLayout !== DEFAULT_UNIFIED_SETTINGS.diffLayout
+        ? [t("settings.restore.labels.diffLayout")]
+        : []),
       ...(settings.proactivePanelsEnabled !== DEFAULT_UNIFIED_SETTINGS.proactivePanelsEnabled
-        ? ["Proactive panels"]
+        ? [t("settings.restore.labels.proactivePanels")]
         : []),
       ...(settings.showSkillsInSlashMenu !== DEFAULT_UNIFIED_SETTINGS.showSkillsInSlashMenu
-        ? ["Show skills in slash menu"]
+        ? [t("settings.restore.labels.skillsInSlashMenu")]
         : []),
       ...(settings.composerCollapseOnScroll !== DEFAULT_UNIFIED_SETTINGS.composerCollapseOnScroll
-        ? ["Collapse composer on scroll"]
+        ? [t("settings.restore.labels.composerCollapse")]
         : []),
       ...(settings.composerRichTextEnabled !== DEFAULT_UNIFIED_SETTINGS.composerRichTextEnabled
-        ? ["Rich text composer"]
+        ? [t("settings.restore.labels.richTextComposer")]
         : []),
-      ...(settings.sendShortcut !== DEFAULT_UNIFIED_SETTINGS.sendShortcut ? ["Send shortcut"] : []),
+      ...(settings.sendShortcut !== DEFAULT_UNIFIED_SETTINGS.sendShortcut
+        ? [t("settings.restore.labels.sendShortcut")]
+        : []),
       ...(settings.followUpBehavior !== DEFAULT_UNIFIED_SETTINGS.followUpBehavior
-        ? ["Follow-up behavior"]
+        ? [t("settings.restore.labels.followUpBehavior")]
         : []),
       ...(settings.contextWindowMeterEnabled !== DEFAULT_UNIFIED_SETTINGS.contextWindowMeterEnabled
-        ? ["Context window indicator"]
+        ? [t("settings.restore.labels.contextWindowIndicator")]
         : []),
       ...(settings.responseStreamingMode !== DEFAULT_UNIFIED_SETTINGS.responseStreamingMode
-        ? ["Response streaming"]
+        ? [t("settings.restore.labels.responseStreaming")]
         : []),
       ...(settings.enableProviderUpdateChecks !==
       DEFAULT_UNIFIED_SETTINGS.enableProviderUpdateChecks
-        ? ["Provider update checks"]
+        ? [t("settings.restore.labels.providerUpdateChecks")]
         : []),
       ...(settings.continueThreadsAfterServerUpdate !==
       DEFAULT_UNIFIED_SETTINGS.continueThreadsAfterServerUpdate
-        ? ["Continue threads after restarts"]
+        ? [t("settings.restore.labels.continueAfterRestarts")]
         : []),
-      ...(isBackgroundActivityDirty ? ["Background activity"] : []),
+      ...(isBackgroundActivityDirty ? [t("settings.restore.labels.backgroundActivity")] : []),
       ...(settings.defaultThreadEnvMode !== DEFAULT_UNIFIED_SETTINGS.defaultThreadEnvMode
-        ? ["New thread mode"]
+        ? [t("settings.restore.labels.newThreadMode")]
         : []),
       ...(settings.newWorktreesStartFromOrigin !==
       DEFAULT_UNIFIED_SETTINGS.newWorktreesStartFromOrigin
-        ? ["New worktrees start from origin"]
+        ? [t("settings.restore.labels.worktreesFromOrigin")]
         : []),
       ...(settings.addProjectBaseDirectory !== DEFAULT_UNIFIED_SETTINGS.addProjectBaseDirectory
-        ? ["Add project base directory"]
+        ? [t("settings.restore.labels.addProjectBaseDir")]
         : []),
       ...(settings.confirmThreadUnpin !== DEFAULT_UNIFIED_SETTINGS.confirmThreadUnpin
-        ? ["Unpin confirmation"]
+        ? [t("settings.restore.labels.unpinConfirmation")]
         : []),
       ...(settings.confirmThreadArchive !== DEFAULT_UNIFIED_SETTINGS.confirmThreadArchive
-        ? ["Archive confirmation"]
+        ? [t("settings.restore.labels.archiveConfirmation")]
         : []),
       ...(settings.confirmThreadDelete !== DEFAULT_UNIFIED_SETTINGS.confirmThreadDelete
-        ? ["Delete confirmation"]
+        ? [t("settings.restore.labels.deleteConfirmation")]
         : []),
-      ...(settings.confirmQuit !== DEFAULT_UNIFIED_SETTINGS.confirmQuit ? ["Quit shortcut"] : []),
-      ...(isTextGenerationModelDirty ? ["Text generation model"] : []),
+      ...(settings.confirmQuit !== DEFAULT_UNIFIED_SETTINGS.confirmQuit
+        ? [t("settings.restore.labels.quitShortcut")]
+        : []),
+      ...(isTextGenerationModelDirty ? [t("settings.restore.labels.textGenerationModel")] : []),
       ...getChangedBrowserSettingLabels(settings),
       ...(settings.enableAgentBrowserAccess !== DEFAULT_UNIFIED_SETTINGS.enableAgentBrowserAccess
-        ? ["Agent browser access"]
+        ? [t("settings.restore.labels.agentBrowserAccess")]
         : []),
     ],
     [
@@ -691,6 +794,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       followSystem,
       theme,
       themeHalves,
+      t,
     ],
   );
 
@@ -698,9 +802,12 @@ export function useSettingsRestore(onRestored?: () => void) {
     if (changedSettingLabels.length === 0) return;
     const api = readLocalApi();
     const confirmed = await (api ?? ensureLocalApi()).dialogs.confirm(
-      ["Restore default settings?", `This will reset: ${changedSettingLabels.join(", ")}.`].join(
-        "\n",
-      ),
+      [
+        t("settings.restore.confirmTitle"),
+        t("settings.restore.confirmResetList", {
+          labels: changedSettingLabels.join(", "),
+        }),
+      ].join("\n"),
       { variant: "destructive" },
     );
     if (!confirmed) return;
@@ -728,8 +835,8 @@ export function useSettingsRestore(onRestored?: () => void) {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Couldn’t restore theme settings",
-          description: "Try again.",
+          title: t("settings.restore.themeRestoreError"),
+          description: t("settings.restore.tryAgain"),
         }),
       );
     };
@@ -824,6 +931,7 @@ export function useSettingsRestore(onRestored?: () => void) {
     setFollowSystem,
     setTheme,
     setThemeHalf,
+    t,
     theme,
     themeHalves,
     updateSettings,
@@ -850,23 +958,26 @@ function TokenStreamingWarningDialog({
   onConfirm: () => void;
   onUseParagraphs: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogPopup>
         <AlertDialogHeader>
-          <AlertDialogTitle>Token by token is a worse experience</AlertDialogTitle>
+          <AlertDialogTitle>{t("settings.general.tokenStreamingDialog.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Token streaming repaints the message on every delta. It is slower, harder to read, and
-            costs more CPU on every connected device. This mode stays only for backwards
-            compatibility. Use paragraph streaming instead.
+            {t("settings.general.tokenStreamingDialog.description")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <Button variant="ghost-muted" className="sm:mr-auto" onClick={onConfirm}>
-            Use token by token
+            {t("settings.general.tokenStreamingDialog.useToken")}
           </Button>
-          <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
-          <Button onClick={onUseParagraphs}>Use paragraphs</Button>
+          <AlertDialogClose render={<Button variant="outline" />}>
+            {t("common.cancel")}
+          </AlertDialogClose>
+          <Button onClick={onUseParagraphs}>
+            {t("settings.general.tokenStreamingDialog.useParagraphs")}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogPopup>
     </AlertDialog>
@@ -880,6 +991,7 @@ function BackgroundActivityAdvancedDialog({
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const resolvedBackgroundActivity = resolveServerBackgroundActivitySettings(settings);
@@ -901,18 +1013,20 @@ function BackgroundActivityAdvancedDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPopup className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Background Activity</DialogTitle>
+          <DialogTitle>{t("settings.general.backgroundActivity.dialog.title")}</DialogTitle>
           <DialogDescription>
-            Tune the shared power policy and the background intervals that feed it.
+            {t("settings.general.backgroundActivity.dialog.description")}
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>
           <div className="overflow-hidden rounded-xl border bg-card text-card-foreground">
             <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <div className="text-sm font-medium">Shared policy</div>
+                <div className="text-sm font-medium">
+                  {t("settings.general.backgroundActivity.dialog.sharedPolicy")}
+                </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Controls whether background work may run after a subscribed interval fires.
+                  {t("settings.general.backgroundActivity.dialog.sharedPolicyDescription")}
                 </p>
               </div>
               <Select
@@ -932,19 +1046,19 @@ function BackgroundActivityAdvancedDialog({
                 <SelectTrigger
                   size="sm"
                   className="w-full sm:w-40"
-                  aria-label="Shared background policy"
+                  aria-label={t("settings.general.backgroundActivity.dialog.sharedPolicyAria")}
                 >
-                  <SelectValue>{BACKGROUND_ACTIVITY_PROFILE_LABELS[activeProfile]}</SelectValue>
+                  <SelectValue>{backgroundActivityProfileOptionLabel(activeProfile)}</SelectValue>
                 </SelectTrigger>
                 <SelectPopup align="end" alignItemWithTrigger={false}>
                   <SelectItem hideIndicator value="balanced">
-                    {BACKGROUND_ACTIVITY_PROFILE_LABELS.balanced}
+                    {backgroundActivityProfileOptionLabel("balanced")}
                   </SelectItem>
                   <SelectItem hideIndicator value="performance">
-                    {BACKGROUND_ACTIVITY_PROFILE_LABELS.performance}
+                    {backgroundActivityProfileOptionLabel("performance")}
                   </SelectItem>
                   <SelectItem hideIndicator value="battery-saver">
-                    {BACKGROUND_ACTIVITY_PROFILE_LABELS["battery-saver"]}
+                    {backgroundActivityProfileOptionLabel("battery-saver")}
                   </SelectItem>
                 </SelectPopup>
               </Select>
@@ -956,7 +1070,7 @@ function BackgroundActivityAdvancedDialog({
                   {searchableSetting("git-fetch-interval").title}
                 </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Refresh remote branch status in the background.
+                  {t("settings.general.backgroundActivity.dialog.gitFetchDescription")}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -981,20 +1095,30 @@ function BackgroundActivityAdvancedDialog({
                   }
                 >
                   <NumberFieldGroup>
-                    <NumberFieldDecrement aria-label="Decrease Git fetch interval" />
-                    <NumberFieldInput aria-label="Git fetch interval in seconds" />
-                    <NumberFieldIncrement aria-label="Increase Git fetch interval" />
+                    <NumberFieldDecrement
+                      aria-label={t("settings.general.backgroundActivity.dialog.decreaseGitFetch")}
+                    />
+                    <NumberFieldInput
+                      aria-label={t("settings.general.backgroundActivity.dialog.gitFetchInput")}
+                    />
+                    <NumberFieldIncrement
+                      aria-label={t("settings.general.backgroundActivity.dialog.increaseGitFetch")}
+                    />
                   </NumberFieldGroup>
                 </NumberField>
-                <span className="text-xs text-muted-foreground">seconds</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("settings.general.backgroundActivity.dialog.seconds")}
+                </span>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <div className="text-sm font-medium">Provider health interval</div>
+                <div className="text-sm font-medium">
+                  {t("settings.general.backgroundActivity.dialog.providerHealth")}
+                </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Refresh provider availability, versions, auth state, and model metadata.
+                  {t("settings.general.backgroundActivity.dialog.providerHealthDescription")}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -1019,20 +1143,36 @@ function BackgroundActivityAdvancedDialog({
                   }
                 >
                   <NumberFieldGroup>
-                    <NumberFieldDecrement aria-label="Decrease provider health interval" />
-                    <NumberFieldInput aria-label="Provider health interval in seconds" />
-                    <NumberFieldIncrement aria-label="Increase provider health interval" />
+                    <NumberFieldDecrement
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.decreaseProviderHealth",
+                      )}
+                    />
+                    <NumberFieldInput
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.providerHealthInput",
+                      )}
+                    />
+                    <NumberFieldIncrement
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.increaseProviderHealth",
+                      )}
+                    />
                   </NumberFieldGroup>
                 </NumberField>
-                <span className="text-xs text-muted-foreground">seconds</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("settings.general.backgroundActivity.dialog.seconds")}
+                </span>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <div className="text-sm font-medium">Host power monitor</div>
+                <div className="text-sm font-medium">
+                  {t("settings.general.backgroundActivity.dialog.hostPowerMonitor")}
+                </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Poll host power state while clients are active.
+                  {t("settings.general.backgroundActivity.dialog.hostPowerMonitorDescription")}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -1057,20 +1197,36 @@ function BackgroundActivityAdvancedDialog({
                   }
                 >
                   <NumberFieldGroup>
-                    <NumberFieldDecrement aria-label="Decrease active host power interval" />
-                    <NumberFieldInput aria-label="Active host power interval in seconds" />
-                    <NumberFieldIncrement aria-label="Increase active host power interval" />
+                    <NumberFieldDecrement
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.decreaseActiveHostPower",
+                      )}
+                    />
+                    <NumberFieldInput
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.activeHostPowerInput",
+                      )}
+                    />
+                    <NumberFieldIncrement
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.increaseActiveHostPower",
+                      )}
+                    />
                   </NumberFieldGroup>
                 </NumberField>
-                <span className="text-xs text-muted-foreground">seconds</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("settings.general.backgroundActivity.dialog.seconds")}
+                </span>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <div className="text-sm font-medium">Idle host monitor</div>
+                <div className="text-sm font-medium">
+                  {t("settings.general.backgroundActivity.dialog.idleHostMonitor")}
+                </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Poll host power state when no foreground client is active.
+                  {t("settings.general.backgroundActivity.dialog.idleHostMonitorDescription")}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -1095,22 +1251,38 @@ function BackgroundActivityAdvancedDialog({
                   }
                 >
                   <NumberFieldGroup>
-                    <NumberFieldDecrement aria-label="Decrease idle host power interval" />
-                    <NumberFieldInput aria-label="Idle host power interval in seconds" />
-                    <NumberFieldIncrement aria-label="Increase idle host power interval" />
+                    <NumberFieldDecrement
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.decreaseIdleHostPower",
+                      )}
+                    />
+                    <NumberFieldInput
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.idleHostPowerInput",
+                      )}
+                    />
+                    <NumberFieldIncrement
+                      aria-label={t(
+                        "settings.general.backgroundActivity.dialog.increaseIdleHostPower",
+                      )}
+                    />
                   </NumberFieldGroup>
                 </NumberField>
-                <span className="text-xs text-muted-foreground">seconds</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("settings.general.backgroundActivity.dialog.seconds")}
+                </span>
               </div>
             </div>
 
             <div className="grid gap-0 border-t sm:grid-cols-2">
-              {BACKGROUND_ACTIVITY_BOOLEAN_OVERRIDES.map(({ key, label }) => (
+              {BACKGROUND_ACTIVITY_BOOLEAN_OVERRIDES.map(({ key }) => (
                 <label
                   key={key}
                   className="flex items-center justify-between gap-3 border-b px-4 py-3 last:border-b-0 sm:border-r sm:even:border-r-0"
                 >
-                  <span className="text-sm font-medium">{label}</span>
+                  <span className="text-sm font-medium">
+                    {backgroundActivityBooleanOverrideLabel(key)}
+                  </span>
                   <Switch
                     checked={resolvedBackgroundActivity[key]}
                     onCheckedChange={(checked) =>
@@ -1124,7 +1296,7 @@ function BackgroundActivityAdvancedDialog({
                         ),
                       )
                     }
-                    aria-label={label}
+                    aria-label={backgroundActivityBooleanOverrideLabel(key)}
                   />
                 </label>
               ))}
@@ -1136,9 +1308,11 @@ function BackgroundActivityAdvancedDialog({
             variant="outline"
             onClick={() => updateSettings(resetBackgroundActivitySettings())}
           >
-            Reset all
+            {t("settings.general.backgroundActivity.dialog.resetAll")}
           </Button>
-          <Button onClick={() => onOpenChange(false)}>Done</Button>
+          <Button onClick={() => onOpenChange(false)}>
+            {t("settings.general.backgroundActivity.dialog.done")}
+          </Button>
         </DialogFooter>
       </DialogPopup>
     </Dialog>

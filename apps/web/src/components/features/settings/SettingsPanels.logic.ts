@@ -19,6 +19,8 @@ import {
 import * as Duration from "effect/Duration";
 import * as Equal from "effect/Equal";
 
+import { translateDynamic } from "../../../i18n";
+
 export function isProjectGroupingEnabled(mode: SidebarProjectGroupingMode): boolean {
   return mode !== "separate";
 }
@@ -92,19 +94,19 @@ export function getChangedTypographySettingLabels(settings: TypographySettings):
   return [
     ...(settings.fontFamilySans !== DEFAULT_UNIFIED_SETTINGS.fontFamilySans ||
     settings.fontSizeInterface !== DEFAULT_UNIFIED_SETTINGS.fontSizeInterface
-      ? ["Interface font"]
+      ? [translateDynamic("settings.restore.labels.interfaceFont", "Interface font")]
       : []),
     ...(settings.fontFamilyComposer !== DEFAULT_UNIFIED_SETTINGS.fontFamilyComposer ||
     settings.fontSizePrompt !== DEFAULT_UNIFIED_SETTINGS.fontSizePrompt
-      ? ["Prompt font"]
+      ? [translateDynamic("settings.restore.labels.promptFont", "Prompt font")]
       : []),
     ...(settings.fontFamilyCode !== DEFAULT_UNIFIED_SETTINGS.fontFamilyCode ||
     settings.fontSizeCode !== DEFAULT_UNIFIED_SETTINGS.fontSizeCode
-      ? ["Code font"]
+      ? [translateDynamic("settings.restore.labels.codeFont", "Code font")]
       : []),
     ...(settings.fontFamilyTerminal !== DEFAULT_UNIFIED_SETTINGS.fontFamilyTerminal ||
     settings.fontSizeTerminal !== DEFAULT_UNIFIED_SETTINGS.fontSizeTerminal
-      ? ["Terminal font"]
+      ? [translateDynamic("settings.restore.labels.terminalFont", "Terminal font")]
       : []),
   ];
 }
@@ -148,24 +150,33 @@ export function getChangedBrowserSettingLabels(settings: BrowserDefaultSettings)
       DEFAULT_UNIFIED_SETTINGS.browserDefaultViewport,
     )
       ? []
-      : ["Browser viewport"]),
+      : [translateDynamic("settings.restore.labels.browserViewport", "Browser viewport")]),
     ...(settings.browserDefaultZoomFactor !== DEFAULT_UNIFIED_SETTINGS.browserDefaultZoomFactor
-      ? ["Browser zoom"]
+      ? [translateDynamic("settings.restore.labels.browserZoom", "Browser zoom")]
       : []),
     ...(settings.browserDefaultAppearance !== DEFAULT_UNIFIED_SETTINGS.browserDefaultAppearance
-      ? ["Browser appearance"]
+      ? [translateDynamic("settings.restore.labels.browserAppearance", "Browser appearance")]
       : []),
     ...(settings.browserRecordingFrameRate !== DEFAULT_UNIFIED_SETTINGS.browserRecordingFrameRate
-      ? ["Recording frame rate"]
+      ? [translateDynamic("settings.restore.labels.recordingFrameRate", "Recording frame rate")]
       : []),
-    ...(settings.browserRecordingShowKeyPresses ? ["Recording key presses"] : []),
-    ...(settings.browserRecordingShowMousePresses ? ["Recording mouse presses"] : []),
+    ...(settings.browserRecordingShowKeyPresses
+      ? [translateDynamic("settings.restore.labels.recordingKeyPresses", "Recording key presses")]
+      : []),
+    ...(settings.browserRecordingShowMousePresses
+      ? [
+          translateDynamic(
+            "settings.restore.labels.recordingMousePresses",
+            "Recording mouse presses",
+          ),
+        ]
+      : []),
     ...(settings.browserLinkTarget !== DEFAULT_UNIFIED_SETTINGS.browserLinkTarget
-      ? ["Open links in"]
+      ? [translateDynamic("settings.restore.labels.openLinksIn", "Open links in")]
       : []),
     ...(settings.browserAutoShowFloatingPreview !==
     DEFAULT_UNIFIED_SETTINGS.browserAutoShowFloatingPreview
-      ? ["Floating preview"]
+      ? [translateDynamic("settings.restore.labels.floatingPreview", "Floating preview")]
       : []),
   ];
 }
@@ -232,23 +243,41 @@ export function formatDiagnosticsDescription(input: {
   readonly otlpMetricsEnabled: boolean;
   readonly otlpMetricsUrl?: string | undefined;
 }): string {
-  const mode = input.localTracingEnabled ? "Local trace file" : "Terminal logs only";
+  const mode = input.localTracingEnabled
+    ? translateDynamic("settings.diagnostics.description.modeLocal", "Local trace file")
+    : translateDynamic("settings.diagnostics.description.modeTerminal", "Terminal logs only");
   const tracesUrl = input.otlpTracesEnabled ? input.otlpTracesUrl : undefined;
   const metricsUrl = input.otlpMetricsEnabled ? input.otlpMetricsUrl : undefined;
 
   if (tracesUrl && metricsUrl) {
     const collapsedUrl = collapseOtelSignalsUrl({ tracesUrl, metricsUrl });
     return collapsedUrl
-      ? `${mode}. Exporting OTEL to ${collapsedUrl}.`
-      : `${mode}. Exporting OTEL traces to ${tracesUrl} and metrics to ${metricsUrl}.`;
+      ? translateDynamic(
+          "settings.diagnostics.description.exportBothCollapsed",
+          `${mode}. Exporting OTEL to ${collapsedUrl}.`,
+          { mode, url: collapsedUrl },
+        )
+      : translateDynamic(
+          "settings.diagnostics.description.exportBoth",
+          `${mode}. Exporting OTEL traces to ${tracesUrl} and metrics to ${metricsUrl}.`,
+          { mode, tracesUrl, metricsUrl },
+        );
   }
 
   if (tracesUrl) {
-    return `${mode}. Exporting OTEL traces to ${tracesUrl}.`;
+    return translateDynamic(
+      "settings.diagnostics.description.exportTraces",
+      `${mode}. Exporting OTEL traces to ${tracesUrl}.`,
+      { mode, tracesUrl },
+    );
   }
 
   if (metricsUrl) {
-    return `${mode}. Exporting OTEL metrics to ${metricsUrl}.`;
+    return translateDynamic(
+      "settings.diagnostics.description.exportMetrics",
+      `${mode}. Exporting OTEL metrics to ${metricsUrl}.`,
+      { mode, metricsUrl },
+    );
   }
 
   return `${mode}.`;

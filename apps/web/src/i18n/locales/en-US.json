@@ -1,4 +1,7 @@
 {
+  "common": {
+    "cancel": "Cancel"
+  },
   "settings": {
     "rootTitle": "Settings",
     "breadcrumbAria": "Settings breadcrumb",
@@ -30,6 +33,92 @@
         "sectionTitle": "Language",
         "title": "Interface language",
         "description": "Choose the language used across the interface. Saved on this device."
+      },
+      "about": {
+        "version": "Version",
+        "updateAvailable": "Update available.",
+        "currentVersion": "Current version of the application.",
+        "download": "Download",
+        "install": "Install",
+        "checking": "Checking…",
+        "downloading": "Downloading…",
+        "upToDate": "Up to Date",
+        "checkForUpdates": "Check for Updates",
+        "updateTrack": "Update track",
+        "updateTrackDescription": "Use stable releases or nightly builds. Switch back anytime.",
+        "updateTrackHostedDescription": "Switches the hosted app release channel.",
+        "channelStable": "Stable",
+        "channelNightly": "Nightly",
+        "channelLatest": "Latest",
+        "couldNotChangeTrack": "Could not change update track",
+        "trackChangeFailed": "Update track change failed.",
+        "couldNotDownload": "Could not download update",
+        "downloadFailed": "Download failed.",
+        "couldNotConfirm": "Could not confirm update",
+        "confirmFailed": "Update confirmation failed.",
+        "couldNotInstall": "Could not install update",
+        "installFailed": "Install failed.",
+        "couldNotCheck": "Could not check for updates",
+        "checkFailed": "Update check failed.",
+        "autoUpdatesUnavailable": "Automatic updates are not available in this build."
+      },
+      "tokenStreamingDialog": {
+        "title": "Token by token is a worse experience",
+        "description": "Token streaming repaints the message on every delta. It is slower, harder to read, and costs more CPU on every connected device. This mode stays only for backwards compatibility. Use paragraph streaming instead.",
+        "useToken": "Use token by token",
+        "useParagraphs": "Use paragraphs"
+      },
+      "responseStreaming": {
+        "options": {
+          "turn": "Wait for the full response",
+          "paragraph": "Show finished paragraphs",
+          "token": "Token by token (legacy)"
+        },
+        "descriptions": {
+          "turn": "Text appears once the agent finishes its turn.",
+          "paragraph": "Each paragraph or code block appears as soon as it is complete.",
+          "token": "Every token repaints the answer as it arrives. Slower and harder to read. Thinking traces still arrive a paragraph at a time."
+        }
+      },
+      "timeFormat": {
+        "options": {
+          "locale": "System default",
+          "12-hour": "12-hour",
+          "24-hour": "24-hour"
+        }
+      },
+      "diffLayout": {
+        "options": {
+          "stacked": "Stacked",
+          "split": "Split"
+        }
+      },
+      "quitShortcut": {
+        "options": {
+          "direct": "Direct",
+          "hold": "Hold",
+          "double-click": "Double press"
+        }
+      },
+      "backgroundActivity": {
+        "profiles": {
+          "balanced": "Balanced",
+          "performance": "Performance",
+          "battery-saver": "Battery saver",
+          "advanced": "Advanced"
+        },
+        "profileDescriptions": {
+          "balanced": "Pauses probes for idle clients, locked hosts, or low power mode.",
+          "performance": "Allows scoped background probes while any subscribed client remains connected.",
+          "battery-saver": "Also pauses background probes when the host or client is on battery."
+        },
+        "overrides": {
+          "pauseWhenHostLocked": "Pause when host is locked",
+          "pauseWhenHostLowPower": "Pause on host low power",
+          "pauseWhenClientLowPower": "Pause on client low power",
+          "pauseWhenOnBattery": "Pause on battery"
+        },
+        "advancedDescription": "Uses custom intervals."
       }
     },
     "shared": {
@@ -50,6 +139,84 @@
         "environmentFallback": "environment",
         "setOnEnvironment": "Set on the environment",
         "builtInDefault": "Built-in default"
+      }
+    },
+    "appearance": {
+      "environmentIdentification": {
+        "options": {
+          "artwork": "Artwork",
+          "pill": "Version pill",
+          "none": "None"
+        }
+      }
+    },
+    "restore": {
+      "confirmTitle": "Restore default settings?",
+      "confirmResetList": "This will reset: {{labels}}.",
+      "themeRestoreError": "Couldn’t restore theme settings",
+      "tryAgain": "Try again.",
+      "labels": {
+        "theme": "Theme",
+        "followSystem": "Follow system",
+        "themeMix": "Theme mix",
+        "contrast": "Contrast",
+        "glassOpacity": "Glass opacity",
+        "diffColors": "Diff colors",
+        "panelAnimations": "Panel animations",
+        "environmentIdentification": "Environment identification",
+        "timeFormat": "Time format",
+        "threadNotifications": "Thread notifications",
+        "inAppNotifications": "In-app notifications",
+        "visibleThreads": "Visible threads",
+        "projectGrouping": "Project Grouping",
+        "autoSettleInactive": "Auto-settle inactive threads",
+        "autoSettleMerged": "Auto-settle merged threads",
+        "wordWrap": "Word wrap",
+        "defaultDiffFileState": "Default diff file state",
+        "diffWhitespace": "Diff whitespace changes",
+        "diffLayout": "Diff layout",
+        "proactivePanels": "Proactive panels",
+        "skillsInSlashMenu": "Show skills in slash menu",
+        "composerCollapse": "Collapse composer on scroll",
+        "richTextComposer": "Rich text composer",
+        "sendShortcut": "Send shortcut",
+        "followUpBehavior": "Follow-up behavior",
+        "contextWindowIndicator": "Context window indicator",
+        "responseStreaming": "Response streaming",
+        "providerUpdateChecks": "Provider update checks",
+        "continueAfterRestarts": "Continue threads after restarts",
+        "backgroundActivity": "Background activity",
+        "newThreadMode": "New thread mode",
+        "worktreesFromOrigin": "New worktrees start from origin",
+        "addProjectBaseDir": "Add project base directory",
+        "unpinConfirmation": "Unpin confirmation",
+        "archiveConfirmation": "Archive confirmation",
+        "deleteConfirmation": "Delete confirmation",
+        "quitShortcut": "Quit shortcut",
+        "textGenerationModel": "Text generation model",
+        "agentBrowserAccess": "Agent browser access",
+        "interfaceFont": "Interface font",
+        "promptFont": "Prompt font",
+        "codeFont": "Code font",
+        "terminalFont": "Terminal font",
+        "browserViewport": "Browser viewport",
+        "browserZoom": "Browser zoom",
+        "browserAppearance": "Browser appearance",
+        "recordingFrameRate": "Recording frame rate",
+        "recordingKeyPresses": "Recording key presses",
+        "recordingMousePresses": "Recording mouse presses",
+        "openLinksIn": "Open links in",
+        "floatingPreview": "Floating preview"
+      }
+    },
+    "diagnostics": {
+      "description": {
+        "modeLocal": "Local trace file",
+        "modeTerminal": "Terminal logs only",
+        "exportBothCollapsed": "{{mode}}. Exporting OTEL to {{url}}.",
+        "exportBoth": "{{mode}}. Exporting OTEL traces to {{tracesUrl}} and metrics to {{metricsUrl}}.",
+        "exportTraces": "{{mode}}. Exporting OTEL traces to {{tracesUrl}}.",
+        "exportMetrics": "{{mode}}. Exporting OTEL metrics to {{metricsUrl}}."
       }
     },
     "searchItems": {

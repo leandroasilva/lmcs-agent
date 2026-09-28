@@ -1,4 +1,7 @@
 {
+  "common": {
+    "cancel": "Cancelar"
+  },
   "settings": {
     "rootTitle": "Configurações",
     "breadcrumbAria": "Trilha de navegação das configurações",
@@ -30,6 +33,92 @@
         "sectionTitle": "Idioma",
         "title": "Idioma da interface",
         "description": "Escolha o idioma usado em toda a interface. Salvo neste dispositivo."
+      },
+      "about": {
+        "version": "Versão",
+        "updateAvailable": "Atualização disponível.",
+        "currentVersion": "Versão atual do aplicativo.",
+        "download": "Baixar",
+        "install": "Instalar",
+        "checking": "Verificando…",
+        "downloading": "Baixando…",
+        "upToDate": "Atualizado",
+        "checkForUpdates": "Verificar atualizações",
+        "updateTrack": "Canal de atualização",
+        "updateTrackDescription": "Use versões estáveis ou builds nightly. Volte quando quiser.",
+        "updateTrackHostedDescription": "Altera o canal de lançamento do app hospedado.",
+        "channelStable": "Estável",
+        "channelNightly": "Nightly",
+        "channelLatest": "Mais recente",
+        "couldNotChangeTrack": "Não foi possível alterar o canal de atualização",
+        "trackChangeFailed": "Falha ao alterar o canal de atualização.",
+        "couldNotDownload": "Não foi possível baixar a atualização",
+        "downloadFailed": "Falha no download.",
+        "couldNotConfirm": "Não foi possível confirmar a atualização",
+        "confirmFailed": "Falha na confirmação da atualização.",
+        "couldNotInstall": "Não foi possível instalar a atualização",
+        "installFailed": "Falha na instalação.",
+        "couldNotCheck": "Não foi possível verificar atualizações",
+        "checkFailed": "Falha na verificação de atualizações.",
+        "autoUpdatesUnavailable": "Atualizações automáticas não estão disponíveis neste build."
+      },
+      "tokenStreamingDialog": {
+        "title": "Token a token é uma experiência pior",
+        "description": "O streaming por token redesenha a mensagem a cada delta. É mais lento, mais difícil de ler e consome mais CPU em cada dispositivo conectado. Este modo existe apenas para compatibilidade com versões anteriores. Use o streaming por parágrafos.",
+        "useToken": "Usar token a token",
+        "useParagraphs": "Usar parágrafos"
+      },
+      "responseStreaming": {
+        "options": {
+          "turn": "Aguardar a resposta completa",
+          "paragraph": "Mostrar parágrafos concluídos",
+          "token": "Token a token (legado)"
+        },
+        "descriptions": {
+          "turn": "O texto aparece quando o agente conclui o turno.",
+          "paragraph": "Cada parágrafo ou bloco de código aparece assim que fica pronto.",
+          "token": "Cada token redesenha a resposta ao chegar. Mais lento e mais difícil de ler. Os traces de raciocínio continuam chegando um parágrafo por vez."
+        }
+      },
+      "timeFormat": {
+        "options": {
+          "locale": "Padrão do sistema",
+          "12-hour": "12 horas",
+          "24-hour": "24 horas"
+        }
+      },
+      "diffLayout": {
+        "options": {
+          "stacked": "Empilhado",
+          "split": "Lado a lado"
+        }
+      },
+      "quitShortcut": {
+        "options": {
+          "direct": "Direto",
+          "hold": "Segurar",
+          "double-click": "Pressionar duas vezes"
+        }
+      },
+      "backgroundActivity": {
+        "profiles": {
+          "balanced": "Equilibrado",
+          "performance": "Desempenho",
+          "battery-saver": "Economia de bateria",
+          "advanced": "Avançado"
+        },
+        "profileDescriptions": {
+          "balanced": "Pausa verificações para clientes ociosos, hosts bloqueados ou em modo de economia de energia.",
+          "performance": "Permite verificações em segundo plano com escopo enquanto algum cliente inscrito permanecer conectado.",
+          "battery-saver": "Também pausa verificações em segundo plano quando o host ou o cliente está na bateria."
+        },
+        "overrides": {
+          "pauseWhenHostLocked": "Pausar quando o host estiver bloqueado",
+          "pauseWhenHostLowPower": "Pausar quando o host estiver com pouca energia",
+          "pauseWhenClientLowPower": "Pausar quando o cliente estiver com pouca energia",
+          "pauseWhenOnBattery": "Pausar quando estiver na bateria"
+        },
+        "advancedDescription": "Usa intervalos personalizados."
       }
     },
     "shared": {
@@ -50,6 +139,84 @@
         "environmentFallback": "ambiente",
         "setOnEnvironment": "Definido no ambiente",
         "builtInDefault": "Padrão interno"
+      }
+    },
+    "appearance": {
+      "environmentIdentification": {
+        "options": {
+          "artwork": "Arte",
+          "pill": "Pílula de versão",
+          "none": "Nenhum"
+        }
+      }
+    },
+    "restore": {
+      "confirmTitle": "Restaurar configurações padrão?",
+      "confirmResetList": "Isso redefinirá: {{labels}}.",
+      "themeRestoreError": "Não foi possível restaurar as configurações de tema",
+      "tryAgain": "Tente novamente.",
+      "labels": {
+        "theme": "Tema",
+        "followSystem": "Seguir o sistema",
+        "themeMix": "Mistura de temas",
+        "contrast": "Contraste",
+        "glassOpacity": "Opacidade do vidro",
+        "diffColors": "Cores do diff",
+        "panelAnimations": "Animações dos painéis",
+        "environmentIdentification": "Identificação do ambiente",
+        "timeFormat": "Formato de hora",
+        "threadNotifications": "Notificações de threads",
+        "inAppNotifications": "Notificações no app",
+        "visibleThreads": "Threads visíveis",
+        "projectGrouping": "Agrupamento de projetos",
+        "autoSettleInactive": "Recolher threads inativas automaticamente",
+        "autoSettleMerged": "Recolher threads mergeadas automaticamente",
+        "wordWrap": "Quebra de linha",
+        "defaultDiffFileState": "Estado padrão dos arquivos no diff",
+        "diffWhitespace": "Mudanças de espaço em branco no diff",
+        "diffLayout": "Layout do diff",
+        "proactivePanels": "Painéis proativos",
+        "skillsInSlashMenu": "Mostrar skills no menu de barra",
+        "composerCollapse": "Recolher o composer ao rolar",
+        "richTextComposer": "Composer de texto rico",
+        "sendShortcut": "Atalho de envio",
+        "followUpBehavior": "Comportamento de follow-up",
+        "contextWindowIndicator": "Indicador de janela de contexto",
+        "responseStreaming": "Streaming de respostas",
+        "providerUpdateChecks": "Verificação de atualizações de provedores",
+        "continueAfterRestarts": "Continuar threads após reinicializações",
+        "backgroundActivity": "Atividade em segundo plano",
+        "newThreadMode": "Modo de novas threads",
+        "worktreesFromOrigin": "Novas worktrees a partir do origin",
+        "addProjectBaseDir": "Diretório base ao adicionar projeto",
+        "unpinConfirmation": "Confirmação ao desafixar",
+        "archiveConfirmation": "Confirmação ao arquivar",
+        "deleteConfirmation": "Confirmação ao excluir",
+        "quitShortcut": "Atalho para sair",
+        "textGenerationModel": "Modelo de geração de texto",
+        "agentBrowserAccess": "Acesso do agente ao navegador",
+        "interfaceFont": "Fonte da interface",
+        "promptFont": "Fonte do prompt",
+        "codeFont": "Fonte de código",
+        "terminalFont": "Fonte do terminal",
+        "browserViewport": "Viewport do navegador",
+        "browserZoom": "Zoom do navegador",
+        "browserAppearance": "Aparência do navegador",
+        "recordingFrameRate": "Taxa de quadros da gravação",
+        "recordingKeyPresses": "Teclas nas gravações",
+        "recordingMousePresses": "Cliques nas gravações",
+        "openLinksIn": "Abrir links em",
+        "floatingPreview": "Pré-visualização flutuante"
+      }
+    },
+    "diagnostics": {
+      "description": {
+        "modeLocal": "Arquivo de trace local",
+        "modeTerminal": "Somente logs do terminal",
+        "exportBothCollapsed": "{{mode}}. Exportando OTEL para {{url}}.",
+        "exportBoth": "{{mode}}. Exportando traces OTEL para {{tracesUrl}} e métricas para {{metricsUrl}}.",
+        "exportTraces": "{{mode}}. Exportando traces OTEL para {{tracesUrl}}.",
+        "exportMetrics": "{{mode}}. Exportando métricas OTEL para {{metricsUrl}}."
       }
     },
     "searchItems": {
