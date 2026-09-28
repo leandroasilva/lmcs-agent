@@ -1,5 +1,6 @@
 import { ChevronRightIcon, ExternalLinkIcon, SearchIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   decodeThirdPartyLicenseManifest,
@@ -10,6 +11,7 @@ import {
   type ThirdPartyLicenseManifest,
 } from "@lmcstools/core/thirdPartyLicenses";
 
+import { translateDynamic } from "../../../i18n";
 import { Button } from "../../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../../ui/input-group";
@@ -27,7 +29,13 @@ async function loadLicenseManifest(signal: AbortSignal): Promise<ThirdPartyLicen
     { signal },
   );
   if (!response.ok) {
-    throw new Error(`The license manifest request failed with status ${String(response.status)}.`);
+    throw new Error(
+      translateDynamic(
+        "settings.licenses.requestFailed",
+        `The license manifest request failed with status ${String(response.status)}.`,
+        { status: String(response.status) },
+      ),
+    );
   }
   return decodeThirdPartyLicenseManifest((await response.json()) as unknown);
 }
@@ -41,6 +49,7 @@ function LicenseNoticeRow({
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
       <article>
@@ -62,11 +71,13 @@ function LicenseNoticeRow({
           </CollapsibleTrigger>
           {entry.sourceUrl ? (
             <Button
-              aria-label={`View project source for ${entry.name}`}
+              aria-label={t("settings.licenses.viewSourceAria", {
+                name: entry.name,
+              })}
               className="me-3 shrink-0 sm:me-4"
               render={<a href={entry.sourceUrl} rel="noreferrer noopener" target="_blank" />}
               size="icon-micro"
-              title="Project source"
+              title={t("settings.licenses.projectSource")}
               variant="ghost-muted"
             >
               <ExternalLinkIcon aria-hidden className="size-3" />
@@ -94,11 +105,15 @@ function LicenseCount({
   filteredCount: number;
   totalCount: number;
 }) {
+  const { t } = useTranslation();
   return (
     <p className="whitespace-nowrap text-xs font-normal text-muted-foreground tabular-nums">
       {filteredCount === totalCount
-        ? `${String(totalCount)} notices`
-        : `${String(filteredCount)} of ${String(totalCount)}`}
+        ? t("settings.licenses.count", { count: totalCount })
+        : t("settings.licenses.countFiltered", {
+            filtered: filteredCount,
+            total: totalCount,
+          })}
     </p>
   );
 }
@@ -118,6 +133,7 @@ function LicenseHeaderAction({
   filteredCount: number;
   totalCount: number;
 }) {
+  const { t } = useTranslation();
   if (!searchOpen) {
     return (
       <div className="flex items-center gap-1.5">
@@ -126,7 +142,7 @@ function LicenseHeaderAction({
           <TooltipTrigger
             render={
               <Button
-                aria-label="Search open-source licenses"
+                aria-label={t("settings.licenses.searchAria")}
                 onClick={() => onSearchOpenChange(true)}
                 size="icon-micro"
                 type="button"
@@ -136,7 +152,7 @@ function LicenseHeaderAction({
               </Button>
             }
           />
-          <TooltipPopup side="top">Search licenses</TooltipPopup>
+          <TooltipPopup side="top">{t("settings.licenses.searchTooltip")}</TooltipPopup>
         </Tooltip>
       </div>
     );
@@ -152,7 +168,7 @@ function LicenseHeaderAction({
           <SearchIcon aria-hidden className="size-3" />
         </InputGroupAddon>
         <InputGroupInput
-          aria-label="Search open-source licenses"
+          aria-label={t("settings.licenses.searchAria")}
           autoFocus
           onBlur={() => {
             if (query.length === 0) onSearchOpenChange(false);
@@ -164,7 +180,7 @@ function LicenseHeaderAction({
             onQueryChange("");
             onSearchOpenChange(false);
           }}
-          placeholder="Search licenses"
+          placeholder={t("settings.licenses.searchPlaceholder")}
           size="sm"
           type="search"
           value={query}
@@ -175,23 +191,29 @@ function LicenseHeaderAction({
 }
 
 function LicenseManifestError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-start gap-3 px-3 py-5 sm:px-4">
       <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-medium text-foreground">Open-source notices are unavailable</h3>
+        <h3 className="text-sm font-medium text-foreground">
+          {t("settings.licenses.unavailableTitle")}
+        </h3>
         <p className="max-w-[70ch] text-pretty text-xs leading-normal text-muted-foreground/80">
           {message}
         </p>
       </div>
       <Button type="button" size="xs" variant="outline" onClick={onRetry}>
-        Try again
+        {t("settings.licenses.tryAgain")}
       </Button>
     </div>
   );
 }
 
 export function OpenSourceLicensesPanel() {
-  const [state, setState] = useState<LicenseManifestState>({ status: "loading" });
+  const { t } = useTranslation();
+  const [state, setState] = useState<LicenseManifestState>({
+    status: "loading",
+  });
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [openEntryKey, setOpenEntryKey] = useState<string | null>(null);
@@ -206,7 +228,13 @@ export function OpenSourceLicensesPanel() {
         if (controller.signal.aborted) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : "The license manifest could not load.",
+          message:
+            error instanceof Error
+              ? error.message
+              : translateDynamic(
+                  "settings.licenses.loadFailed",
+                  "The license manifest could not load.",
+                ),
         });
       },
     );
@@ -223,7 +251,7 @@ export function OpenSourceLicensesPanel() {
   return (
     <SettingsPageContainer>
       <SettingsSection
-        title="Third-party notices"
+        title={t("settings.licenses.sectionTitle")}
         headerAction={
           state.status === "ready" ? (
             <LicenseHeaderAction
@@ -253,7 +281,7 @@ export function OpenSourceLicensesPanel() {
               })
             ) : (
               <p className="px-3 py-8 text-center text-sm/6 text-muted-foreground sm:px-4">
-                No licenses match that search.
+                {t("settings.licenses.empty")}
               </p>
             )}
           </div>
@@ -261,7 +289,7 @@ export function OpenSourceLicensesPanel() {
           <LicenseManifestError message={state.message} onRetry={retry} />
         ) : (
           <p className="px-3 py-5 text-sm/6 text-muted-foreground sm:px-4">
-            Loading open-source notices…
+            {t("settings.licenses.loading")}
           </p>
         )}
       </SettingsSection>

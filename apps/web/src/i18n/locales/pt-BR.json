@@ -1,6 +1,8 @@
 {
   "common": {
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "mixed": "Misto",
+    "errorOccurred": "Ocorreu um erro."
   },
   "settings": {
     "rootTitle": "Configurações",
@@ -33,6 +35,151 @@
         "sectionTitle": "Idioma",
         "title": "Idioma da interface",
         "description": "Escolha o idioma usado em toda a interface. Salvo neste dispositivo."
+      },
+      "autoSettleDaysAria": "Dias de inatividade antes de recolher",
+      "legacyFeatures": {
+        "title": "Recursos legados",
+        "planModeDescription": "Restaura Build/Plan, /plan, /default e Shift+Tab. Desligado usa o modo build.",
+        "planModeAria": "Modo de plano (legado)",
+        "contextWindowDescription": "Mostra o uso da janela de contexto como um indicador circular no composer.",
+        "contextWindowAria": "Indicador de janela de contexto (legado)",
+        "sidebarDescription": "Restaura árvores de threads por projeto em vez da sidebar plana padrão.",
+        "sidebarAria": "Sidebar (legado)"
+      },
+      "sections": {
+        "organization": "Organização",
+        "behavior": "Comportamento",
+        "projectsAndThreads": "Projetos e threads",
+        "confirmations": "Confirmações",
+        "textGeneration": "Geração de texto",
+        "about": "Sobre"
+      },
+      "projectGrouping": {
+        "description": "Combina repositórios equivalentes entre ambientes.",
+        "resetLabel": "agrupamento de projetos",
+        "aria": "Agrupamento de projetos"
+      },
+      "autoSettleMerged": {
+        "description": "Recolhe uma thread quando o pull request dela é mergeado. Pull requests fechados ainda são recolhidos automaticamente.",
+        "resetLabel": "recolhimento ao mergear",
+        "aria": "Recolher threads mergeadas"
+      },
+      "autoSettleInactive": {
+        "description": "Threads da sidebar sem atividade por esse período são recolhidas automaticamente.",
+        "resetLabel": "recolhimento automático",
+        "aria": "Recolher threads inativas"
+      },
+      "daysBeforeAutoSettle": {
+        "description": "Qualquer nova atividade restaura a thread automaticamente."
+      },
+      "inAppNotifications": {
+        "description": "Mostra um toast quando outra thread termina, falha ou precisa de entrada ou aprovação enquanto este app está em foco.",
+        "aria": "Notificações no app"
+      },
+      "diffWhitespace": {
+        "description": "Define se o painel de diff ignora por padrão edições apenas de espaços em branco.",
+        "resetLabel": "alterações de espaço no diff",
+        "aria": "Ocultar alterações de espaço por padrão"
+      },
+      "diffFileState": {
+        "description": "Começa com arquivos expandidos ou recolhidos ao abrir diffs ou a aba Código de um pull request.",
+        "resetLabel": "estado padrão dos arquivos do diff",
+        "aria": "Estado padrão dos arquivos do diff",
+        "expanded": "Expandidos",
+        "collapsed": "Recolhidos"
+      },
+      "proactivePanels": {
+        "description": "Abre primeiro os pull requests vinculados. Caso contrário, abre o diff da árvore de trabalho para alterações em pelo menos 3 arquivos ou 50 linhas.",
+        "resetLabel": "painéis proativos",
+        "aria": "Painéis proativos"
+      },
+      "skillsSlashMenu": {
+        "description": "Também inclui skills no menu de comandos /. Skills sempre aparecem quando você digita $.",
+        "resetLabel": "skills no menu de barra",
+        "aria": "Mostrar skills no menu de barra"
+      },
+      "composerRichText": {
+        "description": "Mostra Markdown formatado enquanto você digita.",
+        "resetLabel": "composer de texto rico",
+        "aria": "Composer de texto rico"
+      },
+      "composerCollapse": {
+        "description": "Recolhe o composer de uma thread existente em uma única linha ao rolar a conversa. Foque o composer ou comece a digitar para expandi-lo novamente.",
+        "resetLabel": "recolher composer ao rolar",
+        "aria": "Recolher composer ao rolar"
+      },
+      "sendShortcut": {
+        "description": "Escolha quando Enter envia um prompt ou insere uma nova linha",
+        "resetLabel": "atalho de envio",
+        "aria": "Atalho de envio",
+        "options": {
+          "modEnterMultiline": "{{modifier}} + Enter para prompts multilinha",
+          "modEnter": "{{modifier}} + Enter sempre"
+        }
+      },
+      "followUp": {
+        "descriptionBase": "Enfileira acompanhamentos enquanto o agente executa ou direciona a execução atual.",
+        "descriptionMultiline": "{{base}} Pressione {{modifier}} + Enter para prompts de uma linha ou {{modifier}} + Shift + Enter para prompts multilinha para fazer o oposto em uma mensagem.",
+        "descriptionModEnter": "{{base}} Pressione {{modifier}} + Shift + Enter para fazer o oposto em uma mensagem.",
+        "descriptionEnter": "{{base}} Pressione {{modifier}} + Enter para fazer o oposto em uma mensagem.",
+        "resetLabel": "comportamento de acompanhamento",
+        "aria": "Comportamento de acompanhamento",
+        "options": {
+          "queue": "Enfileirar",
+          "steer": "Direcionar"
+        }
+      },
+      "providerUpdateChecks": {
+        "description": "Verifica se há versões mais novas dos CLIs de provedores instalados.",
+        "resetLabel": "verificação de atualizações de provedores",
+        "aria": "Verificar versões de provedores"
+      },
+      "continueThreads": {
+        "description": "Retoma automaticamente threads interrompidas após uma atualização, falha ou reinício da máquina nos ambientes selecionados. Atualize servidores antigos primeiro.",
+        "unsupported": "Todos os ambientes conectados selecionados precisam suportar continuação após reinício.",
+        "resetLabel": "continuar threads após reinícios",
+        "aria": "Continuar threads após reinícios"
+      },
+      "worktreesOrigin": {
+        "description": "Cria o worktree a partir do branch correspondente mais recente na origin em vez do seu branch local.",
+        "resetLabel": "novos worktrees a partir da origin",
+        "aria": "Iniciar novos worktrees a partir da origin por padrão"
+      },
+      "projectBaseDir": {
+        "description": "Deixe vazio para usar \"~/\" quando o navegador Adicionar Projeto abrir.",
+        "resetLabel": "diretório base de novos projetos",
+        "aria": "Diretório base de novos projetos"
+      },
+      "unpinConfirmation": {
+        "description": "Pergunta antes de desafixar uma thread da seção de fixadas.",
+        "resetLabel": "confirmação de desafixar",
+        "aria": "Confirmar desafixação de thread"
+      },
+      "archiveConfirmation": {
+        "description": "Exige um segundo clique na ação de arquivar em linha antes de arquivar uma thread.",
+        "resetLabel": "confirmação de arquivar",
+        "aria": "Confirmar arquivamento de thread"
+      },
+      "deleteConfirmation": {
+        "description": "Pergunta antes de excluir uma thread e seu histórico de conversa.",
+        "resetLabel": "confirmação de exclusão",
+        "aria": "Confirmar exclusão de thread"
+      },
+      "textGeneration": {
+        "description": "Usado para títulos de threads e outros textos gerados em dispositivos conectados com este provedor. O controle de versão pode substituí-lo.",
+        "resetLabel": "modelo de geração de texto",
+        "connectPrompt": "Conecte um ambiente para escolher seu modelo de geração de texto.",
+        "noProviders": "Nenhum provedor de geração de texto disponível.",
+        "notSavedTitle": "Modelo de geração de texto não salvo"
+      },
+      "diagnosticsRow": {
+        "descriptionSingle": "Inspecione processos, uso de recursos e logs neste ambiente.",
+        "descriptionMulti": "Inspecione processos, uso de recursos e logs em um ambiente por vez.",
+        "button": "Ver diagnóstico"
+      },
+      "licensesRow": {
+        "description": "Avisos de dependências, assets e ferramentas opcionais usados pelo LMCS Code.",
+        "button": "Ver licenças"
       },
       "about": {
         "version": "Versão",
@@ -78,27 +225,39 @@
           "turn": "O texto aparece quando o agente conclui o turno.",
           "paragraph": "Cada parágrafo ou bloco de código aparece assim que fica pronto.",
           "token": "Cada token redesenha a resposta ao chegar. Mais lento e mais difícil de ler. Os traces de raciocínio continuam chegando um parágrafo por vez."
-        }
+        },
+        "mixed": "Os destinos selecionados usam modos de streaming diferentes.",
+        "resetLabel": "streaming de resposta",
+        "aria": "Streaming de resposta"
       },
       "timeFormat": {
         "options": {
           "locale": "Padrão do sistema",
           "12-hour": "12 horas",
           "24-hour": "24 horas"
-        }
+        },
+        "description": "O padrão do sistema segue a preferência de relógio do navegador ou do SO.",
+        "resetLabel": "formato de hora",
+        "aria": "Formato de hora"
       },
       "diffLayout": {
         "options": {
           "stacked": "Empilhado",
           "split": "Lado a lado"
-        }
+        },
+        "description": "Mostra diffs empilhados ou lado a lado. O botão na barra de ferramentas do diff também altera isso.",
+        "resetLabel": "layout do diff",
+        "aria": "Layout do diff"
       },
       "quitShortcut": {
         "options": {
           "direct": "Direto",
           "hold": "Segurar",
           "double-click": "Pressionar duas vezes"
-        }
+        },
+        "description": "O modo segurar também sai com dois toques rápidos.",
+        "resetLabel": "comportamento do atalho de sair",
+        "aria": "Comportamento do atalho de sair"
       },
       "backgroundActivity": {
         "profiles": {
@@ -118,8 +277,57 @@
           "pauseWhenClientLowPower": "Pausar quando o cliente estiver com pouca energia",
           "pauseWhenOnBattery": "Pausar quando estiver na bateria"
         },
-        "advancedDescription": "Usa intervalos personalizados."
+        "advancedDescription": "Usa intervalos personalizados.",
+        "policyTooltip": "Esta política compartilhada controla o trabalho em segundo plano, como atualizações de Git e verificações de integridade dos provedores, após o término dos intervalos individuais.",
+        "resetLabel": "atividade em segundo plano",
+        "profileAria": "Perfil de atividade em segundo plano",
+        "advancedOneEnvironment": "{{label}} (um ambiente)",
+        "configureAria": "Configurar atividade avançada em segundo plano",
+        "configureTooltip": "Configurar atividade em segundo plano",
+        "advancedSharedPolicyDescription": "Usa intervalos personalizados. Política compartilhada: {{policy}}.",
+        "dialog": {
+          "title": "Atividade em segundo plano",
+          "description": "Ajuste a política de energia compartilhada e os intervalos em segundo plano que a alimentam.",
+          "sharedPolicy": "Política compartilhada",
+          "sharedPolicyDescription": "Controla se o trabalho em segundo plano pode ser executado após o disparo de um intervalo assinado.",
+          "sharedPolicyAria": "Política compartilhada de segundo plano",
+          "gitFetchDescription": "Atualiza o status dos branches remotos em segundo plano.",
+          "decreaseGitFetch": "Diminuir intervalo de git fetch",
+          "gitFetchInput": "Intervalo de git fetch em segundos",
+          "increaseGitFetch": "Aumentar intervalo de git fetch",
+          "seconds": "segundos",
+          "providerHealth": "Intervalo de integridade dos provedores",
+          "providerHealthDescription": "Atualiza disponibilidade, versões, estado de autenticação e metadados de modelos dos provedores.",
+          "decreaseProviderHealth": "Diminuir intervalo de integridade dos provedores",
+          "providerHealthInput": "Intervalo de integridade dos provedores em segundos",
+          "increaseProviderHealth": "Aumentar intervalo de integridade dos provedores",
+          "hostPowerMonitor": "Monitor de energia do host",
+          "hostPowerMonitorDescription": "Consulta o estado de energia do host enquanto há clientes ativos.",
+          "decreaseActiveHostPower": "Diminuir intervalo de energia do host ativo",
+          "activeHostPowerInput": "Intervalo de energia do host ativo em segundos",
+          "increaseActiveHostPower": "Aumentar intervalo de energia do host ativo",
+          "idleHostMonitor": "Monitor de host ocioso",
+          "idleHostMonitorDescription": "Consulta o estado de energia do host quando nenhum cliente em primeiro plano está ativo.",
+          "decreaseIdleHostPower": "Diminuir intervalo de host ocioso",
+          "idleHostPowerInput": "Intervalo de host ocioso em segundos",
+          "increaseIdleHostPower": "Aumentar intervalo de host ocioso",
+          "resetAll": "Redefinir tudo",
+          "done": "Concluir"
+        }
       }
+    },
+    "archived": {
+      "menuUnarchive": "Desarquivar",
+      "menuDelete": "Excluir",
+      "unarchiveFailed": "Falha ao desarquivar thread",
+      "deleteFailed": "Falha ao excluir thread",
+      "actionFailed": "Ação na thread arquivada falhou",
+      "loading": "Carregando threads arquivadas",
+      "loadError": "Não foi possível carregar as threads arquivadas",
+      "empty": "Nenhuma thread arquivada",
+      "loadingDescription": "Verificando ambientes conectados.",
+      "emptyDescription": "Threads arquivadas aparecerão aqui.",
+      "rowDescription": "Arquivada {{archived}} · Criada {{created}}"
     },
     "shared": {
       "backgroundPolicyDetails": "Detalhes da política de segundo plano",
@@ -142,12 +350,158 @@
       }
     },
     "appearance": {
+      "sections": {
+        "colorsAndThemes": "Cores e temas",
+        "interface": "Interface",
+        "motion": "Movimento",
+        "typography": "Tipografia"
+      },
+      "contrast": {
+        "description": "Ajusta o contraste das cores e bordas em toda a interface.",
+        "ariaLabel": "Contraste",
+        "resetLabel": "contraste"
+      },
+      "glassOpacity": {
+        "description": "Valores maiores tornam menus, diálogos e o composer mais sólidos.",
+        "ariaLabel": "Opacidade de vidro",
+        "resetLabel": "opacidade de vidro"
+      },
       "environmentIdentification": {
         "options": {
           "artwork": "Arte",
           "pill": "Pílula de versão",
           "none": "Nenhum"
+        },
+        "description": "Escolha como os ambientes Dev e Nightly são identificados.",
+        "ariaLabel": "Identificação de ambiente",
+        "resetLabel": "identificação de ambiente"
+      },
+      "diffColors": {
+        "description": "Escolha as cores para adições e remoções, incluindo contagens de alterações.",
+        "ariaLabel": "Cores do diff",
+        "resetLabel": "cores do diff",
+        "blueOrange": "Azul e laranja",
+        "redGreen": "Vermelho e verde",
+        "redGreenDefault": "Vermelho e verde (padrão)"
+      },
+      "panelAnimations": {
+        "description": "Define a velocidade de abertura e fechamento dos painéis.",
+        "ariaLabel": "Duração da animação dos painéis",
+        "resetLabel": "animações dos painéis"
+      },
+      "typography": {
+        "advanced": "Avançado",
+        "advancedAria": "Mostrar configurações avançadas de tipografia",
+        "systemDefault": "Padrão do sistema",
+        "systemMonospace": "Monoespaçada do sistema",
+        "interfaceDescription": "Tudo fora de blocos de código e do terminal.",
+        "interfaceSizeLabel": "Tamanho da fonte da interface",
+        "promptDescription": "Apenas a caixa onde você escreve prompts. Fontes mono funcionam bem aqui.",
+        "promptSizeLabel": "Tamanho da fonte do prompt",
+        "codeDescription": "Blocos de código, diffs e previews de arquivos.",
+        "codeSizeLabel": "Tamanho da fonte de código",
+        "terminalDescription": "Saída do terminal, independente de blocos de código e diffs.",
+        "terminalSizeLabel": "Tamanho da fonte do terminal",
+        "monospaceTitle": "Fonte monoespaçada",
+        "monospaceDescription": "Blocos de código, diffs, previews de arquivos e o terminal.",
+        "fontSmoothingDescription": "Usa suavização de texto em tons de cinza mais fina em vez do padrão do macOS.",
+        "fontSmoothingAria": "Suavização de fonte",
+        "fontSmoothingResetLabel": "suavização de fonte",
+        "wordWrapDescription": "Quebra linhas longas em blocos de código, tabelas, diffs e previews de arquivos por padrão.",
+        "wordWrapAria": "Quebrar código, tabelas, diffs e previews de arquivos por padrão",
+        "wordWrapResetLabel": "quebra de linha",
+        "familyAria": "Família de {{title}}"
+      }
+    },
+    "notifications": {
+      "description": "Alertas do sistema quando uma thread termina, falha ou precisa de entrada ou aprovação. Aplica-se a este dispositivo enquanto o LMCS Code está aberto.",
+      "aria": "Notificações de threads",
+      "permissionUnsupported": "Notificações precisam de um navegador compatível em HTTPS ou do app desktop. Somente som ainda está disponível.",
+      "permissionDenied": "Permita notificações nas configurações do navegador ou do sistema e escolha esta opção novamente. Somente som ainda está disponível.",
+      "permissionUnavailable": "Notificações não estão disponíveis neste navegador. Somente som ainda está disponível.",
+      "modes": {
+        "off": "Desligado",
+        "notifications": "Somente notificações",
+        "sound": "Somente som",
+        "notifications-and-sound": "Notificações com som"
+      }
+    },
+    "projects": {
+      "chooseProject": "Escolha um projeto para gerenciar nome, ícone, checkouts e ações."
+    },
+    "licenses": {
+      "sectionTitle": "Avisos de terceiros",
+      "loading": "Carregando avisos de código aberto…",
+      "empty": "Nenhuma licença corresponde à busca.",
+      "unavailableTitle": "Avisos de código aberto indisponíveis",
+      "tryAgain": "Tentar novamente",
+      "loadFailed": "Não foi possível carregar o manifesto de licenças.",
+      "requestFailed": "A requisição do manifesto de licenças falhou com status {{status}}.",
+      "searchAria": "Buscar licenças de código aberto",
+      "searchTooltip": "Buscar licenças",
+      "searchPlaceholder": "Buscar licenças",
+      "projectSource": "Código-fonte do projeto",
+      "viewSourceAria": "Ver código-fonte do projeto de {{name}}",
+      "count_one": "{{count}} aviso",
+      "count_other": "{{count}} avisos",
+      "countFiltered": "{{filtered}} de {{total}}"
+    },
+    "storage": {
+      "sections": {
+        "worktrees": "Worktrees",
+        "artifacts": "Artefatos e logs"
+      },
+      "mixedAcross": "Diferente entre as máquinas selecionadas",
+      "updateMachinesNotice": "Atualize as máquinas selecionadas para configurar a limpeza de worktrees do projeto.",
+      "updateEnvironmentsNotice": "Atualize os ambientes selecionados para usar a limpeza de armazenamento ou escolha uma máquina compatível.",
+      "worktreeCleanup": {
+        "title": "Limpeza automática de worktrees",
+        "descriptionOff": "Mantém os worktrees deste projeto até você excluí-los manualmente.",
+        "descriptionCustom": "Usa estas regras para este projeto.",
+        "descriptionInherit": "Usa as configurações de limpeza de worktrees de cada máquina.",
+        "aria": "Limpeza automática de worktrees",
+        "modes": {
+          "inherit": "Herdar",
+          "off": "Desligado",
+          "custom": "Personalizado"
         }
+      },
+      "worktreeOnDelete": {
+        "title": "Excluir worktrees com threads excluídas",
+        "description": "Remove worktrees sem uso quando threads ativas ou arquivadas são excluídas. Worktrees com alterações locais são mantidos.",
+        "aria": "Excluir worktrees com threads excluídas"
+      },
+      "worktreeAfterDays": {
+        "title": "Excluir worktrees inativos",
+        "description": "Remove worktrees depois que suas threads ficam inativas por esse número de dias. Branches e o histórico da thread são mantidos.",
+        "label": "Excluir worktrees inativos"
+      },
+      "worktreeOnMerge": {
+        "title": "Excluir worktrees mergeados",
+        "description": "Remove worktrees cujo pull request foi mergeado e cujos commits estão incluídos no branch padrão.",
+        "aria": "Excluir worktrees mergeados"
+      },
+      "worktreeUnchanged": {
+        "title": "Excluir worktrees sem alterações",
+        "description": "Remove worktrees sem commits além do branch padrão.",
+        "aria": "Excluir worktrees sem alterações"
+      },
+      "browserArtifacts": {
+        "title": "Excluir artefatos antigos do navegador",
+        "description": "Exclui capturas de navegador salvas após esse número de dias. Links de capturas mais antigas deixarão de abrir.",
+        "label": "Excluir artefatos antigos do navegador"
+      },
+      "rotatedLogs": {
+        "title": "Excluir logs rotacionados antigos",
+        "description": "Exclui arquivos de log rotacionados inativos após esse número de dias. Logs atuais são mantidos.",
+        "label": "Excluir logs rotacionados antigos"
+      },
+      "retention": {
+        "decreaseAria": "Diminuir {{label}}",
+        "inputAria": "{{label}} em dias",
+        "increaseAria": "Aumentar {{label}}",
+        "days": "dias",
+        "off": "Desligado"
       }
     },
     "restore": {
