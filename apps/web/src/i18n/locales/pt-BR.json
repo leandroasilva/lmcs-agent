@@ -4,6 +4,16 @@
     "mixed": "Misto",
     "errorOccurred": "Ocorreu um erro.",
     "tryAgain": "Tente novamente.",
+    "save": "Salvar",
+    "colorPicker": {
+      "instructions": "Use as setas para ajustar o valor em foco. Segure Shift para passos maiores. Use Home e End para o mínimo e o máximo. Pressione Tab para alternar entre saturação e brilho.",
+      "planeAria": "saturação e brilho de {{label}}",
+      "saturationAria": "saturação de {{label}}",
+      "brightnessAria": "brilho de {{label}}",
+      "saturation": "Saturação",
+      "brightness": "Brilho",
+      "axisPercent": "{{axis}} {{percent}}%"
+    },
     "wizard": {
       "setupProgress": "Progresso da configuração",
       "stepAria": "{{step}}, etapa {{number}}",
@@ -942,6 +952,73 @@
         "back": "Voltar",
         "next": "Avançar",
         "submit": "Adicionar instância"
+      },
+      "usage": {
+        "addHub": "Adicionar hub",
+        "cursorTitle": "Uso da conta Cursor",
+        "cursorDescription": "Lê o login existente da CLI do Cursor no Keychain do macOS para mostrar o histórico da conta e os limites mensais. O macOS pode pedir que você autorize o acesso.",
+        "empty": "Nenhum hub configurado.",
+        "remove": "Remover",
+        "removeConfirmTitle": "Remover {{label}}?",
+        "removeConfirmDescription": "A chave de gerenciamento do hub é excluída deste servidor. As contas dele saem da visão de Limites; o hub em si não é alterado. Adicione-o novamente com a URL e a chave para trazê-las de volta.",
+        "removeHub": "Remover hub",
+        "addDialog": {
+          "title": "Adicionar um hub CLIProxyAPI",
+          "description": "Mostre a cota de cada conta que o hub reúne, ao lado dos provedores em {{environment}}. A chave fica nesse servidor.",
+          "urlLabel": "URL do hub",
+          "keyLabel": "Chave de gerenciamento",
+          "labelLabel": "Rótulo (opcional)",
+          "labelPlaceholder": "Usa o nome do host do hub por padrão"
+        }
+      },
+      "customModel": {
+        "optionPosition": "Opção {{number}}",
+        "displayNameLabel": "Nome de exibição",
+        "optionsTitle": "Opções exibidas no composer",
+        "empty": "Nenhuma opção personalizada. O composer usa as opções padrão do provedor.",
+        "copyFrom": "Copiar de…",
+        "copyFromAria": "Copiar opções de um modelo integrado",
+        "customOption": "Personalizada…",
+        "addCustomOption": "Opção personalizada",
+        "addChoice": "Adicionar escolha",
+        "labelPlaceholder": "Rótulo",
+        "choiceValueAria": "Valor da escolha",
+        "choiceLabelAria": "Rótulo da escolha",
+        "defaultChoice": "Padrão",
+        "defaultChoiceAria": "Escolha padrão",
+        "removeChoiceAria": "Remover escolha",
+        "optionIdAria": "ID da opção",
+        "optionLabelAria": "Rótulo da opção",
+        "optionTypeAria": "Tipo da opção",
+        "typeToggle": "Alternância",
+        "typeChoices": "Escolhas",
+        "removeOptionAria": "Remover opção {{number}}",
+        "presets": {
+          "reasoningEffort": "Raciocínio",
+          "serviceTier": "Velocidade",
+          "effort": "Raciocínio",
+          "fastMode": "Modo rápido",
+          "thinking": "Thinking",
+          "reasoning": "Raciocínio",
+          "variant": "Raciocínio",
+          "agent": "Agente"
+        },
+        "errors": {
+          "needsId": "{{position}} precisa de um id.",
+          "duplicateId": "{{position}}: o id \"{{id}}\" é usado duas vezes.",
+          "needsLabel": "{{position}} precisa de um rótulo.",
+          "needsChoice": "{{position}} precisa de pelo menos uma escolha.",
+          "choiceNoValue": "{{position}} tem uma escolha sem valor.",
+          "duplicateChoice": "{{position}}: a escolha \"{{choiceId}}\" é usada duas vezes."
+        }
+      },
+      "accent": {
+        "title": "Cor de destaque",
+        "planeLabel": "Cor de destaque",
+        "hueAria": "Matiz da cor de destaque",
+        "hexAria": "Cor de destaque personalizada em hexadecimal",
+        "chooseAria": "Escolher cor de destaque para {{name}}",
+        "clear": "Limpar cor"
       }
     },
     "restore": {

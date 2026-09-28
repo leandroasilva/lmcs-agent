@@ -5,6 +5,8 @@ import {
 } from "@lmcstools/core";
 import { type CustomModelDefinition, createModelCapabilities } from "@lmcstools/core/model";
 
+import { translateDynamic } from "../../../i18n";
+
 /** Editable mirror of a `ProviderOptionChoice`. `key` is only a React key. */
 export interface EditorChoice {
   readonly key: string;
@@ -35,7 +37,11 @@ export interface DescriptorPreset {
   readonly id: string;
   readonly label: string;
   readonly type: "select" | "boolean";
-  readonly choices?: ReadonlyArray<{ id: string; label: string; isDefault?: boolean }>;
+  readonly choices?: ReadonlyArray<{
+    id: string;
+    label: string;
+    isDefault?: boolean;
+  }>;
 }
 
 const EFFORT_CHOICES = [
@@ -54,7 +60,12 @@ export const DESCRIPTOR_PRESETS_BY_KIND: Partial<
   Record<ProviderDriverKind, ReadonlyArray<DescriptorPreset>>
 > = {
   [ProviderDriverKind.make("codex")]: [
-    { id: "reasoningEffort", label: "Reasoning", type: "select", choices: EFFORT_CHOICES },
+    {
+      id: "reasoningEffort",
+      label: "Reasoning",
+      type: "select",
+      choices: EFFORT_CHOICES,
+    },
     {
       id: "serviceTier",
       label: "Speed",
@@ -82,15 +93,30 @@ export const DESCRIPTOR_PRESETS_BY_KIND: Partial<
     { id: "thinking", label: "Thinking", type: "boolean" },
   ],
   [ProviderDriverKind.make("cursor")]: [
-    { id: "reasoning", label: "Reasoning", type: "select", choices: EFFORT_CHOICES },
+    {
+      id: "reasoning",
+      label: "Reasoning",
+      type: "select",
+      choices: EFFORT_CHOICES,
+    },
     { id: "fastMode", label: "Fast Mode", type: "boolean" },
     { id: "thinking", label: "Thinking", type: "boolean" },
   ],
   [ProviderDriverKind.make("grok")]: [
-    { id: "reasoningEffort", label: "Reasoning", type: "select", choices: EFFORT_CHOICES },
+    {
+      id: "reasoningEffort",
+      label: "Reasoning",
+      type: "select",
+      choices: EFFORT_CHOICES,
+    },
   ],
   [ProviderDriverKind.make("opencode")]: [
-    { id: "variant", label: "Reasoning", type: "select", choices: EFFORT_CHOICES },
+    {
+      id: "variant",
+      label: "Reasoning",
+      type: "select",
+      choices: EFFORT_CHOICES,
+    },
     {
       id: "agent",
       label: "Agent",
@@ -114,7 +140,12 @@ export function choiceFromPreset(choice: {
   label: string;
   isDefault?: boolean;
 }): EditorChoice {
-  return { key: newEditorKey(), id: choice.id, label: choice.label, isDefault: !!choice.isDefault };
+  return {
+    key: newEditorKey(),
+    id: choice.id,
+    label: choice.label,
+    isDefault: !!choice.isDefault,
+  };
 }
 
 export function descriptorFromPreset(preset: DescriptorPreset): EditorDescriptor {
@@ -127,8 +158,19 @@ export function descriptorFromPreset(preset: DescriptorPreset): EditorDescriptor
   };
 }
 
+/** Display-only translation of a preset label; the draft keeps the canonical label. */
+export function presetDisplayLabel(preset: DescriptorPreset): string {
+  return translateDynamic(`settings.providers.customModel.presets.${preset.id}`, preset.label);
+}
+
 export function emptyEditorDescriptor(): EditorDescriptor {
-  return { key: newEditorKey(), type: "select", id: "", label: "", choices: [] };
+  return {
+    key: newEditorKey(),
+    type: "select",
+    id: "",
+    label: "",
+    choices: [],
+  };
 }
 
 export function emptyEditorChoice(): EditorChoice {
@@ -195,20 +237,58 @@ export function descriptorsFromCapabilities(
 export function validateDraft(draft: CustomModelDraft): string | null {
   const seenIds = new Set<string>();
   for (const [index, descriptor] of draft.descriptors.entries()) {
-    const position = `Option ${index + 1}`;
+    const position = translateDynamic(
+      "settings.providers.customModel.optionPosition",
+      `Option ${index + 1}`,
+      { number: index + 1 },
+    );
     const id = descriptor.id.trim();
-    if (!id) return `${position} needs an id.`;
-    if (seenIds.has(id)) return `${position}: id "${id}" is used twice.`;
+    if (!id) {
+      return translateDynamic(
+        "settings.providers.customModel.errors.needsId",
+        `${position} needs an id.`,
+        { position },
+      );
+    }
+    if (seenIds.has(id)) {
+      return translateDynamic(
+        "settings.providers.customModel.errors.duplicateId",
+        `${position}: id "${id}" is used twice.`,
+        { position, id },
+      );
+    }
     seenIds.add(id);
-    if (!descriptor.label.trim()) return `${position} needs a label.`;
+    if (!descriptor.label.trim()) {
+      return translateDynamic(
+        "settings.providers.customModel.errors.needsLabel",
+        `${position} needs a label.`,
+        { position },
+      );
+    }
     if (descriptor.type !== "select") continue;
-    if (descriptor.choices.length === 0) return `${position} needs at least one choice.`;
+    if (descriptor.choices.length === 0) {
+      return translateDynamic(
+        "settings.providers.customModel.errors.needsChoice",
+        `${position} needs at least one choice.`,
+        { position },
+      );
+    }
     const seenChoices = new Set<string>();
     for (const choice of descriptor.choices) {
       const choiceId = choice.id.trim();
-      if (!choiceId) return `${position} has a choice without a value.`;
+      if (!choiceId) {
+        return translateDynamic(
+          "settings.providers.customModel.errors.choiceNoValue",
+          `${position} has a choice without a value.`,
+          { position },
+        );
+      }
       if (seenChoices.has(choiceId)) {
-        return `${position}: choice "${choiceId}" is used twice.`;
+        return translateDynamic(
+          "settings.providers.customModel.errors.duplicateChoice",
+          `${position}: choice "${choiceId}" is used twice.`,
+          { position, choiceId },
+        );
       }
       seenChoices.add(choiceId);
     }

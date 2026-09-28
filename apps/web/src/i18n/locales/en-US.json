@@ -4,6 +4,16 @@
     "mixed": "Mixed",
     "errorOccurred": "An error occurred.",
     "tryAgain": "Try again.",
+    "save": "Save",
+    "colorPicker": {
+      "instructions": "Use arrow keys to adjust the focused value. Hold Shift for larger steps. Use Home and End for the minimum and maximum. Press Tab to move between saturation and brightness.",
+      "planeAria": "{{label}} saturation and brightness",
+      "saturationAria": "{{label}} saturation",
+      "brightnessAria": "{{label}} brightness",
+      "saturation": "Saturation",
+      "brightness": "Brightness",
+      "axisPercent": "{{axis}} {{percent}}%"
+    },
     "wizard": {
       "setupProgress": "Setup progress",
       "stepAria": "{{step}}, step {{number}}",
@@ -942,6 +952,73 @@
         "back": "Back",
         "next": "Next",
         "submit": "Add instance"
+      },
+      "usage": {
+        "addHub": "Add hub",
+        "cursorTitle": "Cursor account usage",
+        "cursorDescription": "Read your existing Cursor CLI login from macOS Keychain to show account history and monthly limits. macOS may ask you to allow access.",
+        "empty": "No hubs configured.",
+        "remove": "Remove",
+        "removeConfirmTitle": "Remove {{label}}?",
+        "removeConfirmDescription": "The hub's management key is deleted from this server. Its accounts leave the Limits view; the hub itself is untouched. Add it again with the URL and key to bring them back.",
+        "removeHub": "Remove hub",
+        "addDialog": {
+          "title": "Add a CLIProxyAPI hub",
+          "description": "Show the quota of every account the hub pools, next to the providers on {{environment}}. The key stays on that server.",
+          "urlLabel": "Hub URL",
+          "keyLabel": "Management key",
+          "labelLabel": "Label (optional)",
+          "labelPlaceholder": "Defaults to the hub's host name"
+        }
+      },
+      "customModel": {
+        "optionPosition": "Option {{number}}",
+        "displayNameLabel": "Display name",
+        "optionsTitle": "Options shown in the composer",
+        "empty": "No custom options. The composer uses the provider's default options.",
+        "copyFrom": "Copy from…",
+        "copyFromAria": "Copy options from a built-in model",
+        "customOption": "Custom…",
+        "addCustomOption": "Custom option",
+        "addChoice": "Add choice",
+        "labelPlaceholder": "Label",
+        "choiceValueAria": "Choice value",
+        "choiceLabelAria": "Choice label",
+        "defaultChoice": "Default",
+        "defaultChoiceAria": "Default choice",
+        "removeChoiceAria": "Remove choice",
+        "optionIdAria": "Option id",
+        "optionLabelAria": "Option label",
+        "optionTypeAria": "Option type",
+        "typeToggle": "Toggle",
+        "typeChoices": "Choices",
+        "removeOptionAria": "Remove option {{number}}",
+        "presets": {
+          "reasoningEffort": "Reasoning",
+          "serviceTier": "Speed",
+          "effort": "Reasoning",
+          "fastMode": "Fast Mode",
+          "thinking": "Thinking",
+          "reasoning": "Reasoning",
+          "variant": "Reasoning",
+          "agent": "Agent"
+        },
+        "errors": {
+          "needsId": "{{position}} needs an id.",
+          "duplicateId": "{{position}}: id \"{{id}}\" is used twice.",
+          "needsLabel": "{{position}} needs a label.",
+          "needsChoice": "{{position}} needs at least one choice.",
+          "choiceNoValue": "{{position}} has a choice without a value.",
+          "duplicateChoice": "{{position}}: choice \"{{choiceId}}\" is used twice."
+        }
+      },
+      "accent": {
+        "title": "Accent color",
+        "planeLabel": "Accent color",
+        "hueAria": "Accent color hue",
+        "hexAria": "Custom hex accent color",
+        "chooseAria": "Choose accent color for {{name}}",
+        "clear": "Clear color"
       }
     },
     "restore": {
