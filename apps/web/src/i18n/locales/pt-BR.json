@@ -3,7 +3,12 @@
     "cancel": "Cancelar",
     "mixed": "Misto",
     "errorOccurred": "Ocorreu um erro.",
-    "tryAgain": "Tente novamente."
+    "tryAgain": "Tente novamente.",
+    "wizard": {
+      "setupProgress": "Progresso da configuração",
+      "stepAria": "{{step}}, etapa {{number}}",
+      "stepSummaryAria": "{{step}}, etapa {{number}}, {{summary}}"
+    }
   },
   "settings": {
     "rootTitle": "Configurações",
@@ -903,6 +908,40 @@
           "hidden": "Ocultos do seletor"
         },
         "add": "Adicionar"
+      },
+      "addInstance": {
+        "errors": {
+          "required": "O ID da instância é obrigatório.",
+          "tooLong": "O ID da instância deve ter 64 caracteres ou menos.",
+          "invalidChars": "O ID da instância deve começar com uma letra e usar apenas letras, dígitos, '-' ou '_'.",
+          "duplicate": "Já existe uma instância chamada '{{id}}'."
+        },
+        "steps": {
+          "driver": "Driver",
+          "identity": "Identidade",
+          "config": "Configuração"
+        },
+        "previewLabel": "{{driver}} Workspace",
+        "toastAddedTitle": "Instância de provedor adicionada",
+        "toastAddedDescription": "Instância '{{id}}' de {{driver}} foi adicionada.",
+        "toastErrorTitle": "Não foi possível adicionar a instância de provedor",
+        "toastErrorFallback": "Falha na atualização.",
+        "title": "Adicionar instância de provedor",
+        "description": "Configure uma instância de provedor adicional em {{environment}} — por exemplo, uma segunda instalação do Codex apontada para outro workspace.",
+        "driverLabel": "Driver",
+        "labelLabel": "Rótulo",
+        "labelPlaceholder": "ex.: Trabalho",
+        "labelHint": "Mostrado na lista de provedores. Opcional.",
+        "idLabel": "ID da instância",
+        "idHint": "Chave de roteamento usada por threads e sessões. Letras, dígitos, '-' ou '_'.",
+        "accentLabel": "Cor de destaque",
+        "swatchAria": "Usar destaque {{swatch}}",
+        "clear": "Limpar",
+        "accentHint": "Marcador opcional mostrado no seletor.",
+        "noConfigRequired": "Este driver não tem configuração obrigatória. Você pode adicionar a instância agora.",
+        "back": "Voltar",
+        "next": "Avançar",
+        "submit": "Adicionar instância"
       }
     },
     "restore": {

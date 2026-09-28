@@ -3,7 +3,12 @@
     "cancel": "Cancel",
     "mixed": "Mixed",
     "errorOccurred": "An error occurred.",
-    "tryAgain": "Try again."
+    "tryAgain": "Try again.",
+    "wizard": {
+      "setupProgress": "Setup progress",
+      "stepAria": "{{step}}, step {{number}}",
+      "stepSummaryAria": "{{step}}, step {{number}}, {{summary}}"
+    }
   },
   "settings": {
     "rootTitle": "Settings",
@@ -903,6 +908,40 @@
           "hidden": "Hidden from picker"
         },
         "add": "Add"
+      },
+      "addInstance": {
+        "errors": {
+          "required": "Instance ID is required.",
+          "tooLong": "Instance ID must be 64 characters or fewer.",
+          "invalidChars": "Instance ID must start with a letter and use only letters, digits, '-', or '_'.",
+          "duplicate": "An instance named '{{id}}' already exists."
+        },
+        "steps": {
+          "driver": "Driver",
+          "identity": "Identity",
+          "config": "Config"
+        },
+        "previewLabel": "{{driver}} Workspace",
+        "toastAddedTitle": "Provider instance added",
+        "toastAddedDescription": "{{driver}} instance '{{id}}' was added.",
+        "toastErrorTitle": "Could not add provider instance",
+        "toastErrorFallback": "Update failed.",
+        "title": "Add provider instance",
+        "description": "Configure an additional provider instance on {{environment}} — for example, a second Codex install pointed at a different workspace.",
+        "driverLabel": "Driver",
+        "labelLabel": "Label",
+        "labelPlaceholder": "e.g. Work",
+        "labelHint": "Shown in the provider list. Optional.",
+        "idLabel": "Instance ID",
+        "idHint": "Routing key used by threads and sessions. Letters, digits, '-', or '_'.",
+        "accentLabel": "Accent color",
+        "swatchAria": "Use {{swatch}} accent",
+        "clear": "Clear",
+        "accentHint": "Optional marker shown in the picker.",
+        "noConfigRequired": "This driver has no required configuration. You can add the instance now.",
+        "back": "Back",
+        "next": "Next",
+        "submit": "Add instance"
       }
     },
     "restore": {

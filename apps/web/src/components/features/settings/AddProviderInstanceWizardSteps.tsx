@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { WizardSteps } from "../../ui/wizard";
 import {
   ADD_PROVIDER_WIZARD_STEPS,
@@ -18,9 +20,13 @@ export function AddProviderInstanceWizardSteps({
   instanceIdError,
   onNavigation,
 }: AddProviderInstanceWizardStepsProps) {
+  const { t } = useTranslation();
+  const steps = ADD_PROVIDER_WIZARD_STEPS.map((step) =>
+    t(`settings.providers.addInstance.steps.${step}`),
+  );
   return (
     <WizardSteps
-      steps={ADD_PROVIDER_WIZARD_STEPS}
+      steps={steps}
       currentStep={currentStep}
       summaries={summaries}
       onStepChange={(requestedStep) =>
