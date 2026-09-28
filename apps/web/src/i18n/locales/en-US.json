@@ -6,6 +6,26 @@
         "title": "Interface language",
         "description": "Choose the language used across the interface. Saved on this device."
       }
+    },
+    "shared": {
+      "backgroundPolicyDetails": "Background policy details",
+      "reconnectToChange": "Reconnect the selected environment to change this setting.",
+      "environmentWideSetting": "Environment-wide setting. Select an environment to change it.",
+      "primaryUnavailable": "This setting is saved on a server, and the hosted app is not anchored to one. Change it from the desktop app or from the server's own address.",
+      "notSavedTitle": "Setting not saved",
+      "resetToDefault": "Reset to default",
+      "resetToInherited": "Reset to inherited value",
+      "resetAria": "Reset {{label}} to default",
+      "overrideFallback": "override",
+      "inheritance": {
+        "mixed": "Mixed across selected environments",
+        "overridden": "Overridden for this project",
+        "t3json": "Inherited from the repository's t3.json",
+        "inheritedFrom": "Inherited from {{source}}",
+        "environmentFallback": "environment",
+        "setOnEnvironment": "Set on the environment",
+        "builtInDefault": "Built-in default"
+      }
     }
   }
 }

@@ -6,6 +6,26 @@
         "title": "Idioma da interface",
         "description": "Escolha o idioma usado em toda a interface. Salvo neste dispositivo."
       }
+    },
+    "shared": {
+      "backgroundPolicyDetails": "Detalhes da política de segundo plano",
+      "reconnectToChange": "Reconecte o ambiente selecionado para alterar esta configuração.",
+      "environmentWideSetting": "Configuração válida para todo o ambiente. Selecione um ambiente para alterá-la.",
+      "primaryUnavailable": "Esta configuração é salva em um servidor, e o app hospedado não está vinculado a um. Altere-a no app desktop ou no endereço do próprio servidor.",
+      "notSavedTitle": "Configuração não salva",
+      "resetToDefault": "Redefinir para o padrão",
+      "resetToInherited": "Redefinir para o valor herdado",
+      "resetAria": "Redefinir {{label}} para o padrão",
+      "overrideFallback": "substituição",
+      "inheritance": {
+        "mixed": "Diferente entre os ambientes selecionados",
+        "overridden": "Substituído para este projeto",
+        "t3json": "Herdado do t3.json do repositório",
+        "inheritedFrom": "Herdado de {{source}}",
+        "environmentFallback": "ambiente",
+        "setOnEnvironment": "Definido no ambiente",
+        "builtInDefault": "Padrão interno"
+      }
     }
   }
 }

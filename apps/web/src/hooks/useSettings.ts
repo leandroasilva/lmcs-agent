@@ -10,6 +10,7 @@
  * cannot silently read the wrong server's settings.
  */
 import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useTranslation } from "react-i18next";
 import { useAtomValue } from "@effect/atom-react";
 import {
   DEFAULT_SERVER_SETTINGS,
@@ -134,7 +135,10 @@ async function hydrateClientSettings(): Promise<void> {
         return;
       }
       if (persistedSettings) {
-        replaceClientSettingsSnapshot({ ...DEFAULT_CLIENT_SETTINGS, ...persistedSettings });
+        replaceClientSettingsSnapshot({
+          ...DEFAULT_CLIENT_SETTINGS,
+          ...persistedSettings,
+        });
       }
       setClientSettingsHydrationStatus("ready");
     } catch (error) {
@@ -189,7 +193,10 @@ export function persistClientSettingsPatch(
         if (clientSettingsHydrationStatus !== "ready") {
           await hydrateClientSettings();
         }
-        replaceClientSettingsSnapshot({ ...getClientSettingsSnapshot(), ...patch });
+        replaceClientSettingsSnapshot({
+          ...getClientSettingsSnapshot(),
+          ...patch,
+        });
       } finally {
         deferredClientSettingsPatchCount -= 1;
       }
@@ -419,6 +426,7 @@ export function usePrimarySettingsAvailable(): boolean {
  * through client persistence.
  */
 function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
+  const { t } = useTranslation();
   const persistServerSettings = useAtomCommand(
     serverEnvironment.updateSettings,
     "server settings update",
@@ -431,10 +439,10 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       if (Object.keys(serverPatch).length > 0) {
         const { sharedPatch, localPatch } = splitSharedServerPatch(serverPatch);
         // Dropping the write silently leaves the control looking saved.
-        const warnUnsaved = (description = PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE) =>
+        const warnUnsaved = (description = t("settings.shared.primaryUnavailable")) =>
           toastManager.add({
             type: "warning",
-            title: "Setting not saved",
+            title: t("settings.shared.notSavedTitle"),
             description,
           });
         if (Object.keys(localPatch).length > 0) {
