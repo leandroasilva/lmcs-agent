@@ -17,6 +17,7 @@ import {
   OpenAI,
   OpenCodeIcon,
 } from "../../shared/Icons";
+import { translateDynamic } from "../../../i18n";
 
 type ProviderSettingsSchema = {
   readonly fields: Readonly<Record<string, Schema.Top>>;
@@ -102,4 +103,10 @@ export type DriverOption = ProviderClientDefinition;
 export function getDriverOption(driver: ProviderDriverKind | undefined): DriverOption | undefined {
   if (driver === undefined) return undefined;
   return PROVIDER_CLIENT_DEFINITION_BY_VALUE[driver];
+}
+
+/** Translated driver badge (e.g. early-access flag), falling back to the definition copy. */
+export function driverBadgeLabel(option: DriverOption): string | undefined {
+  if (option.badgeLabel === undefined) return undefined;
+  return translateDynamic(`settings.providers.drivers.${option.value}.badge`, option.badgeLabel);
 }

@@ -4,6 +4,8 @@ import type {
   ServerProviderCompatibilityAdvisory,
 } from "@lmcstools/core";
 
+import { translateDynamic } from "../../../i18n";
+
 /**
  * Visual treatment for each server-reported provider status. Centralized so
  * the default-driver card and per-instance cards share the same language.
@@ -36,52 +38,75 @@ export type ProviderStatusKey = keyof typeof PROVIDER_STATUS_STYLES;
 export function getProviderSummary(provider: ServerProvider | undefined) {
   if (!provider) {
     return {
-      headline: "Checking provider status",
-      detail: "Waiting for the server to report installation and authentication details.",
+      headline: translateDynamic("settings.providers.status.checking", "Checking provider status"),
+      detail: translateDynamic(
+        "settings.providers.status.checkingDetail",
+        "Waiting for the server to report installation and authentication details.",
+      ),
     };
   }
   if (!provider.enabled || provider.status === "disabled") {
     return {
-      headline: "Disabled",
+      headline: translateDynamic("settings.providers.status.disabled", "Disabled"),
       detail:
         provider.message ??
-        "This provider is installed but disabled for new sessions in LMCS Code.",
+        translateDynamic(
+          "settings.providers.status.disabledDetail",
+          "This provider is installed but disabled for new sessions in LMCS Code.",
+        ),
     };
   }
   if (!provider.installed) {
     return {
-      headline: "Not found",
-      detail: provider.message ?? "CLI not detected on PATH.",
+      headline: translateDynamic("settings.providers.status.notFound", "Not found"),
+      detail:
+        provider.message ??
+        translateDynamic("settings.providers.status.notFoundDetail", "CLI not detected on PATH."),
     };
   }
   if (provider.auth.status === "unauthenticated") {
     return {
-      headline: "Not authenticated",
+      headline: translateDynamic("settings.providers.status.notAuthenticated", "Not authenticated"),
       detail: provider.message ?? null,
     };
   }
   if (provider.status === "warning") {
     return {
-      headline: "Needs attention",
+      headline: translateDynamic("settings.providers.status.needsAttention", "Needs attention"),
       detail:
-        provider.message ?? "The provider is installed, but the server could not fully verify it.",
+        provider.message ??
+        translateDynamic(
+          "settings.providers.status.needsAttentionDetail",
+          "The provider is installed, but the server could not fully verify it.",
+        ),
     };
   }
   if (provider.status === "error") {
     return {
-      headline: "Unavailable",
-      detail: provider.message ?? "The provider failed its startup checks.",
+      headline: translateDynamic("settings.providers.status.unavailable", "Unavailable"),
+      detail:
+        provider.message ??
+        translateDynamic(
+          "settings.providers.status.unavailableDetail",
+          "The provider failed its startup checks.",
+        ),
     };
   }
   if (provider.auth.status === "authenticated") {
     const authLabel = provider.auth.label ?? provider.auth.type;
     return {
-      headline: authLabel ? `Authenticated · ${authLabel}` : "Authenticated",
+      headline: authLabel
+        ? translateDynamic(
+            "settings.providers.status.authenticatedWithLabel",
+            `Authenticated · ${authLabel}`,
+            { label: authLabel },
+          )
+        : translateDynamic("settings.providers.status.authenticated", "Authenticated"),
       detail: provider.message ?? null,
     };
   }
   return {
-    headline: "Available",
+    headline: translateDynamic("settings.providers.status.available", "Available"),
     detail: provider.message ?? null,
   };
 }
@@ -135,10 +160,22 @@ export function getProviderVersionAdvisoryPresentation(
     const targetVersion = compatibility.recommendedVersion;
     const recommendation = getProviderVersionLabel(targetVersion) ?? compatibility.recommendedRange;
     return {
-      title: COMPATIBILITY_TITLES[compatibility.status],
+      title: translateDynamic(
+        `settings.providers.status.compat.${compatibility.status}`,
+        COMPATIBILITY_TITLES[compatibility.status],
+      ),
       detail:
         compatibility.message ??
-        (recommendation ? `Use ${recommendation} for full support.` : "Update for full support."),
+        (recommendation
+          ? translateDynamic(
+              "settings.providers.status.useForFullSupport",
+              `Use ${recommendation} for full support.`,
+              { recommendation },
+            )
+          : translateDynamic(
+              "settings.providers.status.updateForFullSupport",
+              "Update for full support.",
+            )),
       updateCommand:
         targetVersion || latestIsIncompatible ? null : (advisory?.updateCommand ?? null),
       emphasis: compatibility.status === "graceful" ? "normal" : "strong",
@@ -154,7 +191,7 @@ export function getProviderVersionAdvisoryPresentation(
     return null;
   }
 
-  const label = "Update available";
+  const label = translateDynamic("settings.providers.status.updateAvailable", "Update available");
   const version = advisory.latestVersion;
   const versionLabel = getProviderVersionLabel(version);
 
@@ -163,8 +200,15 @@ export function getProviderVersionAdvisoryPresentation(
     detail:
       advisory.message ??
       (versionLabel
-        ? `${label}: install ${versionLabel}.`
-        : `${label}: install the latest provider version.`),
+        ? translateDynamic(
+            "settings.providers.status.updateAvailableInstallVersion",
+            `${label}: install ${versionLabel}.`,
+            { version: versionLabel },
+          )
+        : translateDynamic(
+            "settings.providers.status.updateAvailableInstallLatest",
+            `${label}: install the latest provider version.`,
+          )),
     updateCommand: advisory.updateCommand,
     emphasis: "normal" as const,
     targetVersion: null,

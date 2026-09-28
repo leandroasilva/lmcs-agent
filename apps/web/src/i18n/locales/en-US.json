@@ -2,7 +2,8 @@
   "common": {
     "cancel": "Cancel",
     "mixed": "Mixed",
-    "errorOccurred": "An error occurred."
+    "errorOccurred": "An error occurred.",
+    "tryAgain": "Try again."
   },
   "settings": {
     "rootTitle": "Settings",
@@ -504,6 +505,272 @@
         "off": "Off"
       }
     },
+    "sourceControl": {
+      "sections": {
+        "serverEnvironment": "Server environment",
+        "versionControl": "Version Control",
+        "providers": "Source Control Providers"
+      },
+      "auth": {
+        "authenticated": "Authenticated",
+        "unauthenticated": "Not authenticated",
+        "unknown": "Status unknown"
+      },
+      "account": {
+        "toggleAria": "Toggle source control account visibility",
+        "revealTooltip": "Click to reveal account",
+        "hideTooltip": "Click to hide account"
+      },
+      "comingSoon": "Support for {{label}} is coming soon.",
+      "comingSoonBadge": "Coming Soon",
+      "notAvailable": "Not available on this server: {{hint}}",
+      "authenticatedAs": "as",
+      "availableWithHint": "Available. {{hint}}",
+      "notAuthenticated": "{{label}} is not authenticated on this server. Sign in or configure credentials using the <code>{{executable}}</code> tool on the server host to enable change request features.",
+      "couldNotVerify": "Could not verify {{label}}. {{detail}}",
+      "available": "Available",
+      "toggleDetails": "Toggle {{label}} details",
+      "availabilityAria": "{{label}} availability",
+      "gitFetch": {
+        "policyTooltip": "This interval is configured for Git only. The shared Background activity policy still decides whether Git refreshes may run when the timer fires. Custom intervals appear as Advanced in General settings.",
+        "resetLabel": "fetch interval",
+        "description": "Refresh remote branches in the background. Set to 0 to avoid automatic Git prompts.",
+        "decreaseAria": "Decrease fetch interval",
+        "inputAria": "Automatic Git fetch interval in seconds",
+        "increaseAria": "Increase fetch interval",
+        "seconds": "seconds"
+      },
+      "scanError": "Could not scan the server environment",
+      "scanEmpty": "Nothing detected yet",
+      "scanEmptyDescription": "Install Git on the server, add optional hosting integrations or credentials your workspace needs, then rescan.",
+      "scan": "Scan",
+      "rescanAria": "Rescan server environment",
+      "rescanTooltip": "Rescan Git and hosting integrations",
+      "connectPrompt": "Connect an environment to inspect its version control tools and hosting integrations."
+    },
+    "snapshot": {
+      "updating": "Updating capture settings…",
+      "enableAria": "Enable snapshots",
+      "saving": "Saving…",
+      "save": "Save",
+      "status": {
+        "checking": "Checking snapshots…",
+        "unsupported": "Not supported on this platform.",
+        "turnOn": "Turn this on to set up snapshots."
+      },
+      "summary": {
+        "needsAttention": "Capture needs attention",
+        "checkAccess": "Check capture access in setup",
+        "installHelper": "Install the capture helper to continue",
+        "setupActiveWindow": "Set up active-window snapshots",
+        "manualOnly": "Manual capture only — you'll choose a window each time",
+        "enableCapture": "Enable capture to continue",
+        "connectingShortcut": "Connecting your shortcut…",
+        "waitingPermission": "Waiting for shortcut permission",
+        "ready": "Ready to capture",
+        "useFromOtherApp": "Use your shortcut from another app",
+        "shortcutSaved": "Shortcut saved",
+        "finishSetup": "Finish shortcut setup"
+      },
+      "shortcutStatus": {
+        "approvePrompt": "Approve the shortcut permission prompt to continue.",
+        "saved": "Shortcut saved."
+      },
+      "setupButton": {
+        "continue": "Continue setup",
+        "manage": "Manage capture",
+        "setupDesktop": "Set up {{desktop}} capture"
+      },
+      "feedback": {
+        "unavailableDesktop": "Capture effects aren't available on this desktop.",
+        "installHelper": "Install or update the capture helper to enable effects.",
+        "unavailableNiri": "Capture effects aren't available on Niri.",
+        "updateGnome": "Update the GNOME extension, then sign out and back in to enable effects.",
+        "finishExtension": "Finish extension setup to enable effects."
+      },
+      "description": {
+        "picker": "Automatic capture isn't available here. Choose a window instead.",
+        "default": "Capture a window and attach it to your current draft."
+      },
+      "accessibility": {
+        "screenshotOnly": "This desktop only provides a screenshot.",
+        "description": "Include text and controls when the app makes them available.",
+        "aria": "Include app text in snapshots"
+      },
+      "unavailable": {
+        "updateDesktop": "Update the desktop app to use snapshots.",
+        "desktopOnly": "Only available in the desktop app."
+      },
+      "shortcut": {
+        "press": "Press your shortcut. Esc cancels.",
+        "conflict": "LMCS Code already uses this for \"{{command}}\".",
+        "checking": "Checking shortcut…",
+        "readyToSave": "Ready to save.",
+        "tryModifier": "Try a shortcut such as Ctrl+Shift+2.",
+        "descriptionPicker": "Choose a window to capture from any app.",
+        "descriptionDefault": "Capture the window you're using without switching apps.",
+        "change": "Change shortcut",
+        "permissions": "Shortcut permissions"
+      },
+      "sound": {
+        "description": "Choose the sound played when capture starts.",
+        "aria": "Snapshot sound: {{label}}",
+        "off": "Off",
+        "whoosh": "Whoosh",
+        "whooshDefault": "Whoosh (Default)",
+        "defaultSuffix": "(Default)",
+        "click": "Click",
+        "playWhoosh": "Play Whoosh",
+        "playClick": "Play Click"
+      },
+      "flash": {
+        "description": "Show a gentle cue on the captured window.",
+        "aria": "Flash captured window"
+      },
+      "animations": {
+        "description": "Animate captured windows into your draft.",
+        "aria": "Animate snapshots"
+      },
+      "errors": {
+        "checkSetup": "Couldn't check capture setup",
+        "openShortcutPermissions": "Couldn't open shortcut permissions",
+        "completeSetup": "Couldn't complete capture setup",
+        "saveSettings": "Couldn't save capture settings",
+        "allowTextCapture": "Couldn't allow app text capture",
+        "checkShortcut": "Could not check this shortcut.",
+        "restartToFinish": "Restart LMCS Code to finish capture setup.",
+        "verifyAccess": "Couldn't verify capture access",
+        "closeSetup": "Couldn't close capture setup"
+      }
+    },
+    "providers": {
+      "checked": "Checked",
+      "checkedUnavailable": "Checked unavailable",
+      "deviceDetail": {
+        "primary": "Primary device",
+        "lmcsConnect": "LMCS Connect",
+        "ssh": "SSH",
+        "local": "Local device",
+        "remote": "Remote device"
+      },
+      "devicesAria": "Devices",
+      "placeholder": {
+        "loadingTitle": "Loading provider settings",
+        "connectErrorTitle": "Could not connect to this device",
+        "unavailableTitle": "Provider settings are unavailable",
+        "checkingPermissions": "Checking what this session is allowed to change.",
+        "waitingConfiguration": "Waiting for {{label}}'s configuration.",
+        "deviceUnavailableTitle": "Device unavailable",
+        "deviceUnavailableDescription": "Reconnect this device to set up its provider, or select another device.",
+        "noDevicesTitle": "No connected devices",
+        "loadingDevicesTitle": "Loading devices",
+        "noDevicesDescription": "Connect an execution environment before configuring providers.",
+        "loadingDevicesDescription": "Reading connected execution environments."
+      },
+      "refreshStatus": "Refresh provider status",
+      "refreshing": "Refreshing providers",
+      "addProvider": "Add provider",
+      "readOnly": {
+        "title": "Limited permissions",
+        "description": "This session can view {{label}}'s providers but can't change their settings."
+      },
+      "instanceMissing": "This provider instance is no longer available on this device.",
+      "noneConfigured": "No providers configured.",
+      "advancedTitle": "Advanced",
+      "healthInterval": {
+        "policyTooltip": "This interval is configured here, then the shared Background activity policy decides whether provider probes may run when the timer fires. Custom intervals appear as Advanced in General settings.",
+        "description": "Refresh provider status, versions, and models in the background. Set to 0 to disable.",
+        "resetLabel": "provider health check interval",
+        "decreaseAria": "Decrease provider health check interval",
+        "inputAria": "Provider health check interval in seconds",
+        "increaseAria": "Increase provider health check interval",
+        "seconds": "seconds"
+      },
+      "resetProviderSettings": "{{provider}} provider settings",
+      "updateFailed": "Could not update {{provider}}",
+      "updateStartFailed": "The provider update command could not be started.",
+      "status": {
+        "checking": "Checking provider status",
+        "checkingDetail": "Waiting for the server to report installation and authentication details.",
+        "disabled": "Disabled",
+        "disabledDetail": "This provider is installed but disabled for new sessions in LMCS Code.",
+        "notFound": "Not found",
+        "notFoundDetail": "CLI not detected on PATH.",
+        "notAuthenticated": "Not authenticated",
+        "needsAttention": "Needs attention",
+        "needsAttentionDetail": "The provider is installed, but the server could not fully verify it.",
+        "unavailable": "Unavailable",
+        "unavailableDetail": "The provider failed its startup checks.",
+        "authenticated": "Authenticated",
+        "authenticatedWithLabel": "Authenticated · {{label}}",
+        "available": "Available",
+        "compat": {
+          "graceful": "Limited support",
+          "unsupported": "Unsupported version",
+          "broken": "Known broken version"
+        },
+        "inlineBroken": "Incompatible",
+        "inlineUnsupported": "Unsupported",
+        "useForFullSupport": "Use {{recommendation}} for full support.",
+        "updateForFullSupport": "Update for full support.",
+        "updateAvailable": "Update available",
+        "updateAvailableInstallVersion": "Update available: install {{version}}.",
+        "updateAvailableInstallLatest": "Update available: install the latest provider version."
+      },
+      "drivers": {
+        "cursor": {
+          "badge": "Early Access"
+        },
+        "grok": {
+          "badge": "Early Access"
+        }
+      },
+      "instance": {
+        "email": {
+          "toggleAria": "Toggle account email visibility",
+          "revealTooltip": "Click to reveal email",
+          "hideTooltip": "Click to hide email"
+        },
+        "variables": {
+          "title": "Variables",
+          "description": "API keys, base URLs, and other per-instance CLI settings.",
+          "add": "Add variable",
+          "nameAria": "Environment variable name {{index}}",
+          "valueAria": "Environment variable value {{index}}",
+          "valuePlaceholder": "value",
+          "redactedPlaceholder": "Stored secret, enter a new value to replace",
+          "markSensitiveAria": "Mark environment variable {{name}} as sensitive",
+          "sensitiveTooltip": "Sensitive, stored separately",
+          "plainTextTooltip": "Plain text",
+          "removeAria": "Remove environment variable {{name}}",
+          "footnote": "Sensitive values are stored separately and never returned to the app."
+        },
+        "authenticatedAs": "Authenticated as",
+        "selectAria": "Select {{name}}",
+        "enableAria": "Enable {{name}}",
+        "copyUpdateCommandAria": "Copy {{name}} update command",
+        "copyUpdateCommandTooltip": "Copy update command",
+        "copyCommandTooltip": "Copy command",
+        "viewDetailsAria": "{{title}} — view details",
+        "updating": "Updating",
+        "installVersion": "Install {{version}}",
+        "updateNow": "Update now",
+        "manualUpdateDivider": "or, update manually using",
+        "deleteInstanceAria": "Delete instance {{id}}",
+        "displayNameTitle": "Display name",
+        "labelPlaceholder": "Instance label",
+        "setupTitle": "Setup",
+        "runtimeTitle": "Runtime",
+        "driverTitle": "Driver",
+        "driverUnavailable": "This instance uses <code>{{driver}}</code>, which is not available in this build. Its configuration is preserved.",
+        "environmentTitle": "Environment",
+        "modelsTitle": "Models",
+        "modelsDescription": "Favorites, visibility, and ordering are saved on this device. Custom models are saved on the selected environment.",
+        "copyToastTitle": "{{provider}} update command copied",
+        "copyToastDescription": "Run it in a terminal when you are ready to update.",
+        "copyToastError": "Could not copy {{provider}} update command"
+      }
+    },
     "restore": {
       "confirmTitle": "Restore default settings?",
       "confirmResetList": "This will reset: {{labels}}.",
@@ -571,6 +838,130 @@
         "exportBoth": "{{mode}}. Exporting OTEL traces to {{tracesUrl}} and metrics to {{metricsUrl}}.",
         "exportTraces": "{{mode}}. Exporting OTEL traces to {{tracesUrl}}.",
         "exportMetrics": "{{mode}}. Exporting OTEL metrics to {{metricsUrl}}."
+      },
+      "signal": {
+        "sendSigint": "Send SIGINT",
+        "sendSigkill": "Send SIGKILL"
+      },
+      "expandable": {
+        "showFullError": "Show full error",
+        "showLess": "Show less"
+      },
+      "panel": {
+        "noTraceRecords": "No trace records",
+        "statDetailsAria": "{{label}} details",
+        "copiedTraceIdAria": "Copied trace ID",
+        "copyTraceIdAria": "Copy trace ID",
+        "copiedTooltip": "Copied",
+        "copyTraceIdTooltip": "Copy full trace ID",
+        "processType": {
+          "subprocess": "Subprocess",
+          "agent": "Agent",
+          "process": "Process"
+        },
+        "collapseAria": "Collapse {{name}}",
+        "expandAria": "Expand {{name}}",
+        "headers": {
+          "name": "Name",
+          "cpu": "CPU",
+          "memory": "Memory",
+          "command": "Command",
+          "pid": "PID",
+          "type": "Type",
+          "kill": "Kill",
+          "process": "Process",
+          "cpuTime": "CPU Time",
+          "current": "Current",
+          "average": "Average",
+          "peak": "Peak",
+          "maxMem": "Max Mem",
+          "span": "Span",
+          "cause": "Cause",
+          "duration": "Duration",
+          "ended": "Ended",
+          "count": "Count",
+          "lastSeen": "Last Seen",
+          "trace": "Trace",
+          "time": "Time",
+          "level": "Level",
+          "message": "Message",
+          "failures": "Failures",
+          "max": "Max"
+        },
+        "noLiveProcesses": "No live descendant processes found.",
+        "processRowAria": "{{kind}} process {{name}}",
+        "processKind": {
+          "root": "Root",
+          "child": "Child"
+        },
+        "chartAria": "Average CPU {{avg}}%, peak CPU {{peak}}%",
+        "chartTooltip": "Avg {{avg}}%, peak {{peak}}%",
+        "historyPeriodAria": "Process history period",
+        "checking": "Checking",
+        "checkedUnavailable": "Checked unavailable",
+        "checked": "Checked",
+        "noEditors": "No available editors found.",
+        "noEnvironment": "No environment is selected.",
+        "openLogsFailed": "Unable to open logs folder.",
+        "sigkillConfirm": "Send SIGKILL to process {{pid}}? This cannot be handled by the process.",
+        "confirmSignalFailed": "Could not confirm signal",
+        "sendSignalFailed": "Could not send {{signal}}",
+        "sendSignalFailedDescription": "Failed to send {{signal}}.",
+        "processExited": "Process already exited",
+        "processExitedDescription": "The process is not a child of the LMCS Server. It might already have exited.",
+        "sections": {
+          "liveProcesses": "Live Processes",
+          "resourceHistory": "Resource History",
+          "traceDiagnostics": "Trace Diagnostics",
+          "latestFailures": "Latest Failures",
+          "commonFailures": "Most Common Failures",
+          "slowestSpans": "Slowest Spans",
+          "spanLogs": "Span Logs",
+          "topSpanNames": "Top Span Names"
+        },
+        "refreshProcesses": "Refresh process diagnostics",
+        "refreshResources": "Refresh resource history",
+        "refreshTrace": "Refresh trace diagnostics",
+        "stats": {
+          "childProcesses": "Child Processes",
+          "cpu": "CPU",
+          "memory": "Memory",
+          "serverPid": "Server PID",
+          "cpuTime": "CPU Time",
+          "samples": "Samples",
+          "interval": "Interval",
+          "processes": "Processes",
+          "spans": "Spans",
+          "failures": "Failures",
+          "slowSpans": "Slow Spans",
+          "parseErrors": "Parse Errors"
+        },
+        "tooltips": {
+          "totalCpu": "Total CPU across live child processes of the current server process. The desktop shell and other parent processes are not included.",
+          "totalMemory": "Total resident memory across live child processes of the current server process. The desktop shell and other parent processes are not included.",
+          "cpuTimeApprox": "Approximate active CPU time for the LMCS server root process and its descendants during the selected window. It grows only while sampled processes use CPU and older samples leave as the window moves.",
+          "samplesRetained": "In-memory process samples retained by the server. This resets when the server restarts.",
+          "slowSpansThreshold": "Spans with a duration of {{threshold}} or longer.",
+          "slowSpansFallback": "Spans at or above the configured slow-span threshold."
+        },
+        "empty": {
+          "loadingProcesses": "Loading live processes...",
+          "noProcesses": "No live descendant processes found.",
+          "collectingSamples": "Collecting process resource samples...",
+          "noSamples": "No process resource samples found for this window.",
+          "loadingFailures": "Loading failures...",
+          "noFailures": "No failed spans found.",
+          "loadingFailureGroups": "Loading failure groups...",
+          "noFailureGroups": "No repeated failures found.",
+          "loadingSlowSpans": "Loading slow spans...",
+          "noSpans": "No spans found.",
+          "loadingLogs": "Loading recent logs...",
+          "noLogs": "No warnings or errors found.",
+          "loadingSpanNames": "Loading span names..."
+        },
+        "openLogsFolder": "Open logs folder",
+        "partialFailure": "Some trace files could not be read, so diagnostics may be incomplete. {{message}}",
+        "showFullMessage": "Show full message"
       }
     },
     "searchItems": {

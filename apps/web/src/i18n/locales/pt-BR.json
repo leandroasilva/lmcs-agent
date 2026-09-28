@@ -2,7 +2,8 @@
   "common": {
     "cancel": "Cancelar",
     "mixed": "Misto",
-    "errorOccurred": "Ocorreu um erro."
+    "errorOccurred": "Ocorreu um erro.",
+    "tryAgain": "Tente novamente."
   },
   "settings": {
     "rootTitle": "Configurações",
@@ -504,6 +505,272 @@
         "off": "Desligado"
       }
     },
+    "sourceControl": {
+      "sections": {
+        "serverEnvironment": "Ambiente do servidor",
+        "versionControl": "Controle de versão",
+        "providers": "Provedores de controle de versão"
+      },
+      "auth": {
+        "authenticated": "Autenticado",
+        "unauthenticated": "Não autenticado",
+        "unknown": "Status desconhecido"
+      },
+      "account": {
+        "toggleAria": "Alternar visibilidade da conta de controle de versão",
+        "revealTooltip": "Clique para revelar a conta",
+        "hideTooltip": "Clique para ocultar a conta"
+      },
+      "comingSoon": "Suporte para {{label}} em breve.",
+      "comingSoonBadge": "Em breve",
+      "notAvailable": "Não disponível neste servidor: {{hint}}",
+      "authenticatedAs": "como",
+      "availableWithHint": "Disponível. {{hint}}",
+      "notAuthenticated": "{{label}} não está autenticado neste servidor. Entre ou configure credenciais usando a ferramenta <code>{{executable}}</code> no host do servidor para habilitar recursos de change request.",
+      "couldNotVerify": "Não foi possível verificar {{label}}. {{detail}}",
+      "available": "Disponível",
+      "toggleDetails": "Alternar detalhes de {{label}}",
+      "availabilityAria": "Disponibilidade de {{label}}",
+      "gitFetch": {
+        "policyTooltip": "Este intervalo é configurado apenas para Git. A política compartilhada de Atividade em segundo plano ainda decide se as atualizações de Git podem executar quando o timer dispara. Intervalos personalizados aparecem como Avançado nas configurações Gerais.",
+        "resetLabel": "intervalo de fetch",
+        "description": "Atualiza branches remotos em segundo plano. Defina 0 para evitar prompts automáticos do Git.",
+        "decreaseAria": "Diminuir intervalo de fetch",
+        "inputAria": "Intervalo automático de git fetch em segundos",
+        "increaseAria": "Aumentar intervalo de fetch",
+        "seconds": "segundos"
+      },
+      "scanError": "Não foi possível verificar o ambiente do servidor",
+      "scanEmpty": "Nada detectado ainda",
+      "scanEmptyDescription": "Instale o Git no servidor, adicione integrações de hospedagem opcionais ou credenciais que seu workspace precisa e verifique novamente.",
+      "scan": "Verificar",
+      "rescanAria": "Verificar ambiente do servidor novamente",
+      "rescanTooltip": "Verificar Git e integrações de hospedagem novamente",
+      "connectPrompt": "Conecte um ambiente para inspecionar suas ferramentas de controle de versão e integrações de hospedagem."
+    },
+    "snapshot": {
+      "updating": "Atualizando configurações de captura…",
+      "enableAria": "Ativar snapshots",
+      "saving": "Salvando…",
+      "save": "Salvar",
+      "status": {
+        "checking": "Verificando snapshots…",
+        "unsupported": "Sem suporte nesta plataforma.",
+        "turnOn": "Ative para configurar os snapshots."
+      },
+      "summary": {
+        "needsAttention": "A captura precisa de atenção",
+        "checkAccess": "Verifique o acesso de captura na configuração",
+        "installHelper": "Instale o auxiliar de captura para continuar",
+        "setupActiveWindow": "Configure os snapshots de janela ativa",
+        "manualOnly": "Somente captura manual — você escolherá uma janela a cada vez",
+        "enableCapture": "Ative a captura para continuar",
+        "connectingShortcut": "Conectando seu atalho…",
+        "waitingPermission": "Aguardando permissão do atalho",
+        "ready": "Pronto para capturar",
+        "useFromOtherApp": "Use seu atalho a partir de outro app",
+        "shortcutSaved": "Atalho salvo",
+        "finishSetup": "Conclua a configuração do atalho"
+      },
+      "shortcutStatus": {
+        "approvePrompt": "Aprove o prompt de permissão do atalho para continuar.",
+        "saved": "Atalho salvo."
+      },
+      "setupButton": {
+        "continue": "Continuar configuração",
+        "manage": "Gerenciar captura",
+        "setupDesktop": "Configurar captura do {{desktop}}"
+      },
+      "feedback": {
+        "unavailableDesktop": "Efeitos de captura não estão disponíveis neste desktop.",
+        "installHelper": "Instale ou atualize o auxiliar de captura para ativar os efeitos.",
+        "unavailableNiri": "Efeitos de captura não estão disponíveis no Niri.",
+        "updateGnome": "Atualize a extensão do GNOME e depois saia e entre novamente na sessão para ativar os efeitos.",
+        "finishExtension": "Conclua a configuração da extensão para ativar os efeitos."
+      },
+      "description": {
+        "picker": "A captura automática não está disponível aqui. Escolha uma janela.",
+        "default": "Capture uma janela e anexe-a ao seu rascunho atual."
+      },
+      "accessibility": {
+        "screenshotOnly": "Este desktop fornece apenas uma captura de tela.",
+        "description": "Inclui texto e controles quando o app os disponibiliza.",
+        "aria": "Incluir texto de apps nos snapshots"
+      },
+      "unavailable": {
+        "updateDesktop": "Atualize o app desktop para usar snapshots.",
+        "desktopOnly": "Disponível apenas no app desktop."
+      },
+      "shortcut": {
+        "press": "Pressione seu atalho. Esc cancela.",
+        "conflict": "O LMCS Code já usa este atalho para \"{{command}}\".",
+        "checking": "Verificando atalho…",
+        "readyToSave": "Pronto para salvar.",
+        "tryModifier": "Tente um atalho como Ctrl+Shift+2.",
+        "descriptionPicker": "Escolha uma janela para capturar de qualquer app.",
+        "descriptionDefault": "Capture a janela que você está usando sem trocar de app.",
+        "change": "Alterar atalho",
+        "permissions": "Permissões do atalho"
+      },
+      "sound": {
+        "description": "Escolha o som tocado quando a captura começa.",
+        "aria": "Som do snapshot: {{label}}",
+        "off": "Desligado",
+        "whoosh": "Whoosh",
+        "whooshDefault": "Whoosh (padrão)",
+        "defaultSuffix": "(padrão)",
+        "click": "Clique",
+        "playWhoosh": "Tocar Whoosh",
+        "playClick": "Tocar clique"
+      },
+      "flash": {
+        "description": "Mostra um sinal sutil na janela capturada.",
+        "aria": "Piscar janela capturada"
+      },
+      "animations": {
+        "description": "Anima as janelas capturadas para dentro do seu rascunho.",
+        "aria": "Animar snapshots"
+      },
+      "errors": {
+        "checkSetup": "Não foi possível verificar a configuração de captura",
+        "openShortcutPermissions": "Não foi possível abrir as permissões de atalho",
+        "completeSetup": "Não foi possível concluir a configuração de captura",
+        "saveSettings": "Não foi possível salvar as configurações de captura",
+        "allowTextCapture": "Não foi possível permitir a captura de texto de apps",
+        "checkShortcut": "Não foi possível verificar este atalho.",
+        "restartToFinish": "Reinicie o LMCS Code para concluir a configuração de captura.",
+        "verifyAccess": "Não foi possível verificar o acesso de captura",
+        "closeSetup": "Não foi possível fechar a configuração de captura"
+      }
+    },
+    "providers": {
+      "checked": "Verificado",
+      "checkedUnavailable": "Verificação indisponível",
+      "deviceDetail": {
+        "primary": "Dispositivo principal",
+        "lmcsConnect": "LMCS Connect",
+        "ssh": "SSH",
+        "local": "Dispositivo local",
+        "remote": "Dispositivo remoto"
+      },
+      "devicesAria": "Dispositivos",
+      "placeholder": {
+        "loadingTitle": "Carregando configurações do provedor",
+        "connectErrorTitle": "Não foi possível conectar a este dispositivo",
+        "unavailableTitle": "As configurações do provedor estão indisponíveis",
+        "checkingPermissions": "Verificando o que esta sessão tem permissão para alterar.",
+        "waitingConfiguration": "Aguardando a configuração de {{label}}.",
+        "deviceUnavailableTitle": "Dispositivo indisponível",
+        "deviceUnavailableDescription": "Reconecte este dispositivo para configurar seu provedor ou selecione outro dispositivo.",
+        "noDevicesTitle": "Nenhum dispositivo conectado",
+        "loadingDevicesTitle": "Carregando dispositivos",
+        "noDevicesDescription": "Conecte um ambiente de execução antes de configurar provedores.",
+        "loadingDevicesDescription": "Lendo os ambientes de execução conectados."
+      },
+      "refreshStatus": "Atualizar status dos provedores",
+      "refreshing": "Atualizando provedores",
+      "addProvider": "Adicionar provedor",
+      "readOnly": {
+        "title": "Permissões limitadas",
+        "description": "Esta sessão pode visualizar os provedores de {{label}}, mas não pode alterar suas configurações."
+      },
+      "instanceMissing": "Esta instância de provedor não está mais disponível neste dispositivo.",
+      "noneConfigured": "Nenhum provedor configurado.",
+      "advancedTitle": "Avançado",
+      "healthInterval": {
+        "policyTooltip": "Este intervalo é configurado aqui e, depois, a política compartilhada de Atividade em segundo plano decide se as sondagens de provedor podem ser executadas quando o temporizador dispara. Intervalos personalizados aparecem como Avançado nas configurações Gerais.",
+        "description": "Atualiza status, versões e modelos dos provedores em segundo plano. Defina como 0 para desativar.",
+        "resetLabel": "intervalo de verificação de integridade do provedor",
+        "decreaseAria": "Diminuir intervalo de verificação de integridade do provedor",
+        "inputAria": "Intervalo de verificação de integridade do provedor em segundos",
+        "increaseAria": "Aumentar intervalo de verificação de integridade do provedor",
+        "seconds": "segundos"
+      },
+      "resetProviderSettings": "configurações do provedor {{provider}}",
+      "updateFailed": "Não foi possível atualizar {{provider}}",
+      "updateStartFailed": "O comando de atualização do provedor não pôde ser iniciado.",
+      "status": {
+        "checking": "Verificando status do provedor",
+        "checkingDetail": "Aguardando o servidor relatar detalhes de instalação e autenticação.",
+        "disabled": "Desativado",
+        "disabledDetail": "Este provedor está instalado, mas desativado para novas sessões no LMCS Code.",
+        "notFound": "Não encontrado",
+        "notFoundDetail": "CLI não detectado no PATH.",
+        "notAuthenticated": "Não autenticado",
+        "needsAttention": "Precisa de atenção",
+        "needsAttentionDetail": "O provedor está instalado, mas o servidor não conseguiu verificá-lo totalmente.",
+        "unavailable": "Indisponível",
+        "unavailableDetail": "O provedor falhou nas verificações iniciais.",
+        "authenticated": "Autenticado",
+        "authenticatedWithLabel": "Autenticado · {{label}}",
+        "available": "Disponível",
+        "compat": {
+          "graceful": "Suporte limitado",
+          "unsupported": "Versão não suportada",
+          "broken": "Versão com problemas conhecidos"
+        },
+        "inlineBroken": "Incompatível",
+        "inlineUnsupported": "Não suportado",
+        "useForFullSupport": "Use {{recommendation}} para suporte total.",
+        "updateForFullSupport": "Atualize para suporte total.",
+        "updateAvailable": "Atualização disponível",
+        "updateAvailableInstallVersion": "Atualização disponível: instale {{version}}.",
+        "updateAvailableInstallLatest": "Atualização disponível: instale a versão mais recente do provedor."
+      },
+      "drivers": {
+        "cursor": {
+          "badge": "Acesso antecipado"
+        },
+        "grok": {
+          "badge": "Acesso antecipado"
+        }
+      },
+      "instance": {
+        "email": {
+          "toggleAria": "Alternar visibilidade do e-mail da conta",
+          "revealTooltip": "Clique para revelar o e-mail",
+          "hideTooltip": "Clique para ocultar o e-mail"
+        },
+        "variables": {
+          "title": "Variáveis",
+          "description": "Chaves de API, URLs base e outras configurações de CLI por instância.",
+          "add": "Adicionar variável",
+          "nameAria": "Nome da variável de ambiente {{index}}",
+          "valueAria": "Valor da variável de ambiente {{index}}",
+          "valuePlaceholder": "valor",
+          "redactedPlaceholder": "Segredo armazenado; digite um novo valor para substituir",
+          "markSensitiveAria": "Marcar variável de ambiente {{name}} como sensível",
+          "sensitiveTooltip": "Sensível, armazenada separadamente",
+          "plainTextTooltip": "Texto simples",
+          "removeAria": "Remover variável de ambiente {{name}}",
+          "footnote": "Valores sensíveis são armazenados separadamente e nunca retornados ao app."
+        },
+        "authenticatedAs": "Autenticado como",
+        "selectAria": "Selecionar {{name}}",
+        "enableAria": "Ativar {{name}}",
+        "copyUpdateCommandAria": "Copiar comando de atualização de {{name}}",
+        "copyUpdateCommandTooltip": "Copiar comando de atualização",
+        "copyCommandTooltip": "Copiar comando",
+        "viewDetailsAria": "{{title}} — ver detalhes",
+        "updating": "Atualizando",
+        "installVersion": "Instalar {{version}}",
+        "updateNow": "Atualizar agora",
+        "manualUpdateDivider": "ou atualize manualmente com",
+        "deleteInstanceAria": "Excluir instância {{id}}",
+        "displayNameTitle": "Nome de exibição",
+        "labelPlaceholder": "Rótulo da instância",
+        "setupTitle": "Configuração",
+        "runtimeTitle": "Execução",
+        "driverTitle": "Driver",
+        "driverUnavailable": "Esta instância usa <code>{{driver}}</code>, que não está disponível nesta build. A configuração dela é preservada.",
+        "environmentTitle": "Ambiente",
+        "modelsTitle": "Modelos",
+        "modelsDescription": "Favoritos, visibilidade e ordenação são salvos neste dispositivo. Modelos personalizados são salvos no ambiente selecionado.",
+        "copyToastTitle": "Comando de atualização de {{provider}} copiado",
+        "copyToastDescription": "Execute-o em um terminal quando estiver pronto para atualizar.",
+        "copyToastError": "Não foi possível copiar o comando de atualização de {{provider}}"
+      }
+    },
     "restore": {
       "confirmTitle": "Restaurar configurações padrão?",
       "confirmResetList": "Isso redefinirá: {{labels}}.",
@@ -571,6 +838,130 @@
         "exportBoth": "{{mode}}. Exportando traces OTEL para {{tracesUrl}} e métricas para {{metricsUrl}}.",
         "exportTraces": "{{mode}}. Exportando traces OTEL para {{tracesUrl}}.",
         "exportMetrics": "{{mode}}. Exportando métricas OTEL para {{metricsUrl}}."
+      },
+      "signal": {
+        "sendSigint": "Enviar SIGINT",
+        "sendSigkill": "Enviar SIGKILL"
+      },
+      "expandable": {
+        "showFullError": "Mostrar erro completo",
+        "showLess": "Mostrar menos"
+      },
+      "panel": {
+        "noTraceRecords": "Nenhum registro de trace",
+        "statDetailsAria": "Detalhes de {{label}}",
+        "copiedTraceIdAria": "ID do trace copiado",
+        "copyTraceIdAria": "Copiar ID do trace",
+        "copiedTooltip": "Copiado",
+        "copyTraceIdTooltip": "Copiar ID completo do trace",
+        "processType": {
+          "subprocess": "Subprocesso",
+          "agent": "Agente",
+          "process": "Processo"
+        },
+        "collapseAria": "Recolher {{name}}",
+        "expandAria": "Expandir {{name}}",
+        "headers": {
+          "name": "Nome",
+          "cpu": "CPU",
+          "memory": "Memória",
+          "command": "Comando",
+          "pid": "PID",
+          "type": "Tipo",
+          "kill": "Matar",
+          "process": "Processo",
+          "cpuTime": "Tempo de CPU",
+          "current": "Atual",
+          "average": "Média",
+          "peak": "Pico",
+          "maxMem": "Mem. máx.",
+          "span": "Span",
+          "cause": "Causa",
+          "duration": "Duração",
+          "ended": "Término",
+          "count": "Quantidade",
+          "lastSeen": "Visto por último",
+          "trace": "Trace",
+          "time": "Hora",
+          "level": "Nível",
+          "message": "Mensagem",
+          "failures": "Falhas",
+          "max": "Máx."
+        },
+        "noLiveProcesses": "Nenhum processo descendente ativo encontrado.",
+        "processRowAria": "Processo {{kind}} {{name}}",
+        "processKind": {
+          "root": "raiz",
+          "child": "filho"
+        },
+        "chartAria": "CPU média {{avg}}%, pico de CPU {{peak}}%",
+        "chartTooltip": "Média {{avg}}%, pico {{peak}}%",
+        "historyPeriodAria": "Período do histórico de processos",
+        "checking": "Verificando",
+        "checkedUnavailable": "Verificação indisponível",
+        "checked": "Verificado",
+        "noEditors": "Nenhum editor disponível encontrado.",
+        "noEnvironment": "Nenhum ambiente selecionado.",
+        "openLogsFailed": "Não foi possível abrir a pasta de logs.",
+        "sigkillConfirm": "Enviar SIGKILL para o processo {{pid}}? Isso não pode ser tratado pelo processo.",
+        "confirmSignalFailed": "Não foi possível confirmar o sinal",
+        "sendSignalFailed": "Não foi possível enviar {{signal}}",
+        "sendSignalFailedDescription": "Falha ao enviar {{signal}}.",
+        "processExited": "Processo já encerrado",
+        "processExitedDescription": "O processo não é filho do LMCS Server. Ele pode já ter encerrado.",
+        "sections": {
+          "liveProcesses": "Processos ativos",
+          "resourceHistory": "Histórico de recursos",
+          "traceDiagnostics": "Diagnóstico de traces",
+          "latestFailures": "Falhas recentes",
+          "commonFailures": "Falhas mais comuns",
+          "slowestSpans": "Spans mais lentos",
+          "spanLogs": "Logs de spans",
+          "topSpanNames": "Nomes de spans mais frequentes"
+        },
+        "refreshProcesses": "Atualizar diagnóstico de processos",
+        "refreshResources": "Atualizar histórico de recursos",
+        "refreshTrace": "Atualizar diagnóstico de traces",
+        "stats": {
+          "childProcesses": "Processos filhos",
+          "cpu": "CPU",
+          "memory": "Memória",
+          "serverPid": "PID do servidor",
+          "cpuTime": "Tempo de CPU",
+          "samples": "Amostras",
+          "interval": "Intervalo",
+          "processes": "Processos",
+          "spans": "Spans",
+          "failures": "Falhas",
+          "slowSpans": "Spans lentos",
+          "parseErrors": "Erros de parsing"
+        },
+        "tooltips": {
+          "totalCpu": "CPU total entre os processos filhos ativos do processo atual do servidor. O shell do desktop e outros processos pais não estão incluídos.",
+          "totalMemory": "Memória residente total entre os processos filhos ativos do processo atual do servidor. O shell do desktop e outros processos pais não estão incluídos.",
+          "cpuTimeApprox": "Tempo aproximado de CPU ativa do processo raiz do servidor LMCS e seus descendentes durante a janela selecionada. Ele cresce apenas enquanto processos amostrados usam CPU, e amostras antigas saem conforme a janela avança.",
+          "samplesRetained": "Amostras de processos mantidas em memória pelo servidor. Reinicia quando o servidor reinicia.",
+          "slowSpansThreshold": "Spans com duração de {{threshold}} ou mais.",
+          "slowSpansFallback": "Spans no limite configurado de spans lentos ou acima dele."
+        },
+        "empty": {
+          "loadingProcesses": "Carregando processos ativos...",
+          "noProcesses": "Nenhum processo descendente ativo encontrado.",
+          "collectingSamples": "Coletando amostras de recursos de processos...",
+          "noSamples": "Nenhuma amostra de recursos de processos encontrada nesta janela.",
+          "loadingFailures": "Carregando falhas...",
+          "noFailures": "Nenhum span com falha encontrado.",
+          "loadingFailureGroups": "Carregando grupos de falhas...",
+          "noFailureGroups": "Nenhuma falha repetida encontrada.",
+          "loadingSlowSpans": "Carregando spans lentos...",
+          "noSpans": "Nenhum span encontrado.",
+          "loadingLogs": "Carregando logs recentes...",
+          "noLogs": "Nenhum aviso ou erro encontrado.",
+          "loadingSpanNames": "Carregando nomes de spans..."
+        },
+        "openLogsFolder": "Abrir pasta de logs",
+        "partialFailure": "Alguns arquivos de trace não puderam ser lidos, então o diagnóstico pode estar incompleto. {{message}}",
+        "showFullMessage": "Mostrar mensagem completa"
       }
     },
     "searchItems": {
