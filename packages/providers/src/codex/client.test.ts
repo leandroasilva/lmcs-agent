@@ -12,7 +12,7 @@ import { assert, it } from "@effect/vitest";
 import * as CodexClient from "./client.ts";
 
 const mockPeerPath = Effect.map(Effect.service(Path.Path), (path) =>
-  path.join(import.meta.dirname, "../test/fixtures/codex-app-server-mock-peer.ts"),
+  path.join(import.meta.dirname, "../../test/codex/fixtures/codex-app-server-mock-peer.ts"),
 );
 const mockPeerArgs = (path: string) => [path];
 
@@ -21,7 +21,7 @@ it.layer(NodeServices.layer)("effect-codex-app-server client", (it) => {
     Effect.gen(function* () {
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
       const path = yield* Path.Path;
-      const peerCwd = path.join(import.meta.dirname, "..");
+      const peerCwd = path.join(import.meta.dirname, "../..");
       const command = ChildProcess.make(process.execPath, mockPeerArgs(yield* mockPeerPath), {
         cwd: peerCwd,
         ...(env ? { env: { ...process.env, ...env } } : {}),
@@ -81,7 +81,7 @@ it.layer(NodeServices.layer)("effect-codex-app-server client", (it) => {
         });
 
         const path = yield* Path.Path;
-        const peerCwd = path.join(import.meta.dirname, "..");
+        const peerCwd = path.join(import.meta.dirname, "../..");
         const skills = yield* client.request("skills/list", { cwds: [peerCwd] });
         assert.equal(skills.data.length, 1);
         assert.equal(skills.data[0]?.cwd, peerCwd);
