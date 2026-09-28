@@ -14,7 +14,13 @@ import { useEnvironmentSettings, useUpdateEnvironmentSettings } from "../../../h
 import { cn } from "../../../lib/utils";
 import { normalizeProviderAccentColor } from "../../../providerInstances";
 import { Button } from "../../ui/button";
-import { ACPRegistryIcon, Gemini, GithubCopilotIcon, PiAgentIcon, type Icon } from "../../ui/Icons";
+import {
+  ACPRegistryIcon,
+  Gemini,
+  GithubCopilotIcon,
+  PiAgentIcon,
+  type Icon,
+} from "../../shared/Icons";
 import { Dialog } from "../../ui/dialog";
 import { Badge } from "../../ui/badge";
 import { Input } from "../../ui/input";

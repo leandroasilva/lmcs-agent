@@ -145,7 +145,7 @@ import { formatRelativeTimeLabel, parseTimestampDate } from "../../timestampForm
 import type { SidebarThreadSummary } from "../../types";
 import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import { cn } from "~/lib/utils";
-import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../shared/EnvironmentMachineIcon";
 import { ProjectEnvironmentBadge } from "../features/files/ProjectEnvironmentBadge";
 import { buildThreadActionMenuItems } from "./threadActionMenu.logic";
 import {

@@ -28,7 +28,7 @@ vi.mock("~/state/query", () => ({
   }),
 }));
 vi.mock("~/state/use-atom-command", () => ({ useAtomCommand: () => setFilesViewed }));
-vi.mock("../ui/toast", () => ({ toastManager: { add: toastAdd } }));
+vi.mock("../../ui/toast", () => ({ toastManager: { add: toastAdd } }));
 
 import {
   usePullRequestFilesViewed,

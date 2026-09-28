@@ -66,14 +66,14 @@ vi.mock("~/state/usePullRequestStack", () => ({
     refresh,
   }),
 }));
-vi.mock("../ui/toast", () => ({ toastManager: { add: vi.fn(), update: vi.fn() } }));
-vi.mock("../ui/tooltip", () => ({
+vi.mock("../../ui/toast", () => ({ toastManager: { add: vi.fn(), update: vi.fn() } }));
+vi.mock("../../ui/tooltip", () => ({
   TooltipProvider: Wrapper,
   Tooltip: Wrapper,
   TooltipTrigger: Trigger,
   TooltipPopup: () => null,
 }));
-vi.mock("../ui/menu", () => ({
+vi.mock("../../ui/menu", () => ({
   Menu: Wrapper,
   MenuPopup: Wrapper,
   MenuTrigger: Trigger,
@@ -83,7 +83,7 @@ vi.mock("../ui/menu", () => ({
   MenuSeparator: () => null,
   MenuShortcut: () => null,
 }));
-vi.mock("../ui/alert-dialog", () => ({
+vi.mock("../../ui/alert-dialog", () => ({
   AlertDialog: () => null,
   AlertDialogPopup: Wrapper,
   AlertDialogHeader: Wrapper,

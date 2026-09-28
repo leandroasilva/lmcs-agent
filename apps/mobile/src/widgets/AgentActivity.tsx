@@ -61,12 +61,15 @@ export function AgentActivity(
   // tinted and vibrant presentations, rather than resolving to a label color.
   type Foreground = Parameters<typeof foregroundStyle>[0];
   const primaryForeground = { type: "hierarchical", style: "primary" } as const;
-  const secondaryForeground = { type: "hierarchical", style: "secondary" } as const;
+  const secondaryForeground = {
+    type: "hierarchical",
+    style: "secondary",
+  } as const;
   const monochrome =
     environment.widgetRenderingMode === "accented" || environment.widgetRenderingMode === "vibrant";
 
   // Status tints mirror the web sidebar's pills
-  // (apps/web/src/components/Sidebar.logic.ts resolveThreadStatusPill): amber
+  // (apps/web/src/components/layout/Sidebar.logic.ts resolveThreadStatusPill): amber
   // for approval, indigo for input, sky for working, emerald for completed.
   // On iPhone the LA sits on a dark material, but macOS (iPhone Mirroring /
   // Mac notification center) renders it on a light one — so pick the web

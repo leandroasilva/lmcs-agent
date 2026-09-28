@@ -41,13 +41,13 @@ vi.mock("~/state/environments", async () => {
   };
   return { useRelayEnvironmentDiscovery: () => useSyncExternalStore(subscribe, read, read) };
 });
-vi.mock("../ConnectionStatusDot", () => ({ ConnectionStatusDot: () => null }));
-vi.mock("../ui/tooltip", () => ({
+vi.mock("../../layout/ConnectionStatusDot", () => ({ ConnectionStatusDot: () => null }));
+vi.mock("../../ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => children,
   TooltipTrigger: ({ children }: { children: ReactNode }) => <span>{children}</span>,
   TooltipPopup: () => null,
 }));
-vi.mock("../ui/checkbox", () => ({
+vi.mock("../../ui/checkbox", () => ({
   Checkbox: (props: {
     checked: boolean;
     disabled: boolean;
@@ -61,12 +61,12 @@ vi.mock("../ui/checkbox", () => ({
     />
   ),
 }));
-vi.mock("../ui/button", () => ({
+vi.mock("../../ui/button", () => ({
   Button: ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button {...props}>{children}</button>
   ),
 }));
-vi.mock("../ui/toast", () => ({ toastManager: { add: vi.fn() } }));
+vi.mock("../../ui/toast", () => ({ toastManager: { add: vi.fn() } }));
 
 import { CloudEnvironmentConnectRows } from "./CloudEnvironmentConnectList";
 

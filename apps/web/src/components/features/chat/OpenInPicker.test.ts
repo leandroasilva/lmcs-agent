@@ -1,7 +1,7 @@
 import { FolderClosedIcon } from "lucide-react";
 import { describe, expect, it } from "vite-plus/test";
 
-import { FileExplorerIcon, FinderIcon } from "../../ui/Icons";
+import { FileExplorerIcon, FinderIcon } from "../../shared/Icons";
 import { resolveOpenInOptions } from "./OpenInPicker";
 
 describe("resolveOpenInOptions", () => {

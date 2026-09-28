@@ -27,7 +27,7 @@ vi.mock("~/state/server", () => ({
 vi.mock("~/state/use-atom-command", () => ({
   useAtomCommand: () => testState.updateServer,
 }));
-vi.mock("./ui/toast", () => ({
+vi.mock("../../ui/toast", () => ({
   toastManager: { add: testState.toast },
 }));
 

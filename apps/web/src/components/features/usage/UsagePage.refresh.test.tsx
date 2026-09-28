@@ -10,14 +10,16 @@ const state = vi.hoisted(() => ({
   metric: "limits",
 }));
 vi.mock("@effect/atom-react", () => ({ useAtomValue: () => state.presentations }));
-vi.mock("../../state/presentation", () => ({
+vi.mock("../../../state/presentation", () => ({
   environmentPresentations: { presentationsAtom: null },
 }));
-vi.mock("../../state/server", () => ({ serverEnvironment: { refreshProviders: null } }));
-vi.mock("../../state/use-atom-command", () => ({ useAtomCommand: () => state.refreshProviders }));
-vi.mock("../../env", () => ({ isElectron: false }));
-vi.mock("../../hooks/useSettings", () => ({ usePrimarySettings: () => "24h" }));
-vi.mock("../../state/usage", () => ({
+vi.mock("../../../state/server", () => ({ serverEnvironment: { refreshProviders: null } }));
+vi.mock("../../../state/use-atom-command", () => ({
+  useAtomCommand: () => state.refreshProviders,
+}));
+vi.mock("../../../env", () => ({ isElectron: false }));
+vi.mock("../../../hooks/useSettings", () => ({ usePrimarySettings: () => "24h" }));
+vi.mock("../../../state/usage", () => ({
   useUsage: () => ({
     merged: mergeUsage([], USAGE_CONTRACT_VERSION),
     environments: [
@@ -47,20 +49,20 @@ vi.mock("./usagePagePreferences", () => ({
   readUsagePagePreferences: () => ({ metric: state.metric, windowDays: 30 }),
   saveUsagePagePreferences: vi.fn(),
 }));
-vi.mock("../ui/button", () => ({ Button: "button", InlineButton: "button" }));
-vi.mock("../ui/scroll-area", () => ({ ScrollArea: "div" }));
-vi.mock("../ui/select", () => ({
+vi.mock("../../ui/button", () => ({ Button: "button", InlineButton: "button" }));
+vi.mock("../../ui/scroll-area", () => ({ ScrollArea: "div" }));
+vi.mock("../../ui/select", () => ({
   Select: "select",
   SelectItem: "option",
   SelectPopup: "div",
   SelectTrigger: "div",
   SelectValue: "span",
 }));
-vi.mock("../ui/sidebar", () => ({ SidebarInset: "div" }));
-vi.mock("../ui/toggle-group", () => ({ Toggle: "button", ToggleGroup: "div" }));
-vi.mock("../ui/tooltip", () => ({ Tooltip: "div", TooltipPopup: "div", TooltipTrigger: "div" }));
-vi.mock("../ui/popover", () => ({ Popover: "div", PopoverPopup: "div", PopoverTrigger: "div" }));
-vi.mock("../ui/menu", () => ({
+vi.mock("../../ui/sidebar", () => ({ SidebarInset: "div" }));
+vi.mock("../../ui/toggle-group", () => ({ Toggle: "button", ToggleGroup: "div" }));
+vi.mock("../../ui/tooltip", () => ({ Tooltip: "div", TooltipPopup: "div", TooltipTrigger: "div" }));
+vi.mock("../../ui/popover", () => ({ Popover: "div", PopoverPopup: "div", PopoverTrigger: "div" }));
+vi.mock("../../ui/menu", () => ({
   Menu: "div",
   MenuCheckboxItem: "div",
   MenuItem: "div",
@@ -68,13 +70,13 @@ vi.mock("../ui/menu", () => ({
   MenuSeparator: "hr",
   MenuTrigger: "div",
 }));
-vi.mock("../WorkspaceBreadcrumb", () => ({
+vi.mock("../../layout/WorkspaceBreadcrumb", () => ({
   WorkspaceBreadcrumb: "div",
   WorkspaceBreadcrumbItem: "div",
   WorkspaceBreadcrumbSeparator: "span",
 }));
-vi.mock("../WorkspacePageContainer", () => ({ WorkspacePageContainer: "main" }));
-vi.mock("../WorkspacePageHeader", () => ({ WorkspacePageHeader: "header" }));
+vi.mock("../../layout/WorkspacePageContainer", () => ({ WorkspacePageContainer: "main" }));
+vi.mock("../../layout/WorkspacePageHeader", () => ({ WorkspacePageHeader: "header" }));
 vi.mock("./UsageProviderChart", () => ({ UsageProviderChart: "div" }));
 vi.mock("./UsagePriceOverrides", () => ({ UsagePriceOverrides: () => null }));
 vi.mock("../chat/ProviderInstanceIcon", () => ({ ProviderInstanceIcon: () => null }));

@@ -12,7 +12,7 @@ vi.mock("~/hooks/useCopyToClipboard", () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(), isCopied: false }),
 }));
 vi.mock("~/components/ui/toast", () => ({ toastManager: { add: vi.fn() } }));
-vi.mock("~/components/ChatMarkdown", () => ({ default: () => null }));
+vi.mock("~/components/features/chat/ChatMarkdown", () => ({ default: () => null }));
 vi.mock("~/components/ui/scroll-area", () => ({
   ScrollArea: ({ children }: { children: ReactNode }) => children,
 }));

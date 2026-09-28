@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-vi.mock("../ui/button", () => ({
+vi.mock("../../ui/button", () => ({
   Button: ({ children }: { readonly children?: ReactNode }) => <button>{children}</button>,
 }));
 
-vi.mock("../ui/dialog", () => {
+vi.mock("../../ui/dialog", () => {
   const Container = ({ children }: { readonly children?: ReactNode }) => <div>{children}</div>;
   return {
     Dialog: Container,
@@ -19,11 +19,11 @@ vi.mock("../ui/dialog", () => {
   };
 });
 
-vi.mock("../ui/input", () => ({ Input: () => <input /> }));
-vi.mock("../ui/scroll-area", () => ({
+vi.mock("../../ui/input", () => ({ Input: () => <input /> }));
+vi.mock("../../ui/scroll-area", () => ({
   ScrollArea: ({ children }: { readonly children?: ReactNode }) => <div>{children}</div>,
 }));
-vi.mock("../ui/toggle-group", () => ({
+vi.mock("../../ui/toggle-group", () => ({
   Toggle: ({ children, value }: { readonly children?: ReactNode; readonly value: string }) => (
     <button data-value={value}>{children}</button>
   ),

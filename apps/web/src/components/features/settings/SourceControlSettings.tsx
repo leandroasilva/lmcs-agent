@@ -55,7 +55,7 @@ import {
   ForgejoIcon,
   JujutsuIcon,
   type Icon,
-} from "../../ui/Icons";
+} from "../../shared/Icons";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
 import { SourceControlWritingSettingsSection } from "./SourceControlWritingSettings";
 import {

@@ -41,7 +41,7 @@ import {
   VisualStudioCodeInsiders,
   VSCodium,
   Zed,
-} from "../../ui/Icons";
+} from "../../shared/Icons";
 import {
   AquaIcon,
   CLionIcon,
@@ -55,7 +55,7 @@ import {
   RubyMineIcon,
   RustRoverIcon,
   WebStormIcon,
-} from "../../ui/JetBrainsIcons";
+} from "../../shared/JetBrainsIcons";
 import { cn, isMacPlatform, isWindowsPlatform } from "~/lib/utils";
 import { shellEnvironment } from "~/state/shell";
 import { useAtomCommand } from "~/state/use-atom-command";

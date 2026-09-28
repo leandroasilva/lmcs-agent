@@ -43,7 +43,7 @@ import { MoreVertical, Plus as PlusIcon } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
 import { ScreenRotationIcon } from "~/browser/ScreenRotationIcon";
-import { AnimatedHeight } from "~/components/ui/AnimatedHeight";
+import { AnimatedHeight } from "~/components/shared/AnimatedHeight";
 import { resolveEnvironmentOptionLabel } from "~/components/layout/BranchToolbar.logic";
 import { previewBridge } from "~/components/features/preview/previewBridge";
 import { cn, randomUUID } from "~/lib/utils";

@@ -4,14 +4,14 @@ import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { ComposerBannerStack } from "./ComposerBannerStack";
 
-vi.mock("../ui/popover", () => ({
+vi.mock("../../ui/popover", () => ({
   Popover: "popover",
   PopoverTrigger: ({ render, children }: { render: ReactElement; children: ReactNode }) =>
     cloneElement(render, {}, children),
   PopoverPopup: "popup",
 }));
-vi.mock("../ui/button", () => ({ Button: "button" }));
-vi.mock("../ui/scroll-area", () => ({ ScrollArea: "div" }));
+vi.mock("../../ui/button", () => ({ Button: "button" }));
+vi.mock("../../ui/scroll-area", () => ({ ScrollArea: "div" }));
 
 let renderer: ReactTestRenderer;
 afterEach(async () => {

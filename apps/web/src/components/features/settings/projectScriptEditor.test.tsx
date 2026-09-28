@@ -4,7 +4,7 @@ import { act, StrictMode, type ReactNode } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-vi.mock("./ui/dialog", () => ({
+vi.mock("../../ui/dialog", () => ({
   Dialog: ({ open, children }: { open: boolean; children: ReactNode }) => (open ? children : null),
   DialogDescription: "p",
   DialogFooter: "footer",
@@ -13,7 +13,7 @@ vi.mock("./ui/dialog", () => ({
   DialogPopup: "section",
   DialogTitle: "h2",
 }));
-vi.mock("./ui/alert-dialog", () => ({
+vi.mock("../../ui/alert-dialog", () => ({
   AlertDialog: ({ open, children }: { open: boolean; children: ReactNode }) =>
     open ? children : null,
   AlertDialogClose: "button",
@@ -23,16 +23,16 @@ vi.mock("./ui/alert-dialog", () => ({
   AlertDialogPopup: "section",
   AlertDialogTitle: "h2",
 }));
-vi.mock("./ui/button", () => ({ Button: "button" }));
-vi.mock("./ui/input", () => ({ Input: "input" }));
-vi.mock("./ui/label", () => ({ Label: "label" }));
-vi.mock("./ui/popover", () => ({
+vi.mock("../../ui/button", () => ({ Button: "button" }));
+vi.mock("../../ui/input", () => ({ Input: "input" }));
+vi.mock("../../ui/label", () => ({ Label: "label" }));
+vi.mock("../../ui/popover", () => ({
   Popover: ({ children }: { children: ReactNode }) => children,
   PopoverPopup: () => null,
   PopoverTrigger: "button",
 }));
-vi.mock("./ui/switch", () => ({ Switch: "input" }));
-vi.mock("./ui/textarea", () => ({ Textarea: "textarea" }));
+vi.mock("../../ui/switch", () => ({ Switch: "input" }));
+vi.mock("../../ui/textarea", () => ({ Textarea: "textarea" }));
 
 import {
   EMPTY_PROJECT_SCRIPT_INPUT,

@@ -42,7 +42,7 @@ vi.mock("react/compiler-runtime", async () => {
   return { c: reactHookHarness.useMemoCache };
 });
 
-vi.mock("../../state/server", () => ({
+vi.mock("../../../state/server", () => ({
   serverEnvironment: {
     providerAuthState: setup.authState,
     providerInstallState: setup.installState,
@@ -56,11 +56,11 @@ vi.mock("../../state/server", () => ({
   },
 }));
 
-vi.mock("../../state/use-atom-command", () => ({
+vi.mock("../../../state/use-atom-command", () => ({
   useAtomCommand: (command: unknown) => command,
 }));
 
-vi.mock("../../state/query", () => ({
+vi.mock("../../../state/query", () => ({
   useEnvironmentQuery: (atom: string) => ({
     data: atom === "auth" ? setup.auth : setup.installation,
     error: null,
@@ -69,7 +69,7 @@ vi.mock("../../state/query", () => ({
   }),
 }));
 
-vi.mock("../../localApi", () => ({
+vi.mock("../../../localApi", () => ({
   ensureLocalApi: () => ({ dialogs: { confirm: setup.confirm } }),
 }));
 

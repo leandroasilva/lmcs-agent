@@ -127,7 +127,7 @@ vi.mock("react", () => ({
   useCallback: <T>(callback: T) => callback,
   useMemo: <T>(factory: () => T) => factory(),
 }));
-vi.mock("../components/Sidebar.logic", () => ({ orderItemsByPreferredIds: () => [] }));
+vi.mock("../components/layout/Sidebar.logic", () => ({ orderItemsByPreferredIds: () => [] }));
 vi.mock("../composerDraftStore", () => {
   const useComposerDraftStore = Object.assign(() => null, {
     getState: () => testState.draftStore,

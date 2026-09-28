@@ -33,8 +33,8 @@ vi.mock("./SettingsScopeContext", () => ({
 vi.mock("./useScopedModelAvailability", () => ({
   useScopedModelDisabledReason: () => () => null,
 }));
-vi.mock("../ui/toast", () => ({ toastManager: { add: vi.fn() } }));
-vi.mock("../../state/server", () => ({ EMPTY_SERVER_PROVIDERS: [] }));
+vi.mock("../../ui/toast", () => ({ toastManager: { add: vi.fn() } }));
+vi.mock("../../../state/server", () => ({ EMPTY_SERVER_PROVIDERS: [] }));
 vi.mock("../chat/ProviderModelPicker", () => ({ ProviderModelPicker: () => null }));
 vi.mock("./settingsSearch", () => ({ searchableSetting: (id: string) => ({ id, title: id }) }));
 vi.mock("./settingsLayout", () => ({
@@ -59,16 +59,16 @@ vi.mock("./settingsLayout", () => ({
     </div>
   ),
 }));
-vi.mock("../ui/select", () => ({
+vi.mock("../../ui/select", () => ({
   Select: ({ children }: { children: ReactNode }) => children,
   SelectItem: "span",
   SelectPopup: "div",
   SelectTrigger: "div",
   SelectValue: "span",
 }));
-vi.mock("../ui/switch", () => ({ Switch: "input" }));
-vi.mock("../ui/textarea", () => ({ Textarea: "textarea" }));
-vi.mock("../ui/button", () => ({ Button: "button" }));
+vi.mock("../../ui/switch", () => ({ Switch: "input" }));
+vi.mock("../../ui/textarea", () => ({ Textarea: "textarea" }));
+vi.mock("../../ui/button", () => ({ Button: "button" }));
 
 import { SourceControlWritingSettingsSection } from "./SourceControlWritingSettings";
 

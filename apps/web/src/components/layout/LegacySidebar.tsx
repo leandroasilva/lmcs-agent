@@ -22,7 +22,7 @@ import {
   ThreadWorktreeIndicator,
   useLinkedThreadPullRequest,
 } from "./ThreadStatusIndicators";
-import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../shared/EnvironmentMachineIcon";
 import { ProjectFavicon } from "../features/files/ProjectFavicon";
 import { useAtomValue } from "@effect/atom-react";
 import { autoAnimate } from "@formkit/auto-animate";

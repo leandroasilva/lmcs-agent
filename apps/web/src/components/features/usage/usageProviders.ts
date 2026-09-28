@@ -8,7 +8,7 @@ import {
   type Icon,
   OpenAI,
   OpenCodeIcon,
-} from "../../ui/Icons";
+} from "../../shared/Icons";
 
 type UsageProviderPresentation = {
   readonly label: string;

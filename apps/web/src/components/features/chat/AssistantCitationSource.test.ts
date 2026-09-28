@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({ resolveRange: vi.fn(), toast: vi.fn() }));
 vi.mock("~/lib/assistantTextSelection", () => ({
   resolveAssistantCitationRange: mocks.resolveRange,
 }));
-vi.mock("../ui/toast", () => ({ toastManager: { add: mocks.toast } }));
+vi.mock("../../ui/toast", () => ({ toastManager: { add: mocks.toast } }));
 
 function rect(top: number, height = 20) {
   return { top, bottom: top + height, height, width: 100 } as DOMRect;

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { cn } from "~/lib/utils";
 import type { EnvironmentPresentation } from "~/state/environments";
 import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
-import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
 
 export function formatDesktopSshTarget(target: DesktopSshEnvironmentTarget): string {
   const authority = target.username ? `${target.username}@${target.hostname}` : target.hostname;

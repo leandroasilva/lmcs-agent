@@ -19,17 +19,17 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
 }));
 // Keep the real chip/editor lifecycle while replacing DOM positioning and floating layers.
-vi.mock("../ui/tooltip", () => ({
+vi.mock("../../ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
   TooltipTrigger: ({ render }: { render: ReactNode }) => render,
   TooltipPopup: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
-vi.mock("../ui/popover", () => ({
+vi.mock("../../ui/popover", () => ({
   Popover: ({ children }: { children: ReactNode }) => <>{children}</>,
   PopoverTrigger: ({ children }: { children: ReactNode }) => <button>{children}</button>,
   PopoverPopup: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
-vi.mock("../ui/button", () => ({
+vi.mock("../../ui/button", () => ({
   Button: (props: React.ComponentProps<"button">) => <button {...props} />,
 }));
 

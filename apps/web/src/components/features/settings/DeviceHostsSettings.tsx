@@ -1,6 +1,6 @@
 import { DeviceToolVersions } from "../device/DeviceToolVersions";
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../../ui/tooltip";
-import { AppleIcon, AndroidIcon } from "../../ui/Icons";
+import { AppleIcon, AndroidIcon } from "../../shared/Icons";
 import { Spinner } from "../../ui/spinner";
 import type { EnvironmentId, SshDeviceHostConfig } from "@lmcstools/core";
 import { randomUUID } from "../../../lib/utils";

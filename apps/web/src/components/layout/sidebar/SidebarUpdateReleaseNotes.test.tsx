@@ -6,7 +6,7 @@ const testState = vi.hoisted(() => ({
   addToast: vi.fn(),
 }));
 
-vi.mock("../ui/toast", () => ({
+vi.mock("../../ui/toast", () => ({
   toastManager: { add: testState.addToast },
 }));
 

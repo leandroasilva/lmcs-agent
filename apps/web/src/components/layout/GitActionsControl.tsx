@@ -45,7 +45,7 @@ import {
   GitHubIcon,
   GitLabIcon,
   ForgejoIcon,
-} from "~/components/ui/Icons";
+} from "~/components/shared/Icons";
 import { RadioGroup } from "~/components/ui/radio-group";
 import { Spinner } from "~/components/ui/spinner";
 import { Toggle, ToggleGroup } from "~/components/ui/toggle-group";

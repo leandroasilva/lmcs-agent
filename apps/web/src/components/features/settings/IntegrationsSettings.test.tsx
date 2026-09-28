@@ -20,12 +20,12 @@ const { listBrowserImportSources } = vi.hoisted(() => ({
 vi.mock("../preview/previewBridge", () => ({
   previewBridge: { listBrowserImportSources },
 }));
-vi.mock("../../env", () => ({ isElectron: true }));
-vi.mock("../../state/environments", () => ({
+vi.mock("../../../env", () => ({ isElectron: true }));
+vi.mock("../../../state/environments", () => ({
   useEnvironments: () => ({ environments: [], isReady: true }),
   usePrimaryEnvironment: () => null,
 }));
-vi.mock("../../hooks/useSettings", async (importOriginal) => ({
+vi.mock("../../../hooks/useSettings", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../hooks/useSettings")>()),
   PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE: "Connect to an environment",
   useClientSettings: (selector?: (settings: typeof DEFAULT_CLIENT_SETTINGS) => unknown) =>

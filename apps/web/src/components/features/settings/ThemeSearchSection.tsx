@@ -14,7 +14,7 @@ import {
   replaceCustomThemeCollection,
   type ThemeDefinition,
 } from "../../../themePalette";
-import { GitHubIcon, GitLabIcon } from "../../ui/Icons";
+import { GitHubIcon, GitLabIcon } from "../../shared/Icons";
 import {
   AlertDialog,
   AlertDialogClose,

@@ -33,7 +33,7 @@ const testState = vi.hoisted(() => ({
   onInitializationHeld: undefined as (() => void) | undefined,
 }));
 
-vi.mock("../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
+vi.mock("../../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
 
 vi.mock("@pierre/diffs/worker/worker.js?worker", async () => {
   const { Worker } = await import("node:worker_threads");

@@ -131,7 +131,7 @@ vi.mock("@pierre/diffs/react", () => {
   return { FileDiff: MockFileDiff };
 });
 
-vi.mock("../DiffWorkerPoolProvider", () => ({
+vi.mock("../diffs/DiffWorkerPoolProvider", () => ({
   DiffWorkerPoolProvider: ({ children }: { children?: ReactNode }) => children,
 }));
 

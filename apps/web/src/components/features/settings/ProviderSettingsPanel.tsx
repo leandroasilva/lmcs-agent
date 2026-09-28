@@ -37,7 +37,7 @@ import {
   useUpdateClientSettings,
   useUpdateEnvironmentSettings,
 } from "../../../hooks/useSettings";
-import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
 import { cn } from "../../../lib/utils";
 import { resolveAppModelSelectionState } from "../../../modelSelection";
 import {

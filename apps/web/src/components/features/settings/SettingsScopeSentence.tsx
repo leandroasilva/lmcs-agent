@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import type { SidebarProjectSnapshot } from "../../../sidebarProjectGrouping";
 import { useEnvironments, type EnvironmentPresentation } from "../../../state/environments";
-import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
 import { ProjectFavicon } from "../files/ProjectFavicon";
 import { InlineButton } from "../../ui/button";
 import {

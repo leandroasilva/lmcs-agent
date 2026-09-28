@@ -132,7 +132,7 @@ import { resolveDiffThemeName, type DiffThemeName } from "../../../lib/diffRende
 import { fnv1a32 } from "../../../lib/diffRendering";
 import { LRUCache } from "../../../lib/lruCache";
 import { getSyntaxHighlighterPromise } from "../../../lib/syntaxHighlighting";
-import { GitHubIcon } from "../../ui/Icons";
+import { GitHubIcon } from "../../shared/Icons";
 import { createIncrementalHighlightedDocument } from "../../../lib/incrementalHighlighting";
 import { HighlightedCodeLines } from "./HighlightedCodeLines";
 import { RenderErrorBoundary } from "../../layout/RenderErrorBoundary";

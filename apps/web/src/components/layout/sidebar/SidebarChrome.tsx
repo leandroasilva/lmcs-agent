@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEnvironmentIdentificationMode } from "../../../hooks/useSettings";
 import { cn } from "../../../lib/utils";
 import { useEnvironments } from "../../../state/environments";
-import { LMCSWordmark } from "../../ui/LMCSWordmark";
+import { LMCSWordmark } from "../../shared/LMCSWordmark";
 import {
   resolveEnvironmentIdentificationPillLabel,
   resolveSidebarStageBackdropVariant,

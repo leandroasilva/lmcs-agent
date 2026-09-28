@@ -23,7 +23,7 @@ vi.mock("react/compiler-runtime", async () => {
   return { c: reactHookHarness.useMemoCache };
 });
 
-vi.mock("../../hooks/useSettings", () => ({
+vi.mock("../../../hooks/useSettings", () => ({
   useEnvironmentSettings: settingsHooks.read,
   useUpdateEnvironmentSettings: settingsHooks.update,
 }));

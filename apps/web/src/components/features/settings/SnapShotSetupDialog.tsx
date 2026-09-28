@@ -6,7 +6,7 @@ import {
   type DesktopSnapShotState,
 } from "@lmcstools/core";
 import { useState, type ReactNode } from "react";
-import { MacAccessibilityIcon, MacScreenRecordingIcon } from "../../ui/Icons";
+import { MacAccessibilityIcon, MacScreenRecordingIcon } from "../../shared/Icons";
 import { CaptureShortcutConfig } from "./CaptureShortcutConfig";
 import { Button } from "../../ui/button";
 import { Dialog, DialogDescription } from "../../ui/dialog";

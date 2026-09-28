@@ -32,7 +32,7 @@ export { snoozeWakeLabel };
 
 /**
  * Thread List v2 model, ported from the web sidebar v2
- * (apps/web/src/components/Sidebar.logic.ts + SidebarV2.tsx).
+ * (apps/web/src/components/layout/Sidebar.logic.ts).
  *
  * Four visual states, three colors: color is reserved for "act now"
  * (approval), "in motion" (working), and "broken" (failed). Ready is the
@@ -409,7 +409,9 @@ export function buildThreadListV2ListItems(input: {
   const threadItems = input.items.map((item): ThreadListV2ListItem => {
     const snoozeWakeLabelText =
       item.snoozed && item.thread.snoozedUntil != null && input.snoozeLabelNow !== undefined
-        ? snoozeWakeLabel(item.thread.snoozedUntil, { now: input.snoozeLabelNow })
+        ? snoozeWakeLabel(item.thread.snoozedUntil, {
+            now: input.snoozeLabelNow,
+          })
         : undefined;
     // The minute clock belongs on the item, not the list's extraData, so the
     // recycler's equality can confine the per-minute re-render to rows whose

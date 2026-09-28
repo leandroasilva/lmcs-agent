@@ -43,7 +43,7 @@ const {
   };
 });
 
-vi.mock("~/components/preview/previewBridge", () => ({
+vi.mock("~/components/features/preview/previewBridge", () => ({
   previewBridge: {
     recording: {
       onFrame: vi.fn(),

@@ -28,12 +28,12 @@ const bridge = vi.hoisted(() => ({
   applySnapShotConfig: vi.fn(),
   setSnapShotShortcutSuppressed: vi.fn(),
 }));
-vi.mock("../../lib/desktopSnapShot", () => ({ getDesktopSnapShotBridge: () => bridge }));
-vi.mock("../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "light" }) }));
-vi.mock("../../hooks/useCopyToClipboard", () => ({
+vi.mock("../../../lib/desktopSnapShot", () => ({ getDesktopSnapShotBridge: () => bridge }));
+vi.mock("../../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "light" }) }));
+vi.mock("../../../hooks/useCopyToClipboard", () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(), isCopied: false }),
 }));
-vi.mock("../ui/toast", () => ({ toastManager: { add: vi.fn() } }));
+vi.mock("../../ui/toast", () => ({ toastManager: { add: vi.fn() } }));
 import { CaptureShortcutConfig } from "./CaptureShortcutConfig";
 import { toastManager } from "../../ui/toast";
 

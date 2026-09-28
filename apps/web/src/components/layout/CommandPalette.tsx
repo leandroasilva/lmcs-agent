@@ -170,8 +170,14 @@ import { orderItemsByPreferredIds, sortLogicalProjectsForSidebar } from "./Sideb
 import { resolveEnvironmentOptionLabel } from "./BranchToolbar.logic";
 import { CommandPaletteContent } from "./CommandPaletteContent";
 import { CommandPaletteResults } from "./CommandPaletteResults";
-import { AzureDevOpsIcon, BitbucketIcon, GitHubIcon, GitLabIcon, ForgejoIcon } from "../ui/Icons";
-import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import {
+  AzureDevOpsIcon,
+  BitbucketIcon,
+  GitHubIcon,
+  GitLabIcon,
+  ForgejoIcon,
+} from "../shared/Icons";
+import { EnvironmentMachineIcon } from "../shared/EnvironmentMachineIcon";
 import { ProjectFavicon } from "../features/files/ProjectFavicon";
 import { ProjectFilePicker } from "../features/files/ProjectFilePicker";
 import { openLinkPullRequestDialog } from "../features/pullRequest/LinkPullRequestDialog";

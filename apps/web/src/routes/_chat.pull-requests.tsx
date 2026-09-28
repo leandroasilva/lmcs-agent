@@ -93,7 +93,7 @@ import {
 } from "../components/features/pullRequest/pullRequestListPreferences";
 import { assignProjectsToEnvironments } from "../components/features/pullRequest/pullRequestProjectAssignment.logic";
 import { pullRequestFilterProjects } from "../components/features/pullRequest/pullRequestProjectFilter.logic";
-import { environmentMachineIcon } from "../components/ui/EnvironmentMachineIcon";
+import { environmentMachineIcon } from "../components/shared/EnvironmentMachineIcon";
 import { PullRequestDetailPanel } from "../components/features/pullRequest/PullRequestDetailPanel";
 import {
   PullRequestFiltersMenu,

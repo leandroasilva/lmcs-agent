@@ -4,13 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 // Render popover content without portals so these tests exercise picker input
 // and persistence behavior without starting a browser.
-vi.mock("../ui/popover", () => ({
+vi.mock("../../ui/popover", () => ({
   Popover: ({ children }: { children: ReactNode }) => children,
   PopoverPopup: ({ children }: { children: ReactNode }) => children,
   PopoverTrigger: () => null,
   PopoverClose: () => null,
 }));
-vi.mock("../ui/tooltip", () => ({
+vi.mock("../../ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => children,
   TooltipTrigger: ({ render }: { render: ReactElement }) => render,
   TooltipPopup: () => null,

@@ -9,7 +9,7 @@ const testState = vi.hoisted(() => ({
 }));
 
 vi.mock("@effect/atom-react", () => ({ useAtomValue: () => null }));
-vi.mock("../assets/assetUrls", () => ({
+vi.mock("../../../assets/assetUrls", () => ({
   useAssetUrlRefresh: () => vi.fn(),
   useAssetUrlState: (_environmentId: unknown, resource: unknown) => {
     testState.resources.push(resource);
@@ -22,22 +22,22 @@ vi.mock("../assets/assetUrls", () => ({
     };
   },
 }));
-vi.mock("../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
-vi.mock("../state/use-atom-query-runner", () => ({ useAtomQueryRunner: () => vi.fn() }));
-vi.mock("../state/use-atom-command", () => ({ useAtomCommand: () => vi.fn() }));
-vi.mock("../state/session", async (importOriginal) => ({
+vi.mock("../../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
+vi.mock("../../../state/use-atom-query-runner", () => ({ useAtomQueryRunner: () => vi.fn() }));
+vi.mock("../../../state/use-atom-command", () => ({ useAtomCommand: () => vi.fn() }));
+vi.mock("../../../state/session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../state/session")>()),
   usePreparedConnection: () => ({ _tag: "Loading" }),
 }));
-vi.mock("../state/entities", () => ({
+vi.mock("../../../state/entities", () => ({
   readThreadShell: () => null,
   useProjects: () => [],
   useServerConfigs: () => new Map(),
 }));
-vi.mock("../remoteOpen", () => ({
+vi.mock("../../../remoteOpen", () => ({
   useRemoteOpenResolution: () => ({ state: { mode: "local-exec" }, isResolved: true }),
 }));
-vi.mock("../editorPreferences", () => ({
+vi.mock("../../../editorPreferences", () => ({
   useOpenInPreferredEditor: () => vi.fn(),
   usePreferredEditor: () => [null, vi.fn()],
 }));

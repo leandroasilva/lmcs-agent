@@ -20,7 +20,7 @@ vi.mock("react/compiler-runtime", async () => {
   return { c: reactHookHarness.useMemoCache };
 });
 const suppress = vi.hoisted(() => vi.fn<(_: boolean) => Promise<void>>());
-vi.mock("../../lib/desktopSnapShot", () => ({
+vi.mock("../../../lib/desktopSnapShot", () => ({
   getDesktopSnapShotBridge: () => ({ setSnapShotShortcutSuppressed: suppress }),
 }));
 

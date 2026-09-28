@@ -1,7 +1,7 @@
 import type { EnvironmentId, EnvironmentMachineKind } from "@lmcstools/core";
 
 import type { SidebarProjectSnapshot } from "~/sidebarProjectGrouping";
-import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 /**

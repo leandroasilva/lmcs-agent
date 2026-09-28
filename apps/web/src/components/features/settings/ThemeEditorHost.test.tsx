@@ -53,11 +53,11 @@ vi.mock("react/compiler-runtime", async () => {
   return { c: reactHookHarness.useMemoCache };
 });
 
-vi.mock("../../hooks/useTheme", () => ({ useTheme: () => state.theme }));
+vi.mock("../../../hooks/useTheme", () => ({ useTheme: () => state.theme }));
 vi.mock("./themeEditorStore", () => ({
   useThemeEditorStore: (select: (store: typeof state) => unknown) => select(state),
 }));
-vi.mock("../ui/toast", () => ({
+vi.mock("../../ui/toast", () => ({
   toastManager: { add: vi.fn() },
   stackedThreadToast: (value: unknown) => value,
 }));

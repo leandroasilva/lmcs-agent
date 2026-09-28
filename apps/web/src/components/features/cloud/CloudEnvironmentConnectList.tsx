@@ -27,7 +27,7 @@ import { relayEnvironmentDiscovery } from "~/state/relay";
 import { useRelayEnvironmentDiscovery } from "~/state/environments";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { ConnectionStatusDot } from "../../layout/ConnectionStatusDot";
-import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
 import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "../settings/itemRows";
 import { Checkbox } from "../../ui/checkbox";
 import { Button } from "../../ui/button";

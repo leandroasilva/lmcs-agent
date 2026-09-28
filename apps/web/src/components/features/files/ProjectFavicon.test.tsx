@@ -60,7 +60,7 @@ vi.mock("lucide-react/dynamic", () => ({
 vi.mock("@effect/atom-react", () => ({
   useAtomValue: () => testState.faviconUrl,
 }));
-vi.mock("../state/assets", () => ({
+vi.mock("../../../state/assets", () => ({
   projectFaviconUrlAtom: (input: unknown) => {
     testState.lastTarget = input;
   },

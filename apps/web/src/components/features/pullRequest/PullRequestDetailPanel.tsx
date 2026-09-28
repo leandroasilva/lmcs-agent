@@ -102,7 +102,7 @@ import {
   AlertDialogPopup,
   AlertDialogTitle,
 } from "../../ui/alert-dialog";
-import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { PullRequestEditButton } from "./PullRequestEditButton";

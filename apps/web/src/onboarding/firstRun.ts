@@ -5,12 +5,15 @@ import { ensureClientSettingsHydrated, persistClientSettingsUpdate } from "../ho
 /**
  * Marks first-run onboarding finished (or skipped) so FirstRunGate never
  * routes to the welcome wizard again. The gate itself lives in
- * `components/onboarding/FirstRunGate.tsx`.
+ * `components/features/onboarding/FirstRunGate.tsx`.
  */
 export function useCompleteOnboarding(): () => Promise<void> {
   return useCallback(async () => {
     await ensureClientSettingsHydrated();
     const onboardingCompletedAt = new Date().toISOString();
-    await persistClientSettingsUpdate((current) => ({ ...current, onboardingCompletedAt }));
+    await persistClientSettingsUpdate((current) => ({
+      ...current,
+      onboardingCompletedAt,
+    }));
   }, []);
 }

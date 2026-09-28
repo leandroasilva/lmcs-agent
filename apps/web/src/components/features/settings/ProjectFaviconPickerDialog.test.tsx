@@ -41,7 +41,7 @@ vi.mock("../files/projectFilesQueryState", () => ({
   }),
 }));
 
-vi.mock("../ui/toast", () => ({
+vi.mock("../../ui/toast", () => ({
   toastManager: { add: vi.fn() },
 }));
 

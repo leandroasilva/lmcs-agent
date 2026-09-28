@@ -3,7 +3,7 @@ import { ScaleIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import type { EnvironmentOption } from "./BranchToolbar.logic";
-import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../shared/EnvironmentMachineIcon";
 import { useComposerMenuProps } from "../features/chat/composerEventScope";
 import {
   Select,

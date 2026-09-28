@@ -55,7 +55,7 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => state.navigate,
   useParams: () => state.active,
 }));
-vi.mock("../hooks/useSettings", () => ({
+vi.mock("../../hooks/useSettings", () => ({
   useClientSettings: (
     select: (
       settings: Pick<ClientSettings, "notificationMode" | "inAppNotificationsEnabled">,
@@ -63,18 +63,18 @@ vi.mock("../hooks/useSettings", () => ({
   ) => select({ notificationMode: state.mode, inAppNotificationsEnabled: state.inApp }),
   getClientSettings: () => ({ notificationMode: state.mode }),
 }));
-vi.mock("../state/environments", () => ({
+vi.mock("../../state/environments", () => ({
   useEnvironments: () => ({ environments: [{ environmentId: "env-1" }] }),
 }));
-vi.mock("../state/shell", () => ({
+vi.mock("../../state/shell", () => ({
   environmentShell: { stateValueAtom: vi.fn() },
 }));
-vi.mock("../threadNotifications", async (importOriginal) => ({
+vi.mock("../../threadNotifications", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../threadNotifications")>()),
   playNotificationSound: state.sound,
   setNotificationBadge: vi.fn(),
 }));
-vi.mock("./ui/toast", () => ({
+vi.mock("../ui/toast", () => ({
   toastManager: { add: state.add, close: state.close },
 }));
 

@@ -5,13 +5,13 @@ import { create, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { getSyntaxHighlighterPromise } from "../../../lib/syntaxHighlighting";
-import { GitHubIcon } from "../../ui/Icons";
+import { GitHubIcon } from "../../shared/Icons";
 import { Button } from "../../ui/button";
 import { setMarkdownTaskChecked } from "../files/filePreviewMode";
 
 vi.mock("@effect/atom-react", () => ({ useAtomValue: () => null }));
-vi.mock("../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
-vi.mock("../hooks/useSettings", async (importOriginal) => {
+vi.mock("../../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
+vi.mock("../../../hooks/useSettings", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../hooks/useSettings")>();
   const settings = actual.getClientSettings();
   return {
@@ -20,7 +20,7 @@ vi.mock("../hooks/useSettings", async (importOriginal) => {
       select ? select(settings) : settings,
   };
 });
-vi.mock("./ui/tooltip", async () => {
+vi.mock("../../ui/tooltip", async () => {
   const { cloneElement, isValidElement } = await import("react");
   return {
     Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -34,21 +34,21 @@ vi.mock("./ui/tooltip", async () => {
     TooltipPopup: () => null,
   };
 });
-vi.mock("../state/use-atom-query-runner", () => ({ useAtomQueryRunner: () => vi.fn() }));
-vi.mock("../state/use-atom-command", () => ({ useAtomCommand: () => vi.fn() }));
-vi.mock("../state/session", async (importOriginal) => ({
+vi.mock("../../../state/use-atom-query-runner", () => ({ useAtomQueryRunner: () => vi.fn() }));
+vi.mock("../../../state/use-atom-command", () => ({ useAtomCommand: () => vi.fn() }));
+vi.mock("../../../state/session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../state/session")>()),
   usePreparedConnection: () => ({ _tag: "Loading" }),
 }));
-vi.mock("../state/entities", () => ({
+vi.mock("../../../state/entities", () => ({
   readThreadShell: () => null,
   useProjects: () => [],
   useServerConfigs: () => new Map(),
 }));
-vi.mock("../remoteOpen", () => ({
+vi.mock("../../../remoteOpen", () => ({
   useRemoteOpenResolution: () => ({ state: { mode: "local-exec" }, isResolved: true }),
 }));
-vi.mock("../editorPreferences", () => ({
+vi.mock("../../../editorPreferences", () => ({
   useOpenInPreferredEditor: () => vi.fn(),
   usePreferredEditor: () => [null, vi.fn()],
 }));

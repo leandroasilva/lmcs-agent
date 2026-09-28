@@ -19,7 +19,7 @@ import { useRender } from "@base-ui/react/use-render";
 import { useMemo, type AnimationEvent, type MouseEvent, type ReactElement } from "react";
 import { cn } from "../../lib/utils";
 import { useEnvironment, usePrimaryEnvironmentId } from "../../state/environments";
-import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../shared/EnvironmentMachineIcon";
 import { parseChangeRequestUrl } from "../../lib/openPullRequestLink";
 import { useEnvironmentQuery } from "../../state/query";
 import { linkedPullRequestDetailAtom, useSharedPullRequestSummary } from "../../state/pullRequests";

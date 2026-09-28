@@ -68,7 +68,7 @@ vi.mock("@effect/atom-react", () => ({
   useAtomValue: () => atoms.providers,
 }));
 
-vi.mock("../../state/server", () => ({
+vi.mock("../../../state/server", () => ({
   EMPTY_SERVER_PROVIDERS: [],
   serverEnvironment: {
     providersValueAtom: () => atoms.providersAtom,
@@ -77,12 +77,12 @@ vi.mock("../../state/server", () => ({
   },
 }));
 
-vi.mock("../../state/use-atom-command", () => ({
+vi.mock("../../../state/use-atom-command", () => ({
   useAtomCommand: (atom: symbol) =>
     atom === atoms.refreshProviders ? commands.refresh : commands.updateProvider,
 }));
 
-vi.mock("../../hooks/useSettings", () => ({
+vi.mock("../../../hooks/useSettings", () => ({
   useUpdateClientSettings: () => settingsState.updateClientSettings,
   useEnvironmentSettings: (environmentId: EnvironmentId) => {
     settingsState.readEnvironmentIds.push(environmentId);
@@ -91,11 +91,11 @@ vi.mock("../../hooks/useSettings", () => ({
   useUpdateEnvironmentSettings: () => settingsState.updateSettings,
 }));
 
-vi.mock("../../environments/primary", () => ({
+vi.mock("../../../environments/primary", () => ({
   usePrimarySessionState: () => ({ data: null, error: null, isPending: false, refresh: vi.fn() }),
 }));
 
-vi.mock("../../state/session", () => ({
+vi.mock("../../../state/session", () => ({
   useEnvironmentSessionState: () => ({ data: null, hasError: false, isPending: true }),
 }));
 

@@ -14,7 +14,7 @@ import { useEnvironmentSessionState } from "../../../state/session";
 import {
   ENVIRONMENT_MACHINE_KIND_LABELS,
   EnvironmentMachineIcon,
-} from "../../ui/EnvironmentMachineIcon";
+} from "../../shared/EnvironmentMachineIcon";
 import {
   MenuItem,
   MenuRadioGroup,

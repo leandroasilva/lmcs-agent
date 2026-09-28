@@ -9,7 +9,7 @@ vi.mock("~/browser/useOpenLink", () => ({ useOpenLink: () => vi.fn() }));
 vi.mock("./PullRequestMarkdown", () => ({
   PullRequestMarkdown: ({ text }: { text: string }) => <p>{text}</p>,
 }));
-vi.mock("../ui/tooltip", () => ({
+vi.mock("../../ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => children,
   TooltipTrigger: ({ children }: { children: ReactNode }) => children,
   TooltipPopup: () => null,

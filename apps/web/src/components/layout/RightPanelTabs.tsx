@@ -45,7 +45,7 @@ import type { RightPanelSurface } from "~/rightPanelStore";
 import { cn } from "~/lib/utils";
 import { readLocalApi } from "~/localApi";
 import { Button } from "~/components/ui/button";
-import { AndroidIcon, AppleIcon } from "~/components/ui/Icons";
+import { AndroidIcon, AppleIcon } from "~/components/shared/Icons";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { Kbd } from "~/components/ui/kbd";
 import {

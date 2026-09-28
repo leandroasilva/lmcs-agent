@@ -16,7 +16,7 @@ import {
   type Icon,
   OpenAI,
   OpenCodeIcon,
-} from "../../ui/Icons";
+} from "../../shared/Icons";
 
 type ProviderSettingsSchema = {
   readonly fields: Readonly<Record<string, Schema.Top>>;

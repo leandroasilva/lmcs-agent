@@ -10,7 +10,7 @@ const stageArtworkState = vi.hoisted(() => ({
 vi.mock("~/hooks/useSettings", () => ({
   useEnvironmentIdentificationMode: () => stageArtworkState.mode,
 }));
-vi.mock("../SidebarStageBackdrop", () => ({
+vi.mock("../../layout/SidebarStageBackdrop", () => ({
   StageBackdropButtonArt: ({ variant }: { variant: string }) => `stage-${variant}`,
   useSidebarStageBackdropVariant: (enabled = true) => (enabled ? stageArtworkState.variant : null),
 }));

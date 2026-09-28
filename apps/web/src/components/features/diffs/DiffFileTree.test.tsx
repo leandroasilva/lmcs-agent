@@ -11,9 +11,9 @@ import { DiffFileTree, type DiffFileTreeEntry } from "./DiffFileTree";
 import { diffFileTreeEntries } from "./diffFileTree.logic";
 import { useCodeViewFileReveal } from "./useCodeViewFileReveal";
 
-vi.mock("../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
+vi.mock("../../../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
 // Tooltip positioning is unrelated to the tree's actual model and activation path.
-vi.mock("../ui/tooltip", () => ({
+vi.mock("../../ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => children,
   TooltipTrigger: ({ render }: { render: ReactNode }) => render,
   TooltipPopup: () => null,

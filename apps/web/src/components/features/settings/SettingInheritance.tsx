@@ -11,7 +11,7 @@ import * as Equal from "effect/Equal";
 
 import { cn } from "../../../lib/utils";
 import type { EnvironmentPresentation } from "../../../state/environments";
-import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../../shared/EnvironmentMachineIcon";
 import { resolveEnvModeLabel, WORKTREE_SUBMODULES_LABELS } from "../../layout/BranchToolbar.logic";
 import { PULL_REQUEST_MERGE_METHOD_LABELS } from "../pullRequest/pullRequestDetail.logic";
 import { Button, InlineButton } from "../../ui/button";

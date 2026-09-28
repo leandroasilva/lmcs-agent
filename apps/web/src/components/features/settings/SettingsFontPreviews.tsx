@@ -26,7 +26,7 @@ const EMPTY_SKILLS: ReadonlyArray<never> = [];
 const PROMPT_PREVIEW_TEXT =
   "Use $frontend-design to fix the flaky test in " +
   "[surface.test.ts](apps/web/src/terminal/ghostty/surface.test.ts) and align the header with " +
-  "[SettingsPanels.tsx](apps/web/src/components/settings/SettingsPanels.tsx) before shipping.";
+  "[SettingsPanels.tsx](apps/web/src/components/features/settings/SettingsPanels.tsx) before shipping.";
 
 function noop() {}
 
@@ -82,7 +82,11 @@ function loadDiffPreviewHtml(theme: DiffThemeName): Promise<readonly string[]> {
   if (promise === undefined) {
     promise = preloadPatchFile({
       patch: DIFF_PREVIEW_PATCH,
-      options: { diffStyle: "unified", theme, preferredHighlighter: PREFERRED_HIGHLIGHTER },
+      options: {
+        diffStyle: "unified",
+        theme,
+        preferredHighlighter: PREFERRED_HIGHLIGHTER,
+      },
     }).then((results) => results.map((result) => result.prerenderedHTML));
     diffPreviewHtmlByTheme.set(theme, promise);
   }

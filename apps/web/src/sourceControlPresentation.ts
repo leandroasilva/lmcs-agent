@@ -18,7 +18,7 @@ import {
   ForgejoIcon,
   GitHubIcon,
   GitLabIcon,
-} from "./components/ui/Icons";
+} from "./components/shared/Icons";
 import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 
 export interface SourceControlPresentation {

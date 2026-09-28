@@ -19,20 +19,20 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => state.navigate,
   useParams: () => ({}),
 }));
-vi.mock("./ui/toast", () => ({ toastManager: { add: state.toast } }));
-vi.mock("../state/shell", () => ({ environmentShell: { stateValueAtom: (id: string) => id } }));
-vi.mock("../state/environments", () => ({
+vi.mock("../ui/toast", () => ({ toastManager: { add: state.toast } }));
+vi.mock("../../state/shell", () => ({ environmentShell: { stateValueAtom: (id: string) => id } }));
+vi.mock("../../state/environments", () => ({
   useEnvironments: () => ({
     environments: state.environmentIds.map((environmentId) => ({ environmentId })),
   }),
 }));
-vi.mock("../hooks/useSettings", () => ({
+vi.mock("../../hooks/useSettings", () => ({
   useClientSettings: (
     select: (settings: { notificationMode: string; inAppNotificationsEnabled: boolean }) => unknown,
   ) => select({ notificationMode: state.mode, inAppNotificationsEnabled: state.inApp }),
   getClientSettings: () => ({ notificationMode: state.mode }),
 }));
-vi.mock("../threadNotifications", async (importOriginal) => ({
+vi.mock("../../threadNotifications", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../threadNotifications")>()),
   playNotificationSound: state.sound,
   unlockNotificationAudio: vi.fn(),

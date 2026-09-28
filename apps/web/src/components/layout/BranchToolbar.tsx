@@ -20,7 +20,7 @@ import {
 } from "react";
 
 import { useComposerDraftStore, type DraftId } from "../../composerDraftStore";
-import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { EnvironmentMachineIcon } from "../shared/EnvironmentMachineIcon";
 import { useProject, useThreadShell, useThreadShellsForProjectRefs } from "../../state/entities";
 import {
   type EnvMode,

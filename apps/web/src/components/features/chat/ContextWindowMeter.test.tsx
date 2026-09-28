@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { deriveLatestContextWindowSnapshot } from "~/lib/contextWindow";
 import { ContextWindowMeter } from "./ContextWindowMeter";
 
-vi.mock("../ui/popover", () => ({
+vi.mock("../../ui/popover", () => ({
   Popover: ({ children }: { children: ReactNode }) => children,
   PopoverPopup: ({ children }: { children: ReactNode }) => children,
   PopoverTrigger: ({ closeDelay, render }: { closeDelay: number; render: ReactNode }) => (

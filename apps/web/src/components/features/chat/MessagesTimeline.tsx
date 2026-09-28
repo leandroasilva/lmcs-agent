@@ -102,7 +102,7 @@ import ChatMarkdown, { ChatMarkdownAssetImage } from "./ChatMarkdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Root, RootContent } from "mdast";
-import { LMCSWordmark } from "../../ui/LMCSWordmark";
+import { LMCSWordmark } from "../../shared/LMCSWordmark";
 import {
   BotIcon,
   BrainIcon,
@@ -252,7 +252,7 @@ import {
   type ReviewCommentContext,
 } from "../../../reviewCommentContext";
 import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
-import { ComputerUseAppIcon } from "~/components/ui/Icons";
+import { ComputerUseAppIcon } from "~/components/shared/Icons";
 
 // ---------------------------------------------------------------------------
 // Context — shared state consumed by every row component via Context.
