@@ -4,7 +4,7 @@ import {
   HostedPairingRouteSurface,
   PairingPendingSurface,
   PairingRouteSurface,
-} from "../components/auth/PairingRouteSurface";
+} from "../components/features/auth/PairingRouteSurface";
 
 export const Route = createFileRoute("/pair")({
   beforeLoad: async ({ context }) => {

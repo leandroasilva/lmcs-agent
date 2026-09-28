@@ -1,8 +1,8 @@
-import { Button } from "../ui/button";
-import { Alert, AlertAction, AlertDescription } from "../ui/alert";
+import { Button } from "../../ui/button";
+import { Alert, AlertAction, AlertDescription } from "../../ui/alert";
 import { SettingsPageContainer } from "./settingsLayout";
 import { useSettingsScope } from "./SettingsScopeContext";
-import { useEnvironments } from "../../state/environments";
+import { useEnvironments } from "../../../state/environments";
 import type { SettingsScopeSearch } from "./settingsScope";
 import { useSettingsProjectGroups } from "./useSettingsProjectGroups";
 import { useLocation, useNavigate } from "@tanstack/react-router";

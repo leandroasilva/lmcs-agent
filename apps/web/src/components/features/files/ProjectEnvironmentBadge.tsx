@@ -1,8 +1,8 @@
 import type { EnvironmentId, EnvironmentMachineKind } from "@lmcstools/core";
 
 import type { SidebarProjectSnapshot } from "~/sidebarProjectGrouping";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 /**
  * Machine icon for a project picker row whose group has a member on another

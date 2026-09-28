@@ -33,22 +33,22 @@ import {
   squashAtomCommandFailure,
 } from "@lmcstools/client/state/runtime";
 
-import { isElectron } from "../../env";
-import { useOpenInPreferredEditor } from "../../editorPreferences";
-import { formatShortcutLabel } from "../../keybindings";
-import { cn } from "../../lib/utils";
-import { serverEnvironment } from "../../state/server";
+import { isElectron } from "../../../env";
+import { useOpenInPreferredEditor } from "../../../editorPreferences";
+import { formatShortcutLabel } from "../../../keybindings";
+import { cn } from "../../../lib/utils";
+import { serverEnvironment } from "../../../state/server";
 import { useSettingsScope } from "./SettingsScopeContext";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
-import { Kbd, KbdGroup } from "../ui/kbd";
-import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Toggle } from "../ui/toggle";
-import { toastManager } from "../ui/toast";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../../ui/input-group";
+import { Kbd, KbdGroup } from "../../ui/kbd";
+import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../../ui/menu";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
+import { Toggle } from "../../ui/toggle";
+import { toastManager } from "../../ui/toast";
 import {
   buildKeybindingRows,
   buildKeybindingCommandOptions,
@@ -68,8 +68,8 @@ import {
 } from "./KeybindingsSettings.logic";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
 import { keybindingSearchAnchorId, searchableSetting } from "./settingsSearch";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { useAtomCommand } from "../../state/use-atom-command";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { useAtomCommand } from "../../../state/use-atom-command";
 
 function KeybindingPill({ value }: { value: string }) {
   // Keys dedupe repeated parts; a literal "+" in a shortcut splits into empty strings.

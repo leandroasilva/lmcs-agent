@@ -8,9 +8,9 @@ import {
   fileAttachmentTooLargeMessage,
 } from "@lmcstools/client/state/attachments";
 
-import type { ComposerFileAttachment, ComposerImageAttachment } from "../../composerDraftStore";
-import { isHeicImageFile } from "../../lib/imageCompression";
-import { isVideoAttachment } from "../../types";
+import type { ComposerFileAttachment, ComposerImageAttachment } from "../../../composerDraftStore";
+import { isHeicImageFile } from "../../../lib/imageCompression";
+import { isVideoAttachment } from "../../../types";
 
 type ComposerAttachmentFileKind = "image" | "file" | "unsupported-image";
 

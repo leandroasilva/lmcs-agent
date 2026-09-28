@@ -14,15 +14,15 @@ import {
 } from "@lmcstools/core";
 import { useCallback, useEffect, useRef } from "react";
 
-import { useNewThreadHandler } from "../hooks/useHandleNewThread";
-import { useRemoveClonedProject } from "../hooks/useRemoveClonedProject";
-import { useEnvironments } from "../state/environments";
-import { useEnvironmentProjectClones } from "../state/projectClones";
-import { sourceControlEnvironment } from "../state/sourceControl";
-import { useAtomCommand } from "../state/use-atom-command";
-import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
-import { toastManager } from "./ui/toast";
-import { stackedThreadToast } from "./ui/toastHelpers";
+import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
+import { useRemoveClonedProject } from "../../hooks/useRemoveClonedProject";
+import { useEnvironments } from "../../state/environments";
+import { useEnvironmentProjectClones } from "../../state/projectClones";
+import { sourceControlEnvironment } from "../../state/sourceControl";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { type DraftId, useComposerDraftStore } from "../../composerDraftStore";
+import { toastManager } from "../ui/toast";
+import { stackedThreadToast } from "../ui/toastHelpers";
 
 /**
  * One toast per clone in flight, on every environment. The palette that

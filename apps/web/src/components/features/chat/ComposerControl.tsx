@@ -5,7 +5,7 @@ import type { ComponentProps } from "react";
 import { ChevronDownIcon, type LucideIcon } from "lucide-react";
 
 import { cn } from "~/lib/utils";
-import { Separator } from "../ui/separator";
+import { Separator } from "../../ui/separator";
 
 export type ComposerControlSize = "sm" | "xs";
 

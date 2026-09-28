@@ -11,12 +11,12 @@ import { useRef, useState } from "react";
 import {
   deregisterManagedRelayEnvironmentCommand,
   useManagedRelayEnvironments,
-} from "../../cloud/managedRelayState";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { Button } from "../ui/button";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
-import { toastManager } from "../ui/toast";
+} from "../../../cloud/managedRelayState";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { Button } from "../../ui/button";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../../ui/empty";
+import { toastManager } from "../../ui/toast";
 import {
   ClerkUserProfilePage,
   ClerkUserProfileRefreshButton,

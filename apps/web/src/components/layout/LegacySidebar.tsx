@@ -22,8 +22,8 @@ import {
   ThreadWorktreeIndicator,
   useLinkedThreadPullRequest,
 } from "./ThreadStatusIndicators";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { ProjectFavicon } from "./ProjectFavicon";
+import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { ProjectFavicon } from "../features/files/ProjectFavicon";
 import { useAtomValue } from "@effect/atom-react";
 import { autoAnimate } from "@formkit/auto-animate";
 import React, { useCallback, useEffect, memo, useMemo, useRef, useState } from "react";
@@ -74,33 +74,36 @@ import {
   type SidebarThreadPreviewCount,
   type SidebarThreadSortOrder,
 } from "@lmcstools/core/settings";
-import { isDesktopLocalConnectionTarget, isWslConnectionTarget } from "../connection/desktopLocal";
-import { useDesktopLocalBootstraps } from "../connection/useDesktopLocalBootstraps";
-import { isElectron } from "../env";
-import { useTerminalFocus } from "../hooks/useTerminalFocus";
-import { useOpenPrLink } from "../lib/openPullRequestLink";
-import { releaseProjectDraftUploads } from "../lib/composerDraftUploads";
-import { isTerminalFocused } from "../lib/terminalFocus";
-import { isMacPlatform } from "../lib/utils";
-import { useSidebarPendingFileDropStore } from "../sidebarPendingFileDropStore";
-import { makeWorkspaceFileDropHandlers } from "./chat/workspaceFileDrop";
+import {
+  isDesktopLocalConnectionTarget,
+  isWslConnectionTarget,
+} from "../../connection/desktopLocal";
+import { useDesktopLocalBootstraps } from "../../connection/useDesktopLocalBootstraps";
+import { isElectron } from "../../env";
+import { useTerminalFocus } from "../../hooks/useTerminalFocus";
+import { useOpenPrLink } from "../../lib/openPullRequestLink";
+import { releaseProjectDraftUploads } from "../../lib/composerDraftUploads";
+import { isTerminalFocused } from "../../lib/terminalFocus";
+import { isMacPlatform } from "../../lib/utils";
+import { useSidebarPendingFileDropStore } from "../../sidebarPendingFileDropStore";
+import { makeWorkspaceFileDropHandlers } from "../features/chat/workspaceFileDrop";
 import {
   readThreadShell,
   useProjects,
   useThreadShells,
   useThreadShellsForProjectRefs,
-} from "../state/entities";
-import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
-import { useThreadRunningTerminalIds } from "../state/terminalSessions";
-import { useThreadDiscoveredPorts } from "../portDiscoveryState";
-import { openDiscoveredPort } from "./preview/openDiscoveredPort";
-import { useAtomCommand } from "../state/use-atom-command";
-import { previewEnvironment } from "../state/preview";
+} from "../../state/entities";
+import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../../terminalUiStateStore";
+import { useThreadRunningTerminalIds } from "../../state/terminalSessions";
+import { useThreadDiscoveredPorts } from "../../portDiscoveryState";
+import { openDiscoveredPort } from "../features/preview/openDiscoveredPort";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { previewEnvironment } from "../../state/preview";
 import {
   legacyProjectCwdPreferenceKey,
   resolveProjectExpanded,
   useUiStateStore,
-} from "../uiStateStore";
+} from "../../uiStateStore";
 import {
   resolveShortcutCommand,
   shortcutLabelForCommand,
@@ -108,26 +111,26 @@ import {
   threadJumpCommandForIndex,
   threadJumpIndexFromCommand,
   threadTraversalDirectionFromCommand,
-} from "../keybindings";
-import { isModelPickerOpen } from "../modelPickerVisibility";
-import { useShortcutModifierState } from "../shortcutModifierState";
-import { ensureLocalApi, readLocalApi } from "../localApi";
-import { useComposerDraftStore } from "../composerDraftStore";
-import { useNewThreadHandler } from "../hooks/useHandleNewThread";
-import { useDesktopUpdateState } from "../state/desktopUpdate";
+} from "../../keybindings";
+import { isModelPickerOpen } from "../../modelPickerVisibility";
+import { useShortcutModifierState } from "../../shortcutModifierState";
+import { ensureLocalApi, readLocalApi } from "../../localApi";
+import { useComposerDraftStore } from "../../composerDraftStore";
+import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
+import { useDesktopUpdateState } from "../../state/desktopUpdate";
 
-import { useThreadActions } from "../hooks/useThreadActions";
-import { projectEnvironment } from "../state/projects";
-import { threadEnvironment, useEnvironmentThread } from "../state/threads";
-import { useEnvironment, useEnvironments, usePrimaryEnvironmentId } from "../state/environments";
+import { useThreadActions } from "../../hooks/useThreadActions";
+import { projectEnvironment } from "../../state/projects";
+import { threadEnvironment, useEnvironmentThread } from "../../state/threads";
+import { useEnvironment, useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
 import {
   buildThreadRouteParams,
   resolveActiveThreadRouteRef,
   resolveThreadRouteTarget,
-} from "../threadRoutes";
-import { stackedThreadToast, toastManager } from "./ui/toast";
-import { formatRelativeTimeLabel } from "../timestampFormat";
-import { Kbd } from "./ui/kbd";
+} from "../../threadRoutes";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { formatRelativeTimeLabel } from "../../timestampFormat";
+import { Kbd } from "../ui/kbd";
 import {
   getArm64IntelBuildWarningDescription,
   getDesktopUpdateActionError,
@@ -136,10 +139,10 @@ import {
   resolveDesktopUpdateButtonAction,
   shouldShowArm64IntelBuildWarning,
   shouldToastDesktopUpdateActionResult,
-} from "./desktopUpdate.logic";
-import { showDesktopUpdateDownloadedToast } from "./desktopUpdate.toast";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "./ui/alert";
-import { Button } from "./ui/button";
+} from "../features/settings/desktopUpdate.logic";
+import { showDesktopUpdateDownloadedToast } from "../features/settings/desktopUpdate.toast";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "../ui/alert";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogDescription,
@@ -148,18 +151,18 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Menu, MenuGroup, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "./ui/menu";
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Menu, MenuGroup, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../ui/menu";
 import {
   NumberField,
   NumberFieldDecrement,
   NumberFieldGroup,
   NumberFieldIncrement,
   NumberFieldInput,
-} from "./ui/number-field";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "./ui/select";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+} from "../ui/number-field";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   SidebarContent,
   SidebarGroup,
@@ -170,12 +173,12 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from "./ui/sidebar";
+} from "../ui/sidebar";
 import {
   getThreadKeysToDeselectAfterDelete,
   useThreadSelectionStore,
-} from "../threadSelectionStore";
-import { isCommandPaletteOpen, openCommandPalette } from "../commandPaletteBus";
+} from "../../threadSelectionStore";
+import { isCommandPaletteOpen, openCommandPalette } from "../../commandPaletteBus";
 import {
   archiveSelectedThreadEntries,
   buildMultiSelectThreadContextMenuItems,
@@ -194,27 +197,27 @@ import {
   useThreadJumpHintVisibility,
   ThreadStatusPill,
 } from "./Sidebar.logic";
-import { sortThreads } from "../lib/threadSort";
+import { sortThreads } from "../../lib/threadSort";
 import { SidebarChromeFooter, SidebarChromeHeader } from "./sidebar/SidebarChrome";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { useIsMobile } from "~/hooks/useMediaQuery";
-import { CommandDialogTrigger } from "./ui/command";
+import { CommandDialogTrigger } from "../ui/command";
 import { useClientSettings, useUpdateClientSettings } from "~/hooks/useSettings";
-import { primaryServerKeybindingsAtom } from "../state/server";
+import { primaryServerKeybindingsAtom } from "../../state/server";
 import {
   derivePhysicalProjectKey,
   deriveProjectGroupingOverrideKey,
   getProjectOrderKey,
   selectProjectGroupingSettings,
-} from "../logicalProject";
-import type { SidebarThreadSummary } from "../types";
+} from "../../logicalProject";
+import type { SidebarThreadSummary } from "../../types";
 import {
   buildPhysicalToLogicalProjectKeyMap,
   buildSidebarProjectSnapshots,
   type SidebarProjectGroupMember,
   type SidebarProjectSnapshot,
-} from "../sidebarProjectGrouping";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+} from "../../sidebarProjectGrouping";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 const SIDEBAR_SORT_LABELS: Record<SidebarProjectSortOrder, string> = {
   updated_at: "Last user message",
   created_at: "Created at",

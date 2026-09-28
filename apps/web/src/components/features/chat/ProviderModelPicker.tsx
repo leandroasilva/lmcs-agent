@@ -5,9 +5,9 @@ import {
   type ResolvedKeybindingsConfig,
 } from "@lmcstools/core";
 import { memo, useEffect, useMemo, useState } from "react";
-import { Badge } from "../ui/badge";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Badge } from "../../ui/badge";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { cn } from "~/lib/utils";
 import { ModelPickerContent, resolveModelPickerSelectedModel } from "./ModelPickerContent";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
@@ -16,14 +16,14 @@ import {
   getTriggerDisplayModelLabel,
   getTriggerDisplayModelName,
 } from "./providerIconUtils";
-import { shouldShowInstanceBadge, type ProviderInstanceEntry } from "../../providerInstances";
+import { shouldShowInstanceBadge, type ProviderInstanceEntry } from "../../../providerInstances";
 import {
   ComposerControl,
   ComposerControlChevron,
   type ComposerControlSize,
 } from "./ComposerControl";
 import { useComposerMenuProps } from "./composerEventScope";
-import { shortcutLabelForCommand } from "../../keybindings";
+import { shortcutLabelForCommand } from "../../../keybindings";
 
 export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   /**

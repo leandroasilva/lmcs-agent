@@ -2,30 +2,30 @@ import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-
 import { useEffect, useState, type ReactNode } from "react";
 import { RotateCcwIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { useSettingsRestore } from "../components/settings/SettingsPanels";
+import { useSettingsRestore } from "../components/features/settings/SettingsPanels";
 
-import { SettingsBreadcrumb } from "../components/settings/SettingsBreadcrumb";
+import { SettingsBreadcrumb } from "../components/features/settings/SettingsBreadcrumb";
 import { SidebarInset } from "../components/ui/sidebar";
-import { useNavigateToMainApp } from "../components/sidebar/mainAppLocation";
-import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
+import { useNavigateToMainApp } from "../components/layout/sidebar/mainAppLocation";
+import { WorkspacePageHeader } from "../components/layout/WorkspacePageHeader";
 import { isElectron } from "../env";
 import {
   SettingsScopeProvider,
   useSettingsScope,
-} from "../components/settings/SettingsScopeContext";
+} from "../components/features/settings/SettingsScopeContext";
 import { useEnvironments } from "../state/environments";
-import { SettingsScopeNotice } from "../components/settings/SettingsScopeNotice";
-import { SETTINGS_DEVICE_ONLY_PATHS } from "../components/settings/SettingsScopeSentence";
-import { SettingsPageContainer } from "../components/settings/settingsLayout";
+import { SettingsScopeNotice } from "../components/features/settings/SettingsScopeNotice";
+import { SETTINGS_DEVICE_ONLY_PATHS } from "../components/features/settings/SettingsScopeSentence";
+import { SettingsPageContainer } from "../components/features/settings/settingsLayout";
 import {
   retainSettingsScope,
   validateSettingsRouteSearch,
-} from "../components/settings/settingsScopeNavigation";
+} from "../components/features/settings/settingsScopeNavigation";
 import {
   getSettingsSearchTargetScope,
   getThreadAutoSettlementSearchAvailability,
   isSettingsSearchScopeAvailable,
-} from "../components/settings/settingsSearch";
+} from "../components/features/settings/settingsSearch";
 
 function RestoreDeviceDefaultsButton({ onRestored }: { onRestored: () => void }) {
   const { changedSettingLabels, restoreDefaults } = useSettingsRestore(onRestored);

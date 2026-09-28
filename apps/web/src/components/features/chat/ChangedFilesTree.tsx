@@ -1,11 +1,11 @@
 import { type TurnId } from "@lmcstools/core";
 import { type MouseEvent, memo, useCallback, useMemo, useState } from "react";
-import { type TurnDiffFileChange } from "../../types";
+import { type TurnDiffFileChange } from "../../../types";
 import {
   buildTurnDiffTree,
   summarizeTurnDiffStats,
   type TurnDiffTreeNode,
-} from "../../lib/turnDiffTree";
+} from "../../../lib/turnDiffTree";
 import {
   ChevronsDownUpIcon,
   ChevronsUpDownIcon,
@@ -17,9 +17,9 @@ import {
 import { cn } from "~/lib/utils";
 import { DiffStatLabel, hasNonZeroStat } from "./DiffStatLabel";
 import { PierreEntryIcon } from "./PierreEntryIcon";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { MiddleTruncate } from "../ui/middle-truncate";
+import { Button } from "../../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { MiddleTruncate } from "../../ui/middle-truncate";
 
 const EMPTY_DIRECTORY_OVERRIDES: Record<string, boolean> = {};
 

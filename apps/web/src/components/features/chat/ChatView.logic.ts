@@ -35,25 +35,31 @@ import {
   type Thread,
   type ThreadShell,
   type TurnDiffSummary,
-} from "../types";
-import { type ComposerImageAttachment, type DraftThreadState } from "../composerDraftStore";
+} from "../../../types";
+import { type ComposerImageAttachment, type DraftThreadState } from "../../../composerDraftStore";
 import * as Schema from "effect/Schema";
-import { appAtomRegistry } from "../rpc/atomRegistry";
-import { environmentThreadDetails } from "../state/threads";
+import { appAtomRegistry } from "../../../rpc/atomRegistry";
+import { environmentThreadDetails } from "../../../state/threads";
 import { stripInlineContextReferences } from "~/lib/composerContextReferences";
-import { filterTerminalContextsWithText, type TerminalContextDraft } from "../lib/terminalContext";
-import type { DraftThreadEnvMode } from "../composerDraftStore";
-import { collapseExpandedComposerCursor, type ComposerSubmissionIntent } from "../composer-logic";
-import type { ReviewCommentContext } from "../reviewCommentContext";
-import type { TimelineEntry } from "../session-logic";
-import type { PreviewMiniPlayerSource } from "../previewMiniPlayerStore";
-import type { DesktopPreviewOverlay } from "../previewStateStore";
-import type { RightPanelSurface } from "../rightPanelStore";
+import {
+  filterTerminalContextsWithText,
+  type TerminalContextDraft,
+} from "../../../lib/terminalContext";
+import type { DraftThreadEnvMode } from "../../../composerDraftStore";
+import {
+  collapseExpandedComposerCursor,
+  type ComposerSubmissionIntent,
+} from "../../../composer-logic";
+import type { ReviewCommentContext } from "../../../reviewCommentContext";
+import type { TimelineEntry } from "../../../session-logic";
+import type { PreviewMiniPlayerSource } from "../../../previewMiniPlayerStore";
+import type { DesktopPreviewOverlay } from "../../../previewStateStore";
+import type { RightPanelSurface } from "../../../rightPanelStore";
 import {
   NO_PROVIDER_MODEL_SELECTION,
   resolveSelectableProviderInstanceEntry,
   type ProviderInstanceEntry,
-} from "../providerInstances";
+} from "../../../providerInstances";
 
 export const LAST_INVOKED_SCRIPT_BY_PROJECT_KEY = "t3code:last-invoked-script-by-project";
 export const MAX_HIDDEN_MOUNTED_TERMINAL_THREADS = 10;

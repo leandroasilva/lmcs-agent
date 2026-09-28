@@ -2,7 +2,7 @@ import { passkeys } from "@clerk/electron/passkeys";
 import { ClerkProvider } from "@clerk/electron/react";
 import type { ReactNode } from "react";
 
-import { ManagedRelayAuthProvider } from "../../cloud/managedAuth";
+import { ManagedRelayAuthProvider } from "../../../cloud/managedAuth";
 import { clerkAppearance } from "./clerkAppearance";
 
 /**

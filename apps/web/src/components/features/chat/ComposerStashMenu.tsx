@@ -2,9 +2,9 @@ import { BookmarkIcon, FileIcon, FileTextIcon } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { assistantCitationsToPlainText } from "@lmcstools/core/assistantCitations";
 
-import { formatRelativeTimeLabel } from "../../timestampFormat";
+import { formatRelativeTimeLabel } from "../../../timestampFormat";
 import { cn } from "~/lib/utils";
-import { type PromptStashEntry } from "../../promptStashStore";
+import { type PromptStashEntry } from "../../../promptStashStore";
 import { ComposerBanner } from "./ComposerBanner";
 
 const SNIPPET_MAX_CHARS = 90;

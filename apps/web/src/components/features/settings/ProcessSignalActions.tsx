@@ -1,7 +1,7 @@
 import type { ServerProcessSignal } from "@lmcstools/core";
 
-import { InlineButton } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { InlineButton } from "../../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 /** Process ownership and confirmation stay with the diagnostics view. */
 export function ProcessSignalActions({

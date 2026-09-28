@@ -43,9 +43,9 @@ import { MoreVertical, Plus as PlusIcon } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
 import { ScreenRotationIcon } from "~/browser/ScreenRotationIcon";
-import { AnimatedHeight } from "~/components/AnimatedHeight";
-import { resolveEnvironmentOptionLabel } from "~/components/BranchToolbar.logic";
-import { previewBridge } from "~/components/preview/previewBridge";
+import { AnimatedHeight } from "~/components/ui/AnimatedHeight";
+import { resolveEnvironmentOptionLabel } from "~/components/layout/BranchToolbar.logic";
+import { previewBridge } from "~/components/features/preview/previewBridge";
 import { cn, randomUUID } from "~/lib/utils";
 import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
 import { deviceEnvironment, useDeviceState } from "~/state/device";
@@ -57,10 +57,10 @@ import {
   platformSetupStatus,
   deviceHubDescription,
   agentDeviceDescription,
-} from "~/components/device/DeviceSetup";
-import { isElectron } from "../../env";
+} from "~/components/features/device/DeviceSetup";
+import { isElectron } from "../../../env";
 
-import { Badge } from "../ui/badge";
+import { Badge } from "../../ui/badge";
 import {
   Menu,
   MenuGroup,
@@ -69,10 +69,10 @@ import {
   MenuPopup,
   MenuSeparator,
   MenuTrigger,
-} from "../ui/menu";
+} from "../../ui/menu";
 import { readLocalApi } from "~/localApi";
 
-import { toastManager } from "../ui/toast";
+import { toastManager } from "../../ui/toast";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -81,10 +81,10 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { Button } from "../ui/button";
-import { DraftInput } from "../ui/draft-input";
-import { NumberField, NumberFieldGroup, NumberFieldInput } from "../ui/number-field";
+} from "../../ui/alert-dialog";
+import { Button } from "../../ui/button";
+import { DraftInput } from "../../ui/draft-input";
+import { NumberField, NumberFieldGroup, NumberFieldInput } from "../../ui/number-field";
 import {
   Select,
   SelectGroup,
@@ -93,9 +93,9 @@ import {
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../ui/select";
+import { Switch } from "../../ui/switch";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import {
   getClientSettings,
   persistClientSettingsUpdate,

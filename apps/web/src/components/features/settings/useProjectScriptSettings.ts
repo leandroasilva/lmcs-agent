@@ -17,21 +17,21 @@ import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useRef, useState } from "react";
 
-import { isElectron } from "../../env";
+import { isElectron } from "../../../env";
 import {
   decodeProjectScriptKeybindingRule,
   keybindingValueForCommand,
-} from "../../lib/projectScriptKeybindings";
+} from "../../../lib/projectScriptKeybindings";
 import {
   buildProjectScript,
   commandForProjectScript,
   nextProjectScriptId,
-} from "../../projectScripts";
-import { useProjects } from "../../state/entities";
-import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
-import type { NewProjectScriptInput } from "../projectScriptEditor";
-import { toastManager } from "../ui/toast";
+} from "../../../projectScripts";
+import { useProjects } from "../../../state/entities";
+import { serverEnvironment } from "../../../state/server";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import type { NewProjectScriptInput } from "./projectScriptEditor";
+import { toastManager } from "../../ui/toast";
 
 function reportScriptFailure(result: AtomCommandResult<unknown, unknown>) {
   if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {

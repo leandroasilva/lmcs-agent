@@ -1,9 +1,9 @@
 import { PlayIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
-import { cn } from "../../lib/utils";
-import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
-import { Button } from "../ui/button";
+import { cn } from "../../../lib/utils";
+import { prepareVideoFirstFrame } from "../../../lib/videoFirstFrame";
+import { Button } from "../../ui/button";
 import { OpenMediaLink } from "./OpenMediaLink";
 import { MediaActions, type MediaActionSource } from "./MediaActions";
 

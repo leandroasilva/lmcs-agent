@@ -5,18 +5,18 @@ import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useRef, useState } from "react";
 
-import { isElectron } from "../../env";
-import { cn } from "../../lib/utils";
-import { environmentPresentations } from "../../state/presentation";
-import { serverEnvironment } from "../../state/server";
-import { environmentSession } from "../../state/session";
-import { useAtomCommand } from "../../state/use-atom-command";
-import type { EnvironmentUsageStatus } from "../../state/usage";
+import { isElectron } from "../../../env";
+import { cn } from "../../../lib/utils";
+import { environmentPresentations } from "../../../state/presentation";
+import { serverEnvironment } from "../../../state/server";
+import { environmentSession } from "../../../state/session";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import type { EnvironmentUsageStatus } from "../../../state/usage";
 import {
   resolvePrimaryOperateAccess,
   resolveRemoteOperateAccess,
 } from "../settings/ProviderSettingsPanel.logic";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import {
   Dialog,
   DialogDescription,
@@ -25,12 +25,12 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Menu, MenuCheckboxItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+} from "../../ui/dialog";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
+import { Menu, MenuCheckboxItem, MenuPopup, MenuSeparator, MenuTrigger } from "../../ui/menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "../../ui/tooltip";
 import { USAGE_PRICE_FIELDS } from "./usagePriceForm";
 import {
   isEmptyUsagePriceDraft,

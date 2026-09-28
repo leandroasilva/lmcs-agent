@@ -8,7 +8,7 @@
  */
 import type { ReactNode } from "react";
 
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import {
   Combobox,
   ComboboxSearchInput,
@@ -16,8 +16,8 @@ import {
   ComboboxList,
   ComboboxPopup,
   ComboboxTrigger,
-} from "../ui/combobox";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../ui/combobox";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { PullRequestPeopleGhost } from "./PullRequestGhosts";
 
 export function PullRequestCandidatePicker<T>({

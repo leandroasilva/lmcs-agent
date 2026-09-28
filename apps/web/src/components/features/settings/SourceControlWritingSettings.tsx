@@ -20,18 +20,18 @@ import {
   applyProviderInstanceSettings,
   deriveProviderInstanceEntries,
   sortProviderInstanceEntries,
-} from "../../providerInstances";
+} from "../../../providerInstances";
 import {
   getCustomModelOptionsByInstance,
   resolveAppModelSelectionState,
-} from "../../modelSelection";
-import { EMPTY_SERVER_PROVIDERS } from "../../state/server";
+} from "../../../modelSelection";
+import { EMPTY_SERVER_PROVIDERS } from "../../../state/server";
 import { ProviderModelPicker } from "../chat/ProviderModelPicker";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Textarea } from "../ui/textarea";
-import { toastManager } from "../ui/toast";
-import { Button } from "../ui/button";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../../ui/select";
+import { Switch } from "../../ui/switch";
+import { Textarea } from "../../ui/textarea";
+import { toastManager } from "../../ui/toast";
+import { Button } from "../../ui/button";
 import {
   SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingResetButton,

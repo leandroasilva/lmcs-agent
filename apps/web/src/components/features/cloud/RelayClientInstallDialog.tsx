@@ -7,8 +7,8 @@ import {
   readRelayClientInstallDialogState,
   respondToRelayClientInstallConfirmation,
   subscribeRelayClientInstallDialog,
-} from "../../cloud/relayClientInstallDialog";
-import { Button } from "../ui/button";
+} from "../../../cloud/relayClientInstallDialog";
+import { Button } from "../../ui/button";
 import {
   Dialog,
   DialogDescription,
@@ -17,7 +17,7 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "../ui/dialog";
+} from "../../ui/dialog";
 const installSteps: ReadonlyArray<{
   readonly stage: RelayClientInstallProgressStage;
   readonly label: string;

@@ -5,7 +5,7 @@ import {
 } from "@lmcstools/core/searchRanking";
 
 import type { ComposerCommandItem } from "./ComposerCommandMenu";
-import { scoreProviderSkill } from "../../providerSkillSearch";
+import { scoreProviderSkill } from "../../../providerSkillSearch";
 
 type SlashSearchItem = Extract<
   ComposerCommandItem,

@@ -6,7 +6,7 @@ import {
 } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
-import { deriveProviderInstanceEntries } from "../../providerInstances";
+import { deriveProviderInstanceEntries } from "../../../providerInstances";
 import {
   adjacentModelPickerProvider,
   resolveModelPickerSelectedModel,

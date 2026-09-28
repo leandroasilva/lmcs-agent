@@ -80,73 +80,70 @@ import type {
 } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import { toHtml } from "hast-util-to-html";
-import { createIncrementalMarkdownPlugin } from "../markdown-incremental";
+import { createIncrementalMarkdownPlugin } from "../../../markdown-incremental";
 import { defaultUrlTransform } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkBreaks from "remark-breaks";
 import { parseAssistantCitationHref } from "@lmcstools/core/assistantCitations";
 import { parseComposerContextHref } from "@lmcstools/core/composerContextReferences";
-import { AssistantCitationChip } from "./chat/AssistantCitationChip";
+import { AssistantCitationChip } from "./AssistantCitationChip";
 import remarkGfm from "remark-gfm";
-import { remarkGithubAlerts } from "../markdown-github-alerts";
+import { remarkGithubAlerts } from "../../../markdown-github-alerts";
 import {
   artifactTemplateFromHastProperties,
   CODEX_ARTIFACT_TEMPLATE_HAST_PROPERTIES,
   remarkCodexDirectives,
   renderCodexFileCitationsAsMarkdown,
 } from "@lmcstools/client/codex-markdown-directives";
-import { renderSkillInlineMarkdownChildren } from "./chat/SkillInlineText";
-import {
-  resolveMarkdownMediaPreview,
-  type ExpandedImagePreview,
-} from "./chat/ExpandedImagePreview";
-import { ExpandedImageDialog } from "./chat/ExpandedImageDialog";
-import { markdownImageGallery, markdownImageItems } from "./chat/markdownImageGallery";
-import { MediaVideoPlayer } from "./media/MediaVideoPlayer";
-import { MediaActions, type MediaActionSource } from "./media/MediaActions";
-import { resolveProtocolRelativeMediaUrl } from "./media/mediaContent";
-import { FileTagChipContent } from "./chat/FileTagChip";
-import { PierreEntryIcon } from "./chat/PierreEntryIcon";
+import { renderSkillInlineMarkdownChildren } from "./SkillInlineText";
+import { resolveMarkdownMediaPreview, type ExpandedImagePreview } from "./ExpandedImagePreview";
+import { ExpandedImageDialog } from "./ExpandedImageDialog";
+import { markdownImageGallery, markdownImageItems } from "./markdownImageGallery";
+import { MediaVideoPlayer } from "../media/MediaVideoPlayer";
+import { MediaActions, type MediaActionSource } from "../media/MediaActions";
+import { resolveProtocolRelativeMediaUrl } from "../media/mediaContent";
+import { FileTagChipContent } from "./FileTagChip";
+import { PierreEntryIcon } from "./PierreEntryIcon";
 import {
   revealInFileExplorerLabelForKind,
   revealInFileExplorerLabelForOs,
-} from "./preview/fileExplorerLabel";
+} from "../preview/fileExplorerLabel";
+import { resolveExternalWebLinkHost, showExternalLinkContextMenu } from "./externalLinkContextMenu";
 import {
-  resolveExternalWebLinkHost,
-  showExternalLinkContextMenu,
-} from "./chat/externalLinkContextMenu";
-import { hasSpecificPierreIconForFileName, syntheticFileNameForLanguageId } from "../pierre-icons";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { Button } from "./ui/button";
+  hasSpecificPierreIconForFileName,
+  syntheticFileNameForLanguageId,
+} from "../../../pierre-icons";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { Button } from "../../ui/button";
 import { ContextChip } from "./ContextChip";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "./ui/collapsible";
-import { ScrollArea } from "./ui/scroll-area";
-import { Menu, MenuItem, MenuPopup, MenuTrigger } from "./ui/menu";
-import { stackedThreadToast, toastManager } from "./ui/toast";
-import { recordVisitForThread } from "../browserHistoryStore";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../../ui/menu";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
+import { recordVisitForThread } from "../../../browserHistoryStore";
 import {
   PreferredEditorEnvironmentRequiredError,
   useOpenInPreferredEditor,
   usePreferredEditor,
-} from "../editorPreferences";
-import { openInEditorMenuLabel } from "../editorLabels";
-import { resolveDiffThemeName, type DiffThemeName } from "../lib/diffRendering";
-import { fnv1a32 } from "../lib/diffRendering";
-import { LRUCache } from "../lib/lruCache";
-import { getSyntaxHighlighterPromise } from "../lib/syntaxHighlighting";
-import { GitHubIcon } from "./Icons";
-import { createIncrementalHighlightedDocument } from "../lib/incrementalHighlighting";
-import { HighlightedCodeLines } from "./chat/HighlightedCodeLines";
-import { RenderErrorBoundary } from "./RenderErrorBoundary";
-import { useTheme } from "../hooks/useTheme";
-import { getClientSettings, useClientSettings } from "../hooks/useSettings";
+} from "../../../editorPreferences";
+import { openInEditorMenuLabel } from "../../../editorLabels";
+import { resolveDiffThemeName, type DiffThemeName } from "../../../lib/diffRendering";
+import { fnv1a32 } from "../../../lib/diffRendering";
+import { LRUCache } from "../../../lib/lruCache";
+import { getSyntaxHighlighterPromise } from "../../../lib/syntaxHighlighting";
+import { GitHubIcon } from "../../ui/Icons";
+import { createIncrementalHighlightedDocument } from "../../../lib/incrementalHighlighting";
+import { HighlightedCodeLines } from "./HighlightedCodeLines";
+import { RenderErrorBoundary } from "../../layout/RenderErrorBoundary";
+import { useTheme } from "../../../hooks/useTheme";
+import { getClientSettings, useClientSettings } from "../../../hooks/useSettings";
 import {
   chatMarkdownClipboardPayload,
   serializeTableElementToCsv,
   serializeTableElementToMarkdown,
-} from "../markdown-clipboard";
-import { remarkNormalizeListItemIndentation } from "../markdown-list-indentation";
+} from "../../../markdown-clipboard";
+import { remarkNormalizeListItemIndentation } from "../../../markdown-list-indentation";
 import {
   extractMarkdownLinkHrefs,
   isWindowsDrivePathHref,
@@ -157,46 +154,46 @@ import {
   shouldOpenMarkdownFileLinkInBrowserByDefault,
   shouldOpenMarkdownFileLinkInEditor,
   type MarkdownFileLinkMeta,
-} from "../markdown-links";
-import { readLocalApi } from "../localApi";
-import { useAssetUrlRefresh, useAssetUrlState } from "../assets/assetUrls";
-import { cn } from "../lib/utils";
-import { useRemoteOpenResolution, type RemoteOpenMode } from "../remoteOpen";
-import { useRightPanelStore } from "../rightPanelStore";
-import { readThreadShell, useProjects } from "../state/entities";
-import { serverEnvironment } from "../state/server";
-import { shellEnvironment } from "../state/shell";
-import { assetEnvironment } from "../state/assets";
-import { usePreparedConnection } from "../state/session";
-import { previewEnvironment } from "../state/preview";
-import { useAtomCommand } from "../state/use-atom-command";
-import { useAtomQueryRunner } from "../state/use-atom-query-runner";
-import { projectEnvironment } from "../state/projects";
+} from "../../../markdown-links";
+import { readLocalApi } from "../../../localApi";
+import { useAssetUrlRefresh, useAssetUrlState } from "../../../assets/assetUrls";
+import { cn } from "../../../lib/utils";
+import { useRemoteOpenResolution, type RemoteOpenMode } from "../../../remoteOpen";
+import { useRightPanelStore } from "../../../rightPanelStore";
+import { readThreadShell, useProjects } from "../../../state/entities";
+import { serverEnvironment } from "../../../state/server";
+import { shellEnvironment } from "../../../state/shell";
+import { assetEnvironment } from "../../../state/assets";
+import { usePreparedConnection } from "../../../state/session";
+import { previewEnvironment } from "../../../state/preview";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { useAtomQueryRunner } from "../../../state/use-atom-query-runner";
+import { projectEnvironment } from "../../../state/projects";
 import {
   claimWorkspaceBasenameLookup,
   needsWorkspaceBasenameLookup,
   pickWorkspaceBasenameMatch,
   WORKSPACE_BASENAME_LOOKUP_LIMIT,
-} from "../workspaceBasenameLookup";
+} from "../../../workspaceBasenameLookup";
 import {
   parseChangeRequestUrl,
   pullRequestCandidateUrlFromReferenceAutolink,
   resolvePullRequestPreviewTarget,
   useOpenChangeRequestLink,
 } from "~/lib/openPullRequestLink";
-import { useOpenLink } from "../browser/useOpenLink";
-import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { isPreviewSupportedInRuntime } from "../previewStateStore";
-import { isAbsolutePath, resolvePathLinkTarget } from "../terminal-links";
+import { useOpenLink } from "../../../browser/useOpenLink";
+import { writeTextToClipboard } from "../../../hooks/useCopyToClipboard";
+import { isPreviewSupportedInRuntime } from "../../../previewStateStore";
+import { isAbsolutePath, resolvePathLinkTarget } from "../../../terminal-links";
 import {
   isBrowserPreviewFile,
   openFileInPreview,
   openUrlInPreview,
   BrowserPreviewUnavailableError,
   BrowserSettingsReadError,
-} from "../browser/openFileInPreview";
-import { resolveLinkTarget } from "../browser/browserLinkTarget";
-import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
+} from "../../../browser/openFileInPreview";
+import { resolveLinkTarget } from "../../../browser/browserLinkTarget";
+import { PullRequestLinkPreview } from "../pullRequest/PullRequestLinkPreview";
 
 interface ChatMarkdownProps {
   text: string;

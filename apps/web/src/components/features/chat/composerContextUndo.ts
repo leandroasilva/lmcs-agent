@@ -1,7 +1,10 @@
 import type { PreviewAnnotationPayload } from "@lmcstools/core";
 
-import type { ComposerFileAttachment, ComposerImageAttachment } from "../../composerDraftStore";
-import { fileContextReference, previewAnnotationContextId } from "../../lib/composerContextRecords";
+import type { ComposerFileAttachment, ComposerImageAttachment } from "../../../composerDraftStore";
+import {
+  fileContextReference,
+  previewAnnotationContextId,
+} from "../../../lib/composerContextRecords";
 
 interface RetainedPreviewAnnotation {
   annotation: PreviewAnnotationPayload;

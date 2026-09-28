@@ -9,13 +9,13 @@ import {
 } from "@lmcstools/core";
 import { type CustomModelDefinition, normalizeCustomModelSlug } from "@lmcstools/core/model";
 
-import { cn } from "../../lib/utils";
-import { sortModelsForProviderInstance } from "../../modelOrdering";
-import { MAX_CUSTOM_MODEL_LENGTH } from "../../modelSelection";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { cn } from "../../../lib/utils";
+import { sortModelsForProviderInstance } from "../../../modelOrdering";
+import { MAX_CUSTOM_MODEL_LENGTH } from "../../../modelSelection";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Switch } from "../../ui/switch";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { CustomModelEditor } from "./CustomModelEditor";
 
 /**

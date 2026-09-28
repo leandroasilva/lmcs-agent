@@ -5,19 +5,19 @@ import {
   type ResolvedKeybindingsConfig,
 } from "@lmcstools/core";
 import { memo, useCallback, useEffect, useMemo } from "react";
-import { isOpenFavoriteEditorShortcut, shortcutLabelForCommand } from "../../keybindings";
-import { usePreferredEditor } from "../../editorPreferences";
-import { editorLabelForPlatform } from "../../editorLabels";
+import { isOpenFavoriteEditorShortcut, shortcutLabelForCommand } from "../../../keybindings";
+import { usePreferredEditor } from "../../../editorPreferences";
+import { editorLabelForPlatform } from "../../../editorLabels";
 import {
   openRemoteEditorUrl,
   useRemoteCapableEditors,
   useRemoteOpenHint,
   useRemoteOpenState,
-} from "../../remoteOpen";
-import { useEnvironment } from "../../state/environments";
+} from "../../../remoteOpen";
+import { useEnvironment } from "../../../state/environments";
 import { ChevronDownIcon, FolderClosedIcon, SquareArrowOutUpRightIcon } from "lucide-react";
-import { Button } from "../ui/button";
-import { Group, GroupSeparator } from "../ui/group";
+import { Button } from "../../ui/button";
+import { Group, GroupSeparator } from "../../ui/group";
 import {
   Menu,
   MenuItem,
@@ -28,7 +28,7 @@ import {
   MenuSubTrigger,
   MenuSubPopup,
   MenuTrigger,
-} from "../ui/menu";
+} from "../../ui/menu";
 import {
   AntigravityIcon,
   CursorIcon,
@@ -41,7 +41,7 @@ import {
   VisualStudioCodeInsiders,
   VSCodium,
   Zed,
-} from "../Icons";
+} from "../../ui/Icons";
 import {
   AquaIcon,
   CLionIcon,
@@ -55,7 +55,7 @@ import {
   RubyMineIcon,
   RustRoverIcon,
   WebStormIcon,
-} from "../JetBrainsIcons";
+} from "../../ui/JetBrainsIcons";
 import { cn, isMacPlatform, isWindowsPlatform } from "~/lib/utils";
 import { shellEnvironment } from "~/state/shell";
 import { useAtomCommand } from "~/state/use-atom-command";

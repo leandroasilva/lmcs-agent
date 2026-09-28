@@ -22,7 +22,7 @@ import {
   mergePullRequestLists,
   type EnvironmentPullRequestStat,
   type MergedPullRequestList,
-} from "../components/pullRequest/pullRequestList.logic";
+} from "../components/features/pullRequest/pullRequestList.logic";
 import { formatEnvironmentQueryError } from "./query";
 
 export const pullRequestEnvironment = createPullRequestEnvironmentAtoms(connectionAtomRuntime);

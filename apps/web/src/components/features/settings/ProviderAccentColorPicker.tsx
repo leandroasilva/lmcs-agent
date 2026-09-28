@@ -3,13 +3,13 @@
 import { PipetteIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { hexToHsv, hsvToHex, type HsvColor } from "../../lib/color";
-import { ColorHueSlider, ColorSaturationValuePlane } from "../ui/color-picker";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
-import { Popover, PopoverClose, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { normalizeProviderAccentColor } from "../../providerInstances";
-import { cn } from "../../lib/utils";
+import { hexToHsv, hsvToHex, type HsvColor } from "../../../lib/color";
+import { ColorHueSlider, ColorSaturationValuePlane } from "../../ui/color-picker";
+import { Input } from "../../ui/input";
+import { Button } from "../../ui/button";
+import { Popover, PopoverClose, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { normalizeProviderAccentColor } from "../../../providerInstances";
+import { cn } from "../../../lib/utils";
 
 const FALLBACK_ACCENT_COLOR = "#2563eb";
 

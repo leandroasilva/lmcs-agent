@@ -1,6 +1,6 @@
 import { Spinner } from "~/components/ui/spinner";
 
-import { threadSyncLabel, type ThreadSyncPhase } from "../../threadSync";
+import { threadSyncLabel, type ThreadSyncPhase } from "../../../threadSync";
 import { ComposerBanner } from "./ComposerBanner";
 
 export function ComposerActivityRow({ phase }: { readonly phase: ThreadSyncPhase }) {

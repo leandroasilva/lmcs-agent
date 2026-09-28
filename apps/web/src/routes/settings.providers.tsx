@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EnvironmentId, ProviderInstanceId } from "@lmcstools/core";
 
-import { ProviderSettingsPanel } from "../components/settings/ProviderSettingsPanel";
-import { useSettingsScope } from "../components/settings/SettingsScopeContext";
+import { ProviderSettingsPanel } from "../components/features/settings/ProviderSettingsPanel";
+import { useSettingsScope } from "../components/features/settings/SettingsScopeContext";
 
 /**
  * Providers are machine state, so the page shows one environment at a time:

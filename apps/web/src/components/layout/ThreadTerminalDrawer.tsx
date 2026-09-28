@@ -56,8 +56,8 @@ import {
   type GhosttyTerminalSurfaceOptions,
 } from "~/terminal/ghostty/surface";
 import { type GhosttyColor, type GhosttyTheme } from "~/terminal/ghostty/core";
-import { useOpenInPreferredEditor } from "../editorPreferences";
-import { isTerminalUrl, resolvePathLinkTarget } from "../terminal-links";
+import { useOpenInPreferredEditor } from "../../editorPreferences";
+import { isTerminalUrl, resolvePathLinkTarget } from "../../terminal-links";
 import {
   isDiffToggleShortcut,
   isTerminalClearShortcut,
@@ -67,28 +67,28 @@ import {
   isTerminalToggleShortcut,
   terminalDeleteShortcutData,
   terminalNavigationShortcutData,
-} from "../keybindings";
+} from "../../keybindings";
 import {
   DEFAULT_THREAD_TERMINAL_HEIGHT,
   MAX_TERMINALS_PER_GROUP,
   type ThreadTerminalGroup,
-} from "../types";
+} from "../../types";
 import { readLocalApi } from "~/localApi";
 import { confirmTerminalClose } from "~/lib/terminalCloseConfirm";
-import { useClientSettings } from "../hooks/useSettings";
-import { useLocalStorage } from "../hooks/useLocalStorage";
-import { useAttachedTerminalSession } from "../state/terminalSessions";
-import { serverEnvironment } from "../state/server";
-import { previewEnvironment } from "../state/preview";
-import { terminalEnvironment } from "../state/terminal";
-import { openTerminalLinkInPreview } from "./preview/openTerminalLinkInPreview";
-import { useAtomCommand } from "../state/use-atom-command";
-import { preventTerminalCloseShortcut } from "../lib/terminalCloseShortcut";
+import { useClientSettings } from "../../hooks/useSettings";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { useAttachedTerminalSession } from "../../state/terminalSessions";
+import { serverEnvironment } from "../../state/server";
+import { previewEnvironment } from "../../state/preview";
+import { terminalEnvironment } from "../../state/terminal";
+import { openTerminalLinkInPreview } from "../features/preview/openTerminalLinkInPreview";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { preventTerminalCloseShortcut } from "../../lib/terminalCloseShortcut";
 import {
   resolveTerminalFontPreference,
   resolveTerminalFontSizePreference,
   TYPOGRAPHY_ADVANCED_STORAGE_KEY,
-} from "../appearanceFonts";
+} from "../../appearanceFonts";
 
 const MIN_DRAWER_HEIGHT = 180;
 const MAX_DRAWER_HEIGHT_RATIO = 0.75;

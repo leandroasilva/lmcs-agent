@@ -2,8 +2,8 @@ import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
 import { type DesktopPendingSnapShot, EnvironmentId, ProjectId, ThreadId } from "@lmcstools/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { DraftId, useComposerDraftStore } from "../../composerDraftStore";
-import type { DesktopSnapShotBridge } from "../../lib/desktopSnapShot";
+import { DraftId, useComposerDraftStore } from "../../../composerDraftStore";
+import type { DesktopSnapShotBridge } from "../../../lib/desktopSnapShot";
 import {
   beginSnapShotAnimationWhenReady,
   deliverSnapShot,
@@ -18,7 +18,7 @@ import {
   getPendingSnapShotAnimations,
   setSnapShotAnimationDestination,
   scheduleSnapShotAnimationDestination,
-} from "../../lib/snapShotAnimation";
+} from "../../../lib/snapShotAnimation";
 
 const storage = vi.hoisted(() => {
   const values = new Map<string, string>();

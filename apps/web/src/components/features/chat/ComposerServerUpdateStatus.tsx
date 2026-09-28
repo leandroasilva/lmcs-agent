@@ -3,8 +3,8 @@ import type { ServerUpdateState } from "@lmcstools/client/state/server";
 import { CircleAlertIcon, DownloadIcon } from "lucide-react";
 import { useId, useState } from "react";
 
-import { serverUpdateStageLabel } from "../ServerUpdateAction";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { serverUpdateStageLabel } from "../settings/ServerUpdateAction";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { ComposerBanner } from "./ComposerBanner";
 
 export function ComposerServerUpdateIcon({

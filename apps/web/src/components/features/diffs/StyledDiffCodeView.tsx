@@ -10,7 +10,7 @@ import {
 import type { Ref } from "react";
 
 import { DIFF_SURFACE_THEME_UNSAFE_CSS } from "~/lib/diffRendering";
-import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
+import { DiffWorkerPoolProvider } from "./DiffWorkerPoolProvider";
 
 const DIFF_VIEW_UNSAFE_CSS = `${DIFF_SURFACE_THEME_UNSAFE_CSS}
 :is(

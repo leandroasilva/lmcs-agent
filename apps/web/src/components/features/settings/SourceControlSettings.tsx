@@ -21,12 +21,12 @@ import {
 import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
-import { cn } from "../../lib/utils";
-import { useEnvironmentQuery } from "../../state/query";
-import { sourceControlEnvironment } from "../../state/sourceControl";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Collapsible, CollapsibleContent } from "../ui/collapsible";
+import { cn } from "../../../lib/utils";
+import { useEnvironmentQuery } from "../../../state/query";
+import { sourceControlEnvironment } from "../../../state/sourceControl";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
+import { Collapsible, CollapsibleContent } from "../../ui/collapsible";
 import {
   Empty,
   EmptyContent,
@@ -34,17 +34,17 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "../ui/empty";
-import { Skeleton } from "../ui/skeleton";
+} from "../../ui/empty";
+import { Skeleton } from "../../ui/skeleton";
 import {
   NumberField,
   NumberFieldDecrement,
   NumberFieldGroup,
   NumberFieldIncrement,
   NumberFieldInput,
-} from "../ui/number-field";
-import { Switch } from "../ui/switch";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../ui/number-field";
+import { Switch } from "../../ui/switch";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 import {
   AzureDevOpsIcon,
@@ -55,7 +55,7 @@ import {
   ForgejoIcon,
   JujutsuIcon,
   type Icon,
-} from "../Icons";
+} from "../../ui/Icons";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
 import { SourceControlWritingSettingsSection } from "./SourceControlWritingSettings";
 import {
@@ -67,7 +67,7 @@ import {
   useSettingsSearchTargetId,
 } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 
 const EMPTY_DISCOVERY_RESULT: SourceControlDiscoveryResult = {
   versionControlSystems: [],

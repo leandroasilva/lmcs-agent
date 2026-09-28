@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 
 import { cn, randomUUID } from "~/lib/utils";
 
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import {
   Dialog,
   DialogClose,
@@ -17,8 +17,8 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "../ui/dialog";
-import { Spinner } from "../ui/spinner";
+} from "../../ui/dialog";
+import { Spinner } from "../../ui/spinner";
 import {
   initialWizardStep,
   initialTargetSelection,

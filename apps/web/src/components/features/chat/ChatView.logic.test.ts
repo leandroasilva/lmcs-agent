@@ -14,11 +14,14 @@ import {
 } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Atom, AsyncResult } from "effect/unstable/reactivity";
-import { appAtomRegistry } from "../rpc/atomRegistry";
-import { environmentThreadDetails } from "../state/threads";
+import { appAtomRegistry } from "../../../rpc/atomRegistry";
+import { environmentThreadDetails } from "../../../state/threads";
 
-import type { Thread, ThreadShell, TurnDiffSummary } from "../types";
-import { deriveProviderInstanceEntries, NO_PROVIDER_MODEL_SELECTION } from "../providerInstances";
+import type { Thread, ThreadShell, TurnDiffSummary } from "../../../types";
+import {
+  deriveProviderInstanceEntries,
+  NO_PROVIDER_MODEL_SELECTION,
+} from "../../../providerInstances";
 import type { CodexArtifactTemplate } from "@lmcstools/client/codex-artifact-templates";
 import { scopeThreadRef } from "@lmcstools/client/environment";
 import {
@@ -26,11 +29,11 @@ import {
   pullRequestSurface,
   selectActiveRightPanelSurface,
   useRightPanelStore,
-} from "../rightPanelStore";
+} from "../../../rightPanelStore";
 import {
   selectThreadPreviewMiniPlayer,
   usePreviewMiniPlayerStore,
-} from "../previewMiniPlayerStore";
+} from "../../../previewMiniPlayerStore";
 import {
   MAX_HIDDEN_MOUNTED_TERMINAL_THREADS,
   agentControlledBrowserCloseConfirmation,

@@ -9,14 +9,14 @@ import {
 import { CheckIcon, LayersIcon } from "lucide-react";
 import * as Equal from "effect/Equal";
 
-import { cn } from "../../lib/utils";
-import type { EnvironmentPresentation } from "../../state/environments";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { resolveEnvModeLabel, WORKTREE_SUBMODULES_LABELS } from "../BranchToolbar.logic";
+import { cn } from "../../../lib/utils";
+import type { EnvironmentPresentation } from "../../../state/environments";
+import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { resolveEnvModeLabel, WORKTREE_SUBMODULES_LABELS } from "../../layout/BranchToolbar.logic";
 import { PULL_REQUEST_MERGE_METHOD_LABELS } from "../pullRequest/pullRequestDetail.logic";
-import { Button, InlineButton } from "../ui/button";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Button, InlineButton } from "../../ui/button";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import type { ProjectOverrideEntry, ScopedSettingsTarget } from "./scopedSettings";
 import { isProjectScopedSettingKey } from "./scopedSettings";
 

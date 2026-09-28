@@ -6,11 +6,11 @@ import {
   type DesktopSnapShotState,
 } from "@lmcstools/core";
 import { useState, type ReactNode } from "react";
-import { MacAccessibilityIcon, MacScreenRecordingIcon } from "../Icons";
+import { MacAccessibilityIcon, MacScreenRecordingIcon } from "../../ui/Icons";
 import { CaptureShortcutConfig } from "./CaptureShortcutConfig";
-import { Button } from "../ui/button";
-import { Dialog, DialogDescription } from "../ui/dialog";
-import { WizardSteps, WizardPopup, WizardHeader, WizardPanel, WizardFooter } from "../ui/wizard";
+import { Button } from "../../ui/button";
+import { Dialog, DialogDescription } from "../../ui/dialog";
+import { WizardSteps, WizardPopup, WizardHeader, WizardPanel, WizardFooter } from "../../ui/wizard";
 import {
   captureSetupAccessReady,
   captureSetupBackend,

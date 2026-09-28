@@ -5,7 +5,7 @@ import { executeAtomQuery } from "@lmcstools/client/state/runtime";
 import {
   getProjectFileQueryAtom,
   resolveProjectFileQueryData,
-} from "~/components/files/projectFilesQueryState";
+} from "~/components/features/files/projectFilesQueryState";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 
 /**

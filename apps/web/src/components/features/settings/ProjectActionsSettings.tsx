@@ -6,8 +6,8 @@ import {
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@lmcstools/core/keybindings";
 import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { useT3ProjectFileState } from "../../hooks/useT3ProjectFileScripts";
-import { useEnvironments } from "../../state/environments";
+import { useT3ProjectFileState } from "../../../hooks/useT3ProjectFileScripts";
+import { useEnvironments } from "../../../state/environments";
 import {
   EMPTY_PROJECT_SCRIPT_INPUT,
   editorRequestForScript,
@@ -15,8 +15,8 @@ import {
   ScriptIcon,
   type NewProjectScriptInput,
   type ProjectScriptEditorRequest,
-} from "../projectScriptEditor";
-import { Button } from "../ui/button";
+} from "./projectScriptEditor";
+import { Button } from "../../ui/button";
 import {
   Menu,
   MenuGroup,
@@ -25,7 +25,7 @@ import {
   MenuPopup,
   MenuSeparator,
   MenuTrigger,
-} from "../ui/menu";
+} from "../../ui/menu";
 import { ProjectActionsList } from "./ProjectActionsList";
 import { useProjectScriptSettings } from "./useProjectScriptSettings";
 import { SettingsRow, SettingsSection } from "./settingsLayout";

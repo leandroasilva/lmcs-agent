@@ -1,13 +1,13 @@
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useRef } from "react";
-import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
+import { useCopyToClipboard } from "../../../hooks/useCopyToClipboard";
 import {
   ANCHORED_COPY_TOAST_TIMEOUT_MS,
   showAnchoredCopyErrorToast,
   showAnchoredCopySuccessToast,
-} from "./ui/anchoredCopyToast";
-import { Button } from "./ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+} from "../../ui/anchoredCopyToast";
+import { Button } from "../../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 export function DiffFilePathCopyButton({ filePath }: { filePath: string }) {
   const ref = useRef<HTMLButtonElement>(null);

@@ -1,7 +1,7 @@
 import type { ServerSettings } from "@lmcstools/core";
 import type { ComponentProps } from "react";
 
-import { Switch } from "../ui/switch";
+import { Switch } from "../../ui/switch";
 import { useScopedSettingsMixed } from "./useScopedSettings";
 
 /**

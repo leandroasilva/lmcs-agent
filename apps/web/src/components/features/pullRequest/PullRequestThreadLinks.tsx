@@ -1,4 +1,4 @@
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "../../ui/tooltip";
 import { scopeThreadRef } from "@lmcstools/client/environment";
 import type { EnvironmentId, PullRequestRef, ScopedThreadRef, ThreadId } from "@lmcstools/core";
 import { CheckIcon, MessageSquareIcon } from "lucide-react";
@@ -13,11 +13,11 @@ import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { openCommandPalette } from "~/commandPaletteBus";
-import { Button } from "../ui/button";
-import { Command, CommandInput, CommandItem, CommandList } from "../ui/command";
-import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
-import { MenuItem } from "../ui/menu";
-import { toastManager } from "../ui/toast";
+import { Button } from "../../ui/button";
+import { Command, CommandInput, CommandItem, CommandList } from "../../ui/command";
+import { Dialog, DialogPopup, DialogTitle } from "../../ui/dialog";
+import { MenuItem } from "../../ui/menu";
+import { toastManager } from "../../ui/toast";
 import { PullRequestGlyph } from "./pullRequestIcons";
 
 interface PullRequestThreadLinksProps {

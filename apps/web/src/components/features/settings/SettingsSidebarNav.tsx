@@ -26,8 +26,8 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 
-import { Button } from "../ui/button";
-import { Kbd } from "../ui/kbd";
+import { Button } from "../../ui/button";
+import { Kbd } from "../../ui/kbd";
 import {
   SidebarContent,
   SidebarFooter,
@@ -37,8 +37,8 @@ import {
   SidebarMenuItem,
   useSidebar,
   SidebarInput,
-} from "../ui/sidebar";
-import { SidebarUtilityMenu } from "../sidebar/SidebarChrome";
+} from "../../ui/sidebar";
+import { SidebarUtilityMenu } from "../../layout/sidebar/SidebarChrome";
 import { scrollToSettingsTarget } from "./settingsLayout";
 import {
   searchSettings,

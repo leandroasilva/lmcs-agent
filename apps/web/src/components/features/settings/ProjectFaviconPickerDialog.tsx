@@ -6,17 +6,17 @@ import { useMemo, useState } from "react";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 import { useTheme } from "~/hooks/useTheme";
 import { getLocalFileManagerName, isWindowsPlatform } from "~/lib/utils";
-import { CommandPaletteContent } from "../CommandPaletteContent";
-import type { CommandPaletteActionItem } from "../CommandPalette.logic";
-import { CommandPaletteResults } from "../CommandPaletteResults";
+import { CommandPaletteContent } from "../../layout/CommandPaletteContent";
+import type { CommandPaletteActionItem } from "../../layout/CommandPalette.logic";
+import { CommandPaletteResults } from "../../layout/CommandPaletteResults";
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
 import {
   getProjectFilePickerMatches,
   PROJECT_FILE_PICKER_RESULT_LIMIT,
 } from "../files/ProjectFilePicker.logic";
 import { useProjectFilePickerQuery } from "../files/projectFilesQueryState";
-import { CommandDialog, CommandDialogPopup, CommandFooterAction } from "../ui/command";
-import { toastManager } from "../ui/toast";
+import { CommandDialog, CommandDialogPopup, CommandFooterAction } from "../../ui/command";
+import { toastManager } from "../../ui/toast";
 
 function emptyMessage(query: string, error: string | null, isPending: boolean): string {
   if (error) return error;

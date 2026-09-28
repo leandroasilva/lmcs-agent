@@ -23,35 +23,38 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import GitActionsControl from "../GitActionsControl";
-import { isTrailingDoubleClick } from "../Sidebar.logic";
+import GitActionsControl from "../../layout/GitActionsControl";
+import { isTrailingDoubleClick } from "../../layout/Sidebar.logic";
 import { type DraftId } from "~/composerDraftStore";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { toastManager } from "../../ui/toast";
 import ProjectScriptsControl, {
   type NewProjectScriptInput,
   type ProjectScriptActionResult,
-} from "../ProjectScriptsControl";
+} from "../settings/ProjectScriptsControl";
 import { OpenInPicker } from "./OpenInPicker";
-import { useRemoteOpenState, type RemoteOpenMode } from "../../remoteOpen";
-import { usePrimaryEnvironmentId } from "../../state/environments";
+import { useRemoteOpenState, type RemoteOpenMode } from "../../../remoteOpen";
+import { usePrimaryEnvironmentId } from "../../../state/environments";
 import { useT3ProjectFileScripts } from "~/hooks/useT3ProjectFileScripts";
 import { useThreadActionMenu } from "~/hooks/useThreadActionMenu";
 import { readLocalApi } from "~/localApi";
-import { threadEnvironment } from "../../state/threads";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { observeResponsiveBreakpointFade, usePanelAnimationSettings } from "../../panelAnimations";
-import { ProjectFavicon } from "../ProjectFavicon";
+import { threadEnvironment } from "../../../state/threads";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import {
+  observeResponsiveBreakpointFade,
+  usePanelAnimationSettings,
+} from "../../../panelAnimations";
+import { ProjectFavicon } from "../files/ProjectFavicon";
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
   WorkspaceBreadcrumbSeparator,
   WorkspaceBreadcrumbText,
-} from "../WorkspaceBreadcrumb";
+} from "../../layout/WorkspaceBreadcrumb";
 import { cn } from "~/lib/utils";
 import { useIsMobile } from "~/hooks/useMediaQuery";
-import { Button } from "../ui/button";
-import { Menu, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
+import { Button } from "../../ui/button";
+import { Menu, MenuPopup, MenuSeparator, MenuTrigger } from "../../ui/menu";
 
 interface ChatHeaderProps {
   activeThreadEnvironmentId: EnvironmentId;

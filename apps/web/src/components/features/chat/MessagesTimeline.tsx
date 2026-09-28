@@ -53,7 +53,7 @@ import { resolveChatListAnchoredEndSpace } from "@lmcstools/core/chatList";
 import { toolActivityFaviconUrl } from "@lmcstools/core/favicon";
 import { formatDuration } from "@lmcstools/core/orchestrationTiming";
 import { getProjectFaviconCacheKey } from "@lmcstools/core/projectFavicon";
-import { observeVisibleAnimation } from "../../lib/visibleAnimation";
+import { observeVisibleAnimation } from "../../../lib/visibleAnimation";
 import {
   createContext,
   memo,
@@ -74,7 +74,7 @@ import {
   type MaintainScrollAtEndOptions,
 } from "@legendapp/list/react";
 import { FileDiff } from "@pierre/diffs/react";
-import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
+import { DiffWorkerPoolProvider } from "../diffs/DiffWorkerPoolProvider";
 import {
   createMessageAttachmentPreviewProjector,
   deriveTimelineEntries,
@@ -82,7 +82,7 @@ import {
   workEntryDisplayIndicatesToolFailure,
   workEntrySignalsSevereFailure,
   workLogEntryIsToolLike,
-} from "../../session-logic";
+} from "../../../session-logic";
 import {
   type ChatMessage,
   type ChatFileAttachment,
@@ -91,18 +91,18 @@ import {
   isImageAttachment,
   isVideoAttachment,
   type TurnDiffSummary,
-} from "../../types";
+} from "../../../types";
 import {
   getRenderablePatch,
   resolveDiffThemeName,
   resolveFileDiffPath,
-} from "../../lib/diffRendering";
-import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
-import ChatMarkdown, { ChatMarkdownAssetImage } from "../ChatMarkdown";
+} from "../../../lib/diffRendering";
+import { PREFERRED_HIGHLIGHTER } from "../../../lib/syntaxHighlighting";
+import ChatMarkdown, { ChatMarkdownAssetImage } from "./ChatMarkdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Root, RootContent } from "mdast";
-import { LMCSWordmark } from "../LMCSWordmark";
+import { LMCSWordmark } from "../../ui/LMCSWordmark";
 import {
   BotIcon,
   BrainIcon,
@@ -133,11 +133,11 @@ import type {
   ComposerContextRecord,
   KnownComposerContextRecord,
 } from "@lmcstools/core";
-import { Button } from "../ui/button";
-import type { QueuedComposerMessage } from "../../queuedMessageStore";
-import { useAssetUrlRefresh, useAssetUrls, useAssetUrlState } from "../../assets/assetUrls";
+import { Button } from "../../ui/button";
+import type { QueuedComposerMessage } from "../../../queuedMessageStore";
+import { useAssetUrlRefresh, useAssetUrls, useAssetUrlState } from "../../../assets/assetUrls";
 import { MediaVideoPlayer } from "../media/MediaVideoPlayer";
-import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
+import { getVirtualizedScrollFadeClassName } from "../../ui/scroll-area";
 import {
   buildAttachmentVideoAsset,
   buildAttachmentVideoPreview,
@@ -151,9 +151,9 @@ import {
 import { ProposedPlanCard } from "./ProposedPlanCard";
 import { ChangedFilesCard } from "./ChangedFilesTree";
 import { useAtomValue } from "@effect/atom-react";
-import { useFileContextMenuHandler } from "../../fileContextMenu";
-import { useProject, useThread } from "../../state/entities";
-import { serverEnvironment } from "../../state/server";
+import { useFileContextMenuHandler } from "../../../fileContextMenu";
+import { useProject, useThread } from "../../../state/entities";
+import { serverEnvironment } from "../../../state/server";
 import {
   CHAT_TIMELINE_ANCHOR_OFFSET,
   readTimelinePosition,
@@ -162,7 +162,7 @@ import {
 } from "./timelineScrollAnchoring";
 import { MessageCopyButton } from "./MessageCopyButton";
 import { PierreEntryIcon } from "./PierreEntryIcon";
-import { inferEntryKindFromPath } from "../../pierre-icons";
+import { inferEntryKindFromPath } from "../../../pierre-icons";
 import { AssistantSelectionToolbar } from "./AssistantSelectionToolbar";
 import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
 import {
@@ -201,9 +201,9 @@ import {
   type WorkGroupScrollAnchor,
 } from "./MessagesTimeline.logic";
 import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Spinner } from "../ui/spinner";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { Spinner } from "../../ui/spinner";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { WorktreeSetupCard } from "./WorktreeSetupCard";
 import {
   ContextChipPopover as UserMessageContextPopover,
@@ -213,7 +213,7 @@ import {
   PULL_REQUEST_CHIP_KINDS,
   PullRequestChip,
   UnresolvedChip,
-} from "../contextChipParts";
+} from "./contextChipParts";
 import {
   asKnownContextRecord,
   isPullRequestSummaryContext,
@@ -232,27 +232,27 @@ import {
   encodeComposerContextClipboardHtml,
   encodeComposerContextFragment,
 } from "@lmcstools/core/composerContextClipboard";
-import { chatMarkdownClipboardPayload } from "../../markdown-clipboard";
-import { ContextChip, ContextChipLabel, type ContextChipKind } from "../ContextChip";
-import { createContextPresentationRegistry } from "../contextPresentationRegistry";
+import { chatMarkdownClipboardPayload } from "../../../markdown-clipboard";
+import { ContextChip, ContextChipLabel, type ContextChipKind } from "./ContextChip";
+import { createContextPresentationRegistry } from "./contextPresentationRegistry";
 import { useOpenPrLink } from "~/lib/openPullRequestLink";
-import type { ChatMarkdownContextReference } from "../ChatMarkdown";
+import type { ChatMarkdownContextReference } from "./ChatMarkdown";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 import { cn } from "~/lib/utils";
 import { useUiStateStore } from "~/uiStateStore";
 import { type TimestampFormat } from "@lmcstools/core/settings";
-import { formatChatTimestampTooltip, formatDayAwareTimestamp } from "../../timestampFormat";
+import { formatChatTimestampTooltip, formatDayAwareTimestamp } from "../../../timestampFormat";
 
 import { SkillChipIcon, SkillInlineText } from "./SkillInlineText";
 import { deriveAgentSpawnSummary } from "./agentSpawnSummary";
-import { formatWorkspaceRelativePath } from "../../filePathDisplay";
+import { formatWorkspaceRelativePath } from "../../../filePathDisplay";
 import {
   buildReviewCommentRenderablePatch,
   formatReviewCommentFence,
   type ReviewCommentContext,
-} from "../../reviewCommentContext";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
-import { ComputerUseAppIcon } from "~/components/Icons";
+} from "../../../reviewCommentContext";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
+import { ComputerUseAppIcon } from "~/components/ui/Icons";
 
 // ---------------------------------------------------------------------------
 // Context — shared state consumed by every row component via Context.

@@ -4,9 +4,9 @@ import { ExternalLinkIcon } from "lucide-react";
 import {
   getDesktopUpdateReleaseHistoryUrl,
   getDesktopUpdateReleaseUrl,
-} from "../desktopUpdate.logic";
-import { openDesktopUpdateReleaseNotes } from "../desktopUpdate.toast";
-import { Separator } from "../ui/separator";
+} from "../../features/settings/desktopUpdate.logic";
+import { openDesktopUpdateReleaseNotes } from "../../features/settings/desktopUpdate.toast";
+import { Separator } from "../../ui/separator";
 
 type DesktopUpdateShell = Pick<DesktopBridge, "openExternal">;
 

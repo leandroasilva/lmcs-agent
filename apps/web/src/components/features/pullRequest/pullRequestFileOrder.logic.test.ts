@@ -42,17 +42,16 @@ describe("orderDiffFiles", () => {
   });
 
   it("puts a dependency before what imports it", () => {
-    expect(order([file("src/a.ts", ['import { b } from "./b";']), file("src/b.ts")])).toEqual([
-      "src/b.ts",
-      "src/a.ts",
-    ]);
+    expect(
+      order([file("src/a.ts", ['import { b } from "../../pullRequest/b";']), file("src/b.ts")]),
+    ).toEqual(["src/b.ts", "src/a.ts"]);
   });
 
   it("follows a chain the whole way down", () => {
     expect(
       order([
-        file("src/a.ts", ['import { b } from "./b";']),
-        file("src/b.ts", ['import { c } from "./c";']),
+        file("src/a.ts", ['import { b } from "../../pullRequest/b";']),
+        file("src/b.ts", ['import { c } from "../../pullRequest/c";']),
         file("src/c.ts"),
       ]),
     ).toEqual(["src/c.ts", "src/b.ts", "src/a.ts"]);
@@ -60,13 +59,16 @@ describe("orderDiffFiles", () => {
 
   it("resolves a specifier that climbs out of the importer's directory", () => {
     expect(
-      order([file("src/ui/a.ts", ['import { b } from "../lib/b";']), file("src/lib/b.ts")]),
+      order([file("src/ui/a.ts", ['import { b } from "../../lib/b";']), file("src/lib/b.ts")]),
     ).toEqual(["src/lib/b.ts", "src/ui/a.ts"]);
   });
 
   it("resolves a directory specifier to that directory's index file", () => {
     expect(
-      order([file("src/a.ts", ['import { b } from "./lib";']), file("src/lib/index.ts")]),
+      order([
+        file("src/a.ts", ['import { b } from "../../pullRequest/lib";']),
+        file("src/lib/index.ts"),
+      ]),
     ).toEqual(["src/lib/index.ts", "src/a.ts"]);
   });
 
@@ -90,16 +92,15 @@ describe("orderDiffFiles", () => {
   });
 
   it("resolves a specifier naming an extension, including the .js beside a .ts", () => {
-    expect(order([file("src/a.ts", ['import { b } from "./b.js";']), file("src/b.ts")])).toEqual([
-      "src/b.ts",
-      "src/a.ts",
-    ]);
+    expect(
+      order([file("src/a.ts", ['import { b } from "../../pullRequest/b.js";']), file("src/b.ts")]),
+    ).toEqual(["src/b.ts", "src/a.ts"]);
   });
 
   it("reads require and bare imports too", () => {
     expect(
       order([
-        file("src/a.ts", ['const b = require("./b");', 'import "./c";']),
+        file("src/a.ts", ['const b = require("../../pullRequest/b");', 'import "./c";']),
         file("src/b.ts"),
         file("src/c.ts"),
       ]),
@@ -109,8 +110,8 @@ describe("orderDiffFiles", () => {
   it("falls back to path order inside a cycle", () => {
     expect(
       order([
-        file("src/b.ts", ['import { a } from "./a";']),
-        file("src/a.ts", ['import { b } from "./b";']),
+        file("src/b.ts", ['import { a } from "../../pullRequest/a";']),
+        file("src/a.ts", ['import { b } from "../../pullRequest/b";']),
       ]),
     ).toEqual(["src/a.ts", "src/b.ts"]);
   });
@@ -129,7 +130,7 @@ describe("orderDiffFiles", () => {
         file("pnpm-lock.yaml"),
         file("src/a.test.ts"),
         file("src/__tests__/b.ts"),
-        file("src/a.ts", ['import { b } from "./b";']),
+        file("src/a.ts", ['import { b } from "../../pullRequest/b";']),
         file("src/b.ts"),
         file("dist/a.js"),
       ]),
@@ -153,7 +154,7 @@ describe("orderDiffFiles", () => {
 
   it("orders the same diff the same way whatever order it arrives in", () => {
     const files = [
-      file("src/a.ts", ['import { b } from "./b";']),
+      file("src/a.ts", ['import { b } from "../../pullRequest/b";']),
       file("src/b.ts"),
       file("src/c.ts"),
       file("src/a.test.ts"),

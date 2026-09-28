@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
+import { isLocalEnvironmentDisabled } from "../../../localEnvironment";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -9,10 +9,10 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { Button } from "../ui/button";
-import { Spinner } from "../ui/spinner";
-import { Switch } from "../ui/switch";
+} from "../../ui/alert-dialog";
+import { Button } from "../../ui/button";
+import { Spinner } from "../../ui/spinner";
+import { Switch } from "../../ui/switch";
 import { SettingsRow } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
 

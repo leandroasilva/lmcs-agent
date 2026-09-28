@@ -101,13 +101,13 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+} from "../../ui/alert-dialog";
+import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 import { PullRequestEditButton } from "./PullRequestEditButton";
-import { Input } from "../ui/input";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
+import { Input } from "../../ui/input";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
 import {
   Menu,
   MenuItem,
@@ -117,15 +117,15 @@ import {
   MenuSeparator,
   MenuShortcut,
   MenuTrigger,
-} from "../ui/menu";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { MiddleTruncate } from "../ui/middle-truncate";
+} from "../../ui/menu";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { toastManager } from "../../ui/toast";
+import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../../ui/tooltip";
+import { MiddleTruncate } from "../../ui/middle-truncate";
 import { PullRequestDetailGhost, PullRequestTimelineGhost } from "./PullRequestGhosts";
 import { PullRequestCopyableCode } from "./PullRequestCopyableCode";
 import { PullRequestActivityUnavailableState } from "./PullRequestActivityUnavailableState";
-import { DiffPanelLoadingState } from "../DiffPanelShell";
+import { DiffPanelLoadingState } from "../diffs/DiffPanelShell";
 import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
 import type { PullRequestAgentSelectionInput } from "./PullRequestCodeTab";
 import { openOnHostLabel, showPullRequestLinkContextMenu } from "./pullRequestLinkContextMenu";

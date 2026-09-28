@@ -1,7 +1,7 @@
-import { InlineButton } from "../ui/button";
+import { InlineButton } from "../../ui/button";
 import { useId, useState } from "react";
 
-import { cn } from "../../lib/utils";
+import { cn } from "../../../lib/utils";
 
 /**
  * Long error text clamped to a few lines with a toggle to reveal the rest.

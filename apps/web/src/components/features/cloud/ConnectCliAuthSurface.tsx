@@ -5,11 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   buildConnectCliClerkAuthorizeUrl,
   connectCliSignInRedirectUrl,
-} from "../../cloud/connectCliAuth";
-import { isElectron } from "../../env";
+} from "../../../cloud/connectCliAuth";
+import { isElectron } from "../../../env";
 import { AuthSurfaceShell } from "../auth/AuthSurfaceShell";
 import { resolveClerkSignInProps } from "../clerk/authRedirect";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 
 function ConnectCliAuthMessage({
   eyebrow,

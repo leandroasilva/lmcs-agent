@@ -29,37 +29,37 @@ import * as Result from "effect/Result";
 import { PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { isDesktopLocalConnectionTarget } from "../../connection/desktopLocal";
-import { isElectron } from "../../env";
-import { usePrimarySessionState } from "../../environments/primary";
+import { isDesktopLocalConnectionTarget } from "../../../connection/desktopLocal";
+import { isElectron } from "../../../env";
+import { usePrimarySessionState } from "../../../environments/primary";
 import {
   useEnvironmentSettings,
   useUpdateClientSettings,
   useUpdateEnvironmentSettings,
-} from "../../hooks/useSettings";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { cn } from "../../lib/utils";
-import { resolveAppModelSelectionState } from "../../modelSelection";
+} from "../../../hooks/useSettings";
+import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { cn } from "../../../lib/utils";
+import { resolveAppModelSelectionState } from "../../../modelSelection";
 import {
   useEnvironments,
   usePrimaryEnvironmentId,
   type EnvironmentPresentation,
-} from "../../state/environments";
-import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
-import { useEnvironmentSessionState } from "../../state/session";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { getRelativeTimeState } from "../../timestampFormat";
+} from "../../../state/environments";
+import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../../state/server";
+import { useEnvironmentSessionState } from "../../../state/session";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { getRelativeTimeState } from "../../../timestampFormat";
 import {
   ConnectionStatusDot,
   connectionPhaseDotClassName,
   connectionPhasePingClassName,
-} from "../ConnectionStatusDot";
+} from "../../layout/ConnectionStatusDot";
 import {
   isProviderSettingsUpdateCandidate,
   isProviderUpdateActive,
   type ProviderSettingsUpdateCandidate,
-} from "../ProviderUpdateLaunchNotification.logic";
-import { Button } from "../ui/button";
+} from "./ProviderUpdateLaunchNotification.logic";
+import { Button } from "../../ui/button";
 import {
   Empty,
   EmptyContent,
@@ -67,18 +67,18 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "../ui/empty";
+} from "../../ui/empty";
 import {
   NumberField,
   NumberFieldDecrement,
   NumberFieldGroup,
   NumberFieldIncrement,
   NumberFieldInput,
-} from "../ui/number-field";
-import { ScrollArea } from "../ui/scroll-area";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { stackedThreadToast, toastManager } from "../ui/toast";
+} from "../../ui/number-field";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
 import { AddProviderInstanceDialog } from "./AddProviderInstanceDialog";
 import { ExpandableText } from "./ExpandableText";
 import { ProviderInstanceCard } from "./ProviderInstanceCard";

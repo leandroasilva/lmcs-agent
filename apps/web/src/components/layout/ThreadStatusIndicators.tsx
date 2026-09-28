@@ -17,26 +17,26 @@ import {
 import { FolderGit2Icon, TerminalIcon } from "lucide-react";
 import { useRender } from "@base-ui/react/use-render";
 import { useMemo, type AnimationEvent, type MouseEvent, type ReactElement } from "react";
-import { cn } from "../lib/utils";
-import { useEnvironment, usePrimaryEnvironmentId } from "../state/environments";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { parseChangeRequestUrl } from "../lib/openPullRequestLink";
-import { useEnvironmentQuery } from "../state/query";
-import { linkedPullRequestDetailAtom, useSharedPullRequestSummary } from "../state/pullRequests";
-import { useThreadRunningTerminalIds } from "../state/terminalSessions";
-import { useUiStateStore } from "../uiStateStore";
-import { resolveChangeRequestPresentation } from "../sourceControlPresentation";
+import { cn } from "../../lib/utils";
+import { useEnvironment, usePrimaryEnvironmentId } from "../../state/environments";
+import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { parseChangeRequestUrl } from "../../lib/openPullRequestLink";
+import { useEnvironmentQuery } from "../../state/query";
+import { linkedPullRequestDetailAtom, useSharedPullRequestSummary } from "../../state/pullRequests";
+import { useThreadRunningTerminalIds } from "../../state/terminalSessions";
+import { useUiStateStore } from "../../uiStateStore";
+import { resolveChangeRequestPresentation } from "../../sourceControlPresentation";
 import { resolveThreadStatusPill, type ThreadStatusPill } from "./Sidebar.logic";
-import type { SidebarThreadSummary } from "../types";
-import { formatWorktreePathForDisplay } from "../worktreeCleanup";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { pullRequestListLines } from "./pullRequest/pullRequestListLines";
+import type { SidebarThreadSummary } from "../../types";
+import { formatWorktreePathForDisplay } from "../../worktreeCleanup";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { pullRequestListLines } from "../features/pullRequest/pullRequestListLines";
 import {
   PULL_REQUEST_STATE_PRESENTATION,
   PullRequestGlyph,
   type PullRequestGlyphIcon,
-} from "./pullRequest/pullRequestIcons";
-import { resolvePullRequestState } from "./pullRequest/pullRequestPresentation";
+} from "../features/pullRequest/pullRequestIcons";
+import { resolvePullRequestState } from "../features/pullRequest/pullRequestPresentation";
 
 export interface PrStatusIndicator {
   label: string;

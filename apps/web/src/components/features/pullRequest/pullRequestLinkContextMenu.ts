@@ -3,7 +3,7 @@ import type { ContextMenuItem } from "@lmcstools/core";
 import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";
 import { readLocalApi } from "~/localApi";
 
-import { toastManager } from "../ui/toast";
+import { toastManager } from "../../ui/toast";
 
 export type PullRequestLinkContextMenuAction = "copy-link" | "open-external";
 

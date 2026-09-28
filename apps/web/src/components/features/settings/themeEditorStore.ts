@@ -5,7 +5,7 @@ import {
   type ThemeAppearance,
   type ThemeHalves,
   type ThemePreference,
-} from "../../themePalette";
+} from "../../../themePalette";
 
 /**
  * The theme editor lives above the router so a draft survives navigation: the

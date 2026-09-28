@@ -1,5 +1,5 @@
 import type { ScopedThreadRef } from "@lmcstools/core";
-import { DiscoveryListRow } from "../ui/discovery-list";
+import { DiscoveryListRow } from "../../ui/discovery-list";
 
 import { PreviewFaviconIcon } from "./PreviewFaviconIcon";
 import type { PreviewableServer } from "./useDiscoveredLocalServers";

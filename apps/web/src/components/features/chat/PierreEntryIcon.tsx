@@ -1,7 +1,7 @@
 import { FileIcon, FolderIcon } from "lucide-react";
 import { memo, useInsertionEffect, useMemo } from "react";
 
-import { ensurePierreIconSprite, resolvePierreIconForEntry } from "../../pierre-icons";
+import { ensurePierreIconSprite, resolvePierreIconForEntry } from "../../../pierre-icons";
 import { cn } from "~/lib/utils";
 
 const ICON_COLORS: Record<string, readonly [light: string, dark: string]> = {

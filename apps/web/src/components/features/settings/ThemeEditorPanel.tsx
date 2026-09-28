@@ -33,13 +33,13 @@ import {
   type ThemeColors,
   type ThemeColorRole,
   type ThemeDefinition,
-} from "../../themePalette";
-import { cn } from "../../lib/utils";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../../themePalette";
+import { cn } from "../../../lib/utils";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Switch } from "../../ui/switch";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { getThemeRoleLabel, ThemeColorField } from "./ThemeColorPicker";
 import {
   clearThemeInspectorHover,

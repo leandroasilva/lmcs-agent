@@ -1,8 +1,8 @@
 import { Maximize2Icon, Minimize2Icon, PanelBottomIcon, PanelRightIcon } from "lucide-react";
 import { memo } from "react";
 
-import { Toggle } from "../ui/toggle";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Toggle } from "../../ui/toggle";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 interface PanelLayoutControlsProps {
   showTerminalControl?: boolean;

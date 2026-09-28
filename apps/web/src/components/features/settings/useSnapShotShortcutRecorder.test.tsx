@@ -1,12 +1,12 @@
 import { DEFAULT_CLIENT_SETTINGS } from "@lmcstools/core";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
 import { useSnapShotShortcutRecorder } from "./useSnapShotShortcutRecorder";
 
 const effects = vi.hoisted(() => [] as (() => () => void)[]);
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useCallback: reactHookHarness.useCallback,
@@ -16,7 +16,7 @@ vi.mock("react", async (original) => {
   };
 });
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 const suppress = vi.hoisted(() => vi.fn<(_: boolean) => Promise<void>>());

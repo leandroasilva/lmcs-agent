@@ -20,9 +20,9 @@ import {
 } from "react";
 
 import { cn } from "~/lib/utils";
-import { Button } from "../ui/button";
-import { SidebarInput, SidebarMenuButton } from "../ui/sidebar";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../../ui/button";
+import { SidebarInput, SidebarMenuButton } from "../../ui/sidebar";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 export interface SidebarThreadHeaderProps {
   /** Lands on the search field so a popup can anchor to its width. */

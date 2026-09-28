@@ -45,7 +45,7 @@ import type { RightPanelSurface } from "~/rightPanelStore";
 import { cn } from "~/lib/utils";
 import { readLocalApi } from "~/localApi";
 import { Button } from "~/components/ui/button";
-import { AndroidIcon, AppleIcon } from "~/components/Icons";
+import { AndroidIcon, AppleIcon } from "~/components/ui/Icons";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { Kbd } from "~/components/ui/kbd";
 import {
@@ -72,12 +72,12 @@ import {
 import { useEnvironmentQuery } from "~/state/query";
 import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "~/workspaceTitlebar";
 
-import { PreviewPanelShell, type PreviewPanelMode } from "./preview/PreviewPanelShell";
-import { FaviconImage } from "./preview/PreviewFaviconIcon";
-import { previewBridge } from "./preview/previewBridge";
-import { PierreEntryIcon } from "./chat/PierreEntryIcon";
-import { resolvePullRequestState } from "./pullRequest/pullRequestPresentation";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { PreviewPanelShell, type PreviewPanelMode } from "../features/preview/PreviewPanelShell";
+import { FaviconImage } from "../features/preview/PreviewFaviconIcon";
+import { previewBridge } from "../features/preview/previewBridge";
+import { PierreEntryIcon } from "../features/chat/PierreEntryIcon";
+import { resolvePullRequestState } from "../features/pullRequest/pullRequestPresentation";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 
 interface RightPanelTabsProps {
   mode: PreviewPanelMode;

@@ -1,10 +1,10 @@
 import { type ProviderInstanceId, type ServerProvider } from "@lmcstools/core";
 import { memo } from "react";
 import { InfoIcon, XIcon } from "lucide-react";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "../ui/alert";
-import { Button, InlineButton } from "../ui/button";
-import { formatProviderDriverKindLabel } from "../../providerModels";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "../../ui/alert";
+import { Button, InlineButton } from "../../ui/button";
+import { formatProviderDriverKindLabel } from "../../../providerModels";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 /** Unsupported and broken versions fail mid-turn, so they warn even when ready. */
 function getIncompatibleVersion(status: ServerProvider) {

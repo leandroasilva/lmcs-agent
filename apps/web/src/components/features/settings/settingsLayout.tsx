@@ -17,11 +17,14 @@ import {
 import {
   PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE,
   usePrimarySettingsAvailable,
-} from "../../hooks/useSettings";
-import { cn } from "../../lib/utils";
-import { WorkspacePageContainer, type WorkspacePageWidth } from "../WorkspacePageContainer";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../../hooks/useSettings";
+import { cn } from "../../../lib/utils";
+import {
+  WorkspacePageContainer,
+  type WorkspacePageWidth,
+} from "../../layout/WorkspacePageContainer";
+import { Button } from "../../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { useOptionalSettingsScope } from "./SettingsScopeContext";
 import { SettingsScopeSentence } from "./SettingsScopeSentence";
 import {

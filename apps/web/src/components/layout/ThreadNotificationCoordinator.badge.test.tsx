@@ -33,7 +33,7 @@ vi.mock("../hooks/useSettings", () => ({
   getClientSettings: () => ({ notificationMode: state.mode }),
 }));
 vi.mock("../threadNotifications", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../threadNotifications")>()),
+  ...(await importOriginal<typeof import("../../threadNotifications")>()),
   playNotificationSound: state.sound,
   unlockNotificationAudio: vi.fn(),
   setNotificationBadge: state.badge,

@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 
-import { getLocalStorageItem, setLocalStorageItem } from "../../hooks/useLocalStorage";
+import { getLocalStorageItem, setLocalStorageItem } from "../../../hooks/useLocalStorage";
 
 const STORAGE_KEY = "t3code:usage-page-preferences:v1";
 const UsagePagePreferencesSchema = Schema.Struct({

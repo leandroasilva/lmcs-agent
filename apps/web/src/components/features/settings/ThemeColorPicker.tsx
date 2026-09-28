@@ -1,11 +1,11 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { isThemeColor, themeColorToHex, type ThemeColorRole } from "../../themePalette";
-import { cn } from "../../lib/utils";
-import { hexToHsv, hsvToHex, type HsvColor } from "../../lib/color";
-import { ColorHueSlider, ColorSaturationValuePlane } from "../ui/color-picker";
-import { Input } from "../ui/input";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { isThemeColor, themeColorToHex, type ThemeColorRole } from "../../../themePalette";
+import { cn } from "../../../lib/utils";
+import { hexToHsv, hsvToHex, type HsvColor } from "../../../lib/color";
+import { ColorHueSlider, ColorSaturationValuePlane } from "../../ui/color-picker";
+import { Input } from "../../ui/input";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 export function getThemeRoleLabel(role: ThemeColorRole): string {
   const labels: Partial<Record<ThemeColorRole, string>> = {
     canvas: "Background",

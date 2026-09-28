@@ -15,8 +15,8 @@ import {
 } from "@lmcstools/core/model";
 import type { ReactNode } from "react";
 
-import type { DraftId } from "../../composerDraftStore";
-import { getProviderModelCapabilities } from "../../providerModels";
+import type { DraftId } from "../../../composerDraftStore";
+import { getProviderModelCapabilities } from "../../../providerModels";
 import type { ComposerControlSize } from "./ComposerControl";
 import { shouldRenderTraitsControls, TraitsMenuContent, TraitsPicker } from "./TraitsPicker";
 

@@ -2,7 +2,7 @@ import { EventId, TurnId, type OrchestrationThreadActivity } from "@lmcstools/co
 import { describe, expect, it } from "vite-plus/test";
 
 import { deriveWorkLogEntries } from "./session-logic";
-import { workEntryDisplayLabel } from "./components/chat/MessagesTimeline.logic";
+import { workEntryDisplayLabel } from "./components/features/chat/MessagesTimeline.logic";
 
 // These are the already-truncated fields emitted by ProviderRuntimeIngestion
 // for the malformed-skill diagnostic reported in issue 1084.

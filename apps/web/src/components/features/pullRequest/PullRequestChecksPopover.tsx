@@ -11,9 +11,9 @@ import { cn } from "~/lib/utils";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
 
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { toastManager } from "../ui/toast";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { toastManager } from "../../ui/toast";
 import {
   PullRequestCheckStatusIcon,
   pullRequestCheckStatusLabel,

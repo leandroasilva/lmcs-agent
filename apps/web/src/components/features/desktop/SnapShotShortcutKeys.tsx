@@ -1,6 +1,6 @@
 import type { SnapShotShortcut } from "@lmcstools/core";
-import { snapShotShortcutKeyLabels } from "../../lib/snapShotShortcut";
-import { Kbd, KbdGroup } from "../ui/kbd";
+import { snapShotShortcutKeyLabels } from "../../../lib/snapShotShortcut";
+import { Kbd, KbdGroup } from "../../ui/kbd";
 
 export function SnapShotShortcutKeys({
   shortcut,

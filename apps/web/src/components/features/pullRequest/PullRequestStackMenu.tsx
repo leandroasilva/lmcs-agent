@@ -1,4 +1,4 @@
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "../../ui/tooltip";
 import type {
   EnvironmentId,
   PullRequestRef,
@@ -10,8 +10,8 @@ import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { pullRequestEnvironment } from "~/state/pullRequests";
-import { Button } from "../ui/button";
-import { Menu, MenuPopup, MenuTrigger, MenuItem, MenuGroup, MenuSeparator } from "../ui/menu";
+import { Button } from "../../ui/button";
+import { Menu, MenuPopup, MenuTrigger, MenuItem, MenuGroup, MenuSeparator } from "../../ui/menu";
 import {
   Dialog,
   DialogPopup,
@@ -20,8 +20,8 @@ import {
   DialogHeader,
   DialogPanel,
   DialogFooter,
-} from "../ui/dialog";
-import { toastManager } from "../ui/toast";
+} from "../../ui/dialog";
+import { toastManager } from "../../ui/toast";
 import { PullRequestStackLayers } from "./PullRequestStackLayers";
 import { PullRequestStackHeader } from "./PullRequestStackHeader";
 import { PullRequestStackLayerContent } from "./PullRequestStackLayerContent";

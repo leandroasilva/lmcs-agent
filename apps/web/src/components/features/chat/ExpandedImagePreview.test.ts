@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { EnvironmentId } from "@lmcstools/core";
 
-import type { ComposerFileAttachment } from "../../composerDraftStore";
+import type { ComposerFileAttachment } from "../../../composerDraftStore";
 import {
   wrapExpandedImageIndex,
   attachVideoThumbnail,

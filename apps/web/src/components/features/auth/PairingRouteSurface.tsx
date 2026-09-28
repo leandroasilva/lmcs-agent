@@ -2,18 +2,18 @@ import type { AuthSessionState } from "@lmcstools/core";
 import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import React, { startTransition, useEffect, useRef, useState, useCallback } from "react";
 
-import { APP_DISPLAY_NAME } from "../../branding";
-import { connectPairing } from "../../connection/onboarding";
+import { APP_DISPLAY_NAME } from "../../../branding";
+import { connectPairing } from "../../../connection/onboarding";
 import {
   peekPairingTokenFromUrl,
   stripPairingTokenFromUrl,
   submitServerAuthCredential,
-} from "../../environments/primary";
-import { readHostedPairingRequest } from "../../hostedPairing";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
-import { useAtomCommand } from "../../state/use-atom-command";
+} from "../../../environments/primary";
+import { readHostedPairingRequest } from "../../../hostedPairing";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { StandalonePage, StandalonePageHeader } from "../../ui/standalone-page";
+import { useAtomCommand } from "../../../state/use-atom-command";
 
 export function PairingPendingSurface() {
   return (

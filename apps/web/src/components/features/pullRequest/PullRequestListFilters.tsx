@@ -24,9 +24,9 @@ import {
 import { type ElementType, useState } from "react";
 
 import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
-import { ProjectFavicon, type ProjectFaviconProject } from "../ProjectFavicon";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
-import { Button } from "../ui/button";
+import { ProjectFavicon, type ProjectFaviconProject } from "../files/ProjectFavicon";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../../ui/input-group";
+import { Button } from "../../ui/button";
 
 import {
   Menu,
@@ -42,8 +42,8 @@ import {
   MenuSubPopup,
   MenuSubTrigger,
   MenuTrigger,
-} from "../ui/menu";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../ui/menu";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import {
   pullRequestLabelColor,
   type PullRequestAuthorFacet,

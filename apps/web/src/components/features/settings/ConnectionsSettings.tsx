@@ -49,10 +49,10 @@ import {
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { cn } from "../../lib/utils";
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
-import { formatElapsedDurationLabel, formatExpiresInLabel } from "../../timestampFormat";
+import { useCopyToClipboard } from "../../../hooks/useCopyToClipboard";
+import { cn } from "../../../lib/utils";
+import { isLocalEnvironmentDisabled } from "../../../localEnvironment";
+import { formatElapsedDurationLabel, formatExpiresInLabel } from "../../../timestampFormat";
 import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
 import {
   applyWslEnableSelection,
@@ -77,8 +77,8 @@ import {
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { LoadBalancingSettings } from "./LoadBalancingSettings";
 import { GitHubRoutingSettings } from "./GitHubRoutingSettings";
-import { Input } from "../ui/input";
-import { CommandShortcut } from "../ui/command";
+import { Input } from "../../ui/input";
+import { CommandShortcut } from "../../ui/command";
 import {
   Autocomplete,
   AutocompleteEmpty,
@@ -86,8 +86,8 @@ import {
   AutocompleteItem,
   AutocompleteList,
   AutocompletePopup,
-} from "../ui/autocomplete";
-import { Checkbox } from "../ui/checkbox";
+} from "../../ui/autocomplete";
+import { Checkbox } from "../../ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -98,8 +98,8 @@ import {
   DialogPopup,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog";
-import { ScrollArea } from "../ui/scroll-area";
+} from "../../ui/dialog";
+import { ScrollArea } from "../../ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -108,22 +108,22 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { QRCodeSvg } from "../ui/qr-code";
-import { Spinner } from "../ui/spinner";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
-import { Switch } from "../ui/switch";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { Button } from "../ui/button";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
-import { AnimatedHeight } from "../AnimatedHeight";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { Textarea } from "../ui/textarea";
-import { getPairingTokenFromUrl, setPairingTokenOnUrl } from "../../pairingUrl";
-import { readHostedPairingRequest } from "../../hostedPairing";
+} from "../../ui/alert-dialog";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { QRCodeSvg } from "../../ui/qr-code";
+import { Spinner } from "../../ui/spinner";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../../ui/select";
+import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../../ui/menu";
+import { Switch } from "../../ui/switch";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { Button } from "../../ui/button";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../../ui/empty";
+import { AnimatedHeight } from "../../ui/AnimatedHeight";
+import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { Textarea } from "../../ui/textarea";
+import { getPairingTokenFromUrl, setPairingTokenOnUrl } from "../../../pairingUrl";
+import { readHostedPairingRequest } from "../../../hostedPairing";
 import {
   createServerPairingCredential,
   revokeOtherServerClientSessions,
@@ -164,15 +164,15 @@ import {
   useRelayEnvironmentDiscovery,
 } from "~/state/environments";
 import { requestConfirmDialog } from "~/confirmDialog";
-import { useAtomCommand } from "../../state/use-atom-command";
+import { useAtomCommand } from "../../../state/use-atom-command";
 import { primaryServerKeybindingsAtom, serverEnvironment } from "~/state/server";
-import { ConnectionStatusDot } from "../ConnectionStatusDot";
+import { ConnectionStatusDot } from "../../layout/ConnectionStatusDot";
 import {
   ServerUpdateAction,
   ServerUpdateProgress,
   ServerUpdatesAction,
   type ServerUpdateTarget,
-} from "../ServerUpdateAction";
+} from "./ServerUpdateAction";
 import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
 import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
 import {
@@ -180,7 +180,7 @@ import {
   shortcutLabelForCommand,
   threadJumpCommandForIndex,
   threadJumpIndexFromCommand,
-} from "../../keybindings";
+} from "../../../keybindings";
 
 const DEFAULT_TAILSCALE_SERVE_PORT = 443;
 const EMPTY_ADVERTISED_ENDPOINTS: ReadonlyArray<AdvertisedEndpoint> = [];

@@ -1,4 +1,4 @@
-import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
+import { requestCustomSnooze } from "../components/layout/CustomSnoozeDialog";
 import { scopeProjectRef, scopedThreadKey } from "@lmcstools/client/environment";
 import {
   type AtomCommandResult,
@@ -11,11 +11,11 @@ import type { ScopedThreadRef, ThreadId } from "@lmcstools/core";
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 
-import { resolveSnoozePresets } from "../components/Sidebar.snooze";
+import { resolveSnoozePresets } from "../components/layout/Sidebar.snooze";
 import {
   buildThreadActionMenuItems,
   type ThreadActionMenuId,
-} from "../components/threadActionMenu.logic";
+} from "../components/layout/threadActionMenu.logic";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
 import { threadEnvironment } from "../state/threads";
 import { useAtomCommand } from "../state/use-atom-command";

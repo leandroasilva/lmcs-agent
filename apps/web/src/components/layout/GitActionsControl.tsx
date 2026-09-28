@@ -45,7 +45,7 @@ import {
   GitHubIcon,
   GitLabIcon,
   ForgejoIcon,
-} from "~/components/Icons";
+} from "~/components/ui/Icons";
 import { RadioGroup } from "~/components/ui/radio-group";
 import { Spinner } from "~/components/ui/spinner";
 import { Toggle, ToggleGroup } from "~/components/ui/toggle-group";
@@ -64,8 +64,8 @@ import {
   resolveQuickAction,
   resolveThreadBranchUpdate,
 } from "./GitActionsControl.logic";
-import { WizardPopup, WizardHeader, WizardSteps, WizardPanel, WizardFooter } from "./ui/wizard";
-import { StartTruncatedPath } from "./StartTruncatedPath";
+import { WizardPopup, WizardHeader, WizardSteps, WizardPanel, WizardFooter } from "../ui/wizard";
+import { StartTruncatedPath } from "../features/files/StartTruncatedPath";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import {

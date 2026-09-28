@@ -2,16 +2,16 @@ import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import type { DesktopAppActivationRequest } from "@lmcstools/core";
 import { useEffect, useEffectEvent, useRef } from "react";
 
-import { handleDesktopAppActivationRequest } from "../../desktopAppActivation";
-import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
-import { findProjectByPath, inferProjectTitleFromPath } from "../../lib/projectPaths";
-import { newProjectId } from "../../lib/utils";
-import { readProjects, waitForProject } from "../../state/entities";
-import { usePrimaryEnvironment } from "../../state/environments";
-import { projectEnvironment } from "../../state/projects";
-import { useEnvironmentQuery } from "../../state/query";
-import { environmentShell } from "../../state/shell";
-import { useAtomCommand } from "../../state/use-atom-command";
+import { handleDesktopAppActivationRequest } from "../../../desktopAppActivation";
+import { useNewThreadHandler } from "../../../hooks/useHandleNewThread";
+import { findProjectByPath, inferProjectTitleFromPath } from "../../../lib/projectPaths";
+import { newProjectId } from "../../../lib/utils";
+import { readProjects, waitForProject } from "../../../state/entities";
+import { usePrimaryEnvironment } from "../../../state/environments";
+import { projectEnvironment } from "../../../state/projects";
+import { useEnvironmentQuery } from "../../../state/query";
+import { environmentShell } from "../../../state/shell";
+import { useAtomCommand } from "../../../state/use-atom-command";
 
 export function DesktopAppActivationCoordinator() {
   const primaryEnvironment = usePrimaryEnvironment();

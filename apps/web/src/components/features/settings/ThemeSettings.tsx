@@ -10,9 +10,9 @@ import {
   UploadIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactElement } from "react";
-import { useEnvironmentThemeDefinitions } from "../../hooks/useEnvironmentTheme";
-import { readThemeHalvesRaw } from "../../hooks/useTheme";
-import { cn } from "../../lib/utils";
+import { useEnvironmentThemeDefinitions } from "../../../hooks/useEnvironmentTheme";
+import { readThemeHalvesRaw } from "../../../hooks/useTheme";
+import { cn } from "../../../lib/utils";
 import {
   getThemeDefinition,
   singleAppearanceOf,
@@ -27,7 +27,7 @@ import {
   GROVE_THEME,
   IRIS_THEME,
   OCEAN_THEME,
-} from "../../themePalette";
+} from "../../../themePalette";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -36,10 +36,10 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { Button } from "../ui/button";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+} from "../../ui/alert-dialog";
+import { Button } from "../../ui/button";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
+import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../../ui/tooltip";
 import { ThemeImportDialog } from "./ThemeImportDialog";
 import { searchableSetting } from "./settingsSearch";
 import { useThemeEditorStore } from "./themeEditorStore";

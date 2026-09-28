@@ -6,7 +6,7 @@ import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
 import { useAtomCommand } from "~/state/use-atom-command";
 
-import { toastManager } from "../ui/toast";
+import { toastManager } from "../../ui/toast";
 import {
   countViewedFiles,
   isFileViewed,

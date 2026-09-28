@@ -1,6 +1,6 @@
 import { CircleCheckIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 
 export interface PermissionItem {
   id: string;

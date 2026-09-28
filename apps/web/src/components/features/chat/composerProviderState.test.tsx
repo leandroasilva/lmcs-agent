@@ -6,7 +6,7 @@ import {
   type ServerProviderModel,
 } from "@lmcstools/core";
 import { getProviderOptionDescriptors } from "@lmcstools/core/model";
-import { getProviderModelCapabilities } from "../../providerModels";
+import { getProviderModelCapabilities } from "../../../providerModels";
 import {
   getComposerPromptInjectionState,
   getComposerProviderState,

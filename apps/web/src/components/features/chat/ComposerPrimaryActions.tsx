@@ -2,10 +2,13 @@ import { memo, type PointerEventHandler } from "react";
 import { ChevronDownIcon, ChevronLeftIcon } from "lucide-react";
 import { useEnvironmentIdentificationMode } from "~/hooks/useSettings";
 import { cn } from "~/lib/utils";
-import { StageBackdropButtonArt, useSidebarStageBackdropVariant } from "../SidebarStageBackdrop";
-import { Button } from "../ui/button";
-import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
-import { Spinner } from "../ui/spinner";
+import {
+  StageBackdropButtonArt,
+  useSidebarStageBackdropVariant,
+} from "../../layout/SidebarStageBackdrop";
+import { Button } from "../../ui/button";
+import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../../ui/menu";
+import { Spinner } from "../../ui/spinner";
 import { composerFloatingLayerProps } from "./composerEventScope";
 
 interface PendingActionState {

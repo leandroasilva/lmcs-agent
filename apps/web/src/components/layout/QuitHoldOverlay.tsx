@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { isMacPlatform } from "../lib/utils";
+import { isMacPlatform } from "../../lib/utils";
 
 // A released hold hint lingers for the original hold duration. Double-press
 // hints disappear as soon as their acceptance window closes.

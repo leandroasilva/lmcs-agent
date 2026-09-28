@@ -8,12 +8,12 @@ import { parseKeybindingShortcut } from "@lmcstools/core/keybindings";
 import { FileDiff } from "@pierre/diffs/react";
 import { parseDiffFromFile } from "@pierre/diffs";
 import { useMemo, useState } from "react";
-import { getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
-import { resolveDiffThemeName } from "../../lib/diffRendering";
-import { useTheme } from "../../hooks/useTheme";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { Button } from "../ui/button";
-import { toastManager } from "../ui/toast";
+import { getDesktopSnapShotBridge } from "../../../lib/desktopSnapShot";
+import { resolveDiffThemeName } from "../../../lib/diffRendering";
+import { useTheme } from "../../../hooks/useTheme";
+import { useCopyToClipboard } from "../../../hooks/useCopyToClipboard";
+import { Button } from "../../ui/button";
+import { toastManager } from "../../ui/toast";
 import { shortcutToKeybindingInput } from "./KeybindingsSettings.logic";
 import { useSnapShotShortcutRecorder } from "./useSnapShotShortcutRecorder";
 

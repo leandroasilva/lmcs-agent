@@ -1,5 +1,5 @@
 import { collectComposerContextReferences } from "@lmcstools/core/composerContextReferences";
-import { PLAN_IMPLEMENTATION_PROMPT_PREFIX } from "../../proposedPlan";
+import { PLAN_IMPLEMENTATION_PROMPT_PREFIX } from "../../../proposedPlan";
 
 /**
  * Terminal-style prompt recall for the composer. ArrowUp on an empty

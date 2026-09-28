@@ -22,9 +22,9 @@ import { Children, type CSSProperties, isValidElement, type ReactNode, useState 
 
 import { cn } from "~/lib/utils";
 
-import { Badge } from "../ui/badge";
-import { InlineButton } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Badge } from "../../ui/badge";
+import { InlineButton } from "../../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import type { PullRequestReviewOutcome } from "./pullRequestDetail.logic";
 import { pullRequestLabelColor } from "./pullRequestList.logic";
 import {

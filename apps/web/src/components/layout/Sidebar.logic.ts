@@ -15,10 +15,10 @@ import {
   toSortableTimestamp,
   type SettledThreadTimestampInput,
   type ThreadSortInput,
-} from "../lib/threadSort";
-import type { SidebarThreadSummary, Thread } from "../types";
-import { cn } from "../lib/utils";
-import { isLatestTurnSettled } from "../session-logic";
+} from "../../lib/threadSort";
+import type { SidebarThreadSummary, Thread } from "../../types";
+import { cn } from "../../lib/utils";
+import { isLatestTurnSettled } from "../../session-logic";
 
 export function shouldNavigateAfterThreadPark(input: {
   readonly threadKey: string;

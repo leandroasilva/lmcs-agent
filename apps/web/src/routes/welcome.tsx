@@ -1,8 +1,8 @@
 import { createFileRoute, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { NoProjectsHero } from "../components/NoProjectsHero";
-import { WelcomeWizard } from "../components/onboarding/WelcomeWizard";
+import { NoProjectsHero } from "../components/layout/NoProjectsHero";
+import { WelcomeWizard } from "../components/features/onboarding/WelcomeWizard";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 
 /** Onboarding overlays the workspace. Visiting /welcome reopens setup. */

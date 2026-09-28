@@ -1,4 +1,8 @@
-import { THEME_COLOR_ROLES, getThemeColorVariable, type ThemeColorRole } from "../../themePalette";
+import {
+  THEME_COLOR_ROLES,
+  getThemeColorVariable,
+  type ThemeColorRole,
+} from "../../../themePalette";
 
 export type ThemePaintKind = "background" | "border" | "foreground";
 

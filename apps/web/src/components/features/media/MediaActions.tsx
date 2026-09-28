@@ -5,13 +5,13 @@ import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import type { AssetResource, ContextMenuItem, EnvironmentId } from "@lmcstools/core";
 import { useCallback, useRef, useState, type ReactElement } from "react";
 
-import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
-import { readLocalApi } from "../../localApi";
-import { assetEnvironment } from "../../state/assets";
-import { readPreparedConnection } from "../../state/session";
-import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { writeTextToClipboard } from "../../../hooks/useCopyToClipboard";
+import { readLocalApi } from "../../../localApi";
+import { assetEnvironment } from "../../../state/assets";
+import { readPreparedConnection } from "../../../state/session";
+import { useAtomQueryRunner } from "../../../state/use-atom-query-runner";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { downloadMedia, readMediaPng } from "./mediaContent";
 
 export interface MediaActionSource {

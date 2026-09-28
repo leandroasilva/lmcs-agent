@@ -5,7 +5,7 @@ import { memo, Suspense, use, useMemo, type CSSProperties } from "react";
 import { resolveDiffThemeName } from "~/lib/diffRendering";
 import { getSyntaxHighlighterPromise } from "~/lib/syntaxHighlighting";
 
-import { RenderErrorBoundary } from "../RenderErrorBoundary";
+import { RenderErrorBoundary } from "../../layout/RenderErrorBoundary";
 
 interface Range {
   readonly start: number;

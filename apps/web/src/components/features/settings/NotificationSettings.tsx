@@ -5,8 +5,8 @@ import {
   hasNotificationSound,
   NOTIFICATION_MODE_LABELS,
   unlockNotificationAudio,
-} from "../../threadNotifications";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+} from "../../../threadNotifications";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../../ui/select";
 import { SettingsRow } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
 import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";

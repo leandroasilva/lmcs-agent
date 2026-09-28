@@ -1,8 +1,8 @@
 import { UserButton, useAuth } from "@clerk/react";
 import { LogInIcon, ServerIcon, SmartphoneIcon } from "lucide-react";
 
-import { hasCloudPublicConfig } from "../../cloud/publicConfig";
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
+import { hasCloudPublicConfig } from "../../../cloud/publicConfig";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar";
 import { MobileClientsUserProfilePage } from "./MobileClientsUserProfilePage";
 import { ConnectUserProfilePage } from "./ConnectUserProfilePage";
 import { useConnectAuthPrompt } from "./useConnectAuthPrompt";

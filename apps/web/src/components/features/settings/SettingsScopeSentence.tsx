@@ -3,11 +3,11 @@ import { useLocation } from "@tanstack/react-router";
 import { ChevronDownIcon, LayersIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
-import { useEnvironments, type EnvironmentPresentation } from "../../state/environments";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { ProjectFavicon } from "../ProjectFavicon";
-import { InlineButton } from "../ui/button";
+import type { SidebarProjectSnapshot } from "../../../sidebarProjectGrouping";
+import { useEnvironments, type EnvironmentPresentation } from "../../../state/environments";
+import { EnvironmentMachineIcon } from "../../ui/EnvironmentMachineIcon";
+import { ProjectFavicon } from "../files/ProjectFavicon";
+import { InlineButton } from "../../ui/button";
 import {
   Menu,
   MenuPopup,
@@ -16,7 +16,7 @@ import {
   MenuRadioItemIndicator,
   MenuSeparator,
   MenuTrigger,
-} from "../ui/menu";
+} from "../../ui/menu";
 import { useOptionalSettingsScope } from "./SettingsScopeContext";
 import { resolveSettingsScope, type SettingsScopeSearch } from "./settingsScope";
 import {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { buildPlanImplementationPrompt } from "../../proposedPlan";
+import { buildPlanImplementationPrompt } from "../../../proposedPlan";
 import {
   ATTACHMENT_ONLY_BOOTSTRAP_PROMPT,
   buildComposerPromptHistoryEntries,

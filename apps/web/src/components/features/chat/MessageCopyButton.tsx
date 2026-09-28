@@ -1,13 +1,13 @@
 import { memo, useRef } from "react";
 import { CopyIcon, CheckIcon } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import {
   ANCHORED_COPY_TOAST_TIMEOUT_MS,
   showAnchoredCopyErrorToast,
   showAnchoredCopySuccessToast,
-} from "../ui/anchoredCopyToast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../ui/anchoredCopyToast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 export const MessageCopyButton = memo(function MessageCopyButton({
   text,

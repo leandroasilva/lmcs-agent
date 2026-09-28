@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { applyServerSettingsPatch } from "@lmcstools/core/serverSettings";
 import { resolveWorktreeCleanup } from "@lmcstools/core/projectSettings";
 
-import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
+import type { SidebarProjectSnapshot } from "../../../sidebarProjectGrouping";
 import {
   listProjectOverrides,
   persistScopedSettingsPatch,

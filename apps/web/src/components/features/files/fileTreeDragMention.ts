@@ -1,7 +1,7 @@
 import {
   COMPOSER_MENTION_DRAG_TYPE,
   composerMentionFromTreePath,
-} from "~/components/chat/composerMentionDrag";
+} from "~/components/features/chat/composerMentionDrag";
 
 interface FileTreeDragTransfer {
   setData(format: string, data: string): void;

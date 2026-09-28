@@ -6,7 +6,7 @@ import {
   registerConfirmDialogHost,
   respondToConfirmDialog,
   subscribeConfirmDialog,
-} from "../confirmDialog";
+} from "../../confirmDialog";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -15,8 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
-import { Button } from "./ui/button";
+} from "../ui/alert-dialog";
+import { Button } from "../ui/button";
 
 type ConfirmationCopy = {
   readonly title: string;

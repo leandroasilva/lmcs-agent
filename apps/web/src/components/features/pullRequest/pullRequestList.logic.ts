@@ -20,7 +20,7 @@ import type {
   PullRequestState,
 } from "@lmcstools/core";
 
-import { toSortableTimestamp } from "../../lib/threadSort";
+import { toSortableTimestamp } from "../../../lib/threadSort";
 import type { PullRequestListSort } from "./pullRequestListPreferences";
 
 /**

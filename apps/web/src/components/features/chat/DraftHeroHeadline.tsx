@@ -16,9 +16,9 @@ import {
 } from "~/sidebarProjectGrouping";
 import { useProjects, useThreadShells } from "~/state/entities";
 import { useEnvironments, usePrimaryEnvironmentId } from "~/state/environments";
-import { ProjectEnvironmentBadge } from "../ProjectEnvironmentBadge";
-import { ProjectFavicon } from "../ProjectFavicon";
-import { sortLogicalProjectsForSidebar } from "../Sidebar.logic";
+import { ProjectEnvironmentBadge } from "../files/ProjectEnvironmentBadge";
+import { ProjectFavicon } from "../files/ProjectFavicon";
+import { sortLogicalProjectsForSidebar } from "../../layout/Sidebar.logic";
 import {
   Menu,
   MenuItem,
@@ -27,9 +27,9 @@ import {
   MenuRadioItem,
   MenuSeparator,
   MenuTrigger,
-} from "../ui/menu";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { InlineButton } from "../ui/button";
+} from "../../ui/menu";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { InlineButton } from "../../ui/button";
 import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 
 interface DraftHeroHeadlineProps {

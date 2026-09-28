@@ -1,7 +1,7 @@
 import type { DesktopSshPasswordPromptRequest } from "@lmcstools/core";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import {
   Dialog,
   DialogDescription,
@@ -10,8 +10,8 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
+} from "../../ui/dialog";
+import { Input } from "../../ui/input";
 
 function describeSshTarget(request: DesktopSshPasswordPromptRequest): string {
   return request.username ? `${request.username}@${request.destination}` : request.destination;

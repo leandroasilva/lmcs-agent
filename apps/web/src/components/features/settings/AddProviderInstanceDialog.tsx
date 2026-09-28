@@ -10,20 +10,20 @@ import {
   type ProviderInstanceConfig,
 } from "@lmcstools/core";
 
-import { useEnvironmentSettings, useUpdateEnvironmentSettings } from "../../hooks/useSettings";
-import { cn } from "../../lib/utils";
-import { normalizeProviderAccentColor } from "../../providerInstances";
-import { Button } from "../ui/button";
-import { ACPRegistryIcon, Gemini, GithubCopilotIcon, PiAgentIcon, type Icon } from "../Icons";
-import { Dialog } from "../ui/dialog";
-import { Badge } from "../ui/badge";
-import { Input } from "../ui/input";
-import { RadioGroup } from "../ui/radio-group";
-import { toastManager } from "../ui/toast";
+import { useEnvironmentSettings, useUpdateEnvironmentSettings } from "../../../hooks/useSettings";
+import { cn } from "../../../lib/utils";
+import { normalizeProviderAccentColor } from "../../../providerInstances";
+import { Button } from "../../ui/button";
+import { ACPRegistryIcon, Gemini, GithubCopilotIcon, PiAgentIcon, type Icon } from "../../ui/Icons";
+import { Dialog } from "../../ui/dialog";
+import { Badge } from "../../ui/badge";
+import { Input } from "../../ui/input";
+import { RadioGroup } from "../../ui/radio-group";
+import { toastManager } from "../../ui/toast";
 import { DRIVER_OPTION_BY_VALUE, DRIVER_OPTIONS } from "./providerDriverMeta";
 import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
 import { ProviderSettingsForm, deriveProviderSettingsFields } from "./ProviderSettingsForm";
-import { WizardPanel, WizardPopup, WizardHeader, WizardFooter } from "../ui/wizard";
+import { WizardPanel, WizardPopup, WizardHeader, WizardFooter } from "../../ui/wizard";
 import {
   ADD_PROVIDER_WIZARD_STEPS,
   resolveWizardNavigation,

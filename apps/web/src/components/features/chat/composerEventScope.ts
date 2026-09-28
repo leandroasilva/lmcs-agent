@@ -1,4 +1,4 @@
-import { useComposerHandleContext } from "../../composerHandleContext";
+import { useComposerHandleContext } from "../../../composerHandleContext";
 
 const COMPOSER_FLOATING_LAYER_SELECTOR = [
   '[data-composer-drawer-layer="true"]',

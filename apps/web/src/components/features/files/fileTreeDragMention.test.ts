@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { COMPOSER_MENTION_DRAG_TYPE } from "~/components/chat/composerMentionDrag";
+import { COMPOSER_MENTION_DRAG_TYPE } from "~/components/features/chat/composerMentionDrag";
 import { createFileTreeDragMentionController } from "./fileTreeDragMention.ts";
 
 const makeTransfer = (plainText = "") => {

@@ -16,7 +16,7 @@ import {
   readCustomModelEntries,
   resolveSelectableModel,
 } from "@lmcstools/core/model";
-import { getComposerProviderState } from "./components/chat/composerProviderState";
+import { getComposerProviderState } from "./components/features/chat/composerProviderState";
 import { UnifiedSettings } from "@lmcstools/core/settings";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
@@ -25,7 +25,7 @@ import {
   getProviderModels,
   resolveSelectableProvider,
 } from "./providerModels";
-import { ModelEsque } from "./components/chat/providerIconUtils";
+import { ModelEsque } from "./components/features/chat/providerIconUtils";
 import {
   type ProviderInstanceEntry,
   deriveProviderInstanceEntries,

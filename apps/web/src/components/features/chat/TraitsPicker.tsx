@@ -25,12 +25,12 @@ import {
   MenuRadioItem,
   MenuSeparator as MenuDivider,
   MenuTrigger,
-} from "../ui/menu";
-import { useComposerDraftStore, DraftId } from "../../composerDraftStore";
-import { getProviderModelCapabilities } from "../../providerModels";
+} from "../../ui/menu";
+import { useComposerDraftStore, DraftId } from "../../../composerDraftStore";
+import { getProviderModelCapabilities } from "../../../providerModels";
 import { cn } from "~/lib/utils";
-import { Badge } from "../ui/badge";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Badge } from "../../ui/badge";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import {
   ComposerControl,
   ComposerControlChevron,

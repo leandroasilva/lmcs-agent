@@ -16,10 +16,10 @@ import {
 import {
   assistantCitationHash,
   assistantCitationNavigation,
-} from "../../lib/assistantCitationNavigation";
-import { ContextChip, ContextChipAction, ContextChipLabel } from "../ContextChip";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+} from "../../../lib/assistantCitationNavigation";
+import { ContextChip, ContextChipAction, ContextChipLabel } from "./ContextChip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
 import { AssistantCitationCommentEditor } from "./AssistantCitationCommentEditor";
 import { resolveAssistantCitationCommentDismissal } from "./assistantCitationCommentDismissal";
 import { observeAssistantCitationCommentSource } from "./AssistantCitationSource";

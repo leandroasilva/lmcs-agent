@@ -1,7 +1,7 @@
 import { ClerkProvider } from "@clerk/react";
 import type { ReactNode } from "react";
 
-import { ManagedRelayAuthProvider } from "../../cloud/managedAuth";
+import { ManagedRelayAuthProvider } from "../../../cloud/managedAuth";
 import { clerkAppearance } from "./clerkAppearance";
 
 /**

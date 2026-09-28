@@ -1,7 +1,7 @@
 import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { CheckIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { isMonospaceFamily, queryInstalledFontFamilies } from "../../appearanceFonts";
+import { isMonospaceFamily, queryInstalledFontFamilies } from "../../../appearanceFonts";
 import {
   Combobox,
   ComboboxEmpty,
@@ -10,8 +10,8 @@ import {
   ComboboxListVirtualized,
   ComboboxPopup,
   ComboboxTrigger,
-} from "../ui/combobox";
-import { SelectButton } from "../ui/select";
+} from "../../ui/combobox";
+import { SelectButton } from "../../ui/select";
 
 const DEFAULT_FONT_VALUE = "__default__";
 

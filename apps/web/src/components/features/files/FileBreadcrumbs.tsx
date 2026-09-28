@@ -4,7 +4,7 @@ import type { EnvironmentId } from "@lmcstools/core";
 import { ArrowLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { PierreEntryIcon } from "~/components/chat/PierreEntryIcon";
+import { PierreEntryIcon } from "~/components/features/chat/PierreEntryIcon";
 import {
   Menu,
   MenuGroup,

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   resolveRestingComposerControlsLayout,
   resolveRestingComposerControlsNaturalWidth,
-} from "../composerFooterLayout";
+} from "./composerFooterLayout";
 import { measureRestingComposerControls } from "./restingComposerControlsMeasurement";
 
 function measurePicker(input: { clientWidth: number; flexGrow: string; maxWidth?: string }) {

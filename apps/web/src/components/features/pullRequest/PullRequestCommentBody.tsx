@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 
 import { cn } from "~/lib/utils";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
 
 /** Keep the complete markdown intact while limiting long reports to a readable preview. */

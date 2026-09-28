@@ -2,14 +2,14 @@ import type { SnapShotSource } from "@lmcstools/core";
 import { ImageIcon, TextIcon } from "lucide-react";
 import { Suspense, use, useMemo, type CSSProperties } from "react";
 
-import { useTheme } from "../../hooks/useTheme";
-import { resolveDiffThemeName } from "../../lib/diffRendering";
-import { getSyntaxHighlighterPromise } from "../../lib/syntaxHighlighting";
-import { cn } from "../../lib/utils";
-import { RenderErrorBoundary } from "../RenderErrorBoundary";
-import { Button } from "../ui/button";
-import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { useTheme } from "../../../hooks/useTheme";
+import { resolveDiffThemeName } from "../../../lib/diffRendering";
+import { getSyntaxHighlighterPromise } from "../../../lib/syntaxHighlighting";
+import { cn } from "../../../lib/utils";
+import { RenderErrorBoundary } from "../../layout/RenderErrorBoundary";
+import { Button } from "../../ui/button";
+import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../../ui/popover";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 export const SNAP_SHOT_ATTACHMENT_FRAME_CLASS =
   "relative h-28 w-52 max-w-full overflow-hidden rounded-lg border border-border/80";

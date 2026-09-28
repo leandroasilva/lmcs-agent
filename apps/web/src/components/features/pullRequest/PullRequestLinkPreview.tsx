@@ -14,7 +14,7 @@ import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useAtomQueryRunner } from "~/state/use-atom-query-runner";
 import { useEnvironmentQuery } from "~/state/query";
 
-import { PreviewCard, PreviewCardPopup, PreviewCardTrigger } from "../ui/preview-card";
+import { PreviewCard, PreviewCardPopup, PreviewCardTrigger } from "../../ui/preview-card";
 import { PullRequestActorAvatar, resolvePullRequestState } from "./pullRequestPresentation";
 
 interface PullRequestLinkPreviewTarget {

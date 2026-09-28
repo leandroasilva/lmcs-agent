@@ -14,14 +14,14 @@ import {
 import { useRef, useState } from "react";
 import { Trash2Icon } from "lucide-react";
 
-import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
-import { ensureLocalApi } from "../../localApi";
-import { useEnvironmentQuery } from "../../state/query";
-import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { writeTextToClipboard } from "../../../hooks/useCopyToClipboard";
+import { ensureLocalApi } from "../../../localApi";
+import { useEnvironmentQuery } from "../../../state/query";
+import { serverEnvironment } from "../../../state/server";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { SettingsRow } from "./settingsLayout";
 
 interface ProviderSetupSectionProps {

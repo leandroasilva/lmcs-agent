@@ -1,5 +1,5 @@
 import type { ProjectIconColor } from "@lmcstools/core";
-import { projectIconColorClassName } from "../projectIconColors";
+import { projectIconColorClassName } from "../../../projectIconColors";
 import { cn } from "~/lib/utils";
 
 const monogramSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });

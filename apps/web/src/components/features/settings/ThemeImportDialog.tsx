@@ -1,7 +1,7 @@
 import { DownloadIcon, PlusIcon } from "lucide-react";
 import type { ChangeEvent, DragEvent, UIEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "../../lib/utils";
+import { cn } from "../../../lib/utils";
 import {
   getCustomThemes,
   installCustomTheme,
@@ -10,17 +10,17 @@ import {
   THEME_FILE_VERSION,
   updateCustomTheme,
   type ThemeDefinition,
-} from "../../themePalette";
+} from "../../../themePalette";
 import {
   humanizeThemeName,
   isVsCodeThemeFile,
   pairVsCodeThemes,
   parseVsCodeThemeFile,
   resolveThemeLabelCollisions,
-} from "../../vscodeThemeImport";
-import { Alert } from "../ui/alert";
-import { Button } from "../ui/button";
-import { Dialog, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "../ui/dialog";
+} from "../../../vscodeThemeImport";
+import { Alert } from "../../ui/alert";
+import { Button } from "../../ui/button";
+import { Dialog, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "../../ui/dialog";
 import { ThemeSearchSection } from "./ThemeSearchSection";
 
 /**

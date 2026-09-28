@@ -14,7 +14,7 @@ import {
   buildSidebarProjectSnapshots,
   projectGroupsSpanEnvironments,
 } from "./sidebarProjectGrouping";
-import { orderItemsByPreferredIds } from "./components/Sidebar.logic";
+import { orderItemsByPreferredIds } from "./components/layout/Sidebar.logic";
 import { legacyProjectCwdPreferenceKey } from "./uiStateStore";
 import type { Project } from "./types";
 

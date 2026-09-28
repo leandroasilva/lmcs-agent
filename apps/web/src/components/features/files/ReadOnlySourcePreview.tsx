@@ -1,6 +1,6 @@
 import { File, type FileOptions, Virtualizer } from "@pierre/diffs/react";
 
-import { DiffWorkerPoolProvider } from "~/components/DiffWorkerPoolProvider";
+import { DiffWorkerPoolProvider } from "~/components/features/diffs/DiffWorkerPoolProvider";
 import { useClientSettings } from "~/hooks/useSettings";
 import { useTheme } from "~/hooks/useTheme";
 import { resolveDiffThemeName } from "~/lib/diffRendering";

@@ -17,7 +17,7 @@ import {
 } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 
-import { PREVIEW_RECENT_URL_LIMIT } from "./components/preview/previewConstants";
+import { PREVIEW_RECENT_URL_LIMIT } from "./components/features/preview/previewConstants";
 import { appAtomRegistry } from "./rpc/atomRegistry";
 
 export interface DesktopPreviewOverlay {

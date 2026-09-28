@@ -16,7 +16,7 @@ import {
   resolveSelectionActionPosition,
   type SelectionActionPoint,
 } from "~/lib/selectionActions";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 
 export function AssistantSelectionToolbar({
   viewport,

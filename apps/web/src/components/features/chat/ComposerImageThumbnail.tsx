@@ -1,6 +1,6 @@
 import { memo, useEffect, useState, type ReactNode } from "react";
 
-import { createComposerImageThumbnail } from "../../lib/imageCompression";
+import { createComposerImageThumbnail } from "../../../lib/imageCompression";
 
 /** Keep full-resolution image decoding out of composer rerenders. */
 export const ComposerImageThumbnail = memo(function ComposerImageThumbnail({

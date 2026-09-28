@@ -13,7 +13,7 @@ import { parsePullRequestReference } from "~/pullRequestReference";
 import { getSourceControlPresentation } from "~/sourceControlPresentation";
 import { useEnvironmentQuery } from "~/state/query";
 import { vcsEnvironment } from "~/state/vcs";
-import { Button } from "./ui/button";
+import { Button } from "../../ui/button";
 import {
   Dialog,
   DialogDescription,
@@ -22,9 +22,9 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Spinner } from "./ui/spinner";
+} from "../../ui/dialog";
+import { Input } from "../../ui/input";
+import { Spinner } from "../../ui/spinner";
 
 interface PullRequestThreadDialogProps {
   open: boolean;

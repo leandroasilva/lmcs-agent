@@ -2,12 +2,12 @@ import { EnvironmentId } from "@lmcstools/core";
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { visitElements } from "../../test/reactElementTree";
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
+import { visitElements } from "../../../test/reactElementTree";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
 
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useMemo: reactHookHarness.useMemo,
@@ -16,7 +16,7 @@ vi.mock("react", async (importOriginal) => {
 });
 
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 
@@ -45,7 +45,7 @@ vi.mock("../ui/toast", () => ({
   toastManager: { add: vi.fn() },
 }));
 
-import { toastManager } from "../ui/toast";
+import { toastManager } from "../../ui/toast";
 import {
   canPickExternalProjectFavicon,
   ProjectFaviconPickerDialog,

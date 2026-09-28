@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
 import { usePermissionStatus } from "./usePermissionStatus";
 
 const effects = vi.hoisted(() => [] as Array<() => (() => void) | undefined>);
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useState: reactHookHarness.useState,
@@ -14,7 +14,7 @@ vi.mock("react", async (original) => {
   };
 });
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 const check = vi.fn<() => Promise<{ screen: boolean; accessibility: boolean }>>();

@@ -65,7 +65,7 @@ import {
   type Project,
   type SidebarThreadSummary,
   type Thread,
-} from "../types";
+} from "../../types";
 
 const localEnvironmentId = EnvironmentId.make("environment-local");
 
@@ -616,7 +616,7 @@ describe("orderItemsByPreferredIds", () => {
     // `projectOrder` is populated with physical keys (envId + cwd-derived)
     // by the store and by drag-end handlers. Readers must identify projects
     // with the same key format, or manual sort silently snaps back.
-    const { getProjectOrderKey } = await import("../logicalProject");
+    const { getProjectOrderKey } = await import("../../logicalProject");
     const projects = [
       {
         environmentId: EnvironmentId.make("environment-local"),

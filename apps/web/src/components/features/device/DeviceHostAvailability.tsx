@@ -1,6 +1,6 @@
 import type { DevicePlatformAvailability } from "@lmcstools/core";
 import { Check, Minus } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "../../ui/tooltip";
 
 export function DeviceHostAvailability({
   platforms,

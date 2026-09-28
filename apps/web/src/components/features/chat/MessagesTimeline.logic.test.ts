@@ -41,8 +41,8 @@ import {
   deriveTimelineEntriesWithState,
   type WorkLogEntry,
   type TimelineEntriesProjection,
-} from "../../session-logic";
-import { isImageAttachment, type ChatMessage, type TurnDiffSummary } from "../../types";
+} from "../../../session-logic";
+import { isImageAttachment, type ChatMessage, type TurnDiffSummary } from "../../../types";
 
 describe("streaming row projection", () => {
   function fixture(text = "") {

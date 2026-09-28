@@ -6,7 +6,7 @@ import {
 import {
   resolveSelectableProviderInstanceEntry,
   type ProviderInstanceEntry,
-} from "../../providerInstances";
+} from "../../../providerInstances";
 import { getTriggerDisplayModelName, type ModelEsque } from "./providerIconUtils";
 
 const CLAUDE_RESUME_COMPACTION_MINUTES = 70;

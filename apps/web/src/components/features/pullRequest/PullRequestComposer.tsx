@@ -12,9 +12,15 @@ import type { EnvironmentId, PullRequestDetailView, PullRequestRef } from "@lmcs
 import { MessageSquareIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
-import { Button } from "../ui/button";
-import { Popover, PopoverClose, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
+import { Button } from "../../ui/button";
+import {
+  Popover,
+  PopoverClose,
+  PopoverPopup,
+  PopoverTitle,
+  PopoverTrigger,
+} from "../../ui/popover";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
 import { PullRequestCommentForm } from "./PullRequestCommentForm";
 import { PullRequestReviewForm } from "./PullRequestReviewForm";
 import {

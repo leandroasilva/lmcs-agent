@@ -8,9 +8,9 @@ import {
   ensureClientSettingsHydrated,
   useClientSettings,
   useClientSettingsHydrationStatus,
-} from "../../hooks/useSettings";
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
-import { useCompleteOnboarding } from "../../onboarding/firstRun";
+} from "../../../hooks/useSettings";
+import { isLocalEnvironmentDisabled } from "../../../localEnvironment";
+import { useCompleteOnboarding } from "../../../onboarding/firstRun";
 import {
   isFirstRunWorkspaceProvenanceAuthoritative,
   isFreshFirstRunWorkspace,
@@ -18,18 +18,18 @@ import {
   resolveHostedFirstRunDecision,
   transitionFirstRunGateState,
   type FirstRunGateState,
-} from "../../onboarding/firstRun.logic";
+} from "../../../onboarding/firstRun.logic";
 import {
   useAllEnvironmentShellsBootstrapped,
   useProjects,
   useThreadShells,
-} from "../../state/entities";
-import { useEnvironments } from "../../state/environments";
-import { environmentProjects } from "../../state/projects";
-import { primaryServerConfigAtom, primaryServerWelcomeAtom } from "../../state/server";
-import { environmentShell } from "../../state/shell";
-import { environmentThreadShells } from "../../state/threads";
-import { Button } from "../ui/button";
+} from "../../../state/entities";
+import { useEnvironments } from "../../../state/environments";
+import { environmentProjects } from "../../../state/projects";
+import { primaryServerConfigAtom, primaryServerWelcomeAtom } from "../../../state/server";
+import { environmentShell } from "../../../state/shell";
+import { environmentThreadShells } from "../../../state/threads";
+import { Button } from "../../ui/button";
 
 /**
  * Holds back authenticated and hosted app trees until the first-run decision

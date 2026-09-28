@@ -1,5 +1,5 @@
 import ChatMarkdown from "./ChatMarkdown";
-import { ReadOnlySourcePreview } from "./files/AttachmentFilePreview";
+import { ReadOnlySourcePreview } from "../files/AttachmentFilePreview";
 import type { PreviewAnnotationPayload } from "@lmcstools/core";
 import { formatAttachmentSize } from "@lmcstools/client/state/attachments";
 import { videoMimeType } from "@lmcstools/core/video";
@@ -14,7 +14,7 @@ import {
   formatAttachmentUploadProgress,
   type AttachmentUploadState,
 } from "~/lib/attachmentUploadState";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 import {
   fileContextReference,
   imageContextReference,
@@ -30,13 +30,13 @@ import {
 } from "~/lib/composerContextRecords";
 import type { TerminalContextDraft } from "~/lib/terminalContext";
 import type { ReviewCommentContext } from "~/reviewCommentContext";
-import { ComposerPendingTerminalContextChip } from "./chat/ComposerPendingTerminalContexts";
+import { ComposerPendingTerminalContextChip } from "./ComposerPendingTerminalContexts";
 import {
   createContextPresentationRegistry,
   type ContextPresentationCapability,
 } from "./contextPresentationRegistry";
 import type { ContextChipKind } from "./ContextChip";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import {
   ContextChipPopover,
   ContextChipShell,

@@ -4,11 +4,11 @@ import {
   type DeviceModelSource,
 } from "@lmcstools/client/device/model";
 import type { DevicePlatform } from "@lmcstools/core";
-import iphoneDuo from "./models/iphone-duo.glb?url";
-import iphone18Pro from "./models/iphone-18-pro.glb?url";
-import iphone18ProMax from "./models/iphone-18-pro-max.glb?url";
-import magicKeyboard from "./models/ipad-pro-13-m5-magic-keyboard.glb?url";
-import ipadPro13M5 from "./models/ipad-pro-13-m5.glb?url";
+import iphoneDuo from "../../device/models/iphone-duo.glb?url";
+import iphone18Pro from "../../device/models/iphone-18-pro.glb?url";
+import iphone18ProMax from "../../device/models/iphone-18-pro-max.glb?url";
+import magicKeyboard from "../../device/models/ipad-pro-13-m5-magic-keyboard.glb?url";
+import ipadPro13M5 from "../../device/models/ipad-pro-13-m5.glb?url";
 
 // Bundled URLs follow the client origin in local, desktop, hosted and remote sessions.
 const models: Record<DeviceModelSource["id"], DeviceModelSource> = {

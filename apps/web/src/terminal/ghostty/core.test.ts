@@ -9,7 +9,7 @@ import {
   type TerminalBufferState,
 } from "@lmcstools/client/state/terminal";
 
-import { writeTerminalOutputUpdate } from "../../components/ThreadTerminalDrawer";
+import { writeTerminalOutputUpdate } from "../../components/layout/ThreadTerminalDrawer";
 import { GHOSTTY_CELL_WIDE, GhosttyTerminalCore, ghosttyCellText } from "./core";
 import { loadGhosttyRuntime } from "./runtime";
 

@@ -9,9 +9,9 @@ import { useState, type RefObject } from "react";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { toastManager } from "../ui/toast";
+import { Button } from "../../ui/button";
+import { Textarea } from "../../ui/textarea";
+import { toastManager } from "../../ui/toast";
 import { PullRequestGlyph } from "./pullRequestIcons";
 
 export function PullRequestCommentForm({

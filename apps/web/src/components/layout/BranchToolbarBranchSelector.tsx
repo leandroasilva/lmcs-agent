@@ -1,6 +1,6 @@
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
 import { resolveThreadCurrentPullRequestLink } from "@lmcstools/core/threadPullRequests";
-import { useRightPanelStore } from "../rightPanelStore";
+import { useRightPanelStore } from "../../rightPanelStore";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { scopeProjectRef, scopeThreadRef } from "@lmcstools/client/environment";
 import {
@@ -26,21 +26,21 @@ import {
   type Ref,
 } from "react";
 
-import { useComposerDraftStore, type DraftId } from "../composerDraftStore";
-import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { readLocalApi } from "../localApi";
-import { useOpenPrLink } from "../lib/openPullRequestLink";
-import { shouldLoadNextBranchPageAfterScroll } from "../state/paginatedBranches";
-import { usePaginatedBranches } from "../state/queries";
-import { useProject, useThreadShell } from "../state/entities";
-import { useEnvironmentQuery } from "../state/query";
-import { threadEnvironment } from "../state/threads";
-import { useAtomCommand } from "../state/use-atom-command";
-import { vcsEnvironment } from "../state/vcs";
-import { cn } from "../lib/utils";
-import { parsePullRequestReference } from "../pullRequestReference";
-import { getSourceControlPresentation } from "../sourceControlPresentation";
-import { useComposerMenuProps } from "./chat/composerEventScope";
+import { useComposerDraftStore, type DraftId } from "../../composerDraftStore";
+import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
+import { readLocalApi } from "../../localApi";
+import { useOpenPrLink } from "../../lib/openPullRequestLink";
+import { shouldLoadNextBranchPageAfterScroll } from "../../state/paginatedBranches";
+import { usePaginatedBranches } from "../../state/queries";
+import { useProject, useThreadShell } from "../../state/entities";
+import { useEnvironmentQuery } from "../../state/query";
+import { threadEnvironment } from "../../state/threads";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { vcsEnvironment } from "../../state/vcs";
+import { cn } from "../../lib/utils";
+import { parsePullRequestReference } from "../../pullRequestReference";
+import { getSourceControlPresentation } from "../../sourceControlPresentation";
+import { useComposerMenuProps } from "../features/chat/composerEventScope";
 import {
   deriveLocalBranchNameFromRemoteRef,
   resolveBranchTriggerLabel,
@@ -58,10 +58,10 @@ import {
   resolveThreadPullRequestBadge,
   useLinkedThreadPullRequest,
 } from "./ThreadStatusIndicators";
-import { Button } from "./ui/button";
-import { ComposerControl } from "./chat/ComposerControl";
-import { Switch } from "./ui/switch";
-import { getVirtualizedScrollFadeClassName } from "./ui/scroll-area";
+import { Button } from "../ui/button";
+import { ComposerControl } from "../features/chat/ComposerControl";
+import { Switch } from "../ui/switch";
+import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
 import {
   Combobox,
   ComboboxEmpty,
@@ -71,10 +71,10 @@ import {
   ComboboxPopup,
   ComboboxStatus,
   ComboboxTrigger,
-} from "./ui/combobox";
-import { stackedThreadToast, toastManager } from "./ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { MiddleTruncate } from "./ui/middle-truncate";
+} from "../ui/combobox";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { MiddleTruncate } from "../ui/middle-truncate";
 
 export interface BranchToolbarBranchSelectorHandle {
   open: () => void;

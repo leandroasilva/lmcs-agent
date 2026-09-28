@@ -3,7 +3,7 @@ import { toHtml } from "hast-util-to-html";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
-import { createIncrementalHighlightedDocument } from "../../lib/incrementalHighlighting";
+import { createIncrementalHighlightedDocument } from "../../../lib/incrementalHighlighting";
 import { HighlightedCodeLines } from "./HighlightedCodeLines";
 
 describe("highlighted code lines", () => {

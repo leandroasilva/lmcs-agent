@@ -28,16 +28,16 @@ import {
   workLogEntryIsToolLike,
   type TimelineEntry,
   type WorkLogEntry,
-} from "../../session-logic";
-import { type ChatMessage, type ProposedPlan, type TurnDiffSummary } from "../../types";
-import type { QueuedComposerMessage } from "../../queuedMessageStore";
+} from "../../../session-logic";
+import { type ChatMessage, type ProposedPlan, type TurnDiffSummary } from "../../../types";
+import type { QueuedComposerMessage } from "../../../queuedMessageStore";
 import {
   type MessageId,
   type OrchestrationLatestTurn,
   type TurnId,
   type WorktreeSetupSnapshot,
 } from "@lmcstools/core";
-import { formatWorkspaceRelativePath } from "../../filePathDisplay";
+import { formatWorkspaceRelativePath } from "../../../filePathDisplay";
 
 const TIMELINE_MINIMAP_ITEM_SPACING = 8;
 export const TIMELINE_MINIMAP_MIN_ITEMS = 2;

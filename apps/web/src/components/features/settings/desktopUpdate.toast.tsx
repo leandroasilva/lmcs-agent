@@ -5,7 +5,7 @@ import {
   getDesktopUpdateDownloadedVersion,
   getDesktopUpdateReleaseUrl,
 } from "./desktopUpdate.logic";
-import { toastManager } from "./ui/toast";
+import { toastManager } from "../../ui/toast";
 
 type DesktopUpdateShell = Pick<DesktopBridge, "openExternal">;
 

@@ -1,8 +1,8 @@
 import { type EnvironmentId, UsageLimitSourceId } from "@lmcstools/core";
 import { useState } from "react";
 
-import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
-import { Button } from "../ui/button";
+import { useUpdateEnvironmentSettings } from "../../../hooks/useSettings";
+import { Button } from "../../ui/button";
 import {
   Dialog,
   DialogDescription,
@@ -11,9 +11,9 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+} from "../../ui/dialog";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
 
 /**
  * Stable per hub and readable in settings.json. Dots and dashes in the host

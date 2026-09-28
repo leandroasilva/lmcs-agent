@@ -1,4 +1,4 @@
-import { resolvePlanFollowUpSubmission } from "../../proposedPlan";
+import { resolvePlanFollowUpSubmission } from "../../../proposedPlan";
 import { serializeLegacyContextMessage } from "@lmcstools/core/composerContextLegacySend";
 import {
   ProjectId,

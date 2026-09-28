@@ -13,22 +13,22 @@ import * as Cause from "effect/Cause";
 import { InfoIcon, Trash2Icon } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useComposerDraftStore } from "../../composerDraftStore";
-import { releaseProjectDraftUploads } from "../../lib/composerDraftUploads";
-import { readLocalApi } from "../../localApi";
+import { useComposerDraftStore } from "../../../composerDraftStore";
+import { releaseProjectDraftUploads } from "../../../lib/composerDraftUploads";
+import { readLocalApi } from "../../../localApi";
 import {
   type SidebarProjectGroupMember,
   type SidebarProjectSnapshot,
-} from "../../sidebarProjectGrouping";
-import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
-import { useThreadShells } from "../../state/entities";
-import { projectEnvironment } from "../../state/projects";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { ProjectFavicon } from "../ProjectFavicon";
-import { Alert, AlertDescription } from "../ui/alert";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { stackedThreadToast, toastManager } from "../ui/toast";
+} from "../../../sidebarProjectGrouping";
+import { useEnvironments, usePrimaryEnvironmentId } from "../../../state/environments";
+import { useThreadShells } from "../../../state/entities";
+import { projectEnvironment } from "../../../state/projects";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { ProjectFavicon } from "../files/ProjectFavicon";
+import { Alert, AlertDescription } from "../../ui/alert";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
 import {
   SettingResetButton,
   SettingsPageContainer,

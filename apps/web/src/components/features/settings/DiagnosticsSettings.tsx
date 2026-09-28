@@ -21,23 +21,23 @@ import type {
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 
-import { cn } from "../../lib/utils";
-import { ensureLocalApi } from "../../localApi";
-import { resolveAndPersistPreferredEditor } from "../../editorPreferences";
-import { formatRelativeTimeLabel, getRelativeTimeState } from "../../timestampFormat";
-import { useEnvironmentQuery } from "../../state/query";
-import { serverEnvironment } from "../../state/server";
-import { shellEnvironment } from "../../state/shell";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { Button } from "../ui/button";
-import { ScrollArea } from "../ui/scroll-area";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { toastManager } from "../ui/toast";
+import { cn } from "../../../lib/utils";
+import { ensureLocalApi } from "../../../localApi";
+import { resolveAndPersistPreferredEditor } from "../../../editorPreferences";
+import { formatRelativeTimeLabel, getRelativeTimeState } from "../../../timestampFormat";
+import { useEnvironmentQuery } from "../../../state/query";
+import { serverEnvironment } from "../../../state/server";
+import { shellEnvironment } from "../../../state/shell";
+import { useCopyToClipboard } from "../../../hooks/useCopyToClipboard";
+import { Button } from "../../ui/button";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { toastManager } from "../../ui/toast";
 import { ExpandableText } from "./ExpandableText";
 import { ResourceTelemetryDiagnostics } from "./ResourceTelemetryDiagnostics";
 import { SettingsPageContainer, SettingsSection, useRelativeTimeTick } from "./settingsLayout";
-import { useAtomCommand } from "../../state/use-atom-command";
+import { useAtomCommand } from "../../../state/use-atom-command";
 import { useSettingsScope } from "./SettingsScopeContext";
 
 const NUMBER_FORMAT = new Intl.NumberFormat();

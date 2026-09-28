@@ -32,16 +32,16 @@ import {
   readCustomModelEntries,
   toCustomModelSetting,
 } from "@lmcstools/core/model";
-import { cn } from "../../lib/utils";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { normalizeProviderAccentColor } from "../../providerInstances";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { DraftInput } from "../ui/draft-input";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Switch } from "../ui/switch";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { cn } from "../../../lib/utils";
+import { useCopyToClipboard } from "../../../hooks/useCopyToClipboard";
+import { normalizeProviderAccentColor } from "../../../providerInstances";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
+import { DraftInput } from "../../ui/draft-input";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { Switch } from "../../ui/switch";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import type { DriverOption } from "./providerDriverMeta";
 import { ProviderSettingsForm } from "./ProviderSettingsForm";
 import { ProviderModelsSection } from "./ProviderModelsSection";

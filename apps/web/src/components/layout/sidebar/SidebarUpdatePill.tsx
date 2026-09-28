@@ -2,12 +2,12 @@ import type { DesktopUpdateState } from "@lmcstools/core";
 import { TriangleAlertIcon } from "lucide-react";
 import { type ComponentProps, useCallback, useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { isElectron } from "../../env";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { cn } from "../../lib/utils";
-import { ensureLocalApi } from "../../localApi";
-import { useDesktopUpdateState } from "../../state/desktopUpdate";
-import { stackedThreadToast, toastManager } from "../ui/toast";
+import { isElectron } from "../../../env";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
+import { cn } from "../../../lib/utils";
+import { ensureLocalApi } from "../../../localApi";
+import { useDesktopUpdateState } from "../../../state/desktopUpdate";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
 import {
   canCheckForUpdate,
   getArm64IntelBuildWarningDescription,
@@ -18,12 +18,12 @@ import {
   resolveDesktopUpdateButtonAction,
   shouldShowArm64IntelBuildWarning,
   shouldToastDesktopUpdateActionResult,
-} from "../desktopUpdate.logic";
-import { showDesktopUpdateDownloadedToast } from "../desktopUpdate.toast";
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { Popover, PopoverCreateHandle, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { SidebarMenuItem } from "../ui/sidebar";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../features/settings/desktopUpdate.logic";
+import { showDesktopUpdateDownloadedToast } from "../../features/settings/desktopUpdate.toast";
+import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
+import { Popover, PopoverCreateHandle, PopoverPopup, PopoverTrigger } from "../../ui/popover";
+import { SidebarMenuItem } from "../../ui/sidebar";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import {
   DesktopUpdateStatusIcon,
   shouldContinueDesktopUpdateCheckAnimation,

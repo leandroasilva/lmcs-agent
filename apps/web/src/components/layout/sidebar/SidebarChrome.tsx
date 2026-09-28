@@ -3,17 +3,17 @@ import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
-import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
-import { cn } from "../../lib/utils";
-import { useEnvironments } from "../../state/environments";
-import { LMCSWordmark } from "../LMCSWordmark";
+import { useEnvironmentIdentificationMode } from "../../../hooks/useSettings";
+import { cn } from "../../../lib/utils";
+import { useEnvironments } from "../../../state/environments";
+import { LMCSWordmark } from "../../ui/LMCSWordmark";
 import {
   resolveEnvironmentIdentificationPillLabel,
   resolveSidebarStageBackdropVariant,
   SidebarStageBackdrop,
   useEnvironmentStageLabel,
 } from "../SidebarStageBackdrop";
-import { Badge } from "../ui/badge";
+import { Badge } from "../../ui/badge";
 import {
   SidebarFooter,
   SidebarMenu,
@@ -21,14 +21,14 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
   useSidebar,
-} from "../ui/sidebar";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
+} from "../../ui/sidebar";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { readPullRequestListPreferences } from "../../features/pullRequest/pullRequestListPreferences";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 
 export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   isElectron,

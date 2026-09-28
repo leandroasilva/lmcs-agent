@@ -1,7 +1,7 @@
 import { EnvironmentId } from "@lmcstools/core";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
 
 const settingsHooks = vi.hoisted(() => ({
   read: vi.fn(() => ({ providerInstances: {} })),
@@ -10,7 +10,7 @@ const settingsHooks = vi.hoisted(() => ({
 
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useMemo: reactHookHarness.useMemo,
@@ -19,7 +19,7 @@ vi.mock("react", async (importOriginal) => {
 });
 
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 

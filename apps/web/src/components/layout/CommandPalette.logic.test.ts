@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { EnvironmentId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/core";
-import type { Project, Thread } from "../types";
+import type { Project, Thread } from "../../types";
 import {
   buildBrowseGroups,
   buildCommandPaletteProjectMetadata,

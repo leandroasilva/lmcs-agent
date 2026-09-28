@@ -3,7 +3,7 @@ import { ArrowRightIcon } from "lucide-react";
 
 import { cn } from "~/lib/utils";
 
-import { resolvePullRequestState } from "./pullRequest/pullRequestPresentation";
+import { resolvePullRequestState } from "./pullRequestPresentation";
 
 export function PullRequestContextDetails({ metadata }: { metadata: PullRequestContextMetadata }) {
   const state = resolvePullRequestState(metadata);

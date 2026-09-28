@@ -10,18 +10,18 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
-import { getClientSettings, useClientSettings } from "../hooks/useSettings";
-import { useEnvironments } from "../state/environments";
-import { environmentShell } from "../state/shell";
+import { getClientSettings, useClientSettings } from "../../hooks/useSettings";
+import { useEnvironments } from "../../state/environments";
+import { environmentShell } from "../../state/shell";
 import {
   hasDesktopNotifications,
   hasNotificationSound,
   playNotificationSound,
   setNotificationBadge,
   unlockNotificationAudio,
-} from "../threadNotifications";
+} from "../../threadNotifications";
 import { resolveSidebarThreadStatus } from "./Sidebar.logic";
-import { toastManager } from "./ui/toast";
+import { toastManager } from "../ui/toast";
 
 export function ThreadNotificationCoordinator() {
   const { environments } = useEnvironments();

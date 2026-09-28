@@ -75,14 +75,14 @@ import {
 } from "react";
 import { useParams, useRouter } from "@tanstack/react-router";
 
-import { useRightPanelStore } from "../rightPanelStore";
+import { useRightPanelStore } from "../../rightPanelStore";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
   type AtomCommandResult,
 } from "@lmcstools/client/state/runtime";
-import { isElectron } from "../env";
+import { isElectron } from "../../env";
 import {
   resolveShortcutCommand,
   shortcutLabelForCommand,
@@ -90,63 +90,63 @@ import {
   threadJumpCommandForIndex,
   threadJumpIndexFromCommand,
   threadTraversalDirectionFromCommand,
-} from "../keybindings";
-import { useShortcutModifierState } from "../shortcutModifierState";
-import { useTerminalFocus } from "../hooks/useTerminalFocus";
-import { isTerminalFocused } from "../lib/terminalFocus";
-import { isModelPickerOpen } from "../modelPickerVisibility";
-import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
+} from "../../keybindings";
+import { useShortcutModifierState } from "../../shortcutModifierState";
+import { useTerminalFocus } from "../../hooks/useTerminalFocus";
+import { isTerminalFocused } from "../../lib/terminalFocus";
+import { isModelPickerOpen } from "../../modelPickerVisibility";
+import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../../terminalUiStateStore";
 import { isMacPlatform } from "~/lib/utils";
-import { useOpenPrLink } from "../lib/openPullRequestLink";
-import { releaseComposerDraftUploads } from "../lib/composerDraftUploads";
-import { readLocalApi } from "../localApi";
+import { useOpenPrLink } from "../../lib/openPullRequestLink";
+import { releaseComposerDraftUploads } from "../../lib/composerDraftUploads";
+import { readLocalApi } from "../../localApi";
 import {
   isSameSidebarThreadRef,
   useSidebarPendingFileDropStore,
-} from "../sidebarPendingFileDropStore";
-import { getProjectOrderKey, selectProjectGroupingSettings } from "../logicalProject";
+} from "../../sidebarPendingFileDropStore";
+import { getProjectOrderKey, selectProjectGroupingSettings } from "../../logicalProject";
 import {
   buildSidebarProjectSnapshots,
   projectGroupsSpanEnvironments,
   type SidebarProjectSnapshot,
-} from "../sidebarProjectGrouping";
-import { legacyProjectCwdPreferenceKey, useUiStateStore } from "../uiStateStore";
+} from "../../sidebarProjectGrouping";
+import { legacyProjectCwdPreferenceKey, useUiStateStore } from "../../uiStateStore";
 import {
   getThreadKeysToDeselectAfterDelete,
   useThreadSelectionStore,
-} from "../threadSelectionStore";
-import { useThreadActions } from "../hooks/useThreadActions";
-import { useHandleNewThread } from "../hooks/useHandleNewThread";
-import { isCommandPaletteOpen, openCommandPalette } from "../commandPaletteBus";
-import { startNewThreadFromContext } from "../lib/chatThreadActions";
-import { useClientSettings } from "../hooks/useSettings";
-import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
-import { useLocalStorage } from "../hooks/useLocalStorage";
-import { useNowMinute } from "../hooks/useNowMinute";
-import { useEnvironments, usePrimaryEnvironmentId } from "../state/environments";
+} from "../../threadSelectionStore";
+import { useThreadActions } from "../../hooks/useThreadActions";
+import { useHandleNewThread } from "../../hooks/useHandleNewThread";
+import { isCommandPaletteOpen, openCommandPalette } from "../../commandPaletteBus";
+import { startNewThreadFromContext } from "../../lib/chatThreadActions";
+import { useClientSettings } from "../../hooks/useSettings";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { useNowMinute } from "../../hooks/useNowMinute";
+import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
 import {
   readThreadShell,
   useAllEnvironmentProjectSnapshotsReady,
   useProjects,
   useThreadShells,
-} from "../state/entities";
-import { environmentServerConfigsAtom, primaryServerKeybindingsAtom } from "../state/server";
-import { vcsEnvironment } from "../state/vcs";
-import { threadEnvironment } from "../state/threads";
-import { useEnvironmentQuery } from "../state/query";
-import { useThreadSearch } from "../state/queries";
-import { useAtomCommand } from "../state/use-atom-command";
+} from "../../state/entities";
+import { environmentServerConfigsAtom, primaryServerKeybindingsAtom } from "../../state/server";
+import { vcsEnvironment } from "../../state/vcs";
+import { threadEnvironment } from "../../state/threads";
+import { useEnvironmentQuery } from "../../state/query";
+import { useThreadSearch } from "../../state/queries";
+import { useAtomCommand } from "../../state/use-atom-command";
 import {
   buildThreadRouteParams,
   resolveActiveThreadRouteRef,
   resolveThreadRouteTarget,
-} from "../threadRoutes";
-import { formatRelativeTimeLabel, parseTimestampDate } from "../timestampFormat";
-import type { SidebarThreadSummary } from "../types";
+} from "../../threadRoutes";
+import { formatRelativeTimeLabel, parseTimestampDate } from "../../timestampFormat";
+import type { SidebarThreadSummary } from "../../types";
 import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import { cn } from "~/lib/utils";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { ProjectEnvironmentBadge } from "./ProjectEnvironmentBadge";
+import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { ProjectEnvironmentBadge } from "../features/files/ProjectEnvironmentBadge";
 import { buildThreadActionMenuItems } from "./threadActionMenu.logic";
 import {
   animateSidebarLayoutChanges,
@@ -206,19 +206,19 @@ import {
   useLinkedThreadPullRequest,
 } from "./ThreadStatusIndicators";
 import { resolveSnoozePresets, snoozeWakeLabel, type SnoozePreset } from "./Sidebar.snooze";
-import { ProjectFavicon, type ProjectFaviconProject } from "./ProjectFavicon";
+import { ProjectFavicon, type ProjectFaviconProject } from "../features/files/ProjectFavicon";
 import { ThreadSearchMatchExcerpt } from "./ThreadSearchMatch";
-import { makeWorkspaceFileDropHandlers } from "./chat/workspaceFileDrop";
-import { ProviderInstanceIcon } from "./chat/ProviderInstanceIcon";
-import { getTriggerDisplayModelLabel } from "./chat/providerIconUtils";
+import { makeWorkspaceFileDropHandlers } from "../features/chat/workspaceFileDrop";
+import { ProviderInstanceIcon } from "../features/chat/ProviderInstanceIcon";
+import { getTriggerDisplayModelLabel } from "../features/chat/providerIconUtils";
 import {
   deriveProviderEntriesByEnvironment,
   shouldShowInstanceBadge,
   type ProviderInstanceEntry,
-} from "../providerInstances";
-import { useThreadRunningTerminalIds } from "../state/terminalSessions";
-import { stackedThreadToast, toastManager } from "./ui/toast";
-import { Button, InlineButton } from "./ui/button";
+} from "../../providerInstances";
+import { useThreadRunningTerminalIds } from "../../state/terminalSessions";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { Button, InlineButton } from "../ui/button";
 import {
   Combobox,
   ComboboxEmpty,
@@ -228,13 +228,13 @@ import {
   ComboboxPopup,
   ComboboxTrigger,
   useComboboxFilter,
-} from "./ui/combobox";
-import { SidebarContent, SidebarGroup, useSidebar } from "./ui/sidebar";
+} from "../ui/combobox";
+import { SidebarContent, SidebarGroup, useSidebar } from "../ui/sidebar";
 import { SidebarChromeFooter, SidebarChromeHeader } from "./sidebar/SidebarChrome";
 import { SidebarHeaderIconButton, SidebarThreadHeader } from "./sidebar/SidebarThreadHeader";
-import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuShortcut, MenuTrigger } from "./ui/menu";
-import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { MiddleTruncate } from "./ui/middle-truncate";
+import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuShortcut, MenuTrigger } from "../ui/menu";
+import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { MiddleTruncate } from "../ui/middle-truncate";
 import {
   composerDraftHasUserContent,
   DraftId,
@@ -242,7 +242,7 @@ import {
   useThreadHasUnsentDraft,
   type ComposerThreadDraftState,
   type DraftSessionState,
-} from "../composerDraftStore";
+} from "../../composerDraftStore";
 
 // Settled-tail paging: recent history is the common lookup; the deep tail
 // stays behind an explicit Show more.

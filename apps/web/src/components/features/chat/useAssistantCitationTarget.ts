@@ -1,10 +1,10 @@
 import type { LegendListRef } from "@legendapp/list/react";
 import type { TurnId } from "@lmcstools/core";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import type { TimelineEntry } from "../../session-logic";
+import type { TimelineEntry } from "../../../session-logic";
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
 import type { AssistantCitationRequest, AssistantCitationTarget } from "./AssistantCitationSource";
-import { toastManager } from "../ui/toast";
+import { toastManager } from "../../ui/toast";
 
 export interface CitationHistoryPage {
   readonly loading: boolean;

@@ -4,12 +4,12 @@ import {
   type DesktopSnapShotState,
 } from "@lmcstools/core";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
-import { visitElements } from "../../test/reactElementTree";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
+import { visitElements } from "../../../test/reactElementTree";
 
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useCallback: reactHookHarness.useCallback,
@@ -20,7 +20,7 @@ vi.mock("react", async (original) => {
   };
 });
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 const bridge = vi.hoisted(() => ({
@@ -35,7 +35,7 @@ vi.mock("../../hooks/useCopyToClipboard", () => ({
 }));
 vi.mock("../ui/toast", () => ({ toastManager: { add: vi.fn() } }));
 import { CaptureShortcutConfig } from "./CaptureShortcutConfig";
-import { toastManager } from "../ui/toast";
+import { toastManager } from "../../ui/toast";
 
 const preview: DesktopCaptureConfigPreview = {
   id: "approved-snapshot",

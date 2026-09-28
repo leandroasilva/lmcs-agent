@@ -1,20 +1,20 @@
-import { DESKTOP_PASTE_AS_TEXT_EVENT } from "../../lib/desktopPasteAsText";
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
-import { usePrimaryEnvironmentId } from "../../state/environments";
+import { DESKTOP_PASTE_AS_TEXT_EVENT } from "../../../lib/desktopPasteAsText";
+import { isLocalEnvironmentDisabled } from "../../../localEnvironment";
+import { usePrimaryEnvironmentId } from "../../../state/environments";
 import { runtimeModeConfig, runtimeModeOptions } from "./runtimeModeConfig";
 import { useRightPanelStore } from "~/rightPanelStore";
 import { AttachmentFilePreview } from "../files/AttachmentFilePreview";
-import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
+import { Dialog, DialogPopup, DialogTitle } from "../../ui/dialog";
 import { filterComposerPullRequestMatches } from "@lmcstools/core/composerPullRequestMatches";
-import { importPastedComposerText, readPastedComposerContext } from "../composerInlineTokenPaste";
-import { elementContextToPreviewAnnotation } from "../../lib/elementContext";
+import { importPastedComposerText, readPastedComposerContext } from "./composerInlineTokenPaste";
+import { elementContextToPreviewAnnotation } from "../../../lib/elementContext";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import {
   questionAttachmentDraftId,
   countQuestionAttachments,
   useQuestionAttachmentPreparation,
   changeQuestionAttachmentPreparation,
-} from "../../questionAttachments";
+} from "../../../questionAttachments";
 import type {
   ApprovalRequestId,
   KeybindingCommand,
@@ -77,9 +77,9 @@ import {
   expandCollapsedComposerCursor,
   formatAssistantCitationForComposer,
   replaceTextRange,
-} from "../../composer-logic";
-import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
-import { listContinuationForEnter, listIndentForTab } from "../../composer-list-continuation";
+} from "../../../composer-logic";
+import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../../composerPlaceholder";
+import { listContinuationForEnter, listIndentForTab } from "../../../composer-list-continuation";
 import {
   deriveComposerSendState,
   getAntigravitySendBlockReason,
@@ -87,7 +87,7 @@ import {
   resolveComposerInteractionMode,
   resolveComposerProviderSelection,
   threadShellHasStarted,
-} from "../ChatView.logic";
+} from "./ChatView.logic";
 import {
   dataTransferHasComposerMention,
   makeComposerMentionDragHandlers,
@@ -113,13 +113,13 @@ import {
   useComposerDraftStore,
   useComposerThreadDraft,
   useEffectiveComposerModelState,
-} from "../../composerDraftStore";
+} from "../../../composerDraftStore";
 import {
   MAX_STASH_ENTRIES,
   partitionStashAttachments,
   usePromptStashStore,
   type PromptStashEntry,
-} from "../../promptStashStore";
+} from "../../../promptStashStore";
 import { ComposerStashBadge } from "./ComposerStashBadge";
 import { ComposerStashMenu } from "./ComposerStashMenu";
 import { useComposerMenuState } from "./useComposerMenuState";
@@ -138,7 +138,7 @@ import {
   reconcileAttachmentContextReferences,
   type RetainedAttachmentContextPayloads,
 } from "./composerContextUndo";
-import type { ThreadSyncPhase } from "../../threadSync";
+import type { ThreadSyncPhase } from "../../../threadSync";
 import { ComposerBanner } from "./ComposerBanner";
 import { ComposerSurface } from "./ComposerSurface";
 import {
@@ -146,7 +146,7 @@ import {
   type ComposerBannerStackContent,
   type ComposerBannerStackItem,
 } from "./ComposerBannerStack";
-import { compressImageForStash, prepareImageForAttachment } from "../../lib/imageCompression";
+import { compressImageForStash, prepareImageForAttachment } from "../../../lib/imageCompression";
 import {
   fileAttachmentTooLargeMessage,
   formatAttachmentSize,
@@ -170,20 +170,20 @@ import {
   startAttachmentUpload,
   useAttachmentUploadStore,
   verifyStashedAttachmentUpload,
-} from "../../lib/attachmentUploadQueue";
+} from "../../../lib/attachmentUploadQueue";
 import {
   attachmentUploadBlockReason,
   formatAttachmentUploadProgress,
-} from "../../lib/attachmentUploadState";
-import { isCommandPaletteOpen } from "../../commandPaletteBus";
-import { getTerminalFocusOwner } from "../../lib/terminalFocus";
+} from "../../../lib/attachmentUploadState";
+import { isCommandPaletteOpen } from "../../../commandPaletteBus";
+import { getTerminalFocusOwner } from "../../../lib/terminalFocus";
 import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
-import { resolveShortcutCommand, shortcutLabelForCommand } from "../../keybindings";
+import { resolveShortcutCommand, shortcutLabelForCommand } from "../../../keybindings";
 import {
   type TerminalContextDraft,
   type TerminalContextSelection,
-} from "../../lib/terminalContext";
-import { useComposerPathSearch } from "../../lib/composerPathSearchState";
+} from "../../../lib/terminalContext";
+import { useComposerPathSearch } from "../../../lib/composerPathSearchState";
 import { replaceComposerContextReferences } from "@lmcstools/core/composerContextReferences";
 import {
   getRestingComposerImagePreviewCounts,
@@ -192,14 +192,14 @@ import {
   shouldUseCompactComposerPrimaryActions,
   shouldUseCompactComposerFooter,
   shouldUseRestingComposerLayout,
-} from "../composerFooterLayout";
+} from "./composerFooterLayout";
 import { measureRestingComposerControls } from "./restingComposerControlsMeasurement";
-import { type ComposerPromptEditorHandle, ComposerPromptEditor } from "../ComposerPromptEditor";
+import { type ComposerPromptEditorHandle, ComposerPromptEditor } from "./ComposerPromptEditor";
 import {
   ComposerContextActionsContext,
   composerContextRecordsFromDraft,
   uploadedContextRecordFromDraft,
-} from "../composerContextPresentation";
+} from "./composerContextPresentation";
 import { useOpenPrLink } from "~/lib/openPullRequestLink";
 import {
   collectInlineContextIds,
@@ -298,9 +298,9 @@ import {
   setSnapShotAnimationDestination,
   shouldAnimateSnapShotArrival,
   subscribeToPendingSnapShotAnimations,
-} from "../../lib/snapShotAnimation";
-import { resizeSnapShotSource } from "../../lib/snapShotSource";
-import { basenameOfPath } from "../../pierre-icons";
+} from "../../../lib/snapShotAnimation";
+import { resizeSnapShotSource } from "../../../lib/snapShotSource";
+import { basenameOfPath } from "../../../pierre-icons";
 import { cn, isMacPlatform, randomUUID } from "~/lib/utils";
 import {
   getComposerPromptLengthValidationMessage,
@@ -318,7 +318,7 @@ import {
   resetComposerScrollGesture,
   suppressActiveComposerScrollGesture,
 } from "./composerScrollGesture";
-import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
+import { prepareVideoFirstFrame } from "../../../lib/videoFirstFrame";
 
 function ComposerVideoThumbnail({ file }: { file: File }) {
   const setVideo = useCallback(
@@ -928,10 +928,10 @@ function ComposerCommandMenuLayer(props: { anchor: HTMLElement | null; children:
     document.body,
   );
 }
-import { Button } from "../ui/button";
-import { Select, SelectItem, SelectPopup, SelectValue } from "../ui/select";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { toastManager } from "../ui/toast";
+import { Button } from "../../ui/button";
+import { Select, SelectItem, SelectPopup, SelectValue } from "../../ui/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { toastManager } from "../../ui/toast";
 import {
   FileIcon,
   BotIcon,
@@ -942,7 +942,7 @@ import {
   ShieldIcon,
   XIcon,
 } from "lucide-react";
-import { proposedPlanTitle } from "../../proposedPlan";
+import { proposedPlanTitle } from "../../../proposedPlan";
 import { hasProviderSetup } from "./ProviderStatusBanner";
 import {
   applyProviderInstanceSettings,
@@ -950,8 +950,8 @@ import {
   NO_PROVIDER_MODEL_SELECTION,
   sortProviderInstanceEntries,
   type ProviderInstanceEntry,
-} from "../../providerInstances";
-import { type AppModelOption, getAppModelOptionsForInstance } from "../../modelSelection";
+} from "../../../providerInstances";
+import { type AppModelOption, getAppModelOptionsForInstance } from "../../../modelSelection";
 import type { UnifiedSettings } from "@lmcstools/core/settings";
 import {
   isVideoAttachment,
@@ -960,15 +960,15 @@ import {
   type Thread,
   type ThreadShell,
   videoMimeType,
-} from "../../types";
+} from "../../../types";
 import {
   buildComposerPromptHistoryEntries,
   stepComposerPromptHistory,
   type ComposerPromptHistoryPosition,
 } from "./composerPromptHistory";
-import type { PendingUserInputDraftAnswer } from "../../pendingUserInput";
-import type { PendingApproval, PendingUserInput } from "../../session-logic";
-import type { ContextWindowSnapshot } from "../../lib/contextWindow";
+import type { PendingUserInputDraftAnswer } from "../../../pendingUserInput";
+import type { PendingApproval, PendingUserInput } from "../../../session-logic";
+import type { ContextWindowSnapshot } from "../../../lib/contextWindow";
 import {
   formatProviderSkillDisplayName,
   getProviderSlashCommandsForSlashMenu,
@@ -976,13 +976,13 @@ import {
   resolveProviderSkillsForCwd,
   resolveProviderSlashCommandsForCwd,
 } from "@lmcstools/client/providerSkills";
-import { searchProviderSkills } from "../../providerSkillSearch";
-import { useDelayedStatus } from "../../hooks/useDelayedStatus";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { usePanelAnimationSettings } from "../../panelAnimations";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { serverEnvironment } from "../../state/server";
-import type { ReviewCommentContext } from "../../reviewCommentContext";
+import { searchProviderSkills } from "../../../providerSkillSearch";
+import { useDelayedStatus } from "../../../hooks/useDelayedStatus";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
+import { usePanelAnimationSettings } from "../../../panelAnimations";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { serverEnvironment } from "../../../state/server";
+import type { ReviewCommentContext } from "../../../reviewCommentContext";
 
 const WORKSPACE_SNAPSHOT_RETRY_COOLDOWN_MS = 10_000;
 

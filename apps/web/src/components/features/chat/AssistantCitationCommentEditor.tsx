@@ -1,7 +1,7 @@
 import { ASSISTANT_CITATION_MAX_COMMENT_LENGTH, type AssistantCitation } from "@lmcstools/core";
 import { useState, type Ref } from "react";
 
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 
 export function AssistantCitationCommentEditor({
   citation,

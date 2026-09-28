@@ -8,7 +8,7 @@ import {
   T3_CHAT_THEME,
   themeColorToHex,
   type ThemeColors,
-} from "../../themePalette";
+} from "../../../themePalette";
 import { clerkAppearance } from "./clerkAppearance";
 
 function contrastRatio(first: string, second: string): number {

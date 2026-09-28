@@ -7,11 +7,11 @@ import {
   type ModelEsque,
   PROVIDER_ICON_BY_PROVIDER,
 } from "./providerIconUtils";
-import { ComboboxItem } from "../ui/combobox";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Kbd } from "../ui/kbd";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { ComboboxItem } from "../../ui/combobox";
+import { Button } from "../../ui/button";
+import { Badge } from "../../ui/badge";
+import { Kbd } from "../../ui/kbd";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { cn } from "~/lib/utils";
 import { modelPickerModelKey } from "./modelPickerKeys";
 

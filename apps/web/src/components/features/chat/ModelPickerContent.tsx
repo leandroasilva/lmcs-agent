@@ -25,27 +25,27 @@ import {
   ComboboxSearchInput,
   ComboboxItem,
   ComboboxListVirtualized,
-} from "../ui/combobox";
+} from "../../ui/combobox";
 import { ModelEsque } from "./providerIconUtils";
-import { isCommandPaletteOpen } from "../../commandPaletteBus";
-import { primaryServerKeybindingsAtom } from "../../state/server";
+import { isCommandPaletteOpen } from "../../../commandPaletteBus";
+import { primaryServerKeybindingsAtom } from "../../../state/server";
 import {
   modelPickerJumpCommandForIndex,
   modelPickerJumpIndexFromCommand,
   resolveShortcutCommand,
   shortcutLabelForCommand,
-} from "../../keybindings";
+} from "../../../keybindings";
 import { useClientSettings, useUpdateClientSettings } from "~/hooks/useSettings";
 import { cn } from "~/lib/utils";
-import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
-import { TooltipProvider } from "../ui/tooltip";
-import { InlineButton } from "../ui/button";
+import { getVirtualizedScrollFadeClassName } from "../../ui/scroll-area";
+import { TooltipProvider } from "../../ui/tooltip";
+import { InlineButton } from "../../ui/button";
 import {
   isProviderInstancePickerReady,
   isProviderInstancePickerVisible,
   type ProviderInstanceEntry,
-} from "../../providerInstances";
-import { providerModelKey, sortProviderModelItems } from "../../modelOrdering";
+} from "../../../providerInstances";
+import { providerModelKey, sortProviderModelItems } from "../../../modelOrdering";
 
 type ModelPickerItem = {
   slug: string;

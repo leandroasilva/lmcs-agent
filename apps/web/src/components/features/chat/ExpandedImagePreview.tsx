@@ -1,7 +1,11 @@
 import type { SnapShotSource } from "@lmcstools/core";
 
-import type { ComposerFileAttachment } from "../../composerDraftStore";
-import { type ChatFileAttachment, type ChatImageAttachment, isVideoAttachment } from "../../types";
+import type { ComposerFileAttachment } from "../../../composerDraftStore";
+import {
+  type ChatFileAttachment,
+  type ChatImageAttachment,
+  isVideoAttachment,
+} from "../../../types";
 import type {
   AssetCreateUrlResult,
   AssetResource,

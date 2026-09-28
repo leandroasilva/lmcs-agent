@@ -1,6 +1,6 @@
 import { InfoIcon, RotateCwIcon } from "lucide-react";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 export function DiffFileStatus({
   error,

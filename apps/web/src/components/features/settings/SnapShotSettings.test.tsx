@@ -4,13 +4,13 @@ import {
   type DesktopSnapShotState,
 } from "@lmcstools/core";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
-import { visitElements } from "../../test/reactElementTree";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
+import { visitElements } from "../../../test/reactElementTree";
 
 const effects = vi.hoisted(() => [] as (() => void)[]);
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useCallback: reactHookHarness.useCallback,
@@ -21,7 +21,7 @@ vi.mock("react", async (original) => {
   };
 });
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 vi.mock("@effect/atom-react", () => ({ useAtomValue: () => [] }));
@@ -344,7 +344,7 @@ it("keeps setup errors in the wizard and does not toast them after closing it", 
 it.each([false, true])(
   "resumes macOS permission setup after restart and clears it on close, completed=%s",
   async (completed) => {
-    const { readSnapShotSetupResume } = await import("../../lib/snapShotSetupResume");
+    const { readSnapShotSetupResume } = await import("../../../lib/snapShotSetupResume");
     const values = new Map<string, string>();
     Object.assign(window, {
       localStorage: {

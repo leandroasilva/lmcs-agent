@@ -1,11 +1,11 @@
 import type { RelayClientDeviceRecord } from "@lmcstools/core/relay";
 import { SmartphoneIcon } from "lucide-react";
 
-import { useManagedRelayDevices } from "../../cloud/managedRelayState";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
-import { Skeleton } from "../ui/skeleton";
+import { useManagedRelayDevices } from "../../../cloud/managedRelayState";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../../ui/empty";
+import { Skeleton } from "../../ui/skeleton";
 import {
   mobileClientNotificationDetail,
   mobileClientPlatformLabel,

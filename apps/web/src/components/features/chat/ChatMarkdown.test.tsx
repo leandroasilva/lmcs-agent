@@ -4,15 +4,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { create, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { getSyntaxHighlighterPromise } from "../lib/syntaxHighlighting";
-import { GitHubIcon } from "./Icons";
-import { Button } from "./ui/button";
-import { setMarkdownTaskChecked } from "./files/filePreviewMode";
+import { getSyntaxHighlighterPromise } from "../../../lib/syntaxHighlighting";
+import { GitHubIcon } from "../../ui/Icons";
+import { Button } from "../../ui/button";
+import { setMarkdownTaskChecked } from "../files/filePreviewMode";
 
 vi.mock("@effect/atom-react", () => ({ useAtomValue: () => null }));
 vi.mock("../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
 vi.mock("../hooks/useSettings", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../hooks/useSettings")>();
+  const actual = await importOriginal<typeof import("../../../hooks/useSettings")>();
   const settings = actual.getClientSettings();
   return {
     ...actual,
@@ -27,7 +27,7 @@ vi.mock("./ui/tooltip", async () => {
     TooltipTrigger({
       render,
       children,
-    }: ComponentProps<typeof import("./ui/tooltip").TooltipTrigger>) {
+    }: ComponentProps<typeof import("../../ui/tooltip").TooltipTrigger>) {
       if (!isValidElement(render)) return <>{children}</>;
       return children === undefined ? render : cloneElement(render, undefined, children);
     },
@@ -37,7 +37,7 @@ vi.mock("./ui/tooltip", async () => {
 vi.mock("../state/use-atom-query-runner", () => ({ useAtomQueryRunner: () => vi.fn() }));
 vi.mock("../state/use-atom-command", () => ({ useAtomCommand: () => vi.fn() }));
 vi.mock("../state/session", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../state/session")>()),
+  ...(await importOriginal<typeof import("../../../state/session")>()),
   usePreparedConnection: () => ({ _tag: "Loading" }),
 }));
 vi.mock("../state/entities", () => ({

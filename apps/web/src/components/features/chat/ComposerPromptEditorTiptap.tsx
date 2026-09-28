@@ -58,12 +58,12 @@ import {
 import { collectInlineContextIds } from "~/lib/composerContextReferences";
 import { cn, isMacPlatform } from "~/lib/utils";
 import { basenameOfPath } from "~/pierre-icons";
-import { FileTagChipContent } from "./chat/FileTagChip";
-import { SkillChipIcon } from "./chat/SkillInlineText";
-import { AssistantCitationChip } from "./chat/AssistantCitationChip";
-import { getTimelinePageScrollKey } from "./chat/pageScrollController";
+import { FileTagChipContent } from "./FileTagChip";
+import { SkillChipIcon } from "./SkillInlineText";
+import { AssistantCitationChip } from "./AssistantCitationChip";
+import { getTimelinePageScrollKey } from "./pageScrollController";
 import { ContextChipPopover } from "./contextChipParts";
-import { Button } from "./ui/button";
+import { Button } from "../../ui/button";
 import { ContextChip } from "./ContextChip";
 import {
   ComposerContextActionsContext,
@@ -72,7 +72,7 @@ import {
 } from "./composerContextPresentation";
 import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
 import { formatProviderSkillDisplayName } from "@lmcstools/client/providerSkills";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { importPastedComposerText } from "./composerInlineTokenPaste";
 import { didComposerSelectionChangeVisibly } from "./composerSelection";
 import type { ComposerDraftContextRecords } from "./composerContextPresentation";

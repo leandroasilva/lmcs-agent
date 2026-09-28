@@ -7,7 +7,7 @@ import {
 import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import { useMemo } from "react";
 
-import { useProjectFileQuery } from "~/components/files/projectFilesQueryState";
+import { useProjectFileQuery } from "~/components/features/files/projectFilesQueryState";
 
 const NO_SCRIPTS: ReadonlyArray<T3ProjectFileScript> = [];
 

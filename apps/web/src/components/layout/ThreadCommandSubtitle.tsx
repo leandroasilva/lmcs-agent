@@ -1,10 +1,10 @@
 import type { ProviderDriverKind } from "@lmcstools/core";
 import { FolderGit2Icon, FolderIcon, GitBranchIcon } from "lucide-react";
-import { ProjectFavicon, type ProjectFaviconProject } from "./ProjectFavicon";
-import { ProviderInstanceIcon } from "./chat/ProviderInstanceIcon";
+import { ProjectFavicon, type ProjectFaviconProject } from "../features/files/ProjectFavicon";
+import { ProviderInstanceIcon } from "../features/chat/ProviderInstanceIcon";
 import { cn } from "~/lib/utils";
 
-import { MiddleTruncate } from "./ui/middle-truncate";
+import { MiddleTruncate } from "../ui/middle-truncate";
 
 /**
  * Flip this while reviewing command-palette thread subtitles.

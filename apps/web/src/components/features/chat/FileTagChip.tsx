@@ -1,5 +1,5 @@
-import { inferEntryKindFromPath } from "../../pierre-icons";
-import { ContextChipLabel } from "../ContextChip";
+import { inferEntryKindFromPath } from "../../../pierre-icons";
+import { ContextChipLabel } from "./ContextChip";
 import { PierreEntryIcon } from "./PierreEntryIcon";
 
 /** Icon and label for a file mention; render inside `<ContextChip kind="mention">`. */

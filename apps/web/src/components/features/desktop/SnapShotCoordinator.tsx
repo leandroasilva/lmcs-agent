@@ -9,12 +9,12 @@ import {
   type DraftId,
   type PersistedComposerImageAttachment,
   useComposerDraftStore,
-} from "../../composerDraftStore";
-import { useHandleNewThread } from "../../hooks/useHandleNewThread";
-import { useClientSettings } from "../../hooks/useSettings";
-import { readThreadShell } from "../../state/entities";
-import { compressImageToByteLimit, dataUrlToFile } from "../../lib/imageCompression";
-import { resolveThreadActionProjectRef } from "../../lib/chatThreadActions";
+} from "../../../composerDraftStore";
+import { useHandleNewThread } from "../../../hooks/useHandleNewThread";
+import { useClientSettings } from "../../../hooks/useSettings";
+import { readThreadShell } from "../../../state/entities";
+import { compressImageToByteLimit, dataUrlToFile } from "../../../lib/imageCompression";
+import { resolveThreadActionProjectRef } from "../../../lib/chatThreadActions";
 import {
   beginSnapShotAnimation,
   dismissAllSnapShotAnimations,
@@ -23,16 +23,16 @@ import {
   getPendingSnapShotAnimations,
   updateSnapShotAnimationSource,
   waitForSnapShotAnimationDestination,
-} from "../../lib/snapShotAnimation";
-import { resizeSnapShotSource } from "../../lib/snapShotSource";
-import { playSnapShotSound } from "../../lib/snapShotSound";
+} from "../../../lib/snapShotAnimation";
+import { resizeSnapShotSource } from "../../../lib/snapShotSource";
+import { playSnapShotSound } from "../../../lib/snapShotSound";
 import {
   dispatchSnapShotComposerFocus,
   getDesktopSnapShotBridge,
   type DesktopSnapShotBridge,
-} from "../../lib/desktopSnapShot";
-import { readFileAsDataUrl } from "../ChatView.logic";
-import { stackedThreadToast, toastManager } from "../ui/toast";
+} from "../../../lib/desktopSnapShot";
+import { readFileAsDataUrl } from "../chat/ChatView.logic";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
 
 type CaptureTarget = DraftId | ScopedThreadRef;
 

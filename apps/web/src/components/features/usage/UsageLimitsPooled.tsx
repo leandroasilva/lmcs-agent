@@ -14,15 +14,15 @@ import {
 import { AlertTriangleIcon, TicketIcon } from "lucide-react";
 import { Fragment, type ReactNode, useState } from "react";
 
-import { usePrimarySettings } from "../../hooks/useSettings";
-import { cn } from "../../lib/utils";
-import { formatUpcomingTimestamp } from "../../timestampFormat";
+import { usePrimarySettings } from "../../../hooks/useSettings";
+import { cn } from "../../../lib/utils";
+import { formatUpcomingTimestamp } from "../../../timestampFormat";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { getDriverOption } from "../settings/providerDriverMeta";
 import { RedactedSensitiveText } from "../settings/RedactedSensitiveText";
-import { Button } from "../ui/button";
-import { Alert, AlertTitle } from "../ui/alert";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+import { Button } from "../../ui/button";
+import { Alert, AlertTitle } from "../../ui/alert";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
 import {
   PaceIcon,
   ResetCreditDialog,

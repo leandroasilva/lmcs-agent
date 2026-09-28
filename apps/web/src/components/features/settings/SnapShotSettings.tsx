@@ -10,16 +10,16 @@ import {
 import { PlayIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useClientSettings, useUpdateClientSettings } from "../../hooks/useSettings";
-import { getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
+import { useClientSettings, useUpdateClientSettings } from "../../../hooks/useSettings";
+import { getDesktopSnapShotBridge } from "../../../lib/desktopSnapShot";
 import {
   readSnapShotSetupResume,
   saveSnapShotSetupResume,
   clearSnapShotSetupResume,
-} from "../../lib/snapShotSetupResume";
-import { sameSnapShotShortcut, snapShotKeybindingConflict } from "../../lib/snapShotShortcut";
-import { playSnapShotSound } from "../../lib/snapShotSound";
-import { primaryServerKeybindingsAtom } from "../../state/server";
+} from "../../../lib/snapShotSetupResume";
+import { sameSnapShotShortcut, snapShotKeybindingConflict } from "../../../lib/snapShotShortcut";
+import { playSnapShotSound } from "../../../lib/snapShotSound";
+import { primaryServerKeybindingsAtom } from "../../../state/server";
 import { commandLabel } from "./KeybindingsSettings.logic";
 import {
   snapShotStatus,
@@ -40,11 +40,18 @@ import {
   SettingsSection,
 } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
-import { Button } from "../ui/button";
-import { Menu, MenuItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../ui/menu";
-import { SelectButton } from "../ui/select";
-import { Switch } from "../ui/switch";
-import { toastManager } from "../ui/toast";
+import { Button } from "../../ui/button";
+import {
+  Menu,
+  MenuItem,
+  MenuPopup,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuTrigger,
+} from "../../ui/menu";
+import { SelectButton } from "../../ui/select";
+import { Switch } from "../../ui/switch";
+import { toastManager } from "../../ui/toast";
 import { SnapShotSetupDialog } from "./SnapShotSetupDialog";
 import { useSnapShotShortcutRecorder } from "./useSnapShotShortcutRecorder";
 import {

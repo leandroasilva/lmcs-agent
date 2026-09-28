@@ -1,9 +1,9 @@
 import { useAtomValue } from "@effect/atom-react";
 import { useId } from "react";
 
-import { APP_STAGE_LABEL } from "../branding";
-import { resolveServerBackedAppStageLabel } from "../branding.logic";
-import { primaryServerConfigAtom } from "../state/server";
+import { APP_STAGE_LABEL } from "../../branding";
+import { resolveServerBackedAppStageLabel } from "../../branding.logic";
+import { primaryServerConfigAtom } from "../../state/server";
 
 export type SidebarStageBackdropVariant = "nightly" | "dev";
 export type EnvironmentIdentificationPillLabel = "Dev" | "Nightly";

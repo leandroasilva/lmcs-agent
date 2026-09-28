@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import { ComposerPendingUserInputPanel } from "./ComposerPendingUserInputPanel";
-import type { PendingUserInput } from "../../session-logic";
+import type { PendingUserInput } from "../../../session-logic";
 
 const prompt: PendingUserInput = {
   requestId: ApprovalRequestId.make("request-1"),

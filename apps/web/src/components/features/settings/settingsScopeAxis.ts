@@ -1,4 +1,4 @@
-import type { EnvironmentPresentation } from "../../state/environments";
+import type { EnvironmentPresentation } from "../../../state/environments";
 import type { SettingsScopeSearch } from "./settingsScope";
 
 type ScopeEnvironment = Pick<EnvironmentPresentation, "environmentId" | "label" | "displayUrl">;

@@ -6,12 +6,15 @@ import {
   type ServerConfig,
 } from "@lmcstools/core";
 
-import { isElectron } from "../../env";
-import { usePrimarySessionState } from "../../environments/primary";
-import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
-import { usePrimaryEnvironmentId } from "../../state/environments";
-import { useEnvironmentSessionState } from "../../state/session";
-import { ENVIRONMENT_MACHINE_KIND_LABELS, EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
+import { isElectron } from "../../../env";
+import { usePrimarySessionState } from "../../../environments/primary";
+import { useUpdateEnvironmentSettings } from "../../../hooks/useSettings";
+import { usePrimaryEnvironmentId } from "../../../state/environments";
+import { useEnvironmentSessionState } from "../../../state/session";
+import {
+  ENVIRONMENT_MACHINE_KIND_LABELS,
+  EnvironmentMachineIcon,
+} from "../../ui/EnvironmentMachineIcon";
 import {
   MenuItem,
   MenuRadioGroup,
@@ -20,7 +23,7 @@ import {
   MenuSub,
   MenuSubPopup,
   MenuSubTrigger,
-} from "../ui/menu";
+} from "../../ui/menu";
 import {
   resolvePrimaryOperateAccess,
   resolveRemoteOperateAccess,

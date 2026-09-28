@@ -15,7 +15,7 @@ import {
 import { VirtualizedFile, type SelectedLineRange } from "@pierre/diffs";
 import { Editor } from "@pierre/diffs/editor";
 import { EditProvider, File, type FileOptions, Virtualizer } from "@pierre/diffs/react";
-import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
+import { DiffWorkerPoolProvider } from "../diffs/DiffWorkerPoolProvider";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -27,9 +27,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { isBrowserPreviewFile, openFileInPreview } from "~/browser/openFileInPreview";
 import { useAssetUrlRefresh, useAssetUrlState } from "~/assets/assetUrls";
-import { OpenInPicker } from "~/components/chat/OpenInPicker";
-import { MediaVideoPlayer } from "~/components/media/MediaVideoPlayer";
-import { MediaActions, type MediaActionSource } from "~/components/media/MediaActions";
+import { OpenInPicker } from "~/components/features/chat/OpenInPicker";
+import { MediaVideoPlayer } from "~/components/features/media/MediaVideoPlayer";
+import { MediaActions, type MediaActionSource } from "~/components/features/media/MediaActions";
 import { useRemoteOpenState } from "~/remoteOpen";
 import { useClientSettings, useUpdateClientSettings } from "~/hooks/useSettings";
 import { useTheme } from "~/hooks/useTheme";

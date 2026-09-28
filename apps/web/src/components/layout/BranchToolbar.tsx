@@ -19,9 +19,9 @@ import {
   useState,
 } from "react";
 
-import { useComposerDraftStore, type DraftId } from "../composerDraftStore";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { useProject, useThreadShell, useThreadShellsForProjectRefs } from "../state/entities";
+import { useComposerDraftStore, type DraftId } from "../../composerDraftStore";
+import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { useProject, useThreadShell, useThreadShellsForProjectRefs } from "../../state/entities";
 import {
   type EnvMode,
   type EnvironmentOption,
@@ -39,8 +39,8 @@ import {
 } from "./BranchToolbarBranchSelector";
 import { BranchToolbarEnvironmentSelector } from "./BranchToolbarEnvironmentSelector";
 import { BranchToolbarEnvModeSelector } from "./BranchToolbarEnvModeSelector";
-import { PreviousWorktreeItemContent } from "./PreviousWorktreeItemContent";
-import { ComposerControl } from "./chat/ComposerControl";
+import { PreviousWorktreeItemContent } from "../features/files/PreviousWorktreeItemContent";
+import { ComposerControl } from "../features/chat/ComposerControl";
 import {
   Menu,
   MenuGroup,
@@ -50,14 +50,14 @@ import {
   MenuRadioItem,
   MenuSeparator,
   MenuTrigger,
-} from "./ui/menu";
-import { Separator } from "./ui/separator";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { MiddleTruncate } from "./ui/middle-truncate";
-import { ComposerSurface } from "./chat/ComposerSurface";
-import { useComposerMenuProps } from "./chat/composerEventScope";
-import { measureRestingComposerControls } from "./chat/restingComposerControlsMeasurement";
-import { resolveRestingComposerControlsNaturalWidth } from "./composerFooterLayout";
+} from "../ui/menu";
+import { Separator } from "../ui/separator";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { MiddleTruncate } from "../ui/middle-truncate";
+import { ComposerSurface } from "../features/chat/ComposerSurface";
+import { useComposerMenuProps } from "../features/chat/composerEventScope";
+import { measureRestingComposerControls } from "../features/chat/restingComposerControlsMeasurement";
+import { resolveRestingComposerControlsNaturalWidth } from "../features/chat/composerFooterLayout";
 import { cn } from "~/lib/utils";
 
 export interface BranchToolbarHandle {

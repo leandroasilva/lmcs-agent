@@ -1,12 +1,12 @@
 import type { PreviewAnnotationPayload } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
-import type { ComposerFileAttachment, ComposerImageAttachment } from "../../composerDraftStore";
+import type { ComposerFileAttachment, ComposerImageAttachment } from "../../../composerDraftStore";
 import {
   buildMessageContext,
   fileContextReference,
   previewAnnotationContextId,
-} from "../../lib/composerContextRecords";
+} from "../../../lib/composerContextRecords";
 import {
   reconcileAttachmentContextReferences,
   type RetainedAttachmentContextPayloads,

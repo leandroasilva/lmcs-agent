@@ -11,10 +11,10 @@ import { useState, type ReactNode, type RefObject } from "react";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useAtomCommand } from "~/state/use-atom-command";
 
-import { Button } from "../ui/button";
-import { Select, SelectItem, SelectPopup, SelectTrigger } from "../ui/select";
-import { Textarea } from "../ui/textarea";
-import { toastManager } from "../ui/toast";
+import { Button } from "../../ui/button";
+import { Select, SelectItem, SelectPopup, SelectTrigger } from "../../ui/select";
+import { Textarea } from "../../ui/textarea";
+import { toastManager } from "../../ui/toast";
 import {
   pullRequestReviewKey,
   usePendingReviewComments,

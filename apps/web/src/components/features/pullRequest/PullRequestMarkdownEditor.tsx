@@ -3,9 +3,9 @@ import type { EnvironmentId, ScopedThreadRef } from "@lmcstools/core";
 
 import { cn } from "~/lib/utils";
 
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
+import { Button } from "../../ui/button";
+import { Textarea } from "../../ui/textarea";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
 
 /**

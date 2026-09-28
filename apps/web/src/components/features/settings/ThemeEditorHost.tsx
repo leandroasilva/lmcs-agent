@@ -1,13 +1,13 @@
 import { lazy, Suspense, useCallback, useSyncExternalStore } from "react";
 
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../../hooks/useTheme";
 import {
   getThemeDefinition,
   subscribeToCustomThemes,
   type ThemeAppearance,
   type ThemeDefinition,
-} from "../../themePalette";
-import { stackedThreadToast, toastManager } from "../ui/toast";
+} from "../../../themePalette";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
 import { useThemeEditorStore } from "./themeEditorStore";
 
 // The host mounts above the router on every page, but the editor body only

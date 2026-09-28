@@ -20,9 +20,9 @@ import {
   ServerUpdateAction,
   ServerUpdateProgress,
   ServerUpdatesAction,
-} from "../ServerUpdateAction";
-import { InlineButton } from "../ui/button";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+} from "../settings/ServerUpdateAction";
+import { InlineButton } from "../../ui/button";
+import { Popover, PopoverPopup, PopoverTrigger } from "../../ui/popover";
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";
 import { ComposerServerUpdateIcon } from "./ComposerServerUpdateStatus";
 

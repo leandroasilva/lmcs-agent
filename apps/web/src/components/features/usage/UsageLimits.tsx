@@ -19,11 +19,11 @@ import {
 import { GaugeIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { Fragment, type ReactNode, useState } from "react";
 
-import { usePrimarySettings } from "../../hooks/useSettings";
-import { environmentPresentations } from "../../state/presentation";
-import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { formatUpcomingTimestamp } from "../../timestampFormat";
+import { usePrimarySettings } from "../../../hooks/useSettings";
+import { environmentPresentations } from "../../../state/presentation";
+import { serverEnvironment } from "../../../state/server";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { formatUpcomingTimestamp } from "../../../timestampFormat";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -32,9 +32,9 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../ui/alert-dialog";
+import { Button } from "../../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { UsageLimitsPooled } from "./UsageLimitsPooled";
 import { PROVIDER_PRESENTATION } from "./usageProviders";
 

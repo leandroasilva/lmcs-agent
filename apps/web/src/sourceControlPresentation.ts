@@ -18,8 +18,8 @@ import {
   ForgejoIcon,
   GitHubIcon,
   GitLabIcon,
-} from "./components/Icons";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+} from "./components/ui/Icons";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 
 export interface SourceControlPresentation {
   readonly providerName: string;

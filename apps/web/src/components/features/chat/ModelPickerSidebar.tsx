@@ -3,13 +3,13 @@ import { type ProviderInstanceId } from "@lmcstools/core";
 import { memo, useLayoutEffect, useRef, useState } from "react";
 import { SparklesIcon, StarIcon } from "lucide-react";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { cn } from "~/lib/utils";
 import {
   isProviderInstancePickerReady,
   shouldShowInstanceBadge,
   type ProviderInstanceEntry,
-} from "../../providerInstances";
+} from "../../../providerInstances";
 
 /**
  * Build the hover tooltip for an instance button. Mirrors the old

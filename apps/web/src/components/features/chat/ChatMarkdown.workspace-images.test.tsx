@@ -26,7 +26,7 @@ vi.mock("../hooks/useTheme", () => ({ useTheme: () => ({ resolvedTheme: "dark" }
 vi.mock("../state/use-atom-query-runner", () => ({ useAtomQueryRunner: () => vi.fn() }));
 vi.mock("../state/use-atom-command", () => ({ useAtomCommand: () => vi.fn() }));
 vi.mock("../state/session", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../state/session")>()),
+  ...(await importOriginal<typeof import("../../../state/session")>()),
   usePreparedConnection: () => ({ _tag: "Loading" }),
 }));
 vi.mock("../state/entities", () => ({
@@ -49,7 +49,7 @@ vi.mock("~/lib/openPullRequestLink", () => ({
 }));
 
 import ChatMarkdown, { ChatMarkdownAssetImage } from "./ChatMarkdown";
-import { FileMarkdownPreview } from "./files/FileMarkdownPreview";
+import { FileMarkdownPreview } from "../files/FileMarkdownPreview";
 
 const threadRef = {
   environmentId: EnvironmentId.make("env-windows"),

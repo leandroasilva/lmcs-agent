@@ -1,12 +1,15 @@
 import { preloadPatchFile } from "@pierre/diffs/ssr";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ComposerPromptEditor, type ComposerPromptEditorHandle } from "../ComposerPromptEditor";
-import { EMPTY_COMPOSER_CONTEXT_RECORDS } from "../composerContextPresentation";
-import { terminalThemeFromApp } from "../ThreadTerminalDrawer";
-import { useTheme } from "../../hooks/useTheme";
-import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
-import { resolveDiffThemeName, type DiffThemeName } from "../../lib/diffRendering";
-import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
+import {
+  ComposerPromptEditor,
+  type ComposerPromptEditorHandle,
+} from "../chat/ComposerPromptEditor";
+import { EMPTY_COMPOSER_CONTEXT_RECORDS } from "../chat/composerContextPresentation";
+import { terminalThemeFromApp } from "../../layout/ThreadTerminalDrawer";
+import { useTheme } from "../../../hooks/useTheme";
+import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../../composerPlaceholder";
+import { resolveDiffThemeName, type DiffThemeName } from "../../../lib/diffRendering";
+import { PREFERRED_HIGHLIGHTER } from "../../../lib/syntaxHighlighting";
 import { GhosttyTerminalSurface } from "~/terminal/ghostty/surface";
 
 // The font previews are the real surfaces, not lookalikes: the composer's

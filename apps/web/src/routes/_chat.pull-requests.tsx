@@ -83,18 +83,18 @@ import {
   pullRequestOverrideAfterAction,
   reusePullRequestEntries,
   settlePullRequestOverrides,
-} from "../components/pullRequest/pullRequestList.logic";
+} from "../components/features/pullRequest/pullRequestList.logic";
 import {
   pullRequestListPreferences,
   type PullRequestListPreferencePatch,
   type PullRequestListPreferences,
   type PullRequestListSort,
   writePullRequestListPreferences,
-} from "../components/pullRequest/pullRequestListPreferences";
-import { assignProjectsToEnvironments } from "../components/pullRequest/pullRequestProjectAssignment.logic";
-import { pullRequestFilterProjects } from "../components/pullRequest/pullRequestProjectFilter.logic";
-import { environmentMachineIcon } from "../components/EnvironmentMachineIcon";
-import { PullRequestDetailPanel } from "../components/pullRequest/PullRequestDetailPanel";
+} from "../components/features/pullRequest/pullRequestListPreferences";
+import { assignProjectsToEnvironments } from "../components/features/pullRequest/pullRequestProjectAssignment.logic";
+import { pullRequestFilterProjects } from "../components/features/pullRequest/pullRequestProjectFilter.logic";
+import { environmentMachineIcon } from "../components/ui/EnvironmentMachineIcon";
+import { PullRequestDetailPanel } from "../components/features/pullRequest/PullRequestDetailPanel";
 import {
   PullRequestFiltersMenu,
   PullRequestFilterOptionIcon,
@@ -103,27 +103,27 @@ import {
   pullRequestProjectKey,
   type PullRequestExpectedHost,
   type PullRequestFilterOption,
-} from "../components/pullRequest/PullRequestListFilters";
-import { PullRequestListEmptyState } from "../components/pullRequest/PullRequestListEmptyState";
-import { PullRequestListGhost } from "../components/pullRequest/PullRequestGhosts";
+} from "../components/features/pullRequest/PullRequestListFilters";
+import { PullRequestListEmptyState } from "../components/features/pullRequest/PullRequestListEmptyState";
+import { PullRequestListGhost } from "../components/features/pullRequest/PullRequestGhosts";
 import {
   PullRequestRow,
   type PullRequestRowTarget,
-} from "../components/pullRequest/PullRequestRow";
-import { PullRequestsUnavailableState } from "../components/pullRequest/PullRequestsUnavailableState";
-import { RightPanelTabs, type PullRequestTabStatusSeed } from "../components/RightPanelTabs";
+} from "../components/features/pullRequest/PullRequestRow";
+import { PullRequestsUnavailableState } from "../components/features/pullRequest/PullRequestsUnavailableState";
+import { RightPanelTabs, type PullRequestTabStatusSeed } from "../components/layout/RightPanelTabs";
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
   WorkspaceBreadcrumbSeparator,
-} from "../components/WorkspaceBreadcrumb";
-import { WorkspacePageContainer } from "../components/WorkspacePageContainer";
-import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
+} from "../components/layout/WorkspaceBreadcrumb";
+import { WorkspacePageContainer } from "../components/layout/WorkspacePageContainer";
+import { WorkspacePageHeader } from "../components/layout/WorkspacePageHeader";
 import { isCommandPaletteOpen } from "../commandPaletteBus";
 import { isElectron } from "../env";
 import { resolveShortcutCommand, shortcutLabelForCommand } from "../keybindings";
 import { isTerminalFocused } from "../lib/terminalFocus";
-import { PanelLayoutControls } from "../components/chat/PanelLayoutControls";
+import { PanelLayoutControls } from "../components/features/chat/PanelLayoutControls";
 import { Button } from "../components/ui/button";
 import { Menu, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../components/ui/menu";
 import { SidebarInset } from "../components/ui/sidebar";
@@ -157,7 +157,7 @@ import { cn } from "~/lib/utils";
 import { Separator } from "~/components/ui/separator";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 
 function getShortcutContext() {
   return {

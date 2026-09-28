@@ -33,7 +33,7 @@ vi.mock("../ui/button", () => ({
   Button: (props: React.ComponentProps<"button">) => <button {...props} />,
 }));
 
-import { PopoverPopup } from "../ui/popover";
+import { PopoverPopup } from "../../ui/popover";
 import { AssistantCitationChip } from "./AssistantCitationChip";
 
 const citation = {

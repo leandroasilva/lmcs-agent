@@ -1,12 +1,12 @@
 import { type ApprovalRequestId } from "@lmcstools/core";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { type PendingUserInput } from "../../session-logic";
+import { type PendingUserInput } from "../../../session-logic";
 import {
   derivePendingUserInputProgress,
   type PendingUserInputDraftAnswer,
-} from "../../pendingUserInput";
+} from "../../../pendingUserInput";
 import { CheckIcon } from "lucide-react";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
 import { cn } from "~/lib/utils";
 import { ComposerBanner } from "./ComposerBanner";
 

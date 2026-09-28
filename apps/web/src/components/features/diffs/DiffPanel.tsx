@@ -24,16 +24,16 @@ import {
 import * as Schema from "effect/Schema";
 import * as DateTime from "effect/DateTime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useCodeViewFileReveal } from "./diffs/useCodeViewFileReveal";
-import { useOpenInPreferredEditor } from "../editorPreferences";
-import { useFileContextMenuHandler } from "../fileContextMenu";
-import { type DraftId } from "../composerDraftStore";
-import { openDiffFilePrimaryAction } from "../diffFileActions";
+import { useCodeViewFileReveal } from "./useCodeViewFileReveal";
+import { useOpenInPreferredEditor } from "../../../editorPreferences";
+import { useFileContextMenuHandler } from "../../../fileContextMenu";
+import { type DraftId } from "../../../composerDraftStore";
+import { openDiffFilePrimaryAction } from "../../../diffFileActions";
 import { useCheckpointDiff } from "~/lib/checkpointDiffState";
 import { cn } from "~/lib/utils";
-import { selectThreadDiffPanelSelection, useDiffPanelStore } from "../diffPanelStore";
-import { useLocalStorage } from "../hooks/useLocalStorage";
-import { useTheme } from "../hooks/useTheme";
+import { selectThreadDiffPanelSelection, useDiffPanelStore } from "../../../diffPanelStore";
+import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import { useTheme } from "../../../hooks/useTheme";
 import {
   buildFileDiffContentVersion,
   buildFileDiffIdentityKey,
@@ -42,24 +42,24 @@ import {
   getRenderablePatch,
   resolveDiffThemeName,
   resolveFileDiffPath,
-} from "../lib/diffRendering";
-import { PREFERRED_HIGHLIGHTER } from "../lib/syntaxHighlighting";
-import { areAllDiffFilesCollapsed, toggleAllDiffFiles } from "../lib/diffCollapse";
-import { useTurnDiffSummaries } from "../hooks/useTurnDiffSummaries";
-import { useWorkspaceMutationRefresh } from "../hooks/useWorkspaceMutationRefresh";
-import { useProject, useThread } from "../state/entities";
-import { resolveThreadRouteRef } from "../threadRoutes";
-import { useClientSettings, useUpdateClientSettings } from "../hooks/useSettings";
-import { formatShortTimestamp } from "../timestampFormat";
+} from "../../../lib/diffRendering";
+import { PREFERRED_HIGHLIGHTER } from "../../../lib/syntaxHighlighting";
+import { areAllDiffFilesCollapsed, toggleAllDiffFiles } from "../../../lib/diffCollapse";
+import { useTurnDiffSummaries } from "../../../hooks/useTurnDiffSummaries";
+import { useWorkspaceMutationRefresh } from "../../../hooks/useWorkspaceMutationRefresh";
+import { useProject, useThread } from "../../../state/entities";
+import { resolveThreadRouteRef } from "../../../threadRoutes";
+import { useClientSettings, useUpdateClientSettings } from "../../../hooks/useSettings";
+import { formatShortTimestamp } from "../../../timestampFormat";
 import { DiffFilePathCopyButton } from "./DiffFilePathCopyButton";
 import { DiffPanelLoadingState, DiffPanelShell, type DiffPanelMode } from "./DiffPanelShell";
-import { DiffStatLabel } from "./chat/DiffStatLabel";
-import { AnnotatableCodeView, type AnnotatableCodeViewHandle } from "./diffs/AnnotatableCodeView";
-import { DiffFileTree } from "./diffs/DiffFileTree";
-import { diffFileTreeEntries } from "./diffs/diffFileTree.logic";
-import { Button } from "./ui/button";
-import { ToggleGroup, Toggle } from "./ui/toggle-group";
-import { Switch } from "./ui/switch";
+import { DiffStatLabel } from "../chat/DiffStatLabel";
+import { AnnotatableCodeView, type AnnotatableCodeViewHandle } from "./AnnotatableCodeView";
+import { DiffFileTree } from "./DiffFileTree";
+import { diffFileTreeEntries } from "./diffFileTree.logic";
+import { Button } from "../../ui/button";
+import { ToggleGroup, Toggle } from "../../ui/toggle-group";
+import { Switch } from "../../ui/switch";
 import {
   Combobox,
   ComboboxEmpty,
@@ -68,7 +68,7 @@ import {
   ComboboxList,
   ComboboxPopup,
   ComboboxTrigger,
-} from "./ui/combobox";
+} from "../../ui/combobox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,19 +78,19 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "./ui/menu";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { useEnvironmentQuery } from "../state/query";
-import { useAtomCommand } from "../state/use-atom-command";
-import { serverEnvironment } from "../state/server";
-import { reviewEnvironment } from "../state/review";
-import { vcsEnvironment } from "../state/vcs";
-import { buildBaseRefChoices, filterBaseRefChoices } from "../lib/baseRefChoices";
-import { createGitDiffFileContentsLoader } from "../lib/diffFileContents";
+} from "../../ui/menu";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { useEnvironmentQuery } from "../../../state/query";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { serverEnvironment } from "../../../state/server";
+import { reviewEnvironment } from "../../../state/review";
+import { vcsEnvironment } from "../../../state/vcs";
+import { buildBaseRefChoices, filterBaseRefChoices } from "../../../lib/baseRefChoices";
+import { createGitDiffFileContentsLoader } from "../../../lib/diffFileContents";
 
-import { useReviewFilePatches } from "./diffs/useReviewFilePatches";
-import { DiffFileLoadingBoundary } from "./diffs/DiffFileLoadingBoundary";
-import { DiffFileStatus } from "./diffs/DiffFileStatus";
+import { useReviewFilePatches } from "./useReviewFilePatches";
+import { DiffFileLoadingBoundary } from "./DiffFileLoadingBoundary";
+import { DiffFileStatus } from "./DiffFileStatus";
 
 type DiffThemeType = "light" | "dark";
 const AUTOMATIC_BASE_REF = "__automatic_base_ref__";

@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
-import { deriveProjectIdentity } from "../../projectIdentity";
-import { ProjectMonogram } from "../ProjectMonogram";
+import { deriveProjectIdentity } from "../../../projectIdentity";
+import { ProjectMonogram } from "../files/ProjectMonogram";
 import {
   ProjectMonogramText,
   type ProjectIconColor,
@@ -14,9 +14,9 @@ import {
   PROJECT_EMOJIS,
   PROJECT_ICON_COLORS,
   projectIconColorClassName,
-} from "../../projectIconOptions";
+} from "../../../projectIconOptions";
 import { cn } from "~/lib/utils";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import {
   Dialog,
   DialogDescription,
@@ -25,10 +25,10 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { ScrollArea } from "../ui/scroll-area";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
+} from "../../ui/dialog";
+import { Input } from "../../ui/input";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
 
 const DEFAULT_ICON: IconName = "folder-code";
 const isMonogramText = Schema.is(ProjectMonogramText);

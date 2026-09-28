@@ -25,9 +25,9 @@ import { readLocalApi } from "~/localApi";
 import { cn } from "~/lib/utils";
 import { formatRelativeTimeLabel } from "~/timestampFormat";
 
-import { Button, InlineButton } from "../ui/button";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
-import { MiddleTruncate } from "../ui/middle-truncate";
+import { Button, InlineButton } from "../../ui/button";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
+import { MiddleTruncate } from "../../ui/middle-truncate";
 import { PullRequestCopyableCode } from "./PullRequestCopyableCode";
 import {
   PullRequestActorLabel,

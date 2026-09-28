@@ -1,5 +1,5 @@
 import { threadPullRequestSearchTerms } from "@lmcstools/core/threadPullRequests";
-import type { CommandPaletteLinkedThreads } from "../commandPaletteBus";
+import type { CommandPaletteLinkedThreads } from "../../commandPaletteBus";
 import {
   type EnvironmentId,
   type FilesystemBrowseEntry,
@@ -11,10 +11,10 @@ import type { SidebarThreadSortOrder } from "@lmcstools/core/settings";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
 import { type ReactNode } from "react";
-import { getThreadSortTimestamp, sortThreads } from "../lib/threadSort";
-import { normalizeSearchText } from "../lib/utils";
-import { formatRelativeTimeLabel } from "../timestampFormat";
-import { type Project, type SidebarThreadSummary, type Thread } from "../types";
+import { getThreadSortTimestamp, sortThreads } from "../../lib/threadSort";
+import { normalizeSearchText } from "../../lib/utils";
+import { formatRelativeTimeLabel } from "../../timestampFormat";
+import { type Project, type SidebarThreadSummary, type Thread } from "../../types";
 
 export const RECENT_THREAD_LIMIT = 12;
 export const ITEM_ICON_CLASS = "size-4 text-icon-muted";

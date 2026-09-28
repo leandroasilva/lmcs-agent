@@ -18,7 +18,7 @@ import {
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAssetUrlRefresh } from "~/assets/assetUrls";
-import ChatMarkdown from "~/components/ChatMarkdown";
+import ChatMarkdown from "~/components/features/chat/ChatMarkdown";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { toastManager } from "~/components/ui/toast";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";

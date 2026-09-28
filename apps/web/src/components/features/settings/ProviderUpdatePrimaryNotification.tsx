@@ -4,10 +4,10 @@ import { DownloadIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { type ProviderDriverKind, type ProviderInstanceId } from "@lmcstools/core";
 
-import { primaryServerProvidersAtom, serverEnvironment } from "../state/server";
-import { usePrimaryEnvironment } from "../state/environments";
-import { useDismissedProviderUpdateNotificationKeys } from "../providerUpdateDismissal";
-import { PROVIDER_ICON_BY_PROVIDER } from "./chat/providerIconUtils";
+import { primaryServerProvidersAtom, serverEnvironment } from "../../../state/server";
+import { usePrimaryEnvironment } from "../../../state/environments";
+import { useDismissedProviderUpdateNotificationKeys } from "../../../providerUpdateDismissal";
+import { PROVIDER_ICON_BY_PROVIDER } from "../chat/providerIconUtils";
 import {
   canOneClickUpdateProviderCandidate,
   collectProviderUpdateCandidates,
@@ -20,8 +20,8 @@ import {
   shouldShowPrimaryProviderUpdateToast,
   type ProviderUpdateToastView,
 } from "./ProviderUpdateLaunchNotification.logic";
-import { hiddenToastActionProps, stackedThreadToast, toastManager } from "./ui/toast";
-import { useAtomCommand } from "../state/use-atom-command";
+import { hiddenToastActionProps, stackedThreadToast, toastManager } from "../../ui/toast";
+import { useAtomCommand } from "../../../state/use-atom-command";
 
 const seenProviderUpdateNotificationKeys = new Set<string>();
 type ProviderUpdateToastId = ReturnType<typeof toastManager.add>;

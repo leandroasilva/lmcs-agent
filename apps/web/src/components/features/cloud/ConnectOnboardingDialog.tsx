@@ -13,12 +13,12 @@ import { usePrimarySessionState } from "~/environments/primary";
 import { useLocalStorage } from "~/hooks/useLocalStorage";
 import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
 import { CloudEnvironmentConnectRows } from "./CloudEnvironmentConnectList";
-import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
-import { Dialog } from "../ui/dialog";
-import { Switch } from "../ui/switch";
-import { toastManager } from "../ui/toast";
-import { WizardSteps, WizardPopup, WizardHeader, WizardPanel, WizardFooter } from "../ui/wizard";
+import { Button } from "../../ui/button";
+import { Checkbox } from "../../ui/checkbox";
+import { Dialog } from "../../ui/dialog";
+import { Switch } from "../../ui/switch";
+import { toastManager } from "../../ui/toast";
+import { WizardSteps, WizardPopup, WizardHeader, WizardPanel, WizardFooter } from "../../ui/wizard";
 
 /**
  * Post-sign-in onboarding wizard for LMCS Connect. Opens on every in-session

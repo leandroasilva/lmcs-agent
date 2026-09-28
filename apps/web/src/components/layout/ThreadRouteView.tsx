@@ -3,17 +3,20 @@ import type { ScopedThreadRef } from "@lmcstools/core";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import ChatView from "./ChatView";
-import { resolveDraftPromotionNavigationTarget, threadHasStarted } from "./ChatView.logic";
-import { waitForDraftHeroTransition } from "./chat/draftHeroTransition";
-import { SidebarInset } from "./ui/sidebar";
+import ChatView from "../features/chat/ChatView";
+import {
+  resolveDraftPromotionNavigationTarget,
+  threadHasStarted,
+} from "../features/chat/ChatView.logic";
+import { waitForDraftHeroTransition } from "../features/chat/draftHeroTransition";
+import { SidebarInset } from "../ui/sidebar";
 import {
   finalizePromotedDraftThreadByRef,
   markPromotedDraftThreadByRef,
   useBackgroundDraftSubmissionPending,
   useComposerDraftStore,
-} from "../composerDraftStore";
-import { useSidebarPendingFileDropStore } from "../sidebarPendingFileDropStore";
+} from "../../composerDraftStore";
+import { useSidebarPendingFileDropStore } from "../../sidebarPendingFileDropStore";
 import {
   useEnvironmentThreadRefs,
   useThread,
@@ -21,15 +24,15 @@ import {
   useThreadRefs,
   useThreadShell,
   useThreadStatus,
-} from "../state/entities";
-import { useEnvironmentQuery } from "../state/query";
-import { environmentShell } from "../state/shell";
+} from "../../state/entities";
+import { useEnvironmentQuery } from "../../state/query";
+import { environmentShell } from "../../state/shell";
 import {
   buildThreadRouteParams,
   resolveThreadRouteRenderState,
   type ThreadRouteTarget,
-} from "../threadRoutes";
-import { resolveThreadSyncPhase } from "../threadSync";
+} from "../../threadRoutes";
+import { resolveThreadSyncPhase } from "../../threadSync";
 
 /**
  * The single chat surface behind both `/draft/$draftId` and

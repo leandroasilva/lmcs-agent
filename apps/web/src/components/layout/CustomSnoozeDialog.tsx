@@ -6,22 +6,22 @@ import {
   resolveCustomSnooze,
   type CustomSnoozeInput,
 } from "@lmcstools/client/state/thread-settled";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { CalendarIcon } from "lucide-react";
-import { Calendar } from "./ui/calendar";
-import { weekStartsOn } from "../timestampFormat";
-import { Popover, PopoverTrigger, PopoverPopup } from "./ui/popover";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Toggle, ToggleGroup } from "./ui/toggle-group";
-import { Select, SelectTrigger, SelectValue, SelectPopup, SelectItem } from "./ui/select";
+import { Calendar } from "../ui/calendar";
+import { weekStartsOn } from "../../timestampFormat";
+import { Popover, PopoverTrigger, PopoverPopup } from "../ui/popover";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Toggle, ToggleGroup } from "../ui/toggle-group";
+import { Select, SelectTrigger, SelectValue, SelectPopup, SelectItem } from "../ui/select";
 import {
   NumberField,
   NumberFieldGroup,
   NumberFieldInput,
   NumberFieldDecrement,
   NumberFieldIncrement,
-} from "./ui/number-field";
+} from "../ui/number-field";
 import {
   Dialog,
   DialogPopup,
@@ -30,7 +30,7 @@ import {
   DialogDescription,
   DialogPanel,
   DialogFooter,
-} from "./ui/dialog";
+} from "../ui/dialog";
 
 type SnoozeChoice = { readonly snoozedUntil: string };
 type Request = { readonly resolve: (choice: SnoozeChoice | null) => void };

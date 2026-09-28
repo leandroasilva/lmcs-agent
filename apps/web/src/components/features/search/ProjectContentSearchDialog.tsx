@@ -10,10 +10,10 @@ import { useRightPanelStore } from "~/rightPanelStore";
 import { useProjectContentSearch } from "~/state/queries";
 
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
-import { CommandPaletteContent } from "../CommandPaletteContent";
-import { ScrollArea } from "../ui/scroll-area";
-import { Toggle } from "../ui/toggle";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { CommandPaletteContent } from "../../layout/CommandPaletteContent";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Toggle } from "../../ui/toggle";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { HighlightedSearchLine } from "./HighlightedSearchLine";
 
 interface ProjectContentSearchDialogProps {

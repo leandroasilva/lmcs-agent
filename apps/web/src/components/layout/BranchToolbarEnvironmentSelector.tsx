@@ -3,8 +3,8 @@ import { ScaleIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import type { EnvironmentOption } from "./BranchToolbar.logic";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { useComposerMenuProps } from "./chat/composerEventScope";
+import { EnvironmentMachineIcon } from "../ui/EnvironmentMachineIcon";
+import { useComposerMenuProps } from "../features/chat/composerEventScope";
 import {
   Select,
   SelectGroup,
@@ -13,8 +13,8 @@ import {
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+} from "../ui/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 interface BranchToolbarEnvironmentSelectorProps {
   autoEnvironmentLabel?: string | undefined;

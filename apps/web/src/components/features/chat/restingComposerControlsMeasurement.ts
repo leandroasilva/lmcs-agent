@@ -1,4 +1,4 @@
-import type { RestingComposerControlsMeasurement } from "../composerFooterLayout";
+import type { RestingComposerControlsMeasurement } from "./composerFooterLayout";
 
 function elementOuterWidth(element: HTMLElement): number {
   const width = element.getBoundingClientRect().width;

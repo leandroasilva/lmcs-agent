@@ -1,5 +1,5 @@
-import { MenuGroupLabel } from "../ui/menu";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { MenuGroupLabel } from "../../ui/menu";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 export function PullRequestStackHeader({
   number,

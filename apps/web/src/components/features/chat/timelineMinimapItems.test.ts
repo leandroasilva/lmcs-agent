@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { MessageId } from "@lmcstools/core";
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
 import { deriveTimelineMinimapItems, resolveTimelineMinimapPreview } from "./timelineMinimapItems";
-import type { ChatMessage } from "../../types";
+import type { ChatMessage } from "../../../types";
 
 function rows(
   entries: ReadonlyArray<readonly ["user" | "assistant", string]>,

@@ -2,9 +2,9 @@ import { useState } from "react";
 import * as Option from "effect/Option";
 import type { SshDeviceHostConfig } from "@lmcstools/core";
 import { CheckIcon, MonitorIcon, XIcon } from "lucide-react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Spinner } from "../ui/spinner";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Spinner } from "../../ui/spinner";
 import {
   Dialog,
   DialogPopup,
@@ -13,7 +13,7 @@ import {
   DialogDescription,
   DialogPanel,
   DialogFooter,
-} from "../ui/dialog";
+} from "../../ui/dialog";
 import { DeviceHostAvailability } from "../device/DeviceHostAvailability";
 import { useHostConnectionChecks } from "./useHostConnectionChecks";
 import {

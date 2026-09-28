@@ -5,13 +5,13 @@ import {
 } from "@lmcstools/core";
 import { parseKeybindingShortcut } from "@lmcstools/core/keybindings";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
+import { getDesktopSnapShotBridge } from "../../../lib/desktopSnapShot";
 import {
   formatSnapShotShortcutLabel,
   parseDesktopSnapShotShortcut,
-} from "../../lib/snapShotShortcut";
+} from "../../../lib/snapShotShortcut";
 import { SnapShotShortcutKeys } from "../desktop/SnapShotShortcutKeys";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { keybindingFromKeyboardEvent } from "./KeybindingsSettings.logic";
 import { createRecordingRequestTracker } from "./SnapShotSettings.logic";
 

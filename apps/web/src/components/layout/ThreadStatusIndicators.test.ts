@@ -8,8 +8,8 @@ import {
   resolveThreadPullRequestBadgePresentation,
   synchronizeTerminalPulse,
 } from "./ThreadStatusIndicators";
-import { newestPullRequestSummary } from "../state/pullRequests";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { newestPullRequestSummary } from "../../state/pullRequests";
+import { PullRequestGlyph } from "~/components/features/pullRequest/pullRequestIcons";
 
 describe("synchronizeTerminalPulse", () => {
   it("pins only the status pulse to the document clock", () => {

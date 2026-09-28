@@ -37,17 +37,17 @@ import {
 import {
   useResourceTelemetry,
   useResourceTelemetryHistory,
-} from "../../lib/resourceTelemetryState";
-import { cn } from "../../lib/utils";
-import { ensureLocalApi } from "../../localApi";
-import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { formatRelativeTime } from "../../timestampFormat";
-import { Button } from "../ui/button";
-import { ScrollArea } from "../ui/scroll-area";
-import { Toggle, ToggleGroup } from "../ui/toggle-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { toastManager } from "../ui/toast";
+} from "../../../lib/resourceTelemetryState";
+import { cn } from "../../../lib/utils";
+import { ensureLocalApi } from "../../../localApi";
+import { serverEnvironment } from "../../../state/server";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { formatRelativeTime } from "../../../timestampFormat";
+import { Button } from "../../ui/button";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Toggle, ToggleGroup } from "../../ui/toggle-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { toastManager } from "../../ui/toast";
 import {
   resourceHistoryBarHeight,
   resourceHistoryCpuScaleMax,

@@ -7,7 +7,7 @@ import type {
 } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import { sanitizeNewRefName } from "@lmcstools/core/git";
-import { toSortableTimestamp } from "../lib/threadSort";
+import { toSortableTimestamp } from "../../lib/threadSort";
 export {
   dedupeRemoteBranchesWithLocalMatches,
   deriveLocalBranchNameFromRemoteRef,

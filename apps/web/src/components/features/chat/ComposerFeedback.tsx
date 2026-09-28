@@ -1,9 +1,9 @@
 import { codexFeedbackNotice, type CodexFeedbackSubmission } from "@lmcstools/client/state/threads";
 import { MessageSquareIcon } from "lucide-react";
 
-import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
-import { Button } from "../ui/button";
-import { toastManager } from "../ui/toast";
+import { writeTextToClipboard } from "../../../hooks/useCopyToClipboard";
+import { Button } from "../../ui/button";
+import { toastManager } from "../../ui/toast";
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";
 
 export function feedbackBannerItem(

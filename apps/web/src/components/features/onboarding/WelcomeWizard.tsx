@@ -27,11 +27,11 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { TYPOGRAPHY_ADVANCED_STORAGE_KEY } from "../../appearanceFonts";
-import { useLocalStorage } from "../../hooks/useLocalStorage";
-import { hasCloudPublicConfig } from "../../cloud/publicConfig";
+import { TYPOGRAPHY_ADVANCED_STORAGE_KEY } from "../../../appearanceFonts";
+import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import { hasCloudPublicConfig } from "../../../cloud/publicConfig";
 import { useConnectAuthPrompt } from "../clerk/useConnectAuthPrompt";
-import { useCompleteOnboarding } from "../../onboarding/firstRun";
+import { useCompleteOnboarding } from "../../../onboarding/firstRun";
 import {
   groupOnboardingProjects,
   partitionOnboardingProjects,
@@ -39,43 +39,43 @@ import {
   resolveOnboardingLandingProject,
   resolveOnboardingProjectId,
   type OnboardingProjectGroup,
-} from "../../onboarding/projectImport.logic";
+} from "../../../onboarding/projectImport.logic";
 import {
   getOnboardingProviderState,
   resolveOnboardingProviderInstallCommand,
   resolveOnboardingProviderLoginCommand,
   selectOnboardingProvidersByDriver,
-} from "../../onboarding/providerReadiness.logic";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { newProjectId, randomUUID } from "../../lib/utils";
-import { agentSessionImport } from "../../state/agentSessions";
-import { readProjects, useProjects } from "../../state/entities";
-import { useEnvironments, usePrimaryEnvironment } from "../../state/environments";
-import { isOnboardingRelayEnvironment } from "../../onboarding/targetEnvironment.logic";
-import { useProjectScans } from "../../onboarding/useProjectScans";
-import { projectEnvironment } from "../../state/projects";
-import { serverEnvironment } from "../../state/server";
-import { terminalEnvironment } from "../../state/terminal";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { connectPairing } from "../../connection/onboarding";
+} from "../../../onboarding/providerReadiness.logic";
+import { useCopyToClipboard } from "../../../hooks/useCopyToClipboard";
+import { newProjectId, randomUUID } from "../../../lib/utils";
+import { agentSessionImport } from "../../../state/agentSessions";
+import { readProjects, useProjects } from "../../../state/entities";
+import { useEnvironments, usePrimaryEnvironment } from "../../../state/environments";
+import { isOnboardingRelayEnvironment } from "../../../onboarding/targetEnvironment.logic";
+import { useProjectScans } from "../../../onboarding/useProjectScans";
+import { projectEnvironment } from "../../../state/projects";
+import { serverEnvironment } from "../../../state/server";
+import { terminalEnvironment } from "../../../state/terminal";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { connectPairing } from "../../../connection/onboarding";
 import { getProviderSummary } from "../settings/providerStatus";
 import { getDriverOption } from "../settings/providerDriverMeta";
-import { TerminalViewport } from "../ThreadTerminalDrawer";
+import { TerminalViewport } from "../../layout/ThreadTerminalDrawer";
 import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
-import { ClaudeAI, OpenAI } from "../Icons";
-import { LMCSWordmark } from "../LMCSWordmark";
-import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
-import { Input } from "../ui/input";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
-import { ScrollArea } from "../ui/scroll-area";
-import { Spinner } from "../ui/spinner";
-import { WizardPanel, WizardSteps, WizardPopup, WizardHeader } from "../ui/wizard";
-import { Dialog } from "../ui/dialog";
-import { toastManager } from "../ui/toast";
-import { cn } from "../../lib/utils";
-import { formatRelativeTime } from "../../timestampFormat";
+import { ClaudeAI, OpenAI } from "../../ui/Icons";
+import { LMCSWordmark } from "../../ui/LMCSWordmark";
+import { Button } from "../../ui/button";
+import { Checkbox } from "../../ui/checkbox";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
+import { Input } from "../../ui/input";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "../../ui/tooltip";
+import { ScrollArea } from "../../ui/scroll-area";
+import { Spinner } from "../../ui/spinner";
+import { WizardPanel, WizardSteps, WizardPopup, WizardHeader } from "../../ui/wizard";
+import { Dialog } from "../../ui/dialog";
+import { toastManager } from "../../ui/toast";
+import { cn } from "../../../lib/utils";
+import { formatRelativeTime } from "../../../timestampFormat";
 
 /**
  * First-run welcome wizard. Rendered over the workspace at `/welcome` on a

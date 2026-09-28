@@ -1,10 +1,10 @@
 import { PlusIcon } from "lucide-react";
 import { useCallback } from "react";
 
-import { openCommandPalette } from "../commandPaletteBus";
-import { Button } from "./ui/button";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
-import { SidebarInset } from "./ui/sidebar";
+import { openCommandPalette } from "../../commandPaletteBus";
+import { Button } from "../ui/button";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "../ui/empty";
+import { SidebarInset } from "../ui/sidebar";
 
 export function NoProjectsHero() {
   const openAddProject = useCallback(() => openCommandPalette({ open: "add-project" }), []);

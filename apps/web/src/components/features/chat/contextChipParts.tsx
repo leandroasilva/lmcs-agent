@@ -8,15 +8,15 @@ import {
   type ReactNode,
 } from "react";
 
-import { PULL_REQUEST_STATE_PRESENTATION } from "~/components/pullRequest/pullRequestIcons";
+import { PULL_REQUEST_STATE_PRESENTATION } from "~/components/features/pullRequest/pullRequestIcons";
 import type { PullRequestContextDisplayState } from "~/lib/composerContextRecords";
-import { PierreEntryIcon } from "./chat/PierreEntryIcon";
+import { PierreEntryIcon } from "./PierreEntryIcon";
 import { middleTruncateAttachmentName } from "./composerInlineChip";
-import { PullRequestContextDetails } from "./PullRequestContextDetails";
+import { PullRequestContextDetails } from "../pullRequest/PullRequestContextDetails";
 import { ContextChip, ContextChipLabel, type ContextChipKind } from "./ContextChip";
-import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "./ui/popover";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
+import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../../ui/popover";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { PullRequestLinkPreview } from "../pullRequest/PullRequestLinkPreview";
 import { usePullRequestPreviewTarget } from "~/lib/openPullRequestLink";
 
 /** ContextChip kind for a pull request context in each display state. */

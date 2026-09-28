@@ -11,8 +11,8 @@ import {
   parseKeybindingWhenExpression,
 } from "@lmcstools/core/keybindings";
 
-import { shortcutKeyFromEvent } from "../../keybindings";
-import { isMacPlatform } from "../../lib/utils";
+import { shortcutKeyFromEvent } from "../../../keybindings";
+import { isMacPlatform } from "../../../lib/utils";
 
 export type KeybindingSource = "Default" | "Custom" | "Project";
 

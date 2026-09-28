@@ -9,8 +9,8 @@ import {
 } from "@lmcstools/core";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { visitElements } from "../../test/reactElementTree";
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
+import { visitElements } from "../../../test/reactElementTree";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
 
 const setup = vi.hoisted(() => ({
   auth: null as ProviderAuthState | null,
@@ -29,7 +29,7 @@ const setup = vi.hoisted(() => ({
 
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useRef: reactHookHarness.useRef,
@@ -38,7 +38,7 @@ vi.mock("react", async (importOriginal) => {
 });
 
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 

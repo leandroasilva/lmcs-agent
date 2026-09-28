@@ -6,15 +6,15 @@ import {
   searchOpenVsxThemes,
   type OpenVsxThemeExtension,
   type OpenVsxThemeSort,
-} from "../../openVsxThemes";
-import { useDebouncedValue } from "../../state/queries";
+} from "../../../openVsxThemes";
+import { useDebouncedValue } from "../../../state/queries";
 import {
   getCustomThemes,
   getStoredCustomThemeCollection,
   replaceCustomThemeCollection,
   type ThemeDefinition,
-} from "../../themePalette";
-import { GitHubIcon, GitLabIcon } from "../Icons";
+} from "../../../themePalette";
+import { GitHubIcon, GitLabIcon } from "../../ui/Icons";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -23,11 +23,11 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
-import { Button } from "../ui/button";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { Spinner } from "../ui/spinner";
+} from "../../ui/alert-dialog";
+import { Button } from "../../ui/button";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../../ui/input-group";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../../ui/select";
+import { Spinner } from "../../ui/spinner";
 
 const DOWNLOAD_FORMAT = new Intl.NumberFormat(undefined, {
   notation: "compact",

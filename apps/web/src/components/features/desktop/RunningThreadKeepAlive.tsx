@@ -1,6 +1,6 @@
 import { useAtomMount } from "@effect/atom-react";
 
-import { runningThreadKeepAliveAtom } from "../../state/threads";
+import { runningThreadKeepAliveAtom } from "../../../state/threads";
 
 /**
  * Desktop only. Keeps each running thread subscribed in every enabled

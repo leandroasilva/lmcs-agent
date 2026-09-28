@@ -7,8 +7,8 @@ import {
   resolveLockedWorkspaceLabel,
   type EnvMode,
 } from "./BranchToolbar.logic";
-import { useComposerMenuProps } from "./chat/composerEventScope";
-import { PreviousWorktreeItemContent } from "./PreviousWorktreeItemContent";
+import { useComposerMenuProps } from "../features/chat/composerEventScope";
+import { PreviousWorktreeItemContent } from "../features/files/PreviousWorktreeItemContent";
 import {
   Select,
   SelectGroup,
@@ -17,8 +17,8 @@ import {
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+} from "../ui/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 const PREVIOUS_WORKTREE_SELECT_VALUE = "previous-worktree";
 

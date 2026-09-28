@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { reactHookHarness as hooks } from "../../test/reactHookHarness";
+import { reactHookHarness as hooks } from "../../../test/reactHookHarness";
 import {
   getThemeDefinition,
   installCustomTheme,
@@ -12,7 +12,7 @@ import {
   themeColorToHex,
   updateCustomTheme,
   type ThemeDefinition,
-} from "../../themePalette";
+} from "../../../themePalette";
 import type { ThemeEditorSession } from "./themeEditorStore";
 
 const state = vi.hoisted(() => ({
@@ -30,7 +30,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return {
     ...actual,
     useCallback: reactHookHarness.useCallback,
@@ -49,7 +49,7 @@ vi.mock("react", async (importOriginal) => {
 });
 
 vi.mock("react/compiler-runtime", async () => {
-  const { reactHookHarness } = await import("../../test/reactHookHarness");
+  const { reactHookHarness } = await import("../../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
 });
 

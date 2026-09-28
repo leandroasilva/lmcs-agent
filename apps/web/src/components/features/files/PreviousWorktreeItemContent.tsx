@@ -1,6 +1,6 @@
 import { HistoryIcon } from "lucide-react";
 
-import { MiddleTruncate } from "./ui/middle-truncate";
+import { MiddleTruncate } from "../../ui/middle-truncate";
 
 export function PreviousWorktreeItemContent({ branch }: { branch: string | null }) {
   return (

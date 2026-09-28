@@ -5,12 +5,12 @@ import type { ServerProvider } from "@lmcstools/core";
 import { CircleCheckIcon, DownloadIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 
-import { primaryServerProvidersAtom } from "../../state/server";
+import { primaryServerProvidersAtom } from "../../../state/server";
 import {
   getProviderUpdateSidebarPillView,
   type ProviderUpdateSidebarPillView,
-} from "../ProviderUpdateLaunchNotification.logic";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+} from "../../features/settings/ProviderUpdateLaunchNotification.logic";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 
 const PROVIDER_UPDATE_PILL_STYLES = {
   loading:

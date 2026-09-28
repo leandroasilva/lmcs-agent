@@ -1,13 +1,13 @@
 import type { ProviderInstanceId, UnifiedSettings } from "@lmcstools/core";
 import { useCallback } from "react";
 
-import { getCustomModelOptionsByInstance } from "../../modelSelection";
+import { getCustomModelOptionsByInstance } from "../../../modelSelection";
 import {
   applyProviderInstanceSettings,
   deriveProviderInstanceEntries,
   type ProviderInstanceEntry,
-} from "../../providerInstances";
-import { useEnvironments } from "../../state/environments";
+} from "../../../providerInstances";
+import { useEnvironments } from "../../../state/environments";
 import { useSettingsScope } from "./SettingsScopeContext";
 
 /**

@@ -1,4 +1,4 @@
-import { useLoadBalancedEnvironment } from "../hooks/useLoadBalancedEnvironment";
+import { useLoadBalancedEnvironment } from "../../../hooks/useLoadBalancedEnvironment";
 import { visibleThreadPullRequests } from "@lmcstools/core/threadPullRequests";
 import type { UsageLimitSourceSnapshots } from "@lmcstools/core";
 import {
@@ -6,16 +6,16 @@ import {
   hasProviderUsageLimits,
   isUsageLimitsCommand,
 } from "@lmcstools/core/usageLimits";
-import { feedbackBannerItem } from "./chat/ComposerFeedback";
-import { usageLimitsBannerItem } from "./chat/ComposerUsageLimits";
+import { feedbackBannerItem } from "./ComposerFeedback";
+import { usageLimitsBannerItem } from "./ComposerUsageLimits";
 import { derivePendingRequests } from "@lmcstools/client/pending-requests";
 import {
   questionAttachmentDraftId,
   questionAttachmentDraftPrefix,
   clearQuestionAttachmentDraft,
   useQuestionAttachmentPreparation,
-} from "../questionAttachments";
-import { useAttachmentUploadStore } from "../lib/attachmentUploadQueue";
+} from "../../../questionAttachments";
+import { useAttachmentUploadStore } from "../../../lib/attachmentUploadQueue";
 import {
   type AssistantCitation,
   type ApprovalRequestId,
@@ -100,8 +100,8 @@ import {
 import { flushSync } from "react-dom";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { assistantCitationsToPlainText } from "@lmcstools/core/assistantCitations";
-import { assistantCitationFromLocation } from "../lib/assistantCitationNavigation";
-import { isMacPlatform } from "../lib/utils";
+import { assistantCitationFromLocation } from "../../../lib/assistantCitationNavigation";
+import { isMacPlatform } from "../../../lib/utils";
 import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -114,14 +114,14 @@ import {
 import * as Cause from "effect/Cause";
 import * as Schema from "effect/Schema";
 import { AsyncResult } from "effect/unstable/reactivity";
-import { isElectron } from "../env";
-import { readLocalApi } from "../localApi";
-import { useDiffPanelStore } from "../diffPanelStore";
+import { isElectron } from "../../../env";
+import { readLocalApi } from "../../../localApi";
+import { useDiffPanelStore } from "../../../diffPanelStore";
 import {
   collapseExpandedComposerCursor,
   type ComposerSubmissionIntent,
   parseStandaloneComposerSlashCommand,
-} from "../composer-logic";
+} from "../../../composer-logic";
 import {
   createMessageAttachmentPreviewProjector,
   derivePhase,
@@ -134,7 +134,7 @@ import {
   isLatestTurnSettled,
   selectHandoffImageResources,
   type TimelineEntriesProjection,
-} from "../session-logic";
+} from "../../../session-logic";
 import { type LegendListRef } from "@legendapp/list/react";
 import {
   CHAT_TIMELINE_ANCHOR_OFFSET,
@@ -142,7 +142,7 @@ import {
   readTimelinePosition,
   timelineContentOverflowsViewport,
   type TimelineScrollMode,
-} from "./chat/timelineScrollAnchoring";
+} from "./timelineScrollAnchoring";
 import {
   buildPendingUserInputAnswers,
   carryDisplacedCustomAnswerIntoPrompt,
@@ -150,17 +150,17 @@ import {
   setPendingUserInputCustomAnswer,
   togglePendingUserInputOptionSelection,
   type PendingUserInputDraftAnswer,
-} from "../pendingUserInput";
-import { useUiStateStore } from "../uiStateStore";
+} from "../../../pendingUserInput";
+import { useUiStateStore } from "../../../uiStateStore";
 import {
   latestWorkspaceMutationId,
   useWorkspaceMutationRefresh,
-} from "../hooks/useWorkspaceMutationRefresh";
+} from "../../../hooks/useWorkspaceMutationRefresh";
 import {
   buildPlanImplementationThreadTitle,
   buildPlanImplementationPrompt,
   resolvePlanFollowUpSubmission,
-} from "../proposedPlan";
+} from "../../../proposedPlan";
 import {
   DEFAULT_INTERACTION_MODE,
   DEFAULT_THREAD_TERMINAL_ID,
@@ -169,14 +169,14 @@ import {
   isImageAttachment,
   type SessionPhase,
   type Thread,
-} from "../types";
-import { useTheme } from "../hooks/useTheme";
-import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { isCommandPaletteOpen } from "../commandPaletteBus";
-import { subscribeSnapShotComposerFocus } from "../lib/desktopSnapShot";
+} from "../../../types";
+import { useTheme } from "../../../hooks/useTheme";
+import { writeTextToClipboard } from "../../../hooks/useCopyToClipboard";
+import { isCommandPaletteOpen } from "../../../commandPaletteBus";
+import { subscribeSnapShotComposerFocus } from "../../../lib/desktopSnapShot";
 import { buildTemporaryWorktreeBranchName } from "@lmcstools/core/git";
-import { useMediaQuery } from "../hooks/useMediaQuery";
-import { RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY } from "../rightPanelLayout";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
+import { RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY } from "../../../rightPanelLayout";
 import {
   pullRequestSurface,
   selectActiveRightPanel,
@@ -184,50 +184,50 @@ import {
   selectThreadRightPanelState,
   type RightPanelSurface,
   useRightPanelStore,
-} from "../rightPanelStore";
+} from "../../../rightPanelStore";
 import {
   isPreviewSupportedInRuntime,
   setActivePreviewTab,
   useThreadPreviewState,
-} from "../previewStateStore";
-import { previewRuntimeTabId } from "../browser/previewRuntimeTabId";
-import { BrowserSettingsReadError } from "../browser/openFileInPreview";
-import { addBrowserSurface } from "./preview/addBrowserSurface";
-import { closePreviewSession } from "./preview/closePreviewSession";
-import { ThreadPreviewMiniPlayer } from "./preview/ThreadPreviewMiniPlayer";
-import { subscribePreviewAction } from "./preview/previewActionBus";
-import { getConfiguredPreviewUrls } from "./preview/previewEmptyStateLogic";
-import { makeWorkspaceFileDropHandlers } from "./chat/workspaceFileDrop";
+} from "../../../previewStateStore";
+import { previewRuntimeTabId } from "../../../browser/previewRuntimeTabId";
+import { BrowserSettingsReadError } from "../../../browser/openFileInPreview";
+import { addBrowserSurface } from "../preview/addBrowserSurface";
+import { closePreviewSession } from "../preview/closePreviewSession";
+import { ThreadPreviewMiniPlayer } from "../preview/ThreadPreviewMiniPlayer";
+import { subscribePreviewAction } from "../preview/previewActionBus";
+import { getConfiguredPreviewUrls } from "../preview/previewEmptyStateLogic";
+import { makeWorkspaceFileDropHandlers } from "./workspaceFileDrop";
 import {
   isSameSidebarThreadRef,
   useSidebarPendingFileDropStore,
-} from "../sidebarPendingFileDropStore";
+} from "../../../sidebarPendingFileDropStore";
 import {
   browserMiniPlayerSource,
   previewMiniPlayerSourceKey,
   selectThreadPreviewMiniPlayer,
   usePreviewMiniPlayerStore,
-} from "../previewMiniPlayerStore";
-import { pullRequestPanelContext } from "./pullRequest/pullRequestDetail.logic";
-import { PullRequestDetailPanel } from "./pullRequest/PullRequestDetailPanel";
-import { PullRequestDetailGhost } from "./pullRequest/PullRequestGhosts";
-import { PullRequestsUnavailableState } from "./pullRequest/PullRequestsUnavailableState";
-import { RightPanelTabs } from "./RightPanelTabs";
-import { AgentsPanel } from "./AgentsPanel";
-import { LinkPullRequestDialogHost } from "./pullRequest/LinkPullRequestDialog";
-import { ThreadPullRequestsPanel } from "./pullRequest/ThreadPullRequestsPanel";
+} from "../../../previewMiniPlayerStore";
+import { pullRequestPanelContext } from "../pullRequest/pullRequestDetail.logic";
+import { PullRequestDetailPanel } from "../pullRequest/PullRequestDetailPanel";
+import { PullRequestDetailGhost } from "../pullRequest/PullRequestGhosts";
+import { PullRequestsUnavailableState } from "../pullRequest/PullRequestsUnavailableState";
+import { RightPanelTabs } from "../../layout/RightPanelTabs";
+import { AgentsPanel } from "../../layout/AgentsPanel";
+import { LinkPullRequestDialogHost } from "../pullRequest/LinkPullRequestDialog";
+import { ThreadPullRequestsPanel } from "../pullRequest/ThreadPullRequestsPanel";
 import { useDeviceState } from "~/state/device";
-import { DeviceSetup } from "./device/DeviceSetup";
-import { Dialog } from "./ui/dialog";
-import { WizardPopup } from "./ui/wizard";
+import { DeviceSetup } from "../device/DeviceSetup";
+import { Dialog } from "../../ui/dialog";
+import { WizardPopup } from "../../ui/wizard";
 import {
   deriveAgentPanelModel,
   foldSubagentActivities,
 } from "@lmcstools/client/state/subagentRuntime";
-import { BranchToolbar, type BranchToolbarHandle } from "./BranchToolbar";
-import { resolveShortcutCommand, shortcutLabelForCommand } from "../keybindings";
-import { isEditableFocused } from "../lib/editableFocus";
-import ThreadTerminalDrawer from "./ThreadTerminalDrawer";
+import { BranchToolbar, type BranchToolbarHandle } from "../../layout/BranchToolbar";
+import { resolveShortcutCommand, shortcutLabelForCommand } from "../../../keybindings";
+import { isEditableFocused } from "../../../lib/editableFocus";
+import ThreadTerminalDrawer from "../../layout/ThreadTerminalDrawer";
 import {
   AlarmClockIcon,
   CheckCircle2Icon,
@@ -239,9 +239,9 @@ import {
   WifiOffIcon,
 } from "lucide-react";
 import { cn, randomHex, randomUUID } from "~/lib/utils";
-import { stackedThreadToast, toastManager } from "./ui/toast";
+import { stackedThreadToast, toastManager } from "../../ui/toast";
 import { decodeProjectScriptKeybindingRule } from "~/lib/projectScriptKeybindings";
-import { type NewProjectScriptInput } from "./ProjectScriptsControl";
+import { type NewProjectScriptInput } from "../settings/ProjectScriptsControl";
 import {
   buildProjectScript,
   commandForProjectScript,
@@ -251,44 +251,44 @@ import {
 import { newDraftId, newMessageId, newThreadId } from "~/lib/utils";
 import { useBrowserHistoryStore } from "~/browserHistoryStore";
 import { registerFaviconProjectForThread } from "~/browserFaviconStore";
-import { getProviderModelCapabilities } from "../providerModels";
+import { getProviderModelCapabilities } from "../../../providerModels";
 import {
   applyProviderInstanceSettings,
   deriveProviderInstanceEntries,
   NO_PROVIDER_MODEL_SELECTION,
   sortProviderInstanceEntries,
-} from "../providerInstances";
+} from "../../../providerInstances";
 import {
   useClientSettings,
   useClientSettingsHydrated,
   useEnvironmentSettings,
-} from "../hooks/useSettings";
-import { useNowMinute } from "../hooks/useNowMinute";
-import { usePanelAnimationSettings, usePanelPresence } from "../panelAnimations";
-import { useNewThreadHandler } from "../hooks/useHandleNewThread";
-import { useRemoveClonedProject } from "../hooks/useRemoveClonedProject";
-import { useOpenPanelPullRequestUrl } from "../hooks/useOpenPanelPullRequestUrl";
-import { useThreadActions } from "../hooks/useThreadActions";
-import { resolveAppModelSelectionForInstance } from "../modelSelection";
+} from "../../../hooks/useSettings";
+import { useNowMinute } from "../../../hooks/useNowMinute";
+import { usePanelAnimationSettings, usePanelPresence } from "../../../panelAnimations";
+import { useNewThreadHandler } from "../../../hooks/useHandleNewThread";
+import { useRemoveClonedProject } from "../../../hooks/useRemoveClonedProject";
+import { useOpenPanelPullRequestUrl } from "../../../hooks/useOpenPanelPullRequestUrl";
+import { useThreadActions } from "../../../hooks/useThreadActions";
+import { resolveAppModelSelectionForInstance } from "../../../modelSelection";
+import { getComposerPromptInjectionState, getComposerProviderState } from "./composerProviderState";
 import {
-  getComposerPromptInjectionState,
-  getComposerProviderState,
-} from "./chat/composerProviderState";
-import { confirmTerminalClose, isTerminalCloseConfirmPending } from "../lib/terminalCloseConfirm";
-import { isPreviewFocused } from "../lib/previewFocus";
-import { getTerminalFocusOwner } from "../lib/terminalFocus";
+  confirmTerminalClose,
+  isTerminalCloseConfirmPending,
+} from "../../../lib/terminalCloseConfirm";
+import { isPreviewFocused } from "../../../lib/previewFocus";
+import { getTerminalFocusOwner } from "../../../lib/terminalFocus";
 import {
   preventRepeatedTerminalCloseShortcut,
   preventTerminalCloseShortcut,
-} from "../lib/terminalCloseShortcut";
-import { resolveNewDraftStartFromOrigin } from "../lib/chatThreadActions";
+} from "../../../lib/terminalCloseShortcut";
+import { resolveNewDraftStartFromOrigin } from "../../../lib/chatThreadActions";
 import {
   derivePhysicalProjectKey,
   deriveLogicalProjectKeyFromSettings,
   selectProjectGroupingSettings,
-} from "../logicalProject";
-import { buildPhysicalToLogicalProjectKeyMap } from "../sidebarProjectGrouping";
-import { buildDraftThreadRouteParams, buildThreadRouteParams } from "../threadRoutes";
+} from "../../../logicalProject";
+import { buildPhysicalToLogicalProjectKeyMap } from "../../../sidebarProjectGrouping";
+import { buildDraftThreadRouteParams, buildThreadRouteParams } from "../../../threadRoutes";
 import {
   beginBackgroundDraftSubmissionByRef,
   clearBackgroundDraftSubmissionByRef,
@@ -301,17 +301,17 @@ import {
   restoreFailedBackgroundDraftThread,
   useComposerDraftStore,
   DraftId,
-} from "../composerDraftStore";
+} from "../../../composerDraftStore";
 import {
   formatTerminalContextLabel,
   type TerminalContextDraft,
   type TerminalContextSelection,
-} from "../lib/terminalContext";
+} from "../../../lib/terminalContext";
 import {
   ensureInlineContextReferences,
   removeInlineContextReference,
   stripInlineContextReferences,
-} from "../lib/composerContextReferences";
+} from "../../../lib/composerContextReferences";
 import { serializeLegacyContextMessage } from "@lmcstools/core/composerContextLegacySend";
 import {
   buildMessageContext,
@@ -319,93 +319,102 @@ import {
   previewAnnotationContextReference,
   reviewCommentContextLabel,
   terminalContextReference,
-} from "../lib/composerContextRecords";
+} from "../../../lib/composerContextRecords";
 import {
   isQueuedMessageDue,
   latestCompletedToolActivityId,
   type QueuedComposerMessage,
   useQueuedMessages,
   useQueuedMessageStore,
-} from "../queuedMessageStore";
-import { type ReviewCommentContext } from "../reviewCommentContext";
-import { environmentCatalog } from "../connection/catalog";
-import { isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
-import { useEnvironmentDisconnectDelay } from "../hooks/useEnvironmentDisconnectDelay";
-import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
-import { useKnownTerminalSessions, useThreadRunningTerminalIds } from "../state/terminalSessions";
-import { useEnvironmentQuery } from "../state/query";
+} from "../../../queuedMessageStore";
+import { type ReviewCommentContext } from "../../../reviewCommentContext";
+import { environmentCatalog } from "../../../connection/catalog";
+import { isDesktopLocalConnectionTarget } from "../../../connection/desktopLocal";
+import { useEnvironmentDisconnectDelay } from "../../../hooks/useEnvironmentDisconnectDelay";
+import {
+  selectThreadTerminalUiState,
+  useTerminalUiStateStore,
+} from "../../../terminalUiStateStore";
+import {
+  useKnownTerminalSessions,
+  useThreadRunningTerminalIds,
+} from "../../../state/terminalSessions";
+import { useEnvironmentQuery } from "../../../state/query";
 import {
   environmentServerConfigsAtom,
   primaryServerAvailableEditorsAtom,
   primaryServerKeybindingsAtom,
   serverEnvironment,
-} from "../state/server";
-import { terminalEnvironment } from "../state/terminal";
-import { threadEnvironment, useEnvironmentThread } from "../state/threads";
+} from "../../../state/server";
+import { terminalEnvironment } from "../../../state/terminal";
+import { threadEnvironment, useEnvironmentThread } from "../../../state/threads";
 import { requestOlderThreadTurns, threadHasOlderTurns } from "@lmcstools/client/state/threads";
 import { resolveProviderSkillsForCwd } from "@lmcstools/client/providerSkills";
-import { vcsEnvironment } from "../state/vcs";
-import { sourceControlEnvironment } from "../state/sourceControl";
-import { useProjectClone } from "../state/projectClones";
+import { vcsEnvironment } from "../../../state/vcs";
+import { sourceControlEnvironment } from "../../../state/sourceControl";
+import { useProjectClone } from "../../../state/projectClones";
 import { projectCloneDisplayName, projectCloneProgressSummary } from "@lmcstools/core";
-import { useEnvironments, usePrimaryEnvironment } from "../state/environments";
+import { useEnvironments, usePrimaryEnvironment } from "../../../state/environments";
 import {
   useProject,
   useProjects,
   useThread,
   useThreadRefs,
   useThreadShell,
-} from "../state/entities";
-import { environmentShell } from "../state/shell";
-import { ChatComposer, type ChatComposerHandle } from "./chat/ChatComposer";
-import { createPageScrollController, type PageScrollKey } from "./chat/pageScrollController";
-import { isTimelineScrollTarget } from "./chat/timelineScrollTarget";
-import { DraftHeroHeadline } from "./chat/DraftHeroHeadline";
-import { ExpandedImageDialog } from "./chat/ExpandedImageDialog";
-import { PullRequestThreadDialog } from "./PullRequestThreadDialog";
-import { MessagesTimeline } from "./chat/MessagesTimeline";
-import type { AssistantCitationRequest } from "./chat/AssistantCitationSource";
-import { resolveTimelineIsAtEnd, worktreeSetupAgentStarted } from "./chat/MessagesTimeline.logic";
+} from "../../../state/entities";
+import { environmentShell } from "../../../state/shell";
+import { ChatComposer, type ChatComposerHandle } from "./ChatComposer";
+import { createPageScrollController, type PageScrollKey } from "./pageScrollController";
+import { isTimelineScrollTarget } from "./timelineScrollTarget";
+import { DraftHeroHeadline } from "./DraftHeroHeadline";
+import { ExpandedImageDialog } from "./ExpandedImageDialog";
+import { PullRequestThreadDialog } from "../pullRequest/PullRequestThreadDialog";
+import { MessagesTimeline } from "./MessagesTimeline";
+import type { AssistantCitationRequest } from "./AssistantCitationSource";
+import { resolveTimelineIsAtEnd, worktreeSetupAgentStarted } from "./MessagesTimeline.logic";
 import { resolveComposerTimelineInset, resolveScrollToEndClearance } from "./composerFooterLayout";
-import { ChatHeader } from "./chat/ChatHeader";
-import { PanelLayoutControls, RightPanelMaximizeControl } from "./chat/PanelLayoutControls";
-import { expandedImageKey, type ExpandedImagePreview } from "./chat/ExpandedImagePreview";
+import { ChatHeader } from "./ChatHeader";
+import { PanelLayoutControls, RightPanelMaximizeControl } from "./PanelLayoutControls";
+import { expandedImageKey, type ExpandedImagePreview } from "./ExpandedImagePreview";
 import { NoActiveThreadState } from "./NoActiveThreadState";
-import { WorkspacePageHeader } from "./WorkspacePageHeader";
+import { WorkspacePageHeader } from "../../layout/WorkspacePageHeader";
 import {
   type EnvironmentOption,
   resolveEffectiveEnvMode,
   resolveLocalCheckoutBranchMismatch,
   shouldShowComposerContextStrip,
   shouldShowEnvironmentIndicator,
-} from "./BranchToolbar.logic";
+} from "../../layout/BranchToolbar.logic";
 import {
   getProviderStatusBannerKey,
   ProviderStatusBanner,
   shouldShowProviderStatusBanner,
-} from "./chat/ProviderStatusBanner";
+} from "./ProviderStatusBanner";
 import {
   dismissThreadErrorBannerForSession,
   getThreadErrorBannerKey,
   isThreadErrorBannerDismissedForSession,
   shouldShowThreadErrorBanner,
   ThreadErrorBanner,
-} from "./chat/ThreadErrorBanner";
-import type { ComposerBannerStackItem } from "./chat/ComposerBannerStack";
-import { ComposerSurface } from "./chat/ComposerSurface";
+} from "./ThreadErrorBanner";
+import type { ComposerBannerStackItem } from "./ComposerBannerStack";
+import { ComposerSurface } from "./ComposerSurface";
 import {
   hasAvailableCompactionProvider,
   hasDismissedResumeCompaction,
   shouldOfferResumeCompaction,
-} from "./chat/ContextWindowMeter.logic";
-import { deriveLatestContextWindowSnapshot, formatContextWindowTokens } from "../lib/contextWindow";
+} from "./ContextWindowMeter.logic";
+import {
+  deriveLatestContextWindowSnapshot,
+  formatContextWindowTokens,
+} from "../../../lib/contextWindow";
 import {
   DRAFT_HERO_TRANSITION_ANIMATION_ID,
   DRAFT_HERO_TRANSITION_EASING,
   MOBILE_COMPOSER_VIEW_TRANSITION_NAME,
   MOBILE_DRAFT_HEADLINE_VIEW_TRANSITION_NAME,
   runMobileComposerTransition,
-} from "./chat/draftHeroTransition";
+} from "./draftHeroTransition";
 import {
   MAX_HIDDEN_MOUNTED_TERMINAL_THREADS,
   agentControlledBrowserCloseConfirmation,
@@ -472,26 +481,26 @@ import {
   waitForStartedServerThread,
   shouldRefocusComposerOnWindowFocus,
 } from "./ChatView.logic";
-import type { ThreadSyncPhase } from "../threadSync";
+import type { ThreadSyncPhase } from "../../../threadSync";
 import { useLocalStorage } from "~/hooks/useLocalStorage";
-import { useComposerHandleContext } from "../composerHandleContext";
+import { useComposerHandleContext } from "../../../composerHandleContext";
 import {
   awaitAttachmentUploads,
   getUploadedAttachments,
   releaseDraftAttachments,
   startAttachmentUpload,
-} from "../lib/attachmentUploadQueue";
+} from "../../../lib/attachmentUploadQueue";
 import { sanitizeThreadErrorMessage } from "~/rpc/transportError";
-import { RightPanelSheet } from "./RightPanelSheet";
-import { previewEnvironment } from "../state/preview";
+import { RightPanelSheet } from "../../layout/RightPanelSheet";
+import { previewEnvironment } from "../../../state/preview";
 import { clampFileAttachmentUploadBytes } from "@lmcstools/client/state/attachments";
-import { appAtomRegistry } from "../rpc/atomRegistry";
-import { fileAttachmentCapabilityBlockReason } from "./chat/composerAttachmentFiles";
-import { assetEnvironment } from "../state/assets";
-import { readPreparedConnection } from "../state/session";
-import { useAtomCommand } from "../state/use-atom-command";
-import { useAtomQueryRunner } from "../state/use-atom-query-runner";
-import { Button } from "./ui/button";
+import { appAtomRegistry } from "../../../rpc/atomRegistry";
+import { fileAttachmentCapabilityBlockReason } from "./composerAttachmentFiles";
+import { assetEnvironment } from "../../../state/assets";
+import { readPreparedConnection } from "../../../state/session";
+import { useAtomCommand } from "../../../state/use-atom-command";
+import { useAtomQueryRunner } from "../../../state/use-atom-query-runner";
+import { Button } from "../../ui/button";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -500,14 +509,11 @@ import {
   AlertDialogHeader,
   AlertDialogPopup,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { ServerUpdateAction } from "./ServerUpdateAction";
-import { useAutoBalanceUpdateBanner } from "./chat/useAutoBalanceUpdateBanner";
-import {
-  ComposerServerUpdateIcon,
-  ComposerServerUpdateStatus,
-} from "./chat/ComposerServerUpdateStatus";
+} from "../../ui/alert-dialog";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import { ServerUpdateAction } from "../settings/ServerUpdateAction";
+import { useAutoBalanceUpdateBanner } from "./useAutoBalanceUpdateBanner";
+import { ComposerServerUpdateIcon, ComposerServerUpdateStatus } from "./ComposerServerUpdateStatus";
 import {
   buildVersionMismatchDismissalKey,
   dismissServerUpdateFailure,
@@ -519,12 +525,12 @@ import {
   serverUpdateGuidance,
   supportsDesktopAppUpdate,
   supportsServerUpdateThreadContinuation,
-} from "../versionSkew";
-import { useAssetUrls } from "../assets/assetUrls";
+} from "../../../versionSkew";
+import { useAssetUrls } from "../../../assets/assetUrls";
 import {
   ATTACHMENT_ONLY_BOOTSTRAP_PROMPT,
   recallableComposerPrompt,
-} from "./chat/composerPromptHistory";
+} from "./composerPromptHistory";
 
 const EMPTY_ACTIVITIES: OrchestrationThreadActivity[] = [];
 const EMPTY_QUEUED_MESSAGES: QueuedComposerMessage[] = [];
@@ -606,15 +612,15 @@ function useDraftHeroLayoutTransition(
   return [attachTransitionGroupRef, attachComposerAnchorRef, captureComposerRect] as const;
 }
 const PreviewPanel = lazy(() =>
-  import("./preview/PreviewPanel").then((module) => ({ default: module.PreviewPanel })),
+  import("../preview/PreviewPanel").then((module) => ({ default: module.PreviewPanel })),
 );
-const DiffPanel = lazy(() => import("./DiffPanel"));
+const DiffPanel = lazy(() => import("../diffs/DiffPanel"));
 const selectAutoShowFloatingPreview = (settings: { browserAutoShowFloatingPreview: boolean }) =>
   settings.browserAutoShowFloatingPreview;
 const DevicePanel = lazy(() =>
-  import("./device/DevicePanel").then((module) => ({ default: module.DevicePanel })),
+  import("../device/DevicePanel").then((module) => ({ default: module.DevicePanel })),
 );
-const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
+const FilePreviewPanel = lazy(() => import("../files/FilePreviewPanel"));
 const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
 const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
   "input",

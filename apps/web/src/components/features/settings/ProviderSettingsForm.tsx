@@ -10,12 +10,12 @@ import type {
   ProviderSettingsFormSchemaAnnotation,
 } from "@lmcstools/core";
 
-import { cn } from "../../lib/utils";
-import { DraftInput } from "../ui/draft-input";
-import { Input } from "../ui/input";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Textarea } from "../ui/textarea";
+import { cn } from "../../../lib/utils";
+import { DraftInput } from "../../ui/draft-input";
+import { Input } from "../../ui/input";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../../ui/select";
+import { Switch } from "../../ui/switch";
+import { Textarea } from "../../ui/textarea";
 import type { ProviderClientDefinition } from "./providerDriverMeta";
 import { SettingsRow } from "./settingsLayout";
 

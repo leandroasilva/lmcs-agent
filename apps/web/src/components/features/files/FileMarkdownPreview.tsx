@@ -1,6 +1,6 @@
 import type { ScopedThreadRef } from "@lmcstools/core";
 
-import ChatMarkdown from "~/components/ChatMarkdown";
+import ChatMarkdown from "~/components/features/chat/ChatMarkdown";
 import { resolvePathLinkTarget } from "~/terminal-links";
 
 export function FileMarkdownPreview(props: {

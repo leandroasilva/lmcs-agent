@@ -5,7 +5,7 @@ import {
   type SnoozePreset,
 } from "@lmcstools/client/state/thread-settled";
 
-import { formatShortTimestamp, parseTimestampDate } from "../timestampFormat";
+import { formatShortTimestamp, parseTimestampDate } from "../../timestampFormat";
 
 export { snoozeWakeLabel, type SnoozePreset };
 

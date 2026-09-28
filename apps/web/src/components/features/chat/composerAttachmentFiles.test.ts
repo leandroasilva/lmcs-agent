@@ -1,8 +1,8 @@
 import { EnvironmentId, PROVIDER_SEND_TURN_MAX_FILE_BYTES } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
-import type { ComposerFileAttachment, ComposerImageAttachment } from "../../composerDraftStore";
-import { isVideoAttachment, videoMimeType } from "../../types";
+import type { ComposerFileAttachment, ComposerImageAttachment } from "../../../composerDraftStore";
+import { isVideoAttachment, videoMimeType } from "../../../types";
 import {
   attachmentsToReleaseOnUploadCapabilityLoss,
   classifyComposerAttachmentFile,

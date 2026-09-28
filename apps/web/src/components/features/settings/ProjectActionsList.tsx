@@ -1,9 +1,9 @@
 import type { ProjectScript, ResolvedKeybindingsConfig } from "@lmcstools/core";
 import { SettingsIcon } from "lucide-react";
-import { shortcutLabelForCommand } from "../../keybindings";
-import { commandForProjectScript } from "../../projectScripts";
-import { ScriptIcon } from "../projectScriptEditor";
-import { Button } from "../ui/button";
+import { shortcutLabelForCommand } from "../../../keybindings";
+import { commandForProjectScript } from "../../../projectScripts";
+import { ScriptIcon } from "./projectScriptEditor";
+import { Button } from "../../ui/button";
 import { SettingsRow } from "./settingsLayout";
 
 export function ProjectActionsList({

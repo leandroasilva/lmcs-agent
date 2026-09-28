@@ -70,7 +70,7 @@ vi.mock("../state/shell", () => ({
   environmentShell: { stateValueAtom: vi.fn() },
 }));
 vi.mock("../threadNotifications", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../threadNotifications")>()),
+  ...(await importOriginal<typeof import("../../threadNotifications")>()),
   playNotificationSound: state.sound,
   setNotificationBadge: vi.fn(),
 }));

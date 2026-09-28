@@ -10,10 +10,10 @@ import {
   type ThirdPartyLicenseManifest,
 } from "@lmcstools/core/thirdPartyLicenses";
 
-import { Button } from "../ui/button";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../../ui/button";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../../ui/input-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { SettingsPageContainer, SettingsSection } from "./settingsLayout";
 
 type LicenseManifestState =

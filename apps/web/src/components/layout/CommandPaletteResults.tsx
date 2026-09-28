@@ -1,6 +1,6 @@
 import { type ResolvedKeybindingsConfig } from "@lmcstools/core";
 import { ChevronRightIcon } from "lucide-react";
-import { shortcutLabelForCommand } from "../keybindings";
+import { shortcutLabelForCommand } from "../../keybindings";
 import {
   type CommandPaletteActionItem,
   type CommandPaletteGroup,
@@ -13,7 +13,7 @@ import {
   CommandItem,
   CommandList,
   CommandShortcut,
-} from "./ui/command";
+} from "../ui/command";
 import { ThreadSearchMatchExcerpt } from "./ThreadSearchMatch";
 
 interface CommandPaletteResultsProps {

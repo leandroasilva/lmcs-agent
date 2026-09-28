@@ -3,8 +3,8 @@ import type { EnvironmentId } from "@lmcstools/core";
 import type {
   SidebarProjectGroupMember,
   SidebarProjectSnapshot,
-} from "../../sidebarProjectGrouping";
-import type { EnvironmentPresentation } from "../../state/environments";
+} from "../../../sidebarProjectGrouping";
+import type { EnvironmentPresentation } from "../../../state/environments";
 
 /**
  * Two axes. `machine` narrows the environment axis (absent = all
