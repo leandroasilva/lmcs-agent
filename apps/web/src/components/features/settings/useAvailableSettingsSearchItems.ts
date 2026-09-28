@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { AuthAccessWriteScope } from "@lmcstools/core";
+import { useTranslation } from "react-i18next";
 
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 import { isElectron } from "~/env";
@@ -14,9 +15,11 @@ import type { SettingsScopeSearch } from "./settingsScope";
 import {
   filterAvailableSettingsSearchItems,
   getThreadAutoSettlementSearchAvailability,
+  settingsSearchItemTitle,
 } from "./settingsSearch";
 
 export function useAvailableSettingsSearchItems(scopeSearch: SettingsScopeSearch = {}) {
+  const { i18n } = useTranslation();
   const { environments } = useEnvironments();
   const primarySessionState = usePrimarySessionState();
   const localEnvironmentDisabled = isLocalEnvironmentDisabled();
@@ -59,12 +62,13 @@ export function useAvailableSettingsSearchItems(scopeSearch: SettingsScopeSearch
         }),
         hasThreadAutoSettlement:
           getThreadAutoSettlementSearchAvailability(environments).eligibleEnvironmentIds.length > 0,
-      }),
+      }).map((item) => ({ ...item, title: settingsSearchItemTitle(item) })),
     [
       canManageLocalBackend,
       desktopWsl.data,
       desktopWsl.error,
       environments,
+      i18n.language,
       localEnvironmentDisabled,
       scopeSearch.machine,
     ],

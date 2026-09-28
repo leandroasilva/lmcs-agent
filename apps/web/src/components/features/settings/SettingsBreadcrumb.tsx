@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+
+import { translateDynamic } from "~/i18n";
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
@@ -13,7 +16,13 @@ const SETTINGS_BREADCRUMB_LABELS: Readonly<Record<string, string>> = {
 
 function settingsBreadcrumbLabel(pathname: string): string | null {
   const normalizedPathname = pathname.replace(/\/+$/, "") || "/";
-  return SETTINGS_BREADCRUMB_LABELS[normalizedPathname] ?? null;
+  const fallback = SETTINGS_BREADCRUMB_LABELS[normalizedPathname];
+  return fallback
+    ? translateDynamic(
+        `settings.sections.${normalizedPathname.slice("/settings/".length)}`,
+        fallback,
+      )
+    : null;
 }
 
 /**
@@ -21,18 +30,20 @@ function settingsBreadcrumbLabel(pathname: string): string | null {
  * page content, see `SettingsScopeSentence`.
  */
 export function SettingsBreadcrumb({ pathname }: { pathname: string }) {
+  const { t } = useTranslation();
   const sectionLabel = settingsBreadcrumbLabel(pathname);
+  const rootLabel = t("settings.rootTitle");
 
   return (
-    <WorkspaceBreadcrumb ariaLabel="Settings breadcrumb">
+    <WorkspaceBreadcrumb ariaLabel={t("settings.breadcrumbAria")}>
       {sectionLabel ? (
         <>
-          <WorkspaceBreadcrumbItem>Settings</WorkspaceBreadcrumbItem>
+          <WorkspaceBreadcrumbItem>{rootLabel}</WorkspaceBreadcrumbItem>
           <WorkspaceBreadcrumbSeparator />
         </>
       ) : null}
       <WorkspaceBreadcrumbItem current className="truncate">
-        {sectionLabel ?? "Settings"}
+        {sectionLabel ?? rootLabel}
       </WorkspaceBreadcrumbItem>
     </WorkspaceBreadcrumb>
   );

@@ -1,4 +1,5 @@
 import { isElectron } from "~/env";
+import { translateDynamic } from "~/i18n";
 import { isMacPlatform, isWindowsPlatform, normalizeSearchText } from "~/lib/utils";
 import { STATIC_KEYBINDING_COMMANDS, type KeybindingCommand } from "@lmcstools/core";
 import type { EnvironmentId } from "@lmcstools/core";
@@ -95,6 +96,14 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/connections": "Connections",
   "/settings/archived": "Archive",
 };
+
+/** Section label in the active locale; the record keeps the English fallback. */
+export function settingsSectionLabel(to: SettingsPath): string {
+  return translateDynamic(
+    `settings.sections.${to.slice("/settings/".length)}`,
+    SETTINGS_SECTION_LABELS[to],
+  );
+}
 
 /** Anchor id of the first row bound to `command` on the Keybindings page. */
 export function keybindingSearchAnchorId<Command extends KeybindingCommand>(command: Command) {
@@ -856,7 +865,7 @@ export function getSettingsSearchTargetScope(targetId: string) {
     items.find((candidate) => candidate.targetId === targetId);
   return item
     ? {
-        title: item.title,
+        title: settingsSearchItemTitle(item),
         scope: item.scope ?? SETTINGS_CATEGORY_SCOPES[item.to],
         ...(item.requiresThreadAutoSettlement ? { requiresThreadAutoSettlement: true } : {}),
       }
@@ -938,6 +947,23 @@ export function isSettingsOverviewVisible(search: SettingsScopeSearch): boolean 
   return kind === "project" || kind === "checkout";
 }
 
+const KEYBINDING_SEARCH_ID_PREFIX = "keybinding-";
+
+/**
+ * Item title in the active locale. Registry titles stay in English as the
+ * catalog fallback; keybinding rows share the command catalog with the
+ * Keybindings page.
+ */
+export function settingsSearchItemTitle(item: Pick<SettingsSearchItem, "id" | "title">): string {
+  if (item.id.startsWith(KEYBINDING_SEARCH_ID_PREFIX)) {
+    return translateDynamic(
+      `settings.keybindings.commands.${item.id.slice(KEYBINDING_SEARCH_ID_PREFIX.length)}`,
+      item.title,
+    );
+  }
+  return translateDynamic(`settings.searchItems.${item.id}`, item.title);
+}
+
 /**
  * `id` and `title` props for the element a search item anchors to. Panels
  * spread (or pick from) this instead of restating the strings, so the catalog
@@ -947,8 +973,8 @@ export function searchableSetting(id: SettingsSearchItemId): {
   readonly id: string;
   readonly title: string;
 } {
-  const { id: anchorId, title } = SEARCH_ITEMS_BY_ID.get(id)!;
-  return { id: anchorId, title };
+  const item = SEARCH_ITEMS_BY_ID.get(id)!;
+  return { id: item.id, title: settingsSearchItemTitle(item) };
 }
 
 export function filterAvailableSettingsSearchItems(
@@ -986,7 +1012,7 @@ export function searchSettings(
       const title = normalizeSearchText(item.title);
       const fields = [
         title,
-        normalizeSearchText(SETTINGS_SECTION_LABELS[item.to]),
+        normalizeSearchText(settingsSectionLabel(item.to)),
         ...(item.searchTerms ?? []).map(normalizeSearchText),
       ];
       if (!queryTokens.every((token) => fields.some((field) => field.includes(token)))) return [];

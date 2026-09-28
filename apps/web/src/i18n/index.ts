@@ -24,4 +24,15 @@ void i18n.use(initReactI18next).init({
   },
 });
 
+/**
+ * Lookup for keys built at runtime from registry ids (search items, keybinding
+ * commands). The typed `t` only accepts literal catalog keys, so dynamic
+ * registry lookups go through this single escape hatch with an explicit
+ * English fallback.
+ */
+export function translateDynamic(key: string, fallback: string): string {
+  const lookup = i18n.t as unknown as (k: string, options: { defaultValue: string }) => string;
+  return lookup(key, { defaultValue: fallback });
+}
+
 export default i18n;

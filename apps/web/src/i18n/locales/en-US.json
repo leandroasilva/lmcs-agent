@@ -1,5 +1,30 @@
 {
   "settings": {
+    "rootTitle": "Settings",
+    "breadcrumbAria": "Settings breadcrumb",
+    "paletteResultDescription": "Settings · {{section}}",
+    "restoreDeviceDefaults": "Restore device defaults",
+    "scopeNotice": {
+      "requiresEnvironmentChoose": "{{title}} requires a supporting environment. Choose one to continue.",
+      "requiresEnvironmentConnect": "{{title}} requires a supporting environment. Connect or update an environment to continue.",
+      "notAvailableForTarget": "{{title}} is not available for the selected target. Choose its owning scope to continue.",
+      "reconnectToChange": "Reconnect {{label}} to change its settings."
+    },
+    "sections": {
+      "projects": "Project",
+      "general": "General",
+      "appearance": "Appearance",
+      "keybindings": "Keybindings",
+      "snap-shot": "SnapShots",
+      "providers": "Providers",
+      "integrations": "Integrations",
+      "source-control": "Source Control",
+      "storage": "Storage",
+      "connections": "Connections",
+      "archived": "Archive",
+      "diagnostics": "Diagnostics",
+      "open-source-licenses": "Open source licenses"
+    },
     "general": {
       "language": {
         "sectionTitle": "Language",
@@ -25,6 +50,219 @@
         "environmentFallback": "environment",
         "setOnEnvironment": "Set on the environment",
         "builtInDefault": "Built-in default"
+      }
+    },
+    "searchItems": {
+      "storage-worktrees": "Worktree cleanup",
+      "storage-artifacts": "Artifacts and logs",
+      "project-defaults": "Project defaults and overrides",
+      "interface-language": "Interface language",
+      "project-overview": "Project overview",
+      "default-model": "Default model",
+      "default-permissions": "Permissions",
+      "color-scheme": "Color scheme",
+      "theme": "Themes",
+      "setting-appearance-contrast": "Contrast",
+      "setting-glass-opacity": "Glass opacity",
+      "diff-color-scheme": "Diff colors",
+      "panel-animations": "Panel animations",
+      "environment-identification": "Environment identification",
+      "interface-font": "Interface font",
+      "prompt-font": "Prompt font",
+      "code-font": "Code font",
+      "terminal-font": "Terminal font",
+      "font-smoothing": "Font smoothing",
+      "word-wrap": "Word wrap",
+      "project-grouping": "Project grouping",
+      "auto-settle-inactive-threads": "Auto-settle inactive threads",
+      "auto-settle-merged-threads": "Auto-settle merged threads",
+      "days-before-auto-settle": "Days of inactivity before auto-settle",
+      "thread-notifications": "Thread notifications",
+      "in-app-notifications": "In-app notifications",
+      "time-format": "Time format",
+      "response-streaming": "Response streaming",
+      "hide-whitespace-changes": "Hide whitespace changes",
+      "default-diff-file-state": "Default diff file state",
+      "diff-layout": "Diff layout",
+      "proactive-panels": "Proactive panels",
+      "skills-in-slash-menu": "Show skills in slash menu",
+      "composer-rich-text": "Rich text composer",
+      "composer-collapse": "Collapse composer on scroll",
+      "send-shortcut": "Send shortcut",
+      "follow-up-behavior": "Follow-up behavior",
+      "provider-update-checks": "Provider update checks",
+      "continue-threads-after-server-update": "Continue threads after restarts",
+      "background-activity": "Background activity",
+      "new-threads": "New threads",
+      "worktree-submodules": "Submodules",
+      "start-from-origin": "Start from origin",
+      "add-project-starts-in": "Add project starts in",
+      "unpin-confirmation": "Unpin confirmation",
+      "archive-confirmation": "Archive confirmation",
+      "delete-confirmation": "Delete confirmation",
+      "quit-confirmation": "Quit shortcut",
+      "text-generation-model": "Text generation model",
+      "diagnostics": "Diagnostics",
+      "open-source-licenses": "Open source licenses",
+      "legacy-plan-mode": "Plan mode (legacy)",
+      "legacy-context-window-indicator": "Context window indicator (legacy)",
+      "legacy-sidebar": "Sidebar (legacy)",
+      "keybindings": "Keybindings",
+      "snap-shot-enabled": "SnapShots",
+      "snap-shot-accessibility": "Include app text",
+      "snap-shot-shortcut": "Capture shortcut",
+      "snap-shot-sound": "Capture sound",
+      "snap-shot-flash": "Capture flash",
+      "snap-shot-animations": "Capture animations",
+      "providers": "Providers",
+      "usage-providers": "Usage providers",
+      "cursor-keychain-usage": "Cursor account usage",
+      "provider-health-check-interval": "Health check interval",
+      "agent-browser-access": "Agent browser access",
+      "device-hosts": "Device hosts",
+      "agent-device-access": "Agent device access",
+      "device-hub": "Device hub",
+      "device-platform-support": "Simulator support",
+      "browser-profiles": "Browser profiles",
+      "browser-default-profile": "Default browser profile",
+      "browser-default-viewport": "Default browser viewport",
+      "browser-default-zoom": "Default browser zoom",
+      "browser-default-appearance": "Default browser appearance",
+      "browser-recording-frame-rate": "Browser recording frame rate",
+      "browser-recording-key-presses": "Show key presses in recordings",
+      "browser-recording-mouse-presses": "Show mouse presses in recordings",
+      "browser-link-target": "Open links in",
+      "browser-auto-show-floating-preview": "Auto-show floating preview",
+      "automatic-pull": "Automatically pull",
+      "pull-request-merge-method": "Default merge method",
+      "source-control": "Source control",
+      "git-fetch-interval": "Git fetch interval",
+      "source-control-writing-style": "Source control writing style",
+      "follow-change-request-templates": "Follow change request templates",
+      "source-control-writer-model": "Source control writer model",
+      "project-actions": "Actions",
+      "environment-icon": "Environment icon",
+      "local-environment": "Local environment",
+      "network-access": "Network access",
+      "tailscale-https": "Tailscale HTTPS",
+      "wsl-backend": "WSL backend",
+      "t3-connect": "LMCS Connect",
+      "publish-agent-activity": "Publish agent activity",
+      "connections-environment": "This machine",
+      "remote-environments": "Environments",
+      "load-balancing": "Load balancing",
+      "github-routing": "GitHub sharing",
+      "archive": "Archived threads"
+    },
+    "keybindings": {
+      "commands": {
+        "sidebar": {
+          "toggle": "Sidebar: Toggle"
+        },
+        "navigation": {
+          "back": "Navigation: Back",
+          "forward": "Navigation: Forward"
+        },
+        "terminal": {
+          "toggle": "Terminal: Toggle",
+          "split": "Terminal: Split",
+          "splitVertical": "Terminal: Split Vertical",
+          "new": "Terminal: New",
+          "close": "Terminal: Close"
+        },
+        "rightPanel": {
+          "toggle": "Right Panel: Toggle",
+          "toggleMaximized": "Right Panel: Toggle Maximized",
+          "close": "Right Panel: Close"
+        },
+        "pullRequest": {
+          "copyNumber": "Pull Request: Copy Number"
+        },
+        "diff": {
+          "toggle": "Diff: Toggle"
+        },
+        "preview": {
+          "toggle": "Preview: Toggle",
+          "refresh": "Preview: Refresh",
+          "focusUrl": "Preview: Focus Url",
+          "zoomIn": "Preview: Zoom In",
+          "zoomOut": "Preview: Zoom Out",
+          "resetZoom": "Preview: Reset Zoom"
+        },
+        "commandPalette": {
+          "toggle": "Command Palette: Toggle"
+        },
+        "filePicker": {
+          "toggle": "File Picker: Toggle"
+        },
+        "projectSearch": {
+          "toggle": "Project Search: Toggle"
+        },
+        "usage": {
+          "open": "Usage: Open"
+        },
+        "theme": {
+          "select": "Theme: Select"
+        },
+        "appearance": {
+          "cycle": "Appearance: Cycle"
+        },
+        "themeEditor": {
+          "toggle": "Theme Editor: Toggle"
+        },
+        "composer": {
+          "stash": "Composer: Stash",
+          "host": "Composer: Host",
+          "effort": "Composer: Effort",
+          "mode": "Composer: Mode",
+          "workspace": "Composer: Workspace",
+          "previousWorktree": "Composer: Previous Worktree",
+          "branch": "Composer: Branch"
+        },
+        "chat": {
+          "new": "Chat: New",
+          "newLocal": "Chat: New Local"
+        },
+        "editor": {
+          "openFavorite": "Editor: Open Favorite"
+        },
+        "modelPicker": {
+          "toggle": "Model Picker: Toggle",
+          "previousProvider": "Model Picker: Previous Provider",
+          "nextProvider": "Model Picker: Next Provider",
+          "jump": {
+            "1": "Model Picker: Jump: 1",
+            "2": "Model Picker: Jump: 2",
+            "3": "Model Picker: Jump: 3",
+            "4": "Model Picker: Jump: 4",
+            "5": "Model Picker: Jump: 5",
+            "6": "Model Picker: Jump: 6",
+            "7": "Model Picker: Jump: 7",
+            "8": "Model Picker: Jump: 8",
+            "9": "Model Picker: Jump: 9"
+          }
+        },
+        "thread": {
+          "stop": "Thread: Stop",
+          "steerQueuedMessage": "Thread: Steer Queued Message",
+          "previous": "Thread: Previous",
+          "next": "Thread: Next",
+          "copyReference": "Pull Request: Copy Link or Thread ID",
+          "settle": "Thread: Settle",
+          "pin": "Thread: Pin",
+          "undo": "Thread: Undo",
+          "jump": {
+            "1": "Thread: Jump: 1",
+            "2": "Thread: Jump: 2",
+            "3": "Thread: Jump: 3",
+            "4": "Thread: Jump: 4",
+            "5": "Thread: Jump: 5",
+            "6": "Thread: Jump: 6",
+            "7": "Thread: Jump: 7",
+            "8": "Thread: Jump: 8",
+            "9": "Thread: Jump: 9"
+          }
+        }
       }
     }
   }

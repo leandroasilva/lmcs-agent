@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { threadPullRequestLinkMode } from "@lmcstools/client/thread-pull-request-compatibility";
 import { visibleThreadPullRequests } from "@lmcstools/core/threadPullRequests";
 
@@ -183,7 +184,7 @@ import { ProjectFilePicker } from "../features/files/ProjectFilePicker";
 import { openLinkPullRequestDialog } from "../features/pullRequest/LinkPullRequestDialog";
 import { ProjectContentSearchDialog } from "../features/search/ProjectContentSearchDialog";
 import { toggleThemeEditorForTheme } from "../features/settings/themeEditorStore";
-import { searchSettings, SETTINGS_SECTION_LABELS } from "../features/settings/settingsSearch";
+import { searchSettings, settingsSectionLabel } from "../features/settings/settingsSearch";
 import {
   COMMAND_PALETTE_META_ICON_CLASS,
   CommandPaletteMetaDot,
@@ -738,6 +739,7 @@ function OpenCommandPaletteDialog(props: {
   const { environments } = useEnvironments();
   const desktopLocalBootstraps = useDesktopLocalBootstraps();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
+  const { t } = useTranslation();
   const availableSettingsSearchItems = useAvailableSettingsSearchItems();
   const { activeDraftThread, activeThread, defaultProjectRef, handleNewThread } =
     useHandleNewThread();
@@ -1599,7 +1601,13 @@ function OpenCommandPaletteDialog(props: {
         });
       }
 
-      return [{ value: `sources:${environmentId}`, label: "Sources", items: sourceItems }];
+      return [
+        {
+          value: `sources:${environmentId}`,
+          label: "Sources",
+          items: sourceItems,
+        },
+      ];
     },
     [openSourceControlSettings, startAddProjectBrowse, startAddProjectClone],
   );
@@ -2036,7 +2044,10 @@ function OpenCommandPaletteDialog(props: {
       title: "Open pull requests",
       icon: <PullRequestGlyph.pullRequest className={ITEM_ICON_CLASS} />,
       run: async () => {
-        await navigate({ to: "/pull-requests", search: readPullRequestListPreferences() });
+        await navigate({
+          to: "/pull-requests",
+          search: readPullRequestListPreferences(),
+        });
       },
     });
   }
@@ -2109,9 +2120,11 @@ function OpenCommandPaletteDialog(props: {
   ).map((item) => ({
     kind: "action",
     value: `setting:${item.id}`,
-    searchTerms: [item.title, SETTINGS_SECTION_LABELS[item.to], ...(item.searchTerms ?? [])],
+    searchTerms: [item.title, settingsSectionLabel(item.to), ...(item.searchTerms ?? [])],
     title: item.title,
-    description: `Settings · ${SETTINGS_SECTION_LABELS[item.to]}`,
+    description: t("settings.paletteResultDescription", {
+      section: settingsSectionLabel(item.to),
+    }),
     ...(item.secondary ? { secondary: true } : {}),
     icon: <SettingsIcon className={ITEM_ICON_CLASS} />,
     run: async () => {
@@ -2836,7 +2849,13 @@ function OpenCommandPaletteDialog(props: {
               (candidate) => candidate.httpBaseUrl === environment.displayUrl,
             );
             const runningDistro = bootstrap?.runningDistro ?? null;
-            return [{ environmentId: environment.environmentId, backendId, runningDistro }];
+            return [
+              {
+                environmentId: environment.environmentId,
+                backendId,
+                runningDistro,
+              },
+            ];
           }),
           primaryEnvironmentId,
           desktopWslState ?? null,
@@ -3041,9 +3060,13 @@ function OpenCommandPaletteDialog(props: {
                   : "Enter a repository path and press Enter to look it up.",
             }
           : addProjectCloneFlow?.step === "confirm"
-            ? { emptyStateMessage: "Choose a destination path and press Enter to clone." }
+            ? {
+                emptyStateMessage: "Choose a destination path and press Enter to clone.",
+              }
             : relativePathNeedsActiveProject
-              ? { emptyStateMessage: "Relative paths require an active project." }
+              ? {
+                  emptyStateMessage: "Relative paths require an active project.",
+                }
               : willCreateProjectPath
                 ? {
                     emptyStateMessage: "Press Enter to create this folder and add it as a project.",

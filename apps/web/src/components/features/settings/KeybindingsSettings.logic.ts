@@ -11,6 +11,7 @@ import {
   parseKeybindingWhenExpression,
 } from "@lmcstools/core/keybindings";
 
+import { translateDynamic } from "../../../i18n";
 import { shortcutKeyFromEvent } from "../../../keybindings";
 import { isMacPlatform } from "../../../lib/utils";
 
@@ -154,7 +155,11 @@ function conflictsWithWhen(leftWhen: string, rightWhen: string): boolean {
 
 export function keybindingConflictLabels(
   rows: ReadonlyArray<KeybindingRow>,
-  input: { readonly rowId: string; readonly key: string; readonly when: string },
+  input: {
+    readonly rowId: string;
+    readonly key: string;
+    readonly when: string;
+  },
 ): ReadonlyArray<string> {
   if (input.key.trim().length === 0) return [];
   const conflicts: Array<string> = [];
@@ -199,7 +204,9 @@ export function buildKeybindingRows(
       when: row.when,
     });
     return conflicts.length > 0
-      ? Object.assign({}, row, { conflicts: [...new Set(conflicts)].toSorted() })
+      ? Object.assign({}, row, {
+          conflicts: [...new Set(conflicts)].toSorted(),
+        })
       : row;
   });
 
@@ -289,6 +296,15 @@ export function commandLabel(command: KeybindingCommand): string {
     return `Run Script: ${titleCaseCommandSegment(raw.slice("script.".length, -".run".length))}`;
   }
   return raw.split(".").map(titleCaseCommandSegment).join(": ");
+}
+
+/**
+ * Command label in the active locale. User script commands have no catalog
+ * entry, so they always fall back to the derived English label.
+ */
+export function translatedCommandLabel(command: KeybindingCommand): string {
+  if (command.startsWith("script.")) return commandLabel(command);
+  return translateDynamic(`settings.keybindings.commands.${command}`, commandLabel(command));
 }
 
 function titleCaseCommandSegment(segment: string): string {

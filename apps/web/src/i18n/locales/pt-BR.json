@@ -1,5 +1,30 @@
 {
   "settings": {
+    "rootTitle": "Configurações",
+    "breadcrumbAria": "Trilha de navegação das configurações",
+    "paletteResultDescription": "Configurações · {{section}}",
+    "restoreDeviceDefaults": "Restaurar padrões do dispositivo",
+    "scopeNotice": {
+      "requiresEnvironmentChoose": "{{title}} requer um ambiente compatível. Escolha um para continuar.",
+      "requiresEnvironmentConnect": "{{title}} requer um ambiente compatível. Conecte ou atualize um ambiente para continuar.",
+      "notAvailableForTarget": "{{title}} não está disponível para o destino selecionado. Escolha o escopo ao qual ele pertence para continuar.",
+      "reconnectToChange": "Reconecte {{label}} para alterar suas configurações."
+    },
+    "sections": {
+      "projects": "Projeto",
+      "general": "Geral",
+      "appearance": "Aparência",
+      "keybindings": "Atalhos de teclado",
+      "snap-shot": "SnapShots",
+      "providers": "Provedores",
+      "integrations": "Integrações",
+      "source-control": "Controle de versão",
+      "storage": "Armazenamento",
+      "connections": "Conexões",
+      "archived": "Arquivo",
+      "diagnostics": "Diagnóstico",
+      "open-source-licenses": "Licenças de código aberto"
+    },
     "general": {
       "language": {
         "sectionTitle": "Idioma",
@@ -25,6 +50,219 @@
         "environmentFallback": "ambiente",
         "setOnEnvironment": "Definido no ambiente",
         "builtInDefault": "Padrão interno"
+      }
+    },
+    "searchItems": {
+      "storage-worktrees": "Limpeza de worktrees",
+      "storage-artifacts": "Artefatos e logs",
+      "project-defaults": "Padrões e substituições do projeto",
+      "interface-language": "Idioma da interface",
+      "project-overview": "Visão geral do projeto",
+      "default-model": "Modelo padrão",
+      "default-permissions": "Permissões",
+      "color-scheme": "Esquema de cores",
+      "theme": "Temas",
+      "setting-appearance-contrast": "Contraste",
+      "setting-glass-opacity": "Opacidade do vidro",
+      "diff-color-scheme": "Cores do diff",
+      "panel-animations": "Animações dos painéis",
+      "environment-identification": "Identificação do ambiente",
+      "interface-font": "Fonte da interface",
+      "prompt-font": "Fonte do prompt",
+      "code-font": "Fonte de código",
+      "terminal-font": "Fonte do terminal",
+      "font-smoothing": "Suavização de fonte",
+      "word-wrap": "Quebra de linha",
+      "project-grouping": "Agrupamento de projetos",
+      "auto-settle-inactive-threads": "Recolher threads inativas automaticamente",
+      "auto-settle-merged-threads": "Recolher threads mergeadas automaticamente",
+      "days-before-auto-settle": "Dias de inatividade antes de recolher",
+      "thread-notifications": "Notificações de threads",
+      "in-app-notifications": "Notificações no app",
+      "time-format": "Formato de hora",
+      "response-streaming": "Streaming de respostas",
+      "hide-whitespace-changes": "Ocultar mudanças de espaço em branco",
+      "default-diff-file-state": "Estado padrão dos arquivos no diff",
+      "diff-layout": "Layout do diff",
+      "proactive-panels": "Painéis proativos",
+      "skills-in-slash-menu": "Mostrar skills no menu de barra",
+      "composer-rich-text": "Composer de texto rico",
+      "composer-collapse": "Recolher o composer ao rolar",
+      "send-shortcut": "Atalho de envio",
+      "follow-up-behavior": "Comportamento de follow-up",
+      "provider-update-checks": "Verificação de atualizações de provedores",
+      "continue-threads-after-server-update": "Continuar threads após reinicializações",
+      "background-activity": "Atividade em segundo plano",
+      "new-threads": "Novas threads",
+      "worktree-submodules": "Submódulos",
+      "start-from-origin": "Começar a partir do origin",
+      "add-project-starts-in": "Diretório inicial ao adicionar projeto",
+      "unpin-confirmation": "Confirmação ao desafixar",
+      "archive-confirmation": "Confirmação ao arquivar",
+      "delete-confirmation": "Confirmação ao excluir",
+      "quit-confirmation": "Atalho para sair",
+      "text-generation-model": "Modelo de geração de texto",
+      "diagnostics": "Diagnóstico",
+      "open-source-licenses": "Licenças de código aberto",
+      "legacy-plan-mode": "Modo de plano (legado)",
+      "legacy-context-window-indicator": "Indicador de janela de contexto (legado)",
+      "legacy-sidebar": "Sidebar (legada)",
+      "keybindings": "Atalhos de teclado",
+      "snap-shot-enabled": "SnapShots",
+      "snap-shot-accessibility": "Incluir texto do app",
+      "snap-shot-shortcut": "Atalho de captura",
+      "snap-shot-sound": "Som de captura",
+      "snap-shot-flash": "Flash de captura",
+      "snap-shot-animations": "Animações de captura",
+      "providers": "Provedores",
+      "usage-providers": "Provedores de uso",
+      "cursor-keychain-usage": "Uso da conta Cursor",
+      "provider-health-check-interval": "Intervalo de verificação de integridade",
+      "agent-browser-access": "Acesso do agente ao navegador",
+      "device-hosts": "Hosts de dispositivos",
+      "agent-device-access": "Acesso do agente a dispositivos",
+      "device-hub": "Hub de dispositivos",
+      "device-platform-support": "Suporte a simuladores",
+      "browser-profiles": "Perfis de navegador",
+      "browser-default-profile": "Perfil de navegador padrão",
+      "browser-default-viewport": "Viewport padrão do navegador",
+      "browser-default-zoom": "Zoom padrão do navegador",
+      "browser-default-appearance": "Aparência padrão do navegador",
+      "browser-recording-frame-rate": "Taxa de quadros da gravação do navegador",
+      "browser-recording-key-presses": "Mostrar teclas pressionadas nas gravações",
+      "browser-recording-mouse-presses": "Mostrar cliques do mouse nas gravações",
+      "browser-link-target": "Abrir links em",
+      "browser-auto-show-floating-preview": "Mostrar pré-visualização flutuante automaticamente",
+      "automatic-pull": "Pull automático",
+      "pull-request-merge-method": "Método de merge padrão",
+      "source-control": "Controle de versão",
+      "git-fetch-interval": "Intervalo de git fetch",
+      "source-control-writing-style": "Estilo de escrita do controle de versão",
+      "follow-change-request-templates": "Seguir templates de change request",
+      "source-control-writer-model": "Modelo de escrita do controle de versão",
+      "project-actions": "Ações",
+      "environment-icon": "Ícone do ambiente",
+      "local-environment": "Ambiente local",
+      "network-access": "Acesso à rede",
+      "tailscale-https": "Tailscale HTTPS",
+      "wsl-backend": "Backend WSL",
+      "t3-connect": "LMCS Connect",
+      "publish-agent-activity": "Publicar atividade do agente",
+      "connections-environment": "Esta máquina",
+      "remote-environments": "Ambientes",
+      "load-balancing": "Balanceamento de carga",
+      "github-routing": "Compartilhamento do GitHub",
+      "archive": "Threads arquivadas"
+    },
+    "keybindings": {
+      "commands": {
+        "sidebar": {
+          "toggle": "Sidebar: Alternar"
+        },
+        "navigation": {
+          "back": "Navegação: Voltar",
+          "forward": "Navegação: Avançar"
+        },
+        "terminal": {
+          "toggle": "Terminal: Alternar",
+          "split": "Terminal: Dividir",
+          "splitVertical": "Terminal: Dividir verticalmente",
+          "new": "Terminal: Novo",
+          "close": "Terminal: Fechar"
+        },
+        "rightPanel": {
+          "toggle": "Painel direito: Alternar",
+          "toggleMaximized": "Painel direito: Alternar maximização",
+          "close": "Painel direito: Fechar"
+        },
+        "pullRequest": {
+          "copyNumber": "Pull request: Copiar número"
+        },
+        "diff": {
+          "toggle": "Diff: Alternar"
+        },
+        "preview": {
+          "toggle": "Preview: Alternar",
+          "refresh": "Preview: Atualizar",
+          "focusUrl": "Preview: Focar URL",
+          "zoomIn": "Preview: Aumentar zoom",
+          "zoomOut": "Preview: Reduzir zoom",
+          "resetZoom": "Preview: Redefinir zoom"
+        },
+        "commandPalette": {
+          "toggle": "Paleta de comandos: Alternar"
+        },
+        "filePicker": {
+          "toggle": "Seletor de arquivos: Alternar"
+        },
+        "projectSearch": {
+          "toggle": "Busca no projeto: Alternar"
+        },
+        "usage": {
+          "open": "Uso: Abrir"
+        },
+        "theme": {
+          "select": "Tema: Selecionar"
+        },
+        "appearance": {
+          "cycle": "Aparência: Alternar"
+        },
+        "themeEditor": {
+          "toggle": "Editor de temas: Alternar"
+        },
+        "composer": {
+          "stash": "Composer: Guardar",
+          "host": "Composer: Host",
+          "effort": "Composer: Esforço",
+          "mode": "Composer: Modo",
+          "workspace": "Composer: Workspace",
+          "previousWorktree": "Composer: Worktree anterior",
+          "branch": "Composer: Branch"
+        },
+        "chat": {
+          "new": "Chat: Novo",
+          "newLocal": "Chat: Novo local"
+        },
+        "editor": {
+          "openFavorite": "Editor: Abrir favorito"
+        },
+        "modelPicker": {
+          "toggle": "Seletor de modelo: Alternar",
+          "previousProvider": "Seletor de modelo: Provedor anterior",
+          "nextProvider": "Seletor de modelo: Próximo provedor",
+          "jump": {
+            "1": "Seletor de modelo: Ir para: 1",
+            "2": "Seletor de modelo: Ir para: 2",
+            "3": "Seletor de modelo: Ir para: 3",
+            "4": "Seletor de modelo: Ir para: 4",
+            "5": "Seletor de modelo: Ir para: 5",
+            "6": "Seletor de modelo: Ir para: 6",
+            "7": "Seletor de modelo: Ir para: 7",
+            "8": "Seletor de modelo: Ir para: 8",
+            "9": "Seletor de modelo: Ir para: 9"
+          }
+        },
+        "thread": {
+          "stop": "Thread: Parar",
+          "steerQueuedMessage": "Thread: Direcionar mensagem na fila",
+          "previous": "Thread: Anterior",
+          "next": "Thread: Próxima",
+          "copyReference": "Pull request: Copiar link ou ID da thread",
+          "settle": "Thread: Recolher",
+          "pin": "Thread: Fixar",
+          "undo": "Thread: Desfazer",
+          "jump": {
+            "1": "Thread: Ir para: 1",
+            "2": "Thread: Ir para: 2",
+            "3": "Thread: Ir para: 3",
+            "4": "Thread: Ir para: 4",
+            "5": "Thread: Ir para: 5",
+            "6": "Thread: Ir para: 6",
+            "7": "Thread: Ir para: 7",
+            "8": "Thread: Ir para: 8",
+            "9": "Thread: Ir para: 9"
+          }
+        }
       }
     }
   }
