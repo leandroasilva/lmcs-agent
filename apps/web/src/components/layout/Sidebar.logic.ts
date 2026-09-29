@@ -17,6 +17,7 @@ import {
   type ThreadSortInput,
 } from "../../lib/threadSort";
 import type { SidebarThreadSummary, Thread } from "../../types";
+import { translateDynamic } from "../../i18n";
 import { cn } from "../../lib/utils";
 import { isLatestTurnSettled } from "../../session-logic";
 
@@ -89,7 +90,10 @@ export function useSidebarRowSubscriptionLease(isActive: boolean): {
 // blanks its badge. The value is bound to `key`, so a different worktree or
 // linked pull request cannot reuse the previous one.
 export function useRetainedValue<T>(key: string | null, value: T | null): T | null {
-  const retained = React.useRef<{ readonly key: string; readonly value: T } | null>(null);
+  const retained = React.useRef<{
+    readonly key: string;
+    readonly value: T;
+  } | null>(null);
   if (key !== null && value !== null) {
     retained.current = { key, value };
   }
@@ -130,7 +134,11 @@ export function sidebarMarkerId(marker: SidebarListMarker): string {
 }
 
 export type SidebarListItem =
-  | { readonly kind: "thread"; readonly key: string; readonly section: SidebarSection }
+  | {
+      readonly kind: "thread";
+      readonly key: string;
+      readonly section: SidebarSection;
+    }
   | { readonly kind: "marker"; readonly marker: SidebarListMarker };
 
 export function sidebarListItemId(item: SidebarListItem): string {
@@ -192,7 +200,10 @@ export type SidebarThreadDropPlan =
   | {
       readonly kind: "reorder-pinned";
       readonly order: readonly string[];
-      readonly assignments: ReadonlyArray<{ readonly id: string; readonly orderKey: string }>;
+      readonly assignments: ReadonlyArray<{
+        readonly id: string;
+        readonly orderKey: string;
+      }>;
     }
   /** From another section into the pinned block. Fresh pins take `orderKey`
       on the pin command. `extraAssignments` land afterward, including the
@@ -201,12 +212,18 @@ export type SidebarThreadDropPlan =
       readonly kind: "pin";
       readonly order: readonly string[];
       readonly orderKey: string | undefined;
-      readonly extraAssignments: ReadonlyArray<{ readonly id: string; readonly orderKey: string }>;
+      readonly extraAssignments: ReadonlyArray<{
+        readonly id: string;
+        readonly orderKey: string;
+      }>;
     }
   | {
       readonly kind: "move-active";
       readonly order: readonly string[];
-      readonly assignments: ReadonlyArray<{ readonly id: string; readonly orderKey: string }>;
+      readonly assignments: ReadonlyArray<{
+        readonly id: string;
+        readonly orderKey: string;
+      }>;
       readonly unpin: boolean;
       readonly unsettle: boolean;
       readonly unsnooze: boolean;
@@ -355,7 +372,12 @@ export function applySidebarThreadDrop<
     };
   }
   const resumed = wasSettled
-    ? { ...awake, settledOverride: "active" as const, settledAt: null, unsettledAt: now }
+    ? {
+        ...awake,
+        settledOverride: "active" as const,
+        settledAt: null,
+        unsettledAt: now,
+      }
     : awake;
   return {
     ...resumed,
@@ -461,13 +483,26 @@ export function buildMultiSelectThreadContextMenuItems(input: {
   hasRunningThread: boolean;
 }): readonly ContextMenuItem<"mark-unread" | "archive" | "delete">[] {
   return [
-    { id: "mark-unread", label: `Mark unread (${input.count})` },
+    {
+      id: "mark-unread",
+      label: translateDynamic("sidebar.bulk.markUnread", `Mark unread (${input.count})`, {
+        count: input.count,
+      }),
+    },
     {
       id: "archive",
-      label: `Archive (${input.count})`,
+      label: translateDynamic("sidebar.bulk.archive", `Archive (${input.count})`, {
+        count: input.count,
+      }),
       disabled: input.hasRunningThread,
     },
-    { id: "delete", label: `Delete (${input.count})`, destructive: true },
+    {
+      id: "delete",
+      label: translateDynamic("sidebar.bulk.delete", `Delete (${input.count})`, {
+        count: input.count,
+      }),
+      destructive: true,
+    },
   ];
 }
 
@@ -479,13 +514,21 @@ export function buildBulkTitleRegenerationContextMenuItem(input: {
   if (input.actionableCount === 0) {
     return {
       id: "regenerate-title",
-      label: `Regenerating… (${input.supportedCount})`,
+      label: translateDynamic(
+        "sidebar.bulk.regenerating",
+        `Regenerating… (${input.supportedCount})`,
+        { count: input.supportedCount },
+      ),
       disabled: true,
     };
   }
   return {
     id: "regenerate-title",
-    label: `Regenerate titles (${input.actionableCount})`,
+    label: translateDynamic(
+      "sidebar.bulk.regenerateTitles",
+      `Regenerate titles (${input.actionableCount})`,
+      { count: input.actionableCount },
+    ),
   };
 }
 
@@ -498,18 +541,25 @@ export function buildBulkUnpinContextMenuItem(input: {
   pinnedCount: number;
 }): ContextMenuItem<"unpin"> | null {
   if (input.pinnedCount === 0) return null;
-  return { id: "unpin", label: `Unpin (${input.pinnedCount})` };
+  return {
+    id: "unpin",
+    label: translateDynamic("sidebar.bulk.unpin", `Unpin (${input.pinnedCount})`, {
+      count: input.pinnedCount,
+    }),
+  };
 }
 
+export type ThreadStatusPillId =
+  | "working"
+  | "monitoring"
+  | "connecting"
+  | "completed"
+  | "approval"
+  | "input"
+  | "planReady";
+
 export interface ThreadStatusPill {
-  label:
-    | "Working"
-    | "Monitoring"
-    | "Connecting"
-    | "Completed"
-    | "Pending Approval"
-    | "Awaiting Input"
-    | "Plan Ready";
+  status: ThreadStatusPillId;
   colorClass: string;
   dotClass: string;
   pulse: boolean;
@@ -518,14 +568,14 @@ export interface ThreadStatusPill {
 // Rollup order mirrors the per-thread resolver exactly: attention states,
 // then active work, then the actionable plan prompt, then passive
 // monitoring. A Monitoring sibling must never hide a Plan Ready thread.
-const THREAD_STATUS_PRIORITY: Record<ThreadStatusPill["label"], number> = {
-  "Pending Approval": 6,
-  "Awaiting Input": 5,
-  Working: 4,
-  Connecting: 4,
-  "Plan Ready": 3,
-  Monitoring: 2,
-  Completed: 1,
+const THREAD_STATUS_PRIORITY: Record<ThreadStatusPillId, number> = {
+  approval: 6,
+  input: 5,
+  working: 4,
+  connecting: 4,
+  planReady: 3,
+  monitoring: 2,
+  completed: 1,
 };
 
 type ThreadStatusInput = Pick<
@@ -888,7 +938,10 @@ export function searchSidebarThreads<
     } else if (
       contentMatchKeys.size > 0 &&
       contentMatchKeys.has(
-        threadSearchMatchKey({ environmentId: thread.environmentId, threadId: thread.id }),
+        threadSearchMatchKey({
+          environmentId: thread.environmentId,
+          threadId: thread.id,
+        }),
       )
     ) {
       contentMatches.push(thread);
@@ -974,7 +1027,7 @@ export function resolveThreadStatusPill(input: {
 
   if (thread.hasPendingApprovals) {
     return {
-      label: "Pending Approval",
+      status: "approval",
       colorClass: "text-amber-600 dark:text-amber-300/90",
       dotClass: "bg-amber-500 dark:bg-amber-300/90",
       pulse: false,
@@ -983,7 +1036,7 @@ export function resolveThreadStatusPill(input: {
 
   if (thread.hasPendingUserInput) {
     return {
-      label: "Awaiting Input",
+      status: "input",
       colorClass: "text-indigo-600 dark:text-indigo-300/90",
       dotClass: "bg-indigo-500 dark:bg-indigo-300/90",
       pulse: false,
@@ -992,7 +1045,7 @@ export function resolveThreadStatusPill(input: {
 
   if (thread.session?.status === "running") {
     return {
-      label: "Working",
+      status: "working",
       colorClass: "text-sky-600 dark:text-sky-300/80",
       dotClass: "bg-sky-500 dark:bg-sky-300/80",
       pulse: true,
@@ -1001,7 +1054,7 @@ export function resolveThreadStatusPill(input: {
 
   if (thread.session?.status === "starting") {
     return {
-      label: "Connecting",
+      status: "connecting",
       colorClass: "text-sky-600 dark:text-sky-300/80",
       dotClass: "bg-sky-500 dark:bg-sky-300/80",
       pulse: true,
@@ -1017,7 +1070,7 @@ export function resolveThreadStatusPill(input: {
     thread.hasActionableProposedPlan;
   if (hasPlanReadyPrompt) {
     return {
-      label: "Plan Ready",
+      status: "planReady",
       colorClass: "text-violet-600 dark:text-violet-300/90",
       dotClass: "bg-violet-500 dark:bg-violet-300/90",
       pulse: false,
@@ -1030,7 +1083,7 @@ export function resolveThreadStatusPill(input: {
   // live work. Same recede treatment as Working per inbox-zero.
   if (thread.backgroundLiveness === "working") {
     return {
-      label: "Working",
+      status: "working",
       colorClass: "text-sky-600 dark:text-sky-300/80",
       dotClass: "bg-sky-500 dark:bg-sky-300/80",
       pulse: true,
@@ -1039,7 +1092,7 @@ export function resolveThreadStatusPill(input: {
 
   if (thread.backgroundLiveness === "monitoring") {
     return {
-      label: "Monitoring",
+      status: "monitoring",
       colorClass: "text-sky-600 dark:text-sky-300/80",
       dotClass: "bg-sky-500 dark:bg-sky-300/80",
       pulse: false,
@@ -1048,7 +1101,7 @@ export function resolveThreadStatusPill(input: {
 
   if (hasUnseenCompletion(thread)) {
     return {
-      label: "Completed",
+      status: "completed",
       colorClass: "text-emerald-600 dark:text-emerald-300/90",
       dotClass: "bg-emerald-500 dark:bg-emerald-300/90",
       pulse: false,
@@ -1067,7 +1120,7 @@ export function resolveProjectStatusIndicator(
     if (status === null) continue;
     if (
       highestPriorityStatus === null ||
-      THREAD_STATUS_PRIORITY[status.label] > THREAD_STATUS_PRIORITY[highestPriorityStatus.label]
+      THREAD_STATUS_PRIORITY[status.status] > THREAD_STATUS_PRIORITY[highestPriorityStatus.status]
     ) {
       highestPriorityStatus = status;
     }

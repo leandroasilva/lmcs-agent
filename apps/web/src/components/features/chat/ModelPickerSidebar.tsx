@@ -10,6 +10,7 @@ import {
   shouldShowInstanceBadge,
   type ProviderInstanceEntry,
 } from "../../../providerInstances";
+import { translateDynamic } from "../../../i18n";
 
 /**
  * Build the hover tooltip for an instance button. Mirrors the old
@@ -19,13 +20,20 @@ import {
 function describeUnavailableInstance(entry: ProviderInstanceEntry): string {
   const label = entry.displayName;
   if (!entry.enabled || entry.status === "disabled") {
-    return `${label} — Disabled in settings.`;
+    return `${label} — ${translateDynamic(
+      "chat.modelPicker.disabledInSettings",
+      "Disabled in settings.",
+    )}`;
   }
   if (entry.status === "ready" && entry.isAvailable) {
     return label;
   }
   const kind =
-    entry.status === "error" ? "Unavailable" : entry.status === "warning" ? "Limited" : "Not ready";
+    entry.status === "error"
+      ? translateDynamic("chat.modelPicker.statusUnavailable", "Unavailable")
+      : entry.status === "warning"
+        ? translateDynamic("chat.modelPicker.statusLimited", "Limited")
+        : translateDynamic("chat.modelPicker.statusNotReady", "Not ready");
   const msg = entry.snapshot.message?.trim();
   return msg ? `${label} — ${kind}. ${msg}` : `${label} — ${kind}.`;
 }
@@ -91,7 +99,7 @@ export const ModelPickerSidebar = memo(function ModelPickerSidebar(props: {
     <Toolbar.Root
       className="w-11 shrink-0 overflow-hidden bg-muted/30"
       data-model-picker-sidebar="true"
-      aria-label="Providers"
+      aria-label={translateDynamic("chat.modelPicker.providers", "Providers")}
       orientation="vertical"
       onKeyDown={(event) => {
         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -127,7 +135,7 @@ export const ModelPickerSidebar = memo(function ModelPickerSidebar(props: {
                         )}
                         onClick={() => handleSelect("favorites")}
                         type="button"
-                        aria-label="Favorites"
+                        aria-label={translateDynamic("chat.modelPicker.favorites", "Favorites")}
                         aria-pressed={props.selectedInstanceId === "favorites"}
                       >
                         <StarIcon className="size-5 fill-current shrink-0" aria-hidden />
@@ -139,7 +147,7 @@ export const ModelPickerSidebar = memo(function ModelPickerSidebar(props: {
                     sideOffset={PICKER_TOOLTIP_SIDE_OFFSET}
                     align="center"
                   >
-                    Favorites
+                    {translateDynamic("chat.modelPicker.favorites", "Favorites")}
                   </TooltipPopup>
                 </Tooltip>
               </div>
@@ -165,7 +173,7 @@ export const ModelPickerSidebar = memo(function ModelPickerSidebar(props: {
               : isContextDisabled
                 ? (props.getDisabledInstanceTooltip?.(entry) ?? entry.displayName)
                 : showNewBadge
-                  ? `${entry.displayName} — New`
+                  ? `${entry.displayName} — ${translateDynamic("chat.modelPicker.newBadge", "New")}`
                   : entry.displayName;
 
             const button = (
@@ -192,7 +200,10 @@ export const ModelPickerSidebar = memo(function ModelPickerSidebar(props: {
                   isUnavailable || isContextDisabled
                     ? tooltip
                     : showNewBadge
-                      ? `${entry.displayName}, new`
+                      ? `${entry.displayName}, ${translateDynamic(
+                          "chat.modelPicker.newAria",
+                          "new",
+                        )}`
                       : entry.displayName
                 }
               >

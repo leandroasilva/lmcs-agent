@@ -5,6 +5,7 @@ import { AsyncResult } from "effect/unstable/reactivity";
 import { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { DEFAULT_SERVER_SETTINGS } from "@lmcstools/core";
 import { supportsSharedSettingsSync } from "@lmcstools/client/state/shared-settings";
@@ -30,18 +31,24 @@ import {
 } from "./settings-scoped-server";
 
 export function SettingsThreadsRouteScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
     <>
       <SettingsEnvironmentFilterHeader />
-      <SettingsScreen title="Thread behavior" trailing={<AndroidSettingsEnvironmentFilter />}>
+      <SettingsScreen
+        title={t("nav.threadBehavior")}
+        trailing={<AndroidSettingsEnvironmentFilter />}
+      >
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
           className="flex-1"
           contentContainerClassName="gap-6 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+          contentContainerStyle={{
+            paddingBottom: Math.max(insets.bottom, 18) + 18,
+          }}
         >
           <AutoSettleSettingsRows />
           <LegacySettingsSection />
@@ -57,6 +64,7 @@ const AUTO_SETTLE_DEFAULT_DAYS = DEFAULT_SERVER_SETTINGS.sidebarAutoSettleAfterD
  * Mobile edits auto-settle defaults across selected capable targets.
  */
 function AutoSettleSettingsRows() {
+  const { t } = useTranslation();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
   const selectedProject = projectGroups.find((group) => group.key === selectedProjectKey);
   const projectSelected = selectedProjectKey !== null;
@@ -93,7 +101,10 @@ function AutoSettleSettingsRows() {
     setPendingWrites((count) => count + 1);
     void Promise.allSettled(
       writes.map((entry) =>
-        updateSettings({ environmentId: entry.environmentId, input: { patch: entry.patch } }),
+        updateSettings({
+          environmentId: entry.environmentId,
+          input: { patch: entry.patch },
+        }),
       ),
     ).finally(() => {
       writeInFlight.current = false;
@@ -140,7 +151,10 @@ function AutoSettleSettingsRows() {
     setPendingWrites((count) => count + 1);
     void Promise.allSettled(
       writes.map((entry) =>
-        updateSettings({ environmentId: entry.environmentId, input: { patch: entry.patch } }),
+        updateSettings({
+          environmentId: entry.environmentId,
+          input: { patch: entry.patch },
+        }),
       ),
     ).finally(() => {
       writeInFlight.current = false;
@@ -155,34 +169,38 @@ function AutoSettleSettingsRows() {
     <View className="gap-6">
       {projectSelected ? (
         <SettingsProjectOverridesSection
-          projectLabel={selectedProject?.label ?? "Unavailable project"}
+          projectLabel={selectedProject?.label ?? t("settings.scope.unavailableProject")}
           hasOverrides={hasProjectOverrides}
           supportsOverrides={supportsProjectOverrides}
           pending={pendingWrites > 0}
           onClear={clearProjectOverrides}
         />
       ) : null}
-      <SettingsSection title="Auto-settle">
+      <SettingsSection title={t("settings.threads.autoSettle")}>
         <SettingsSwitchRow
           icon="arrow.triangle.branch"
-          label="Auto-settle merged threads"
+          label={t("settings.threads.autoSettleOnMerge")}
           value={referenceSettings.sidebarAutoSettleOnMerge}
           disabled={disabled}
           onValueChange={(value) => writeToAll({ sidebarAutoSettleOnMerge: value })}
         />
         <SettingsSwitchRow
           icon="clock"
-          label="Auto-settle inactive threads"
+          label={t("settings.threads.autoSettleInactive")}
           value={afterDays !== null}
           disabled={disabled}
           onValueChange={(value) =>
-            writeToAll({ sidebarAutoSettleAfterDays: value ? AUTO_SETTLE_DEFAULT_DAYS : null })
+            writeToAll({
+              sidebarAutoSettleAfterDays: value ? AUTO_SETTLE_DEFAULT_DAYS : null,
+            })
           }
         />
         {afterDays !== null ? (
           <View className="flex-row items-center gap-4 px-4 py-4 android:min-h-14 android:py-3">
             <View className="w-[22px] android:w-6" />
-            <Text className="flex-1 text-foreground text-lg android:text-base">Inactive days</Text>
+            <Text className="flex-1 text-foreground text-lg android:text-base">
+              {t("settings.threads.inactiveDays")}
+            </Text>
             <AutoSettleDaysField
               value={afterDays}
               disabled={disabled}
@@ -192,9 +210,11 @@ function AutoSettleSettingsRows() {
         ) : null}
       </SettingsSection>
       {pendingWrites === 0 && mismatches.length > 0 ? (
-        <SettingsSection title="Across environments">
+        <SettingsSection title={t("settings.threads.acrossEnvironments")}>
           <View className="gap-3 p-4">
-            <Text className="text-base text-foreground">Auto-settle defaults differ</Text>
+            <Text className="text-base text-foreground">
+              {t("settings.threads.defaultsDiffer")}
+            </Text>
             <Text className="text-sm text-foreground-muted">
               {mismatches.map((mismatch) => mismatch.label).join(", ")}
             </Text>
@@ -205,7 +225,7 @@ function AutoSettleSettingsRows() {
               className="self-start rounded-full bg-subtle px-4 py-2 active:opacity-70"
             >
               <Text className="text-sm font-t3-medium text-foreground">
-                Apply auto-settle defaults
+                {t("settings.threads.applyDefaults")}
               </Text>
             </Pressable>
           </View>
@@ -221,6 +241,7 @@ function AutoSettleSettingsRows() {
  * mobile preferences.
  */
 function LegacySettingsSection() {
+  const { t } = useTranslation();
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
   const preferences = useAtomValue(mobilePreferencesAtom);
   const planModeEnabled =
@@ -228,18 +249,15 @@ function LegacySettingsSection() {
 
   return (
     <View className="gap-3">
-      <SettingsSection title="Legacy">
+      <SettingsSection title={t("settings.threads.legacy")}>
         <SettingsSwitchRow
           icon="hammer"
-          label="Plan Mode"
+          label={t("settings.threads.planMode")}
           value={planModeEnabled}
           onValueChange={(value) => savePreferences({ planModeEnabled: value })}
         />
       </SettingsSection>
-      <Text className="px-2 text-sm text-foreground-muted">
-        Opt into retired interfaces kept for compatibility. Plan Mode restores the Build/Plan
-        control; otherwise every task runs in Build mode.
-      </Text>
+      <Text className="px-2 text-sm text-foreground-muted">{t("settings.threads.legacyHint")}</Text>
     </View>
   );
 }

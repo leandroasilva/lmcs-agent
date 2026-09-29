@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import type { AppSymbolName } from "./AppSymbol";
 import { AppText as Text } from "./AppText";
@@ -37,6 +38,7 @@ export function AndroidScreenHeader(props: {
   readonly embedded?: boolean;
   readonly hideBottomBorder?: boolean;
 }) {
+  const { t } = useTranslation();
   const titleTypography = useScaledTextRole("title");
   const subtitleTypography = useScaledTextRole("label");
   const { height: materialToolbarHeight, ...headerPadding } = useMaterialToolbarLayout(
@@ -60,7 +62,7 @@ export function AndroidScreenHeader(props: {
       <View style={{ minHeight: materialToolbarHeight }} className="flex-row items-center gap-1">
         {props.onBack ? (
           <MaterialIconButton
-            accessibilityLabel="Navigate up"
+            accessibilityLabel={t("common.navigateUp")}
             icon="arrow.left"
             tintColorClassName="accent-header-foreground"
             onPress={props.onBack}
@@ -110,7 +112,7 @@ export function AndroidScreenHeader(props: {
           >
             {(open) => (
               <MaterialIconButton
-                accessibilityLabel="More actions"
+                accessibilityLabel={t("common.moreActions")}
                 icon="ellipsis"
                 tintColorClassName="accent-header-foreground"
                 onPress={open}

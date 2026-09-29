@@ -24,6 +24,7 @@ import {
 } from "./ComposerControl";
 import { useComposerMenuProps } from "./composerEventScope";
 import { shortcutLabelForCommand } from "../../../keybindings";
+import { translateDynamic } from "../../../i18n";
 
 export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   /**
@@ -32,7 +33,10 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
    */
   activeInstanceId: ProviderInstanceId;
   model: string;
-  selectedModels?: ReadonlyArray<{ instanceId: ProviderInstanceId; model: string }>;
+  selectedModels?: ReadonlyArray<{
+    instanceId: ProviderInstanceId;
+    model: string;
+  }>;
   onToggleModel?: (instanceId: ProviderInstanceId, model: string) => void;
   lockedProvider: ProviderDriverKind | null;
   lockedContinuationGroupKey?: string | null;
@@ -85,8 +89,8 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   const triggerTitle = selectedModel
     ? getTriggerDisplayModelName(selectedModel)
     : props.model === ANTIGRAVITY_DEFAULT_MODEL
-      ? "Choose model"
-      : props.model || "Choose model";
+      ? translateDynamic("chat.modelPicker.chooseModel", "Choose model")
+      : props.model || translateDynamic("chat.modelPicker.chooseModel", "Choose model");
   const triggerLabel = selectedModel
     ? `${getTriggerDisplayModelLabel(selectedModel)}${selectedModel.isUnavailable ? " (Unavailable)" : ""}`
     : triggerTitle;
@@ -133,15 +137,22 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
       event.preventDefault();
     };
 
-    document.addEventListener("wheel", preventBackgroundWheel, { capture: true, passive: false });
+    document.addEventListener("wheel", preventBackgroundWheel, {
+      capture: true,
+      passive: false,
+    });
     document.addEventListener("touchmove", preventBackgroundTouchMove, {
       capture: true,
       passive: false,
     });
 
     return () => {
-      document.removeEventListener("wheel", preventBackgroundWheel, { capture: true });
-      document.removeEventListener("touchmove", preventBackgroundTouchMove, { capture: true });
+      document.removeEventListener("wheel", preventBackgroundWheel, {
+        capture: true,
+      });
+      document.removeEventListener("touchmove", preventBackgroundTouchMove, {
+        capture: true,
+      });
       documentElement.style.overscrollBehavior = previousDocumentOverscrollBehavior;
       body.style.overflow = previousBodyOverflow;
       body.style.paddingRight = previousBodyPaddingRight;
@@ -176,14 +187,15 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   });
   const multipleLabel = selectedEntries
     ? selectedEntries.length === 0
-      ? "Choose models"
+      ? translateDynamic("chat.modelPicker.chooseModels", "Choose models")
       : `${selectedEntries
           .slice(0, 2)
           .map((selection) => selection.label)
           .join(", ")}${selectedEntries.length > 2 ? `, ${selectedEntries.length - 2} more` : ""}`
     : undefined;
   const allModelNames = selectedEntries
-    ? selectedEntries.map((selection) => selection.label).join(", ") || "Choose models"
+    ? selectedEntries.map((selection) => selection.label).join(", ") ||
+      translateDynamic("chat.modelPicker.chooseModels", "Choose models")
     : undefined;
   const triggerTooltipContent = shortcutLabel
     ? `${props.triggerLabel ?? allModelNames ?? triggerLabel} · ${shortcutLabel}`

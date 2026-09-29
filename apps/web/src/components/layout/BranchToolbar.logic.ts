@@ -7,6 +7,7 @@ import type {
 } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import { sanitizeNewRefName } from "@lmcstools/core/git";
+import { translateDynamic } from "../../i18n";
 import { toSortableTimestamp } from "../../lib/threadSort";
 export {
   dedupeRemoteBranchesWithLocalMatches,
@@ -46,7 +47,7 @@ export function resolveEnvironmentOptionLabel(input: {
       if (!label) return false;
       return !GENERIC_LOCAL_ENVIRONMENT_LABELS.has(label.toLowerCase());
     });
-    return preferredLocalLabel ?? "This device";
+    return preferredLocalLabel ?? translateDynamic("palette.environment.thisDevice", "This device");
   }
 
   return runtimeLabel ?? savedLabel ?? input.environmentId;
@@ -133,7 +134,11 @@ export function resolvePreviousWorktreeSeed(input: {
   }>;
   currentWorktreePath: string | null;
 }): PreviousWorktreeSeed | null {
-  let latest: { branch: string | null; worktreePath: string; updatedAt: number } | null = null;
+  let latest: {
+    branch: string | null;
+    worktreePath: string;
+    updatedAt: number;
+  } | null = null;
   for (const thread of input.threads) {
     if (
       !thread.worktreePath ||

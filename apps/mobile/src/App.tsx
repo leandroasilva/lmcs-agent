@@ -19,6 +19,7 @@ import {
 } from "./features/settings/appearance/AppearancePreferencesProvider";
 import { RootStack } from "./Stack";
 import { appAtomRegistry } from "./state/atom-registry";
+import { useLocale } from "./i18n/useLocale";
 import { OverlayPortalHost } from "./components/OverlayPortal";
 import { shouldHandleAppLink } from "./lib/appLinking";
 import { useMobileNavigationTheme } from "./lib/useMobileNavigationTheme";
@@ -53,6 +54,12 @@ function SplashScreenCoordinator() {
   return null;
 }
 
+/** Keeps i18next aligned with the device-persisted locale. */
+function LanguageCoordinator() {
+  useLocale();
+  return null;
+}
+
 export default function App() {
   return (
     <RegistryContext.Provider value={appAtomRegistry}>
@@ -72,6 +79,7 @@ function AppContent() {
   return (
     <>
       <SplashScreenCoordinator />
+      <LanguageCoordinator />
       <SubscriptionUsageCoordinator />
       <GestureHandlerRootView className="flex-1">
         <KeyboardProvider statusBarTranslucent>

@@ -1,6 +1,9 @@
 import type { EnvironmentId, UsageLimitsReport } from "@lmcstools/core";
 import { limitsNotice } from "@lmcstools/core/usageLimits";
 import { GaugeIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+import { translateDynamic } from "../../../i18n";
 
 import { getDriverOption } from "../settings/providerDriverMeta";
 import { RedactedSensitiveText } from "../settings/RedactedSensitiveText";
@@ -22,6 +25,7 @@ function accountLabel(account: UsageLimitsReport["accounts"][number]): string {
 }
 
 function AccountSummary({ account }: { readonly account: UsageLimitsReport["accounts"][number] }) {
+  const { t } = useTranslation();
   const label = accountLabel(account);
   return (
     <>
@@ -29,9 +33,9 @@ function AccountSummary({ account }: { readonly account: UsageLimitsReport["acco
         <RedactedSensitiveText
           key={label}
           value={label}
-          ariaLabel="Toggle account label visibility"
-          revealTooltip="Click to reveal account"
-          hideTooltip="Click to hide account"
+          ariaLabel={t("chat.usage.toggleAccountAria")}
+          revealTooltip={t("chat.usage.revealAccount")}
+          hideTooltip={t("chat.usage.hideAccount")}
           className="max-w-full truncate align-bottom font-sans text-xs leading-normal"
         />
       ) : (
@@ -54,16 +58,18 @@ export function usageLimitsBannerItem(
   const summary = single ? (
     <AccountSummary account={single} />
   ) : (
-    `${report.accounts.length} accounts`
+    translateDynamic("chat.usage.accounts", `${report.accounts.length} accounts`, {
+      count: report.accounts.length,
+    })
   );
   return {
     id,
     variant: "info",
     priority: "notice",
     icon: <GaugeIcon />,
-    title: "Usage limits",
+    title: translateDynamic("chat.usage.title", "Usage limits"),
     description: summary,
-    dismissLabel: "Dismiss usage limits",
+    dismissLabel: translateDynamic("chat.usage.dismiss", "Dismiss usage limits"),
     onDismiss,
     children: <UsageLimitsBannerBody report={report} environmentId={environmentId} />,
   };

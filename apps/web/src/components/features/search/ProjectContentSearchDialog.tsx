@@ -2,6 +2,7 @@ import { Spinner } from "~/components/ui/spinner";
 import type { ProjectContentMatch } from "@lmcstools/core";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useActiveProjectTarget, type ActiveProjectTarget } from "~/hooks/useActiveProjectTarget";
 import { useTheme } from "~/hooks/useTheme";
@@ -15,6 +16,7 @@ import { ScrollArea } from "../../ui/scroll-area";
 import { Toggle } from "../../ui/toggle";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
 import { HighlightedSearchLine } from "./HighlightedSearchLine";
+import "../../../i18n";
 
 interface ProjectContentSearchDialogProps {
   readonly onOpenChange: (open: boolean) => void;
@@ -33,7 +35,10 @@ interface MatchGroup {
   readonly matches: ReadonlyArray<ProjectContentMatch & { readonly resultIndex: number }>;
 }
 
-function splitPath(path: string): { readonly name: string; readonly directory: string } {
+function splitPath(path: string): {
+  readonly name: string;
+  readonly directory: string;
+} {
   const separator = path.lastIndexOf("/");
   return separator === -1
     ? { name: path, directory: "" }
@@ -51,7 +56,10 @@ function groupMatches(matches: ReadonlyArray<ProjectContentMatch>): MatchGroup[]
       groups.set(match.path, [indexedMatch]);
     }
   });
-  return [...groups].map(([path, groupedMatches]) => ({ path, matches: groupedMatches }));
+  return [...groups].map(([path, groupedMatches]) => ({
+    path,
+    matches: groupedMatches,
+  }));
 }
 
 function SearchOptionButton(props: {
@@ -81,19 +89,23 @@ function SearchOptionButton(props: {
 }
 
 function EmptyContentSearchDialog() {
+  const { t } = useTranslation();
   return (
     <CommandPaletteContent
-      aria-label="Search project contents"
-      escapeLabel="Back"
-      footerActionLabel="Open file"
-      inputProps={{ disabled: true, placeholder: "Search project contents…" }}
+      aria-label={t("palette.action.searchProjectContents")}
+      escapeLabel={t("common.back")}
+      footerActionLabel={t("palette.filePicker.openFile")}
+      inputProps={{
+        disabled: true,
+        placeholder: t("palette.contentSearch.placeholder"),
+      }}
       mode="none"
       panelSize="fill"
       testId="project-content-search"
       value=""
     >
       <p className="m-auto px-6 text-center text-muted-foreground text-sm">
-        Open a project to search its files.
+        {t("palette.filePicker.noProject")}
       </p>
     </CommandPaletteContent>
   );
@@ -103,6 +115,7 @@ function OpenContentSearchDialog(props: {
   readonly onOpenChange: (open: boolean) => void;
   readonly target: ActiveProjectTarget;
 }) {
+  const { t } = useTranslation();
   const { target } = props;
   const { resolvedTheme } = useTheme();
   const [query, setQuery] = useState("");
@@ -163,28 +176,30 @@ function OpenContentSearchDialog(props: {
 
   return (
     <CommandPaletteContent
-      aria-label={`Search file contents in ${target.projectName}`}
-      escapeLabel="Back"
-      footerActionLabel="Open file"
+      aria-label={t("palette.contentSearch.aria", {
+        project: target.projectName,
+      })}
+      escapeLabel={t("common.back")}
+      footerActionLabel={t("palette.filePicker.openFile")}
       inputAccessory={
         <div className="absolute inset-e-2.5 top-1/2 flex shrink-0 -translate-y-1/2 items-center gap-0.5 rounded-md border bg-muted/30 p-0.5">
           <SearchOptionButton
             active={caseSensitive}
-            label="Match case"
+            label={t("palette.contentSearch.matchCase")}
             onClick={() => setCaseSensitive((current) => !current)}
           >
             Aa
           </SearchOptionButton>
           <SearchOptionButton
             active={wholeWord}
-            label="Match whole word"
+            label={t("palette.contentSearch.matchWholeWord")}
             onClick={() => setWholeWord((current) => !current)}
           >
             <span className="underline decoration-2 underline-offset-2">ab</span>
           </SearchOptionButton>
           <SearchOptionButton
             active={useRegex}
-            label="Use regular expression"
+            label={t("palette.contentSearch.useRegex")}
             onClick={() => setUseRegex((current) => !current)}
           >
             .*
@@ -193,7 +208,9 @@ function OpenContentSearchDialog(props: {
       }
       inputProps={{
         className: "pe-30",
-        placeholder: `Search in ${target.projectName}`,
+        placeholder: t("palette.contentSearch.searchIn", {
+          project: target.projectName,
+        }),
         onKeyDown: (event) => {
           if (event.key === "ArrowDown" && matches.length > 0) {
             event.preventDefault();
@@ -227,14 +244,17 @@ function OpenContentSearchDialog(props: {
         <div className="flex h-9 shrink-0 items-center border-b px-3 text-xs text-muted-foreground">
           {search.isPending ? (
             <span className="flex items-center gap-2">
-              <Spinner size="sm" /> Searching…
+              <Spinner size="sm" /> {t("palette.contentSearch.searching")}
             </span>
           ) : search.error ? (
             <span className="text-destructive">{search.error}</span>
           ) : search.invalidRegex ? (
-            <span className="text-destructive">Invalid regular expression</span>
+            <span className="text-destructive">{t("palette.contentSearch.invalidRegex")}</span>
           ) : (
-            `${matches.length.toLocaleString()}${search.truncated ? "+" : ""} results in ${fileCount.toLocaleString()} files`
+            t("palette.contentSearch.results", {
+              results: `${matches.length.toLocaleString()}${search.truncated ? "+" : ""}`,
+              files: fileCount.toLocaleString(),
+            })
           )}
         </div>
       ) : null}
@@ -242,8 +262,8 @@ function OpenContentSearchDialog(props: {
       {matches.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
           {search.hasQuery && !search.isPending && !search.error
-            ? "No results found."
-            : "Type to search across your project."}
+            ? t("palette.contentSearch.noResults")
+            : t("palette.contentSearch.typeToSearch")}
         </div>
       ) : (
         <ScrollArea className="min-h-0 flex-1" scrollFade>

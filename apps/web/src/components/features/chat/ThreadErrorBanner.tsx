@@ -1,8 +1,10 @@
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, AlertAction, AlertDescription } from "../../ui/alert";
 import { Button } from "../../ui/button";
 import { CircleAlertIcon, XIcon } from "lucide-react";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../../ui/tooltip";
+import "../../../i18n";
 
 export function getThreadErrorBannerKey(threadKey: string, error: string | null): string | null {
   return error === null ? null : `${threadKey}\u0000${error}`;
@@ -40,6 +42,7 @@ export const ThreadErrorBanner = memo(function ThreadErrorBanner({
   error: string | null;
   onDismiss?: () => void;
 }) {
+  const { t } = useTranslation();
   if (!error) return null;
   return (
     <div className="pointer-events-auto mx-auto w-fit max-w-[min(48rem,calc(100%-2rem))] pt-3">
@@ -55,7 +58,12 @@ export const ThreadErrorBanner = memo(function ThreadErrorBanner({
         </AlertDescription>
         {onDismiss && (
           <AlertAction>
-            <Button variant="ghost" size="icon-xs" aria-label="Dismiss error" onClick={onDismiss}>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label={t("chat.error.dismiss")}
+              onClick={onDismiss}
+            >
               <XIcon className="text-destructive" />
             </Button>
           </AlertAction>

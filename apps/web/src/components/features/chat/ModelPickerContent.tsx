@@ -28,6 +28,7 @@ import {
 } from "../../ui/combobox";
 import { ModelEsque } from "./providerIconUtils";
 import { isCommandPaletteOpen } from "../../../commandPaletteBus";
+import { translateDynamic } from "../../../i18n";
 import { primaryServerKeybindingsAtom } from "../../../state/server";
 import {
   modelPickerJumpCommandForIndex,
@@ -151,7 +152,10 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
   /** The instance currently selected in the composer (combobox "value"). */
   activeInstanceId: ProviderInstanceId;
   model: string;
-  selectedModels?: ReadonlyArray<{ instanceId: ProviderInstanceId; model: string }>;
+  selectedModels?: ReadonlyArray<{
+    instanceId: ProviderInstanceId;
+    model: string;
+  }>;
   onToggleModel?: (instanceId: ProviderInstanceId, model: string) => void;
   /**
    * When set, the picker is locked to the given driver kind — typically
@@ -731,7 +735,12 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     return mapping.size > 0 ? mapping : EMPTY_MODEL_JUMP_LABELS;
   }, [keybindings, modelJumpCommandByKey, modelJumpShortcutContext]);
   const modelListExtraData = useMemo(
-    () => ({ favoritesSet, modelJumpLabelByKey, activeModelKey, selectedModelKeySet }),
+    () => ({
+      favoritesSet,
+      modelJumpLabelByKey,
+      activeModelKey,
+      selectedModelKeySet,
+    }),
     [favoritesSet, modelJumpLabelByKey, activeModelKey, selectedModelKeySet],
   );
 
@@ -884,7 +893,10 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
           >
             <ComboboxSearchInput
               ref={searchInputRef}
-              placeholder="Search models..."
+              placeholder={translateDynamic(
+                "chat.modelPicker.searchPlaceholder",
+                "Search models...",
+              )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -1039,14 +1051,23 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
                       }}
                     >
                       {providerSetupEntries.length > 1
-                        ? `Set up ${entry.displayName}`
-                        : "Open provider setup"}
+                        ? translateDynamic(
+                            "chat.modelPicker.setUpProvider",
+                            `Set up ${entry.displayName}`,
+                            { displayName: entry.displayName },
+                          )
+                        : translateDynamic(
+                            "chat.modelPicker.openProviderSetup",
+                            "Open provider setup",
+                          )}
                     </InlineButton>
                   </div>
                 ))}
               </div>
             ) : (
-              <ComboboxEmpty className="empty:h-0">No models found</ComboboxEmpty>
+              <ComboboxEmpty className="empty:h-0">
+                {translateDynamic("chat.modelPicker.noModels", "No models found")}
+              </ComboboxEmpty>
             )}
           </div>
         </Combobox>

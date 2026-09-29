@@ -6,6 +6,8 @@ import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import type { ProviderInstanceId, SidebarProjectGroupingMode } from "@lmcstools/core";
+import type { Locale } from "@lmcstools/core/settings";
+import { isLocale } from "@lmcstools/client/i18n";
 import type { ComposerEnterBehavior } from "../lib/composerEnterBehavior";
 import { MOBILE_THEME_IDS, type MobileThemeId, type MobileThemeMode } from "../lib/mobileTheme";
 import * as MobileDatabase from "./mobile-database";
@@ -21,6 +23,8 @@ export interface Preferences {
   readonly lightThemeId?: MobileThemeId;
   readonly darkThemeId?: MobileThemeId;
   readonly themeMode?: MobileThemeMode;
+  /** Device-local UI language; absence means the default locale. */
+  readonly locale?: Locale;
   readonly baseFontSize?: number;
   readonly terminalFontSize?: number | null;
   readonly markdownFontSize?: number;
@@ -82,13 +86,14 @@ export class MobilePreferencesStore extends Context.Service<
   }
 >()("@lmcstools/mobile/persistence/MobilePreferencesStore") {}
 
-function sanitizePreferences(parsed: Preferences): Preferences {
+export function sanitizePreferences(parsed: Preferences): Preferences {
   const preferences: {
     liveActivitiesEnabled?: boolean;
     themeId?: MobileThemeId;
     lightThemeId?: MobileThemeId;
     darkThemeId?: MobileThemeId;
     themeMode?: MobileThemeMode;
+    locale?: Locale;
     baseFontSize?: number;
     terminalFontSize?: number | null;
     markdownFontSize?: number;
@@ -133,6 +138,7 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   ) {
     preferences.themeMode = parsed.themeMode;
   }
+  if (isLocale(parsed.locale)) preferences.locale = parsed.locale;
   if (typeof parsed.baseFontSize === "number") preferences.baseFontSize = parsed.baseFontSize;
   if (typeof parsed.terminalFontSize === "number" || parsed.terminalFontSize === null) {
     preferences.terminalFontSize = parsed.terminalFontSize;
@@ -267,7 +273,10 @@ export const make = Effect.fn("MobilePreferencesStore.make")(function* () {
       yield* Effect.logWarning("Database unavailable; saving preferences to secure storage.").pipe(
         Effect.annotateLogs({ cause: databaseResult.failure }),
       );
-      const fallback = yield* encode(PREFERENCES_FALLBACK_KEY, { payload, updatedAt: timestamp });
+      const fallback = yield* encode(PREFERENCES_FALLBACK_KEY, {
+        payload,
+        updatedAt: timestamp,
+      });
       yield* secureStorage.setItem(PREFERENCES_FALLBACK_KEY, fallback);
       return;
     }

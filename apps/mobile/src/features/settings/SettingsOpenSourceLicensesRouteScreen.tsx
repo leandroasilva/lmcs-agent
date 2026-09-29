@@ -11,6 +11,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import { Linking, Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { SymbolView } from "../../components/AppSymbol";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/AppText";
@@ -38,9 +39,10 @@ function LicenseRow(props: {
   readonly entry: ThirdPartyLicenseEntry;
   readonly onPress: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable
-      accessibilityHint="Opens the complete license notice"
+      accessibilityHint={t("settings.licenses.openNoticeHint")}
       accessibilityLabel={`${props.entry.name}, ${props.entry.license}`}
       accessibilityRole="button"
       onPress={props.onPress}
@@ -69,6 +71,7 @@ function LicenseRow(props: {
 }
 
 export function SettingsOpenSourceLicensesRouteScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
@@ -99,10 +102,10 @@ export function SettingsOpenSourceLicensesRouteScreen() {
 
   if (!manifest) {
     return (
-      <SettingsScreen title="Open source licenses">
+      <SettingsScreen title={t("nav.openSourceLicenses")}>
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-base text-foreground-muted">
-            License notices are unavailable in this build.
+            {t("settings.licenses.unavailableBuild")}
           </Text>
         </View>
       </SettingsScreen>
@@ -110,7 +113,7 @@ export function SettingsOpenSourceLicensesRouteScreen() {
   }
 
   return (
-    <SettingsScreen title="Open source licenses">
+    <SettingsScreen title={t("nav.openSourceLicenses")}>
       {Platform.OS === "ios" ? (
         <NativeStackScreenOptions
           options={{
@@ -118,7 +121,7 @@ export function SettingsOpenSourceLicensesRouteScreen() {
               ? () => [
                   createNativeMailSearchToolbarItem({
                     onSearchTextChange: setQuery,
-                    placeholder: "Search packages",
+                    placeholder: t("settings.licenses.searchPlaceholder"),
                     searchTextChangeId: "open-source-licenses-search-text",
                     showsSearchDismissButton: true,
                   }),
@@ -134,7 +137,7 @@ export function SettingsOpenSourceLicensesRouteScreen() {
                   obscureBackground: false,
                   onCancelButtonPress: () => setQuery(""),
                   onChangeText: (event) => setQuery(event.nativeEvent.text),
-                  placeholder: "Search packages",
+                  placeholder: t("settings.licenses.searchPlaceholder"),
                 },
           }}
         />
@@ -163,7 +166,7 @@ export function SettingsOpenSourceLicensesRouteScreen() {
         ListEmptyComponent={
           <View className="items-center px-6 py-12">
             <Text className="text-center text-base text-foreground-muted">
-              No licenses match that search.
+              {t("settings.licenses.empty")}
             </Text>
           </View>
         }
@@ -171,12 +174,12 @@ export function SettingsOpenSourceLicensesRouteScreen() {
           Platform.OS !== "ios" ? (
             <View className="px-5 pt-4 pb-5">
               <TextInput
-                accessibilityLabel="Search open-source licenses"
+                accessibilityLabel={t("settings.licenses.searchAria")}
                 autoCapitalize="none"
                 autoCorrect={false}
                 clearButtonMode="while-editing"
                 onChangeText={setQuery}
-                placeholder="Search packages"
+                placeholder={t("settings.licenses.searchPlaceholder")}
                 returnKeyType="search"
                 value={query}
               />
@@ -193,6 +196,7 @@ export function SettingsOpenSourceLicensesRouteScreen() {
 type LicenseDetailProps = StaticScreenProps<{ readonly entryKey: string }>;
 
 export function SettingsOpenSourceLicenseRouteScreen({ route }: LicenseDetailProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const manifest = useMobileThirdPartyLicenses();
   const entry = manifest
@@ -202,10 +206,10 @@ export function SettingsOpenSourceLicenseRouteScreen({ route }: LicenseDetailPro
 
   if (!entry) {
     return (
-      <SettingsScreen title="License notice">
+      <SettingsScreen title={t("nav.licenseNotice")}>
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-base text-foreground-muted">
-            This license notice is unavailable.
+            {t("settings.licenses.noticeUnavailable")}
           </Text>
         </View>
       </SettingsScreen>
@@ -213,12 +217,14 @@ export function SettingsOpenSourceLicenseRouteScreen({ route }: LicenseDetailPro
   }
 
   return (
-    <SettingsScreen title="License notice">
+    <SettingsScreen title={t("nav.licenseNotice")}>
       <ScrollView
         className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="gap-5 px-5 pt-4"
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, 18) + 18,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <View className="gap-2 px-1">
@@ -230,12 +236,14 @@ export function SettingsOpenSourceLicenseRouteScreen({ route }: LicenseDetailPro
           </Text>
           {sourceUrl ? (
             <Pressable
-              accessibilityHint="Opens the project website"
+              accessibilityHint={t("settings.licenses.openProjectHint")}
               accessibilityRole="link"
               onPress={() => void Linking.openURL(sourceUrl)}
               className="min-h-12 flex-row items-center gap-2 self-start py-2 active:opacity-60"
             >
-              <Text className="font-t3-medium text-primary-text">Project source</Text>
+              <Text className="font-t3-medium text-primary-text">
+                {t("settings.licenses.projectSource")}
+              </Text>
               <SymbolView
                 name="arrow.up.right"
                 size={16}

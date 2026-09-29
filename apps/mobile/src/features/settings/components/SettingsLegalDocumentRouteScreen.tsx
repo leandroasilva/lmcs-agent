@@ -1,6 +1,7 @@
 import { type NavigationProp, type ParamListBase, useNavigation } from "@react-navigation/native";
 import { useCallback, useLayoutEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { WebView } from "react-native-webview";
 
 import { AppText as Text } from "../../../components/AppText";
@@ -10,10 +11,11 @@ import { isLegalDocumentUrl, LEGAL_URL } from "../lib/legal-document-url";
 
 export function SettingsLegalDocumentCloseHeaderButton() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
 
   return (
     <Pressable
-      accessibilityLabel="Close legal document"
+      accessibilityLabel={t("settings.legal.closeAria")}
       accessibilityRole="button"
       hitSlop={12}
       onPress={() => navigation.goBack()}
@@ -35,11 +37,12 @@ export function SettingsLegalDocumentExternalHeaderButton({
 }: {
   readonly externalUrl?: string;
 }) {
+  const { t } = useTranslation();
   const safeExternalUrl = isLegalDocumentUrl(externalUrl) ? externalUrl : LEGAL_URL;
 
   return (
     <Pressable
-      accessibilityLabel="Open legal documents in external browser"
+      accessibilityLabel={t("settings.legal.externalAria")}
       accessibilityRole="button"
       hitSlop={12}
       onPress={() => void Linking.openURL(safeExternalUrl).catch(() => undefined)}
@@ -65,6 +68,7 @@ export function SettingsLegalDocumentRouteScreen({
   documentName,
   documentUrl,
 }: SettingsLegalDocumentRouteScreenProps) {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [reloadKey, setReloadKey] = useState(0);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -96,7 +100,7 @@ export function SettingsLegalDocumentRouteScreen({
         />
         <View className="items-center gap-2">
           <Text className="text-center font-t3-bold text-lg text-foreground">
-            Couldn&apos;t load the {documentName.toLowerCase()}
+            {t("settings.legal.loadError")}
           </Text>
           <Text selectable className="text-center text-sm leading-normal text-foreground-muted">
             {loadError}
@@ -111,14 +115,18 @@ export function SettingsLegalDocumentRouteScreen({
             }}
             className="items-center rounded-xl bg-foreground px-4 py-3 active:opacity-80"
           >
-            <Text className="font-t3-bold text-base text-sheet">Try Again</Text>
+            <Text className="font-t3-bold text-base text-sheet">
+              {t("settings.legal.tryAgain")}
+            </Text>
           </Pressable>
           <Pressable
             accessibilityRole="link"
             onPress={() => openExternalUrl(documentUrl)}
             className="items-center rounded-xl px-4 py-3 active:bg-foreground/5"
           >
-            <Text className="font-t3-medium text-base text-foreground-muted">Open in Browser</Text>
+            <Text className="font-t3-medium text-base text-foreground-muted">
+              {t("settings.legal.openInBrowser")}
+            </Text>
           </Pressable>
         </View>
       </View>

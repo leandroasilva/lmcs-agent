@@ -1,4 +1,5 @@
 import { ArrowUpIcon, ClockIcon } from "lucide-react";
+import { translateDynamic } from "../../../i18n";
 import { ReadOnlySourcePreview } from "../files/AttachmentFilePreview";
 import { useRightPanelStore } from "~/rightPanelStore";
 import {
@@ -1266,7 +1267,9 @@ export const MessagesTimeline = memo(function MessagesTimeline({
     }
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-placeholder text-sm">Send a message to start the conversation.</p>
+        <p className="text-placeholder text-sm">
+          {translateDynamic("chat.timeline.empty", "Send a message to start the conversation.")}
+        </p>
       </div>
     );
   }

@@ -11,6 +11,7 @@ import type { SidebarThreadSortOrder } from "@lmcstools/core/settings";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
 import { type ReactNode } from "react";
+import { translateDynamic } from "../../i18n";
 import { getThreadSortTimestamp, sortThreads } from "../../lib/threadSort";
 import { normalizeSearchText } from "../../lib/utils";
 import { formatRelativeTimeLabel } from "../../timestampFormat";
@@ -31,8 +32,11 @@ export function buildLinkedThreadActionItems(
   return input.threads.map((thread) => ({
     kind: "action",
     value: `thread:${input.environmentId}:${thread.id}`,
-    title: thread.title || "Untitled thread",
-    description: thread.archivedAt === null ? "Linked thread" : "Archived thread",
+    title: thread.title || translateDynamic("palette.item.untitledThread", "Untitled thread"),
+    description:
+      thread.archivedAt === null
+        ? translateDynamic("palette.item.linkedThread", "Linked thread")
+        : translateDynamic("palette.item.archivedThread", "Archived thread"),
     searchTerms: [input.query, thread.title],
     icon: input.icon,
     run: () => input.runThread({ environmentId: input.environmentId, id: thread.id }),
@@ -111,11 +115,23 @@ export function reduceCommandPaletteUiState(
         },
       };
     case "OpenAddProject":
-      return { open: true, mode: "command", openIntent: { kind: "add-project" } };
+      return {
+        open: true,
+        mode: "command",
+        openIntent: { kind: "add-project" },
+      };
     case "OpenNewThreadIn":
-      return { open: true, mode: "command", openIntent: { kind: "new-thread-in" } };
+      return {
+        open: true,
+        mode: "command",
+        openIntent: { kind: "new-thread-in" },
+      };
     case "OpenChangeTheme":
-      return { open: true, mode: "command", openIntent: { kind: "change-theme" } };
+      return {
+        open: true,
+        mode: "command",
+        openIntent: { kind: "change-theme" },
+      };
     case "ClearOpenIntent":
       return state.openIntent ? { ...state, openIntent: null } : state;
   }
@@ -200,7 +216,9 @@ export function buildCommandPaletteProjectMetadata(input: {
   const environmentLabels = new Set<string>();
 
   for (const project of input.projects) {
-    const label = input.locationByEnvironmentId.get(project.environmentId)?.label ?? "Remote";
+    const label =
+      input.locationByEnvironmentId.get(project.environmentId)?.label ??
+      translateDynamic("palette.location.remote", "Remote");
     searchTerms.push(project.title, project.workspaceRoot, label);
     environmentLabels.add(label);
   }
@@ -288,7 +306,7 @@ export function buildThreadActionItems<TThread extends BuildThreadActionItemsThr
       descriptionParts.push(`#${thread.branch}`);
     }
     if (thread.id === input.activeThreadId) {
-      descriptionParts.push("Current thread");
+      descriptionParts.push(translateDynamic("palette.item.currentThread", "Current thread"));
     }
 
     const leadingContent = input.renderLeadingContent?.(thread);
@@ -411,21 +429,21 @@ export function filterCommandPaletteGroups(input: {
     if (input.projectSearchItems.length > 0) {
       searchableGroups.push({
         value: "projects-search",
-        label: "Projects",
+        label: translateDynamic("palette.group.projects", "Projects"),
         items: input.projectSearchItems,
       });
     }
     if (input.settingsSearchItems && input.settingsSearchItems.length > 0) {
       searchableGroups.push({
         value: "settings-search",
-        label: "Settings",
+        label: translateDynamic("palette.group.settings", "Settings"),
         items: input.settingsSearchItems,
       });
     }
     if (input.threadSearchItems.length > 0) {
       searchableGroups.push({
         value: "threads-search",
-        label: "Threads",
+        label: translateDynamic("palette.group.threads", "Threads"),
         items: input.threadSearchItems,
       });
     }
@@ -500,7 +518,13 @@ export function buildBrowseGroups(input: {
     });
   }
 
-  return [{ value: "directories", label: "Directories", items }];
+  return [
+    {
+      value: "directories",
+      label: translateDynamic("palette.group.directories", "Directories"),
+      items,
+    },
+  ];
 }
 
 export function filterPinnedBrowseEntries(input: {
@@ -538,12 +562,16 @@ export function buildRootGroups(input: {
 }): CommandPaletteGroup[] {
   const groups: CommandPaletteGroup[] = [];
   if (input.actionItems.length > 0) {
-    groups.push({ value: "actions", label: "Actions", items: input.actionItems });
+    groups.push({
+      value: "actions",
+      label: translateDynamic("palette.group.actions", "Actions"),
+      items: input.actionItems,
+    });
   }
   if (input.recentThreadItems.length > 0) {
     groups.push({
       value: "recent-threads",
-      label: "Recent Threads",
+      label: translateDynamic("palette.group.recentThreads", "Recent Threads"),
       items: input.recentThreadItems,
     });
   }
@@ -553,12 +581,21 @@ export function buildRootGroups(input: {
 export function getCommandPaletteInputPlaceholder(mode: CommandPaletteMode): string {
   switch (mode) {
     case "root":
-      return "Search commands, projects, and threads...";
+      return translateDynamic(
+        "palette.placeholder.root",
+        "Search commands, projects, and threads...",
+      );
     case "root-browse":
-      return "Enter project path (e.g. ~/projects/my-app)";
+      return translateDynamic(
+        "palette.placeholder.rootBrowse",
+        "Enter project path (e.g. ~/projects/my-app)",
+      );
     case "submenu":
-      return "Search...";
+      return translateDynamic("palette.placeholder.submenu", "Search...");
     case "submenu-browse":
-      return "Enter path (e.g. ~/projects/my-app)";
+      return translateDynamic(
+        "palette.placeholder.submenuBrowse",
+        "Enter path (e.g. ~/projects/my-app)",
+      );
   }
 }

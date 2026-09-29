@@ -6,6 +6,7 @@ import {
 } from "@lmcstools/client/state/thread-settled";
 
 import { formatShortTimestamp, parseTimestampDate } from "../../timestampFormat";
+import { translateDynamic } from "../../i18n";
 
 export { snoozeWakeLabel, type SnoozePreset };
 
@@ -20,11 +21,13 @@ export function resolveSnoozePresets(
   timestampFormat: TimestampFormat,
 ): ReadonlyArray<SnoozePreset> {
   return resolveSharedSnoozePresets(now).map((preset) => {
+    const label = translateDynamic(`sidebar.snoozePreset.${preset.id}`, preset.label);
     const wake = parseTimestampDate(preset.snoozedUntil);
-    if (wake === null) return preset;
+    if (wake === null) return { ...preset, label };
     const time = timeOfDayLabel(wake, timestampFormat);
     return {
       ...preset,
+      label,
       whenLabel:
         preset.id === "next-week"
           ? `${wake.toLocaleDateString(undefined, { weekday: "short" })} ${time}`
@@ -52,6 +55,9 @@ export function snoozeWakeDescription(
   if (dayDelta === 1) return `tomorrow ${time}`;
   const weekday = wake.toLocaleDateString(undefined, { weekday: "short" });
   if (dayDelta < 7) return `${weekday} ${time}`;
-  const date = wake.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const date = wake.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
   return `${date}, ${time}`;
 }

@@ -27,6 +27,7 @@ import { ProjectFavicon } from "../features/files/ProjectFavicon";
 import { useAtomValue } from "@effect/atom-react";
 import { autoAnimate } from "@formkit/auto-animate";
 import React, { useCallback, useEffect, memo, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -446,7 +447,11 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
       event.stopPropagation();
       navigateToThread(threadRef);
       void (async () => {
-        const result = await openDiscoveredPort({ threadRef, port, openPreview });
+        const result = await openDiscoveredPort({
+          threadRef,
+          port,
+          openPreview,
+        });
         if (result._tag === "Success" || isAtomCommandInterrupted(result)) {
           return;
         }
@@ -1155,6 +1160,7 @@ interface SidebarProjectItemProps {
 }
 
 const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjectItemProps) {
+  const { t } = useTranslation();
   const {
     project,
     isThreadListExpanded,
@@ -1653,7 +1659,9 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
         "This permanently clears any archived conversation history.",
         "This removes only this project entry.",
       ].join("\n");
-      const confirmed = await api.dialogs.confirm(message, { variant: "destructive" });
+      const confirmed = await api.dialogs.confirm(message, {
+        variant: "destructive",
+      });
       if (!confirmed) {
         return;
       }
@@ -1706,7 +1714,9 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
                 openProjectGroupingDialog(member);
                 return;
               case "copy-path":
-                copyPathToClipboard(member.workspaceRoot, { path: member.workspaceRoot });
+                copyPathToClipboard(member.workspaceRoot, {
+                  path: member.workspaceRoot,
+                });
                 return;
               case "delete":
                 return handleRemoveProject(member);
@@ -1767,7 +1777,11 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
             buildTargetedItem("rename", "Rename"),
             buildTargetedItem("grouping", "Group into..."),
             buildTargetedItem("copy-path", "Copy Path"),
-            { id: "project-settings", label: "Project settings", icon: "settings" },
+            {
+              id: "project-settings",
+              label: "Project settings",
+              icon: "settings",
+            },
             buildTargetedItem("delete", "Remove", {
               destructive: true,
             }),
@@ -2252,7 +2266,12 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
       const clicked = await api.contextMenu.show(
         [
           ...(thread.branch
-            ? [{ id: "new-thread-on-branch", label: `New thread on ${thread.branch}` }]
+            ? [
+                {
+                  id: "new-thread-on-branch",
+                  label: `New thread on ${thread.branch}`,
+                },
+              ]
             : []),
           { id: "rename", label: "Rename thread" },
           { id: "mark-unread", label: "Mark unread" },
@@ -2384,7 +2403,7 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
               <TooltipTrigger
                 render={
                   <span
-                    aria-label={projectStatus.label}
+                    aria-label={t(`sidebar.pill.${projectStatus.status}`)}
                     className={`-ml-0.5 relative inline-flex size-3.5 shrink-0 items-center justify-center ${projectStatus.colorClass}`}
                   />
                 }
@@ -2398,7 +2417,7 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
                 </span>
                 <ChevronRightIcon className="absolute inset-0 m-auto size-3.5 text-icon-muted opacity-0 transition-opacity duration-150 group-hover/project-header:opacity-100" />
               </TooltipTrigger>
-              <TooltipPopup side="top">{projectStatus.label}</TooltipPopup>
+              <TooltipPopup side="top">{t(`sidebar.pill.${projectStatus.status}`)}</TooltipPopup>
             </Tooltip>
           ) : (
             <ChevronRightIcon

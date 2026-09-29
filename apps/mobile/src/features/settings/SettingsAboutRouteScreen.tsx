@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { AppText as Text } from "../../components/AppText";
 import { SymbolView } from "../../components/AppSymbol";
@@ -17,16 +18,19 @@ import { SettingsSection } from "./components/SettingsSection";
 import { SettingsScreen } from "./components/SettingsScreen";
 
 export function SettingsAboutRouteScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
-    <SettingsScreen title="About LMCS Code">
+    <SettingsScreen title={t("nav.about")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         className="flex-1"
         contentContainerClassName="gap-6 px-5 pt-4"
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, 18) + 18,
+        }}
       >
         <AppSettingsSection />
       </ScrollView>
@@ -35,6 +39,7 @@ export function SettingsAboutRouteScreen() {
 }
 
 function AppSettingsSection() {
+  const { t } = useTranslation();
   const [updateState, setUpdateState] = useState<AppUpdateCheckState>("idle");
   const updateInFlight = useRef(false);
   const hiddenUpdateTapCount = useRef(0);
@@ -86,17 +91,17 @@ function AppSettingsSection() {
 
   const statusLabel =
     updateState === "checking"
-      ? "Checking…"
+      ? t("settings.about.status.checking")
       : updateState === "downloading"
-        ? "Downloading…"
+        ? t("settings.about.status.downloading")
         : // "ready" appears only when this check joined an in-flight background-mode
           // check; that download installs at the next backgrounding.
           updateState === "ready"
-          ? "Update ready"
+          ? t("settings.about.status.ready")
           : updateState === "restarting"
-            ? "Restarting…"
+            ? t("settings.about.status.restarting")
             : updateState === "current"
-              ? "Up to date"
+              ? t("settings.about.status.current")
               : null;
 
   const versionRow = (
@@ -108,7 +113,7 @@ function AppSettingsSection() {
         type="monochrome"
         weight="regular"
       />
-      <Text className="flex-1 text-lg text-foreground">Version</Text>
+      <Text className="flex-1 text-lg text-foreground">{t("settings.about.version")}</Text>
       <View className="items-end">
         <Text className="text-lg text-foreground-muted">{versionLabel}</Text>
         {statusLabel ? (
@@ -119,18 +124,24 @@ function AppSettingsSection() {
   );
 
   return (
-    <SettingsSection title="App">
-      <SettingsRow icon="internaldrive" label="Client Storage" target="SettingsClientStorage" />
-      <SettingsRow icon="stethoscope" label="Diagnostics" target="SettingsDiagnostics" />
+    <SettingsSection title={t("settings.about.app")}>
+      <SettingsRow
+        icon="internaldrive"
+        label={t("nav.clientStorage")}
+        target="SettingsClientStorage"
+      />
+      <SettingsRow icon="stethoscope" label={t("nav.diagnostics")} target="SettingsDiagnostics" />
       <SettingsRow
         icon="doc.on.doc"
-        label="Open source licenses"
+        label={t("nav.openSourceLicenses")}
         target="SettingsOpenSourceLicenses"
       />
-      <SettingsRow icon="doc.text" label="Legal" fullScreenTarget="SettingsLegal" />
+      <SettingsRow icon="doc.text" label={t("nav.legal")} fullScreenTarget="SettingsLegal" />
       {updateCheckAvailable ? (
         <Pressable
-          accessibilityLabel={`Version ${versionLabel}`}
+          accessibilityLabel={t("settings.about.versionAria", {
+            version: versionLabel,
+          })}
           accessibilityRole="text"
           disabled={busy}
           onPress={handleVersionPress}

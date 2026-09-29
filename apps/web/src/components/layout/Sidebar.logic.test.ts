@@ -110,7 +110,10 @@ describe("deleteSelectedThreadEntries", () => {
     const deletion = deleteSelectedThreadEntries({
       entries,
       delete: async ({ threadKey }, deletedThreadKeys) => {
-        worktreeChecks.push({ threadKey, deletedThreadKeys: [...deletedThreadKeys] });
+        worktreeChecks.push({
+          threadKey,
+          deletedThreadKeys: [...deletedThreadKeys],
+        });
         return threadKey === "one" ? pendingDelete : success;
       },
     });
@@ -151,8 +154,16 @@ describe("deleteSelectedThreadEntries", () => {
   });
 
   it.each([
-    { firstResult: success, deletedThreadKeys: new Set(["one"]), firstFailure: null },
-    { firstResult: failure, deletedThreadKeys: new Set<string>(), firstFailure: failure },
+    {
+      firstResult: success,
+      deletedThreadKeys: new Set(["one"]),
+      firstFailure: null,
+    },
+    {
+      firstResult: failure,
+      deletedThreadKeys: new Set<string>(),
+      firstFailure: failure,
+    },
   ])("stops on interruption and preserves earlier results %#", async (testCase) => {
     const attemptedThreadKeys: string[] = [];
     const outcome = await deleteSelectedThreadEntries({
@@ -296,13 +307,19 @@ describe("buildBulkTitleRegenerationContextMenuItem", () => {
 describe("buildMultiSelectThreadContextMenuItems", () => {
   it("offers bulk archive with the selected count", () => {
     expect(
-      buildMultiSelectThreadContextMenuItems({ count: 3, hasRunningThread: false }),
+      buildMultiSelectThreadContextMenuItems({
+        count: 3,
+        hasRunningThread: false,
+      }),
     ).toContainEqual({ id: "archive", label: "Archive (3)", disabled: false });
   });
 
   it("disables bulk archive when a selected thread is running", () => {
     expect(
-      buildMultiSelectThreadContextMenuItems({ count: 2, hasRunningThread: true }),
+      buildMultiSelectThreadContextMenuItems({
+        count: 2,
+        hasRunningThread: true,
+      }),
     ).toContainEqual({ id: "archive", label: "Archive (2)", disabled: true });
   });
 });
@@ -542,13 +559,19 @@ describe("isSidebarNestedLinkClick", () => {
   });
 
   it("walks up from a text node to the enclosing link", () => {
-    expect(isSidebarNestedLinkClick({ parentElement: linkTarget } as unknown as EventTarget)).toBe(
-      true,
-    );
+    expect(
+      isSidebarNestedLinkClick({
+        parentElement: linkTarget,
+      } as unknown as EventTarget),
+    ).toBe(true);
   });
 
   it("leaves ordinary row clicks alone", () => {
-    expect(isSidebarNestedLinkClick({ closest: () => null } as unknown as EventTarget)).toBe(false);
+    expect(
+      isSidebarNestedLinkClick({
+        closest: () => null,
+      } as unknown as EventTarget),
+    ).toBe(false);
     expect(isSidebarNestedLinkClick(null)).toBe(false);
   });
 });
@@ -760,15 +783,23 @@ describe("resolveSidebarThreadStatus", () => {
   const idle = { hasPendingApprovals: false, hasPendingUserInput: false };
 
   it("prioritizes approval over a running session", () => {
-    expect(resolveSidebarThreadStatus({ ...idle, hasPendingApprovals: true, session })).toBe(
-      "approval",
-    );
+    expect(
+      resolveSidebarThreadStatus({
+        ...idle,
+        hasPendingApprovals: true,
+        session,
+      }),
+    ).toBe("approval");
   });
 
   it("prioritizes awaiting input over a running session, below approval", () => {
-    expect(resolveSidebarThreadStatus({ ...idle, hasPendingUserInput: true, session })).toBe(
-      "input",
-    );
+    expect(
+      resolveSidebarThreadStatus({
+        ...idle,
+        hasPendingUserInput: true,
+        session,
+      }),
+    ).toBe("input");
     expect(
       resolveSidebarThreadStatus({
         ...idle,
@@ -799,13 +830,21 @@ describe("resolveSidebarThreadStatus", () => {
     expect(
       resolveSidebarThreadStatus({
         ...idle,
-        session: { ...session, status: "stopped" as const, lastError: "persisted" },
+        session: {
+          ...session,
+          status: "stopped" as const,
+          lastError: "persisted",
+        },
       }),
     ).toBe("ready");
     expect(
       resolveSidebarThreadStatus({
         ...idle,
-        session: { ...session, status: "ready" as const, lastError: "persisted" },
+        session: {
+          ...session,
+          status: "ready" as const,
+          lastError: "persisted",
+        },
       }),
     ).toBe("ready");
   });
@@ -830,7 +869,10 @@ describe("searchSidebarThreads", () => {
   const contentKeys = (...ids: ReadonlyArray<string>) =>
     new Set(
       ids.map((id) =>
-        threadSearchMatchKey({ environmentId: localEnvironmentId, threadId: ThreadId.make(id) }),
+        threadSearchMatchKey({
+          environmentId: localEnvironmentId,
+          threadId: ThreadId.make(id),
+        }),
       ),
     );
 
@@ -1084,7 +1126,10 @@ describe("resolveSidebarDropTarget", () => {
     key,
     section,
   });
-  const marker = (marker: SidebarListMarker): SidebarListItem => ({ kind: "marker", marker });
+  const marker = (marker: SidebarListMarker): SidebarListItem => ({
+    kind: "marker",
+    marker,
+  });
   // Pinned p1 p2 | Active a1 a2 | Snoozed z1 | Settled s1
   const items: readonly SidebarListItem[] = [
     marker("pinned-header"),
@@ -1306,9 +1351,27 @@ describe("planSidebarThreadDrop", () => {
   });
 
   it.each([
-    { key: "p2", section: "pinned" as const, unpin: true, unsettle: false, unsnooze: false },
-    { key: "s1", section: "settled" as const, unpin: false, unsettle: true, unsnooze: false },
-    { key: "z1", section: "snoozed" as const, unpin: false, unsettle: false, unsnooze: true },
+    {
+      key: "p2",
+      section: "pinned" as const,
+      unpin: true,
+      unsettle: false,
+      unsnooze: false,
+    },
+    {
+      key: "s1",
+      section: "settled" as const,
+      unpin: false,
+      unsettle: true,
+      unsnooze: false,
+    },
+    {
+      key: "z1",
+      section: "snoozed" as const,
+      unpin: false,
+      unsettle: false,
+      unsnooze: true,
+    },
   ])("moves a $section thread to the chosen Active slot", (source) => {
     const order = ["a1", source.key, "a2", "a3"];
     const result = plan({
@@ -1401,7 +1464,11 @@ describe("planSidebarThreadDrop", () => {
       plan({
         activeKey: "a2",
         activeSection: "active",
-        target: { section: "active", pinnedOrder: [], activeOrder: ["a1", "a2", "a3"] },
+        target: {
+          section: "active",
+          pinnedOrder: [],
+          activeOrder: ["a1", "a2", "a3"],
+        },
       }),
     ).toEqual({ kind: "none" });
   });
@@ -1410,7 +1477,11 @@ describe("planSidebarThreadDrop", () => {
     const input = {
       activeKey: "a3",
       activeSection: "active" as const,
-      target: { section: "active" as const, pinnedOrder: [], activeOrder: ["a1", "a3", "a2"] },
+      target: {
+        section: "active" as const,
+        pinnedOrder: [],
+        activeOrder: ["a1", "a3", "a2"],
+      },
       activeReorderableKeys: new Set(["a3"]),
     };
     expect(plan(input).kind).toBe("move-active");
@@ -1424,13 +1495,22 @@ describe("planSidebarThreadDrop", () => {
         ]),
       }),
     ).toEqual({ kind: "none" });
-    expect(plan({ ...input, activeReorderableKeys: new Set() })).toEqual({ kind: "none" });
+    expect(plan({ ...input, activeReorderableKeys: new Set() })).toEqual({
+      kind: "none",
+    });
   });
 
   it("settles anything dropped on Settled except a settled thread", () => {
-    const target = { section: "settled", pinnedOrder: ["p1", "p2", "p3"] } as const;
-    expect(plan({ activeKey: "a1", activeSection: "active", target })).toEqual({ kind: "settle" });
-    expect(plan({ activeKey: "p1", activeSection: "pinned", target })).toEqual({ kind: "settle" });
+    const target = {
+      section: "settled",
+      pinnedOrder: ["p1", "p2", "p3"],
+    } as const;
+    expect(plan({ activeKey: "a1", activeSection: "active", target })).toEqual({
+      kind: "settle",
+    });
+    expect(plan({ activeKey: "p1", activeSection: "pinned", target })).toEqual({
+      kind: "settle",
+    });
     expect(plan({ activeKey: "z1", activeSection: "snoozed", target })).toEqual({ kind: "settle" });
     expect(plan({ activeKey: "s1", activeSection: "settled", target })).toEqual({ kind: "none" });
   });
@@ -1506,7 +1586,11 @@ describe("planSidebarThreadDrop", () => {
       activeSection: "active" as const,
       order: ["p1", "p3", "a1", "p2"],
     },
-    { activeKey: "p1", activeSection: "pinned" as const, order: ["p3", "p1", "p2"] },
+    {
+      activeKey: "p1",
+      activeSection: "pinned" as const,
+      order: ["p3", "p1", "p2"],
+    },
   ])("rejects $activeSection drops that require rewriting a disabled neighbor", (source) => {
     expect(
       plan({
@@ -1591,7 +1675,10 @@ describe("applySidebarThreadDrop", () => {
     unsettledAt: null,
     ...overrides,
   });
-  const newer = thread({ id: ThreadId.make("newer"), createdAt: "2026-03-09T11:00:00.000Z" });
+  const newer = thread({
+    id: ThreadId.make("newer"),
+    createdAt: "2026-03-09T11:00:00.000Z",
+  });
 
   it("previews an un-settle at the same active position as the eventual server row", () => {
     const source = thread({ settledOverride: "settled", settledAt: earlier });
@@ -1612,7 +1699,13 @@ describe("applySidebarThreadDrop", () => {
   });
 
   it.each([
-    { state: "pin", pinnedAt: earlier, pinOrderKey: "m", snoozedAt: null, snoozedUntil: null },
+    {
+      state: "pin",
+      pinnedAt: earlier,
+      pinOrderKey: "m",
+      snoozedAt: null,
+      snoozedUntil: null,
+    },
     {
       state: "snooze",
       pinnedAt: null,
@@ -1628,7 +1721,11 @@ describe("applySidebarThreadDrop", () => {
       snoozedUntil: wakeAt,
     },
   ])("preserves the active sort anchor when clearing a $state", ({ state: _state, ...parked }) => {
-    const source = thread({ ...parked, settledOverride: "active", unsettledAt: earlier });
+    const source = thread({
+      ...parked,
+      settledOverride: "active",
+      unsettledAt: earlier,
+    });
     const preview = applySidebarThreadDrop(source, "active", now);
     const final = {
       ...source,
@@ -1688,7 +1785,11 @@ describe("applySidebarThreadDrop", () => {
       settledAt: serverNow,
       unsettledAt: null,
     };
-    const existing = { ...newer, settledOverride: "settled" as const, settledAt: newer.createdAt };
+    const existing = {
+      ...newer,
+      settledOverride: "settled" as const,
+      settledAt: newer.createdAt,
+    };
     expect(preview).toEqual({ ...final, settledAt: now });
     expect(sortSettledThreadsForSidebar([existing, preview]).map((row) => row.id)).toEqual([
       "dragged",
@@ -1708,7 +1809,11 @@ describe("applySidebarThreadDrop", () => {
     });
     const preview = applySidebarThreadDrop(source, "settled", now);
     const final = { ...source, snoozedAt: null, snoozedUntil: null };
-    const existing = { ...newer, settledOverride: "settled" as const, settledAt: newer.createdAt };
+    const existing = {
+      ...newer,
+      settledOverride: "settled" as const,
+      settledAt: newer.createdAt,
+    };
     expect(preview).toEqual(final);
     expect(sortSettledThreadsForSidebar([existing, preview]).map((row) => row.id)).toEqual([
       "newer",
@@ -1737,9 +1842,17 @@ describe("applySidebarThreadDrop", () => {
     });
     expect(
       sortPinnedThreadsForSidebar([
-        thread({ id: ThreadId.make("after"), pinnedAt: earlier, pinOrderKey: "t" }),
+        thread({
+          id: ThreadId.make("after"),
+          pinnedAt: earlier,
+          pinOrderKey: "t",
+        }),
         preview,
-        thread({ id: ThreadId.make("before"), pinnedAt: earlier, pinOrderKey: "f" }),
+        thread({
+          id: ThreadId.make("before"),
+          pinnedAt: earlier,
+          pinOrderKey: "f",
+        }),
       ]).map((row) => row.id),
     ).toEqual(["before", "dragged", "after"]);
     expect(source).toEqual(original);
@@ -1755,7 +1868,11 @@ describe("applySidebarThreadDrop", () => {
       unsettledAt: earlier,
     });
     const unchangedSlot = applySidebarThreadDrop(source, "pinned", now);
-    expect(unchangedSlot).toEqual({ ...source, snoozedAt: null, snoozedUntil: null });
+    expect(unchangedSlot).toEqual({
+      ...source,
+      snoozedAt: null,
+      snoozedUntil: null,
+    });
     expect(applySidebarThreadDrop(source, "pinned", now, "m")).toEqual({
       ...unchangedSlot,
       pinOrderKey: "m",
@@ -1763,9 +1880,17 @@ describe("applySidebarThreadDrop", () => {
   });
 
   it("keeps an Active drop at its chosen position after unpinning", () => {
-    const source = thread({ pinnedAt: earlier, pinOrderKey: "g", activeOrderKey: "z" });
+    const source = thread({
+      pinnedAt: earlier,
+      pinOrderKey: "g",
+      activeOrderKey: "z",
+    });
     const preview = applySidebarThreadDrop(source, "active", now, "m");
-    expect(preview).toMatchObject({ pinnedAt: null, pinOrderKey: null, activeOrderKey: "m" });
+    expect(preview).toMatchObject({
+      pinnedAt: null,
+      pinOrderKey: null,
+      activeOrderKey: "m",
+    });
     expect(
       sortThreadsForSidebar([
         thread({ id: ThreadId.make("after"), activeOrderKey: "t" }),
@@ -1797,9 +1922,17 @@ describe("sortPinnedThreadsForSidebar", () => {
   it("sorts keyed threads by key ahead of keyless threads in creation order", () => {
     const sorted = sortPinnedThreadsForSidebar([
       pinnable({ id: "keyless-old", createdAt: "2026-03-09T08:00:00.000Z" }),
-      pinnable({ id: "second", createdAt: "2026-03-09T09:00:00.000Z", pinOrderKey: "t" }),
+      pinnable({
+        id: "second",
+        createdAt: "2026-03-09T09:00:00.000Z",
+        pinOrderKey: "t",
+      }),
       pinnable({ id: "keyless-new", createdAt: "2026-03-09T12:00:00.000Z" }),
-      pinnable({ id: "first", createdAt: "2026-03-09T07:00:00.000Z", pinOrderKey: "g" }),
+      pinnable({
+        id: "first",
+        createdAt: "2026-03-09T07:00:00.000Z",
+        pinOrderKey: "g",
+      }),
     ]);
 
     expect(sorted.map((thread) => thread.id)).toEqual([
@@ -1812,8 +1945,16 @@ describe("sortPinnedThreadsForSidebar", () => {
 
   it("breaks equal keys by id so raced writes render identically everywhere", () => {
     const sorted = sortPinnedThreadsForSidebar([
-      pinnable({ id: "b", createdAt: "2026-03-09T10:00:00.000Z", pinOrderKey: "m" }),
-      pinnable({ id: "a", createdAt: "2026-03-09T11:00:00.000Z", pinOrderKey: "m" }),
+      pinnable({
+        id: "b",
+        createdAt: "2026-03-09T10:00:00.000Z",
+        pinOrderKey: "m",
+      }),
+      pinnable({
+        id: "a",
+        createdAt: "2026-03-09T11:00:00.000Z",
+        pinOrderKey: "m",
+      }),
     ]);
 
     expect(sorted.map((thread) => thread.id)).toEqual(["a", "b"]);
@@ -1855,9 +1996,15 @@ describe("sortSettledThreadsForSidebar", () => {
 
   it("falls back to last activity for auto-settled threads without a settledAt stamp", () => {
     const sorted = sortSettledThreadsForSidebar([
-      settled({ id: "auto-old", latestUserMessageAt: "2026-03-09T08:00:00.000Z" }),
+      settled({
+        id: "auto-old",
+        latestUserMessageAt: "2026-03-09T08:00:00.000Z",
+      }),
       settled({ id: "explicit", settledAt: "2026-03-09T10:00:00.000Z" }),
-      settled({ id: "auto-recent", latestUserMessageAt: "2026-03-09T11:00:00.000Z" }),
+      settled({
+        id: "auto-recent",
+        latestUserMessageAt: "2026-03-09T11:00:00.000Z",
+      }),
     ]);
 
     expect(sorted.map((thread) => thread.id)).toEqual(["auto-recent", "explicit", "auto-old"]);
@@ -1867,7 +2014,10 @@ describe("sortSettledThreadsForSidebar", () => {
     // The message came in before the other thread's, but its turn finished
     // after: completion time is the real "work ended" moment.
     const sorted = sortSettledThreadsForSidebar([
-      settled({ id: "message-only", latestUserMessageAt: "2026-03-09T10:04:00.000Z" }),
+      settled({
+        id: "message-only",
+        latestUserMessageAt: "2026-03-09T10:04:00.000Z",
+      }),
       settled({
         id: "completed-later",
         latestUserMessageAt: "2026-03-09T10:00:00.000Z",
@@ -1930,7 +2080,10 @@ describe("resolveWorkingStartedAt", () => {
   it("skips a malformed startedAt instead of returning it", () => {
     expect(
       resolveWorkingStartedAt({
-        latestTurn: makeLatestTurn({ startedAt: "not-a-date", completedAt: null }),
+        latestTurn: makeLatestTurn({
+          startedAt: "not-a-date",
+          completedAt: null,
+        }),
         session,
       }),
     ).toBe("2026-03-09T10:00:00.000Z");
@@ -1984,7 +2137,7 @@ describe("resolveThreadStatusPill", () => {
           hasPendingUserInput: true,
         },
       }),
-    ).toMatchObject({ label: "Pending Approval", pulse: false });
+    ).toMatchObject({ status: "approval", pulse: false });
   });
 
   it("shows awaiting input when plan mode is blocked on user answers", () => {
@@ -1995,7 +2148,7 @@ describe("resolveThreadStatusPill", () => {
           hasPendingUserInput: true,
         },
       }),
-    ).toMatchObject({ label: "Awaiting Input", pulse: false });
+    ).toMatchObject({ status: "input", pulse: false });
   });
 
   it("falls back to working when the thread is actively running without blockers", () => {
@@ -2003,7 +2156,7 @@ describe("resolveThreadStatusPill", () => {
       resolveThreadStatusPill({
         thread: baseThread,
       }),
-    ).toMatchObject({ label: "Working", pulse: true });
+    ).toMatchObject({ status: "working", pulse: true });
   });
 
   it("shows plan ready when a settled plan turn has a proposed plan ready for follow-up", () => {
@@ -2020,7 +2173,7 @@ describe("resolveThreadStatusPill", () => {
           },
         },
       }),
-    ).toMatchObject({ label: "Plan Ready", pulse: false });
+    ).toMatchObject({ status: "planReady", pulse: false });
   });
 
   it("does not manufacture completed state without a client visit marker", () => {
@@ -2054,7 +2207,7 @@ describe("resolveThreadStatusPill", () => {
           },
         },
       }),
-    ).toMatchObject({ label: "Completed", pulse: false });
+    ).toMatchObject({ status: "completed", pulse: false });
   });
 });
 
@@ -2067,44 +2220,44 @@ describe("resolveProjectStatusIndicator", () => {
     expect(
       resolveProjectStatusIndicator([
         {
-          label: "Completed",
+          status: "completed",
           colorClass: "text-emerald-600",
           dotClass: "bg-emerald-500",
           pulse: false,
         },
         {
-          label: "Pending Approval",
+          status: "approval",
           colorClass: "text-amber-600",
           dotClass: "bg-amber-500",
           pulse: false,
         },
         {
-          label: "Working",
+          status: "working",
           colorClass: "text-sky-600",
           dotClass: "bg-sky-500",
           pulse: true,
         },
       ]),
-    ).toMatchObject({ label: "Pending Approval", dotClass: "bg-amber-500" });
+    ).toMatchObject({ status: "approval", dotClass: "bg-amber-500" });
   });
 
   it("prefers plan-ready over completed when no stronger action is needed", () => {
     expect(
       resolveProjectStatusIndicator([
         {
-          label: "Completed",
+          status: "completed",
           colorClass: "text-emerald-600",
           dotClass: "bg-emerald-500",
           pulse: false,
         },
         {
-          label: "Plan Ready",
+          status: "planReady",
           colorClass: "text-violet-600",
           dotClass: "bg-violet-500",
           pulse: false,
         },
       ]),
-    ).toMatchObject({ label: "Plan Ready", dotClass: "bg-violet-500" });
+    ).toMatchObject({ status: "planReady", dotClass: "bg-violet-500" });
   });
 });
 

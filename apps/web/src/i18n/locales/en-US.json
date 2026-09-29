@@ -27,6 +27,447 @@
       "stepSummaryAria": "{{step}}, step {{number}}, {{summary}}"
     }
   },
+  "palette": {
+    "overlay": {
+      "command": "Command palette",
+      "filePicker": "File picker"
+    },
+    "current": "Current",
+    "searchingThreadMessages": "Searching thread messages…",
+    "location": {
+      "local": "Local",
+      "localNamed": "{{label}} (Local)",
+      "remote": "Remote"
+    },
+    "environment": {
+      "thisDevice": "This device"
+    },
+    "footer": {
+      "navigate": "Navigate"
+    },
+    "group": {
+      "actions": "Actions",
+      "directories": "Directories",
+      "environments": "Environments",
+      "projects": "Projects",
+      "recentThreads": "Recent Threads",
+      "settings": "Settings",
+      "sources": "Sources",
+      "threads": "Threads"
+    },
+    "item": {
+      "untitledThread": "Untitled thread",
+      "linkedThread": "Linked thread",
+      "archivedThread": "Archived thread",
+      "currentThread": "Current thread"
+    },
+    "placeholder": {
+      "root": "Search commands, projects, and threads...",
+      "rootBrowse": "Enter project path (e.g. ~/projects/my-app)",
+      "submenu": "Search...",
+      "submenuBrowse": "Enter path (e.g. ~/projects/my-app)"
+    },
+    "action": {
+      "addProject": "Add project",
+      "changeAppearance": "Change appearance",
+      "changeTheme": "Change theme",
+      "copyPrLink": "Copy PR link",
+      "copyThreadId": "Copy thread ID",
+      "gitUrlDescription": "Clone from a remote URL",
+      "goToFile": "Go to file",
+      "linkPullRequest": "Link pull request to thread",
+      "localFolder": "Local folder",
+      "localFolderDescription": "Browse a folder on disk",
+      "newThreadInPrefix": "New thread in",
+      "newThreadInSubmenu": "New thread in...",
+      "openPullRequests": "Open pull requests",
+      "openSettings": "Open settings",
+      "openUsage": "Open usage",
+      "openWslFolder": "Open WSL folder",
+      "projectSettings": "Project settings",
+      "providerClone": "Clone {{provider}} {{hint}}",
+      "providerRepository": "{{provider}} repository",
+      "providerSetupHint": "Open Settings -> Source Control to configure this provider.",
+      "searchProjectContents": "Search project contents",
+      "setupRequired": "Setup Required",
+      "showLinkedPullRequests": "Show linked pull requests",
+      "toggleThemeEditor": "Toggle theme editor"
+    },
+    "theme": {
+      "forMode": "For {{mode}} mode"
+    },
+    "provider": {
+      "url": "Git URL",
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "forgejo": "Forgejo / Gitea",
+      "bitbucket": "Bitbucket",
+      "azure-devops": "Azure DevOps"
+    },
+    "clone": {
+      "urlInputPlaceholder": "Enter Git clone URL",
+      "providerInputPlaceholder": "Enter {{provider}} repository ({{hint}})",
+      "providerUnavailableHint": "Provider status unavailable. Open Settings -> Source Control and rescan.",
+      "providerNotAuthenticatedHint": "{{provider}} is not authenticated. Open Settings -> Source Control for setup guidance.",
+      "selectDestination": "Select where to clone",
+      "repositoryHeader": "Repository",
+      "openInFileManager": "Open in {{fileManager}}",
+      "emptyUrlHint": "Enter a Git clone URL and press Enter to continue.",
+      "emptyRepositoryHint": "Enter a repository path and press Enter to look it up.",
+      "emptyDestinationHint": "Choose a destination path and press Enter to clone.",
+      "emptyCreateFolderHint": "Press Enter to create this folder and add it as a project.",
+      "relativePathRequiresProject": "Relative paths require an active project."
+    },
+    "submit": {
+      "add": "Add",
+      "clone": "Clone",
+      "createAndAdd": "Create & Add",
+      "createAndClone": "Create & Clone",
+      "lookup": "Lookup",
+      "working": "Working",
+      "cloning": "Cloning",
+      "select": "Select"
+    },
+    "filePicker": {
+      "openFile": "Open file",
+      "searchPlaceholder": "Search files…",
+      "noProject": "Open a project to search its files.",
+      "searching": "Searching workspace files…",
+      "indexing": "Indexing workspace files…",
+      "noMatches": "No matching files.",
+      "noFiles": "No files found."
+    },
+    "contentSearch": {
+      "placeholder": "Search project contents…",
+      "aria": "Search file contents in {{project}}",
+      "searchIn": "Search in {{project}}",
+      "matchCase": "Match case",
+      "matchWholeWord": "Match whole word",
+      "useRegex": "Use regular expression",
+      "searching": "Searching…",
+      "invalidRegex": "Invalid regular expression",
+      "results": "{{results}} results in {{files}} files",
+      "noResults": "No results found.",
+      "typeToSearch": "Type to search across your project."
+    }
+  },
+  "sidebar": {
+    "action": {
+      "snooze": "Snooze thread",
+      "discardDraft": "Discard draft",
+      "dismissWoke": "Dismiss Woke notification",
+      "unpinThread": "Unpin thread",
+      "wakeThreadNow": "Wake thread now",
+      "unsettleThread": "Un-settle thread",
+      "settleThread": "Settle thread",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "settle": "Settle",
+      "unsettle": "Un-settle",
+      "wake": "Wake"
+    },
+    "status": {
+      "working": "Working",
+      "monitoring": "Monitoring",
+      "approval": "Approval",
+      "input": "Input",
+      "failed": "Failed",
+      "woke": "Woke"
+    },
+    "pill": {
+      "working": "Working",
+      "monitoring": "Monitoring",
+      "connecting": "Connecting",
+      "completed": "Completed",
+      "approval": "Pending Approval",
+      "input": "Awaiting Input",
+      "planReady": "Plan Ready"
+    },
+    "worktree": {
+      "withBranch": "Worktree: {{path}} ({{branch}})",
+      "plain": "Worktree: {{path}}"
+    },
+    "terminalProcessCount_one": "{{count}} terminal process running",
+    "terminalProcessCount_other": "{{count}} terminal processes running",
+    "terminalRunning": "Terminal process running",
+    "draft": {
+      "attachmentCount_one": "{{count}} attachment",
+      "attachmentCount_other": "{{count}} attachments"
+    },
+    "snoozePreset": {
+      "hour": "In 1 hour",
+      "three-hours": "In 3 hours",
+      "evening": "This evening",
+      "tomorrow": "Tomorrow",
+      "next-week": "Next week",
+      "custom": "Custom…"
+    },
+    "section": {
+      "pinned": "Pinned",
+      "active": "Active",
+      "snoozed": "Snoozed",
+      "snoozedCount_one": "Snoozed ({{count}})",
+      "snoozedCount_other": "Snoozed ({{count}})",
+      "settled": "Settled",
+      "settledCount_one": "Settled ({{count}})",
+      "settledCount_other": "Settled ({{count}})"
+    },
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more",
+    "empty": {
+      "noProjects": "No projects yet",
+      "addProject": "Add project",
+      "noThreads": "No threads yet",
+      "noThreadsInProject": "No threads in {{project}} yet"
+    },
+    "search": {
+      "noThreads": "No threads found"
+    },
+    "searchResults": "Thread search results",
+    "projectScope": {
+      "all": "All projects",
+      "filter": "Filter threads by project",
+      "filterNamed": "Filter threads by project: {{project}}",
+      "searchAria": "Search projects",
+      "searchPlaceholder": "Search projects...",
+      "noMatching": "No matching projects.",
+      "settingsFor": "Project settings for {{project}}"
+    },
+    "chrome": {
+      "goToThreads": "Go to threads",
+      "settings": "Settings",
+      "pullRequests": "Pull Requests",
+      "usage": "Usage"
+    },
+    "threadTitle": "Thread title",
+    "unsentDraft": "Unsent draft",
+    "pinned": "Pinned",
+    "branchMismatch": "You're currently checked out on another branch.",
+    "regeneratingTitle": "Regenerating title",
+    "bulk": {
+      "settle_one": "Settle ({{count}})",
+      "settle_other": "Settle ({{count}})",
+      "snooze_one": "Snooze ({{count}})",
+      "snooze_other": "Snooze ({{count}})",
+      "markUnread_one": "Mark unread ({{count}})",
+      "markUnread_other": "Mark unread ({{count}})",
+      "delete_one": "Delete ({{count}})",
+      "delete_other": "Delete ({{count}})",
+      "archive_one": "Archive ({{count}})",
+      "archive_other": "Archive ({{count}})",
+      "unpin_one": "Unpin ({{count}})",
+      "unpin_other": "Unpin ({{count}})",
+      "regenerating_one": "Regenerating… ({{count}})",
+      "regenerating_other": "Regenerating… ({{count}})",
+      "regenerateTitles_one": "Regenerate titles ({{count}})",
+      "regenerateTitles_other": "Regenerate titles ({{count}})"
+    },
+    "threadAction": {
+      "newThreadOnBranch": "New thread on {{branch}}",
+      "unpin": "Unpin thread",
+      "pin": "Pin thread",
+      "unsettle": "Un-settle thread",
+      "settle": "Settle thread",
+      "wake": "Wake thread",
+      "snooze": "Snooze",
+      "rename": "Rename thread",
+      "regenerating": "Regenerating…",
+      "regenerateTitle": "Regenerate title",
+      "markUnread": "Mark unread",
+      "showAllProjects": "Show all projects",
+      "filterBy": "Filter by {{project}}",
+      "autoSettle": "Auto-settle behavior",
+      "autoSettleEnabled": "Enabled",
+      "autoSettleDisabled": "Disabled",
+      "copy": "Copy",
+      "copyPath": "Path",
+      "copyBranch": "Branch",
+      "copyThreadId": "Thread ID",
+      "projectSettings": "Project settings",
+      "archive": "Archive thread",
+      "delete": "Delete"
+    },
+    "confirm": {
+      "deleteBulk_one": "Delete {{count}} thread?",
+      "deleteBulk_other": "Delete {{count}} threads?",
+      "deleteBulkDescription": "This permanently clears conversation history for these threads.",
+      "archive": "Archive thread \"{{title}}\"?",
+      "delete": "Delete thread \"{{title}}\"?",
+      "deleteDescription": "This permanently clears conversation history for this thread."
+    }
+  },
+  "chat": {
+    "actions": {
+      "submitting": "Submitting...",
+      "submit": "Submit",
+      "next": "Next",
+      "nextQuestion": "Next question",
+      "submitAnswers": "Submit answers",
+      "submitAnswer": "Submit answer",
+      "stopGeneration": "Stop generation",
+      "previousQuestion": "Previous question",
+      "previous": "Previous",
+      "sending": "Sending...",
+      "refine": "Refine",
+      "implement": "Implement",
+      "implementationActions": "Implementation actions",
+      "implementInNewThread": "Implement in a new thread",
+      "environmentDisconnected": "Environment disconnected",
+      "connecting": "Connecting",
+      "preparingWorktree": "Preparing worktree",
+      "sendingShort": "Sending",
+      "queueMessage": "Queue message",
+      "sendMessage": "Send message"
+    },
+    "runtimeMode": {
+      "supervised": "Supervised",
+      "supervisedDescription": "Ask before commands and file changes.",
+      "autoAcceptEdits": "Auto-accept edits",
+      "autoAcceptEditsDescription": "Auto-approve edits, ask before other actions.",
+      "auto": "Auto",
+      "autoDescription": "Supported providers approve routine actions; others still ask.",
+      "fullAccess": "Full access",
+      "fullAccessDescription": "Allow commands and edits without prompts."
+    },
+    "controls": {
+      "moreAria": "More composer controls",
+      "mode": "Mode",
+      "modeChat": "Chat",
+      "modePlan": "Plan",
+      "access": "Access",
+      "build": "Build",
+      "runtimeMode": "Runtime mode",
+      "planModeTooltip": "Plan mode — click to return to normal build mode",
+      "defaultModeTooltip": "Default mode — click to enter plan mode"
+    },
+    "timeline": {
+      "loadingMessages": "Loading messages...",
+      "syncingMessages": "Syncing messages...",
+      "empty": "Send a message to start the conversation."
+    },
+    "composer": {
+      "placeholderDisconnected": "Ask for changes, send follow-ups, or attach images",
+      "attachmentUnsupported": "Update this server to send files with question answers",
+      "reattachOne": "Attach the interrupted file again or remove it",
+      "reattachOther": "Attach the interrupted files again or remove them",
+      "compactUnavailable": "Compacting is unavailable right now",
+      "selectModelRequired": "Select at least one model.",
+      "openProviderSettings": "Open provider settings",
+      "noProvider": "No provider available",
+      "writeCustomAnswer": "Write custom answer",
+      "expandAria": "Expand composer",
+      "chooseOption": "Choose an option above",
+      "typeOwnAnswer": "Type your own answer, or leave this blank to use the selected option",
+      "enableProvider": "Enable a provider in Settings",
+      "askAnythingShort": "Ask anything...",
+      "resolveApproval": "Resolve this approval request to continue",
+      "planFeedback": "Add feedback to refine the plan, or leave this blank to implement it",
+      "chooseProject": "Choose a project above to start a thread",
+      "enableProviderSend": "Enable a provider in Settings to send a message",
+      "askAnythingFull": "Ask anything, @tag files/folders, $use skills, or / for commands",
+      "draftAttachmentAria": "Draft attachment may not persist",
+      "draftAttachmentTooltip": "Draft attachment could not be saved locally and may be lost on navigation.",
+      "attachAgain": "Attach again",
+      "removeToSend": "Remove to send",
+      "attachFiles": "Attach files"
+    },
+    "empty": {
+      "noActiveThread": "No active thread",
+      "pickThreadTitle": "Pick a thread to continue",
+      "pickThreadDescription": "Select an existing thread or create a new one to get started."
+    },
+    "error": {
+      "dismiss": "Dismiss error"
+    },
+    "feedback": {
+      "copyId": "Copy ID",
+      "dismissLabel": "Dismiss feedback notice"
+    },
+    "header": {
+      "breadcrumbAria": "Thread breadcrumb",
+      "newThreadIn": "New thread in {{project}}",
+      "threadTitle": "Thread title",
+      "threadActions": "Thread actions for {{title}}",
+      "moreActions": "More header actions",
+      "actionsMenu": "Header actions"
+    },
+    "menu": {
+      "switchModel": "Switch response model for this thread",
+      "switchToPlan": "Switch this thread into plan mode",
+      "switchToBuild": "Switch this thread back to normal build mode",
+      "runProviderCommand": "Run provider command",
+      "runProviderSkill": "Run provider skill",
+      "scopeSkill": "{{scope}} skill",
+      "noSkills": "No skills found. Try / to browse provider commands.",
+      "noPrUnavailable": "Pull requests are not available for this project.",
+      "noPrUnreadable": "Pull requests could not be read for this project.",
+      "noPrMatches": "No pull request matches {{query}}.",
+      "noPrFound": "No pull requests found in this repository.",
+      "noPaths": "No matching files or folders.",
+      "noCommands": "No matching command."
+    },
+    "modelPicker": {
+      "searchPlaceholder": "Search models...",
+      "noModels": "No models found",
+      "setUpProvider": "Set up {{displayName}}",
+      "openProviderSetup": "Open provider setup",
+      "chooseModel": "Choose model",
+      "chooseModels": "Choose models",
+      "newModelAria": "New model",
+      "badgeNew": "New",
+      "badgeUnavailable": "Unavailable",
+      "addFavorite": "Add to favorites",
+      "removeFavorite": "Remove from favorites",
+      "statusUnavailable": "Unavailable",
+      "statusLimited": "Limited",
+      "statusNotReady": "Not ready",
+      "disabledInSettings": "Disabled in settings.",
+      "newBadge": "New",
+      "newAria": "new",
+      "providers": "Providers",
+      "favorites": "Favorites"
+    },
+    "usage": {
+      "toggleAccountAria": "Toggle account label visibility",
+      "revealAccount": "Click to reveal account",
+      "hideAccount": "Click to hide account",
+      "accounts_one": "{{count}} account",
+      "accounts_other": "{{count}} accounts",
+      "title": "Usage limits",
+      "dismiss": "Dismiss usage limits"
+    },
+    "stash": {
+      "openAria": "Stashed prompts: {{total}}. Open stash.",
+      "label": "Stash",
+      "emptyCountLabel": "(empty)",
+      "attachmentCount_one": "({{count}} attachment)",
+      "attachmentCount_other": "({{count}} attachments)",
+      "fileCount_one": "({{count}} file)",
+      "fileCount_other": "({{count}} files)",
+      "imageCount_one": "({{count}} image)",
+      "imageCount_other": "({{count}} images)",
+      "close": "Close stash",
+      "listAria": "Stashed prompts",
+      "empty": "Nothing stashed yet.",
+      "emptyWithShortcut": "Nothing stashed yet. Press {{shortcut}} with a prompt in the composer to stash it.",
+      "restoreAria": "Restore stashed prompt: {{prompt}}",
+      "savingImages_one": "saving {{count}} image…",
+      "savingImages_other": "saving {{count}} images…",
+      "imagesDropped_one": "{{count}} image dropped",
+      "imagesDropped_other": "{{count}} images dropped",
+      "delete": "Delete stashed prompt"
+    },
+    "tasks": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Completed",
+      "label": "Tasks",
+      "expandAria": "Tasks: {{completed}} of {{total}} complete. Current task: {{step}}",
+      "collapseAria": "Collapse tasks: {{completed}} of {{total}} complete. Current task: {{step}}",
+      "listAria": "Task list. {{completed}} of {{total}} complete.",
+      "now": "now"
+    }
+  },
   "settings": {
     "rootTitle": "Settings",
     "breadcrumbAria": "Settings breadcrumb",

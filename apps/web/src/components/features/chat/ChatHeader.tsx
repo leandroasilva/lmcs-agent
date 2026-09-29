@@ -23,6 +23,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import GitActionsControl from "../../layout/GitActionsControl";
 import { isTrailingDoubleClick } from "../../layout/Sidebar.logic";
 import { type DraftId } from "~/composerDraftStore";
@@ -55,6 +56,7 @@ import { cn } from "~/lib/utils";
 import { useIsMobile } from "~/hooks/useMediaQuery";
 import { Button } from "../../ui/button";
 import { Menu, MenuPopup, MenuSeparator, MenuTrigger } from "../../ui/menu";
+import { translateDynamic } from "../../../i18n";
 
 interface ChatHeaderProps {
   activeThreadEnvironmentId: EnvironmentId;
@@ -148,6 +150,7 @@ export const ChatHeader = memo(function ChatHeader({
   onUpdateProjectScript,
   onDeleteProjectScript,
 }: ChatHeaderProps) {
+  const { t } = useTranslation();
   const { active: panelAnimationsActive, durationMs: panelAnimationDurationMs } =
     usePanelAnimationSettings();
   const headerActionsRef = useRef<HTMLDivElement | null>(null);
@@ -160,7 +163,10 @@ export const ChatHeader = memo(function ChatHeader({
       container,
       active: panelAnimationsActive,
       durationMs: panelAnimationDurationMs,
-      breakpoint: { value: HEADER_ACTIONS_EXPANDED_BREAKPOINT_REM, unit: "rem" },
+      breakpoint: {
+        value: HEADER_ACTIONS_EXPANDED_BREAKPOINT_REM,
+        unit: "rem",
+      },
     });
   }, [panelAnimationDurationMs, panelAnimationsActive]);
   const isMobile = useIsMobile();
@@ -221,7 +227,10 @@ export const ChatHeader = memo(function ChatHeader({
   // Inline rename, keyed by thread: navigating away drops an in-progress
   // rename instead of committing stale text. Cleared on thread change (not
   // just hidden) so returning to the thread doesn't revive the old draft.
-  const [renaming, setRenaming] = useState<{ threadId: ThreadId; title: string } | null>(null);
+  const [renaming, setRenaming] = useState<{
+    threadId: ThreadId;
+    title: string;
+  } | null>(null);
   if (renaming !== null && renaming.threadId !== activeThreadId) {
     setRenaming(null);
   }
@@ -234,9 +243,15 @@ export const ChatHeader = memo(function ChatHeader({
   const commitRename = useCallback(
     (title: string) => {
       setRenaming(null);
-      const resolution = resolveRenameCommit({ title, originalTitle: activeThreadTitle });
+      const resolution = resolveRenameCommit({
+        title,
+        originalTitle: activeThreadTitle,
+      });
       if (resolution.action === "reject-empty") {
-        toastManager.add({ type: "warning", title: "Thread title cannot be empty" });
+        toastManager.add({
+          type: "warning",
+          title: "Thread title cannot be empty",
+        });
         return;
       }
       if (resolution.action === "noop") return;
@@ -328,10 +343,19 @@ export const ChatHeader = memo(function ChatHeader({
         const api = readLocalApi();
         if (!api) return;
         void api.contextMenu
-          .show([{ id: "project-settings", label: "Project settings", icon: "settings" }], {
-            x: event.clientX,
-            y: event.clientY,
-          })
+          .show(
+            [
+              {
+                id: "project-settings",
+                label: translateDynamic("sidebar.threadAction.projectSettings", "Project settings"),
+                icon: "settings",
+              },
+            ],
+            {
+              x: event.clientX,
+              y: event.clientY,
+            },
+          )
           .then((action) => {
             if (action === "project-settings") onOpenProjectSettings?.();
           });
@@ -404,7 +428,7 @@ export const ChatHeader = memo(function ChatHeader({
       onContextMenu={handleHeaderContextMenu}
     >
       <WorkspaceBreadcrumb
-        ariaLabel="Thread breadcrumb"
+        ariaLabel={t("chat.header.breadcrumbAria")}
         className="flex-1 overflow-clip [overflow-clip-margin:2px]"
       >
         {/* The project always leads the header: knowing which project a
@@ -418,7 +442,9 @@ export const ChatHeader = memo(function ChatHeader({
                   render={
                     <button
                       type="button"
-                      aria-label={`New thread in ${activeProjectName}`}
+                      aria-label={t("chat.header.newThreadIn", {
+                        project: activeProjectName,
+                      })}
                       onClick={onNewThreadInProject}
                       className="inline-flex min-w-0 max-w-full cursor-pointer items-center gap-1.5 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                     />
@@ -429,7 +455,9 @@ export const ChatHeader = memo(function ChatHeader({
                     {activeProjectName}
                   </WorkspaceBreadcrumbText>
                 </TooltipTrigger>
-                <TooltipPopup side="top">New thread in {activeProjectName}</TooltipPopup>
+                <TooltipPopup side="top">
+                  {t("chat.header.newThreadIn", { project: activeProjectName })}
+                </TooltipPopup>
               </Tooltip>
             </WorkspaceBreadcrumbItem>
             <WorkspaceBreadcrumbSeparator>
@@ -441,7 +469,7 @@ export const ChatHeader = memo(function ChatHeader({
           {renamingTitle !== null ? (
             <input
               autoFocus
-              aria-label="Thread title"
+              aria-label={t("chat.header.threadTitle")}
               className="min-w-0 flex-1 rounded-sm bg-transparent text-sm font-medium text-foreground outline-none ring-1 ring-ring/50 focus:ring-ring"
               defaultValue={renamingTitle}
               onBlur={(event) => {
@@ -458,7 +486,9 @@ export const ChatHeader = memo(function ChatHeader({
                   <button
                     ref={titleButtonRef}
                     type="button"
-                    aria-label={`Thread actions for ${activeThreadTitle}`}
+                    aria-label={t("chat.header.threadActions", {
+                      title: activeThreadTitle,
+                    })}
                     aria-haspopup="menu"
                     onClick={openMenuFromTitle}
                     onDoubleClick={handleTitleDoubleClick}
@@ -509,7 +539,9 @@ export const ChatHeader = memo(function ChatHeader({
                 ? undefined
                 : "hidden"
             }
-            render={<Button size="icon-sm" variant="ghost" aria-label="More header actions" />}
+            render={
+              <Button size="icon-sm" variant="ghost" aria-label={t("chat.header.moreActions")} />
+            }
           >
             <EllipsisIcon className="size-4" />
           </MenuTrigger>
@@ -517,7 +549,7 @@ export const ChatHeader = memo(function ChatHeader({
           <MenuPopup
             data-chat-header-actions
             keepMounted
-            aria-label="Header actions"
+            aria-label={t("chat.header.actionsMenu")}
             align="end"
             finalFocus={actionsCollapsed ? undefined : false}
           >

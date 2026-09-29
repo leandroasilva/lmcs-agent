@@ -2,8 +2,11 @@ import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollVie
 import { useAuth, useUser } from "@clerk/expo";
 import { useNavigation } from "@react-navigation/native";
 import { Platform, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { deriveProjectGroupLabel } from "@lmcstools/client/state/project-grouping";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import "../../i18n";
 
 import { hasCloudPublicConfig } from "../cloud/publicConfig";
 import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
@@ -19,6 +22,7 @@ import {
 import { useSettingsEnvironmentFilter } from "./settings-environment-filter";
 
 export function SettingsRouteScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { layout } = useAdaptiveWorkspaceLayout();
   const content = hasCloudPublicConfig() ? (
@@ -32,7 +36,7 @@ export function SettingsRouteScreen() {
       {Platform.OS === "ios" && layout.usesSplitView ? (
         <NativeHeaderToolbar placement="left">
           <NativeHeaderToolbar.Button
-            accessibilityLabel="Go back"
+            accessibilityLabel={t("common.goBack")}
             icon="chevron.left"
             onPress={() => navigation.goBack()}
           />
@@ -40,7 +44,10 @@ export function SettingsRouteScreen() {
       ) : null}
       <SettingsEnvironmentFilterHeader closeSettings />
       {Platform.OS === "android" ? (
-        <SettingsScreen title="Settings" trailing={<AndroidSettingsEnvironmentFilter />}>
+        <SettingsScreen
+          title={t("common.settings")}
+          trailing={<AndroidSettingsEnvironmentFilter />}
+        >
           {content}
         </SettingsScreen>
       ) : (
@@ -51,16 +58,17 @@ export function SettingsRouteScreen() {
 }
 
 function ConfiguredSettingsRouteScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const { user } = useUser();
   const { savedConnectionsById } = useSavedRemoteConnections();
   const accountLabel = !isLoaded
-    ? "Checking"
+    ? t("settings.index.accountChecking")
     : !isSignedIn
-      ? "Sign in"
-      : (user?.primaryEmailAddress?.emailAddress ?? "Signed in");
+      ? t("settings.index.signIn")
+      : (user?.primaryEmailAddress?.emailAddress ?? t("settings.index.signedIn"));
 
   return (
     <View collapsable={false} className="flex-1 bg-sheet">
@@ -69,24 +77,30 @@ function ConfiguredSettingsRouteScreen() {
         showsVerticalScrollIndicator={false}
         className="flex-1"
         contentContainerClassName="gap-4 px-5 pt-4"
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, 18) + 18,
+        }}
       >
-        <SettingsSection title="Connections">
+        <SettingsSection title={t("settings.section.connections")}>
           <SettingsRow
             icon="person.crop.circle"
-            label="LMCS Account"
+            label={t("settings.index.account")}
             value={accountLabel}
             disabled={!isLoaded}
             onPress={() => navigation.navigate("SettingsSheet", { screen: "SettingsAuth" })}
           />
           <SettingsRow
             icon="desktopcomputer"
-            label="Environments"
+            label={t("settings.index.environments")}
             value={`${Object.keys(savedConnectionsById).length}`}
             valuePosition="trailing"
             target="SettingsEnvironments"
           />
-          <SettingsRow icon="bell.badge" label="Notifications" target="SettingsNotifications" />
+          <SettingsRow
+            icon="bell.badge"
+            label={t("settings.index.notifications")}
+            target="SettingsNotifications"
+          />
         </SettingsSection>
 
         <SettingsIndexSections />
@@ -96,6 +110,7 @@ function ConfiguredSettingsRouteScreen() {
 }
 
 function LocalSettingsRouteScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { savedConnectionsById } = useSavedRemoteConnections();
   const environmentCount = Object.keys(savedConnectionsById).length;
@@ -111,10 +126,10 @@ function LocalSettingsRouteScreen() {
           paddingBottom: Math.max(insets.bottom, 18) + 18,
         }}
       >
-        <SettingsSection title="Connections">
+        <SettingsSection title={t("settings.section.connections")}>
           <SettingsRow
             icon="desktopcomputer"
-            label="Environments"
+            label={t("settings.index.environments")}
             value={`${environmentCount}`}
             valuePosition="trailing"
             target="SettingsEnvironments"
@@ -128,6 +143,7 @@ function LocalSettingsRouteScreen() {
 }
 
 function SettingsIndexSections() {
+  const { t } = useTranslation();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
   const noServerTargets = selectedTargets.length === 0;
   const selectedProject = projectGroups.find((group) => group.key === selectedProjectKey);
@@ -143,60 +159,85 @@ function SettingsIndexSections() {
           representative: scopedProjectMembers[0]!,
           members: scopedProjectMembers,
         })
-      : (selectedProject?.label ?? "Unavailable project");
+      : (selectedProject?.label ?? t("settings.index.unavailableProject"));
   return (
     <>
-      <SettingsSection title="Interface">
-        <SettingsRow icon="paintbrush" label="Appearance" target="SettingsAppearance" />
+      <SettingsSection title={t("settings.section.interface")}>
+        <SettingsRow
+          icon="paintbrush"
+          label={t("settings.index.appearance")}
+          target="SettingsAppearance"
+        />
+        <SettingsRow icon="globe" label={t("settings.index.language")} target="SettingsLanguage" />
         {Platform.OS === "ios" ? (
-          <SettingsRow icon="keyboard" label="Keyboard" target="SettingsKeyboard" />
+          <SettingsRow
+            icon="keyboard"
+            label={t("settings.index.keyboard")}
+            target="SettingsKeyboard"
+          />
         ) : null}
       </SettingsSection>
 
-      <SettingsSection title="Projects & threads">
+      <SettingsSection title={t("settings.section.projectsAndThreads")}>
         {selectedProjectKey !== null ? (
           <SettingsRow
             icon="folder"
-            label="Overview"
+            label={t("settings.index.overview")}
             value={projectLabel}
             target="SettingsProjectOverview"
           />
         ) : null}
-        <SettingsRow icon="folder" label="Organization" target="SettingsOrganization" />
-        <SettingsRow icon="text.bubble" label="Thread behavior" target="SettingsThreads" />
-        <SettingsRow icon="archivebox" label="Archived Threads" target="SettingsArchive" />
-      </SettingsSection>
-
-      <SettingsSection title="Server settings">
+        <SettingsRow
+          icon="folder"
+          label={t("settings.index.organization")}
+          target="SettingsOrganization"
+        />
         <SettingsRow
           icon="text.bubble"
-          label="New threads"
+          label={t("settings.index.threadBehavior")}
+          target="SettingsThreads"
+        />
+        <SettingsRow
+          icon="archivebox"
+          label={t("settings.index.archivedThreads")}
+          target="SettingsArchive"
+        />
+      </SettingsSection>
+
+      <SettingsSection title={t("settings.section.server")}>
+        <SettingsRow
+          icon="text.bubble"
+          label={t("settings.index.newThreads")}
           target="SettingsEnvironmentNewThreads"
           disabled={noServerTargets}
         />
         <SettingsRow
           icon="arrow.triangle.branch"
-          label="Source control"
+          label={t("settings.index.sourceControl")}
           target="SettingsEnvironmentSourceControl"
           disabled={noServerTargets}
         />
         <SettingsRow
           icon="text.alignleft"
-          label="Agent behavior"
+          label={t("settings.index.agentBehavior")}
           target="SettingsEnvironmentAgentBehavior"
           disabled={noServerTargets}
         />
         <SettingsRow
           icon="arrow.clockwise"
-          label="Maintenance"
+          label={t("settings.index.maintenance")}
           target="SettingsEnvironmentMaintenance"
           disabled={noServerTargets}
         />
       </SettingsSection>
 
-      <SettingsSection title="App">
-        <SettingsRow icon="chart.bar.xaxis" label="Usage" target="SettingsUsage" />
-        <SettingsRow icon="info.circle" label="About LMCS Code" target="SettingsAbout" />
+      <SettingsSection title={t("settings.section.app")}>
+        <SettingsRow
+          icon="chart.bar.xaxis"
+          label={t("settings.index.usage")}
+          target="SettingsUsage"
+        />
+        <SettingsRow icon="info.circle" label={t("settings.index.about")} target="SettingsAbout" />
       </SettingsSection>
     </>
   );

@@ -17,6 +17,8 @@ import {
 import { FolderGit2Icon, TerminalIcon } from "lucide-react";
 import { useRender } from "@base-ui/react/use-render";
 import { useMemo, type AnimationEvent, type MouseEvent, type ReactElement } from "react";
+import { useTranslation } from "react-i18next";
+import { translateDynamic } from "../../i18n";
 import { cn } from "../../lib/utils";
 import { useEnvironment, usePrimaryEnvironmentId } from "../../state/environments";
 import { EnvironmentMachineIcon } from "../shared/EnvironmentMachineIcon";
@@ -101,7 +103,11 @@ export function useLinkedThreadPullRequest(
       ? null
       : {
           pr: pullRequestDetailToVcsStatus(detail),
-          sourceControlProvider: { kind: detail.provider, name: detail.provider, baseUrl: "" },
+          sourceControlProvider: {
+            kind: detail.provider,
+            name: detail.provider,
+            baseUrl: "",
+          },
         };
   }, [current, detail]);
 }
@@ -214,7 +220,12 @@ export function ThreadPullRequestBadgeControl({
   onOpenStack: () => void;
   onOpenPullRequest: (event: MouseEvent<HTMLElement>) => void;
 }) {
-  const presentation = resolveThreadPullRequestBadgePresentation({ badge, number, url, status });
+  const presentation = resolveThreadPullRequestBadgePresentation({
+    badge,
+    number,
+    url,
+    status,
+  });
   if (presentation === null) return null;
   return (
     <PullRequestBadge
@@ -303,7 +314,10 @@ export function ThreadPullRequestsMiniList({
         const presentation =
           snapshot === null
             ? null
-            : resolvePullRequestState({ state: snapshot.state, isDraft: snapshot.isDraft });
+            : resolvePullRequestState({
+                state: snapshot.state,
+                isDraft: snapshot.isDraft,
+              });
         return (
           <li
             key={`${line.link.host}/${line.link.repository}#${line.link.number}`}
@@ -345,7 +359,10 @@ export function prStatusIndicator(
 ): PrStatusIndicator | null {
   if (!pr) return null;
   const presentation = resolveChangeRequestPresentation(provider);
-  const state = resolvePullRequestState({ state: pr.state, isDraft: pr.isDraft === true });
+  const state = resolvePullRequestState({
+    state: pr.state,
+    isDraft: pr.isDraft === true,
+  });
 
   const tooltipLead = `${presentation.shortName} #${pr.number} - ${state.label}`;
   return {
@@ -410,6 +427,7 @@ export function ThreadWorktreeIndicator({
 }: {
   thread: Pick<SidebarThreadSummary, "id" | "branch" | "worktreePath">;
 }) {
+  const { t } = useTranslation();
   const worktreePath = thread.worktreePath?.trim();
   if (!worktreePath) {
     return null;
@@ -417,8 +435,11 @@ export function ThreadWorktreeIndicator({
 
   const displayPath = formatWorktreePathForDisplay(worktreePath);
   const tooltip = thread.branch
-    ? `Worktree: ${displayPath} (${thread.branch})`
-    : `Worktree: ${displayPath}`;
+    ? t("sidebar.worktree.withBranch", {
+        path: displayPath,
+        branch: thread.branch,
+      })
+    : t("sidebar.worktree.plain", { path: displayPath });
 
   return (
     <Tooltip>
@@ -446,13 +467,15 @@ export function ThreadStatusLabel({
   status: ThreadStatusPill;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
+  const label = t(`sidebar.pill.${status.status}`);
   if (compact) {
     return (
       <Tooltip>
         <TooltipTrigger
           render={
             <span
-              aria-label={status.label}
+              aria-label={label}
               className={`inline-flex size-3.5 shrink-0 items-center justify-center ${status.colorClass}`}
             />
           }
@@ -463,7 +486,7 @@ export function ThreadStatusLabel({
             }`}
           />
         </TooltipTrigger>
-        <TooltipPopup side="top">{status.label}</TooltipPopup>
+        <TooltipPopup side="top">{label}</TooltipPopup>
       </Tooltip>
     );
   }
@@ -473,7 +496,7 @@ export function ThreadStatusLabel({
       <TooltipTrigger
         render={
           <span
-            aria-label={status.label}
+            aria-label={label}
             className={`inline-flex items-center gap-1 text-3xs ${status.colorClass}`}
           />
         }
@@ -483,9 +506,9 @@ export function ThreadStatusLabel({
             status.pulse ? "animate-status-pulse" : ""
           }`}
         />
-        <span className="hidden md:inline">{status.label}</span>
+        <span className="hidden md:inline">{label}</span>
       </TooltipTrigger>
-      <TooltipPopup side="top">{status.label}</TooltipPopup>
+      <TooltipPopup side="top">{label}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -561,6 +584,7 @@ export function ThreadRowLeadingStatus({ thread }: { thread: SidebarThreadSummar
  * environment indicator, matching the sidebar's trailing indicators.
  */
 export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSummary }) {
+  const { t } = useTranslation();
   const runningTerminalIds = useThreadRunningTerminalIds({
     environmentId: thread.environmentId,
     threadId: thread.id,
@@ -571,7 +595,9 @@ export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSumma
   // glyph is what tells the environments apart.
   const isRemoteThread = thread.environmentId !== primaryEnvironmentId;
   const remoteEnvLabel = environment?.label ?? null;
-  const threadEnvironmentLabel = isRemoteThread ? (remoteEnvLabel ?? "Remote") : null;
+  const threadEnvironmentLabel = isRemoteThread
+    ? (remoteEnvLabel ?? t("palette.location.remote"))
+    : null;
   const remoteMachine = resolveEnvironmentMachineKind(environment?.serverConfig ?? null);
   const terminalStatus = terminalStatusFromRunningIds(runningTerminalIds);
 
@@ -587,7 +613,7 @@ export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSumma
             render={
               <span
                 role="img"
-                aria-label={terminalStatus.label}
+                aria-label={translateDynamic("sidebar.terminalRunning", terminalStatus.label)}
                 className={`inline-flex items-center justify-center ${terminalStatus.colorClass}`}
               />
             }
@@ -597,7 +623,9 @@ export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSumma
               onAnimationStart={synchronizeTerminalPulse}
             />
           </TooltipTrigger>
-          <TooltipPopup side="top">{terminalStatus.label}</TooltipPopup>
+          <TooltipPopup side="top">
+            {translateDynamic("sidebar.terminalRunning", terminalStatus.label)}
+          </TooltipPopup>
         </Tooltip>
       ) : null}
       {isRemoteThread ? (
@@ -605,7 +633,7 @@ export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSumma
           <TooltipTrigger
             render={
               <span
-                aria-label={threadEnvironmentLabel ?? "Remote"}
+                aria-label={threadEnvironmentLabel ?? t("palette.location.remote")}
                 className="inline-flex items-center justify-center"
               />
             }

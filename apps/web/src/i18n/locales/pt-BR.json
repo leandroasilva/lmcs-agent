@@ -27,6 +27,447 @@
       "stepSummaryAria": "{{step}}, etapa {{number}}, {{summary}}"
     }
   },
+  "palette": {
+    "overlay": {
+      "command": "Paleta de comandos",
+      "filePicker": "Seletor de arquivos"
+    },
+    "current": "Atual",
+    "searchingThreadMessages": "Buscando mensagens dos threads…",
+    "location": {
+      "local": "Local",
+      "localNamed": "{{label}} (Local)",
+      "remote": "Remoto"
+    },
+    "environment": {
+      "thisDevice": "Este dispositivo"
+    },
+    "footer": {
+      "navigate": "Navegar"
+    },
+    "group": {
+      "actions": "Ações",
+      "directories": "Diretórios",
+      "environments": "Ambientes",
+      "projects": "Projetos",
+      "recentThreads": "Threads recentes",
+      "settings": "Configurações",
+      "sources": "Origens",
+      "threads": "Threads"
+    },
+    "item": {
+      "untitledThread": "Thread sem título",
+      "linkedThread": "Thread vinculado",
+      "archivedThread": "Thread arquivado",
+      "currentThread": "Thread atual"
+    },
+    "placeholder": {
+      "root": "Busque comandos, projetos e threads...",
+      "rootBrowse": "Informe o caminho do projeto (ex.: ~/projects/meu-app)",
+      "submenu": "Buscar...",
+      "submenuBrowse": "Informe o caminho (ex.: ~/projects/meu-app)"
+    },
+    "action": {
+      "addProject": "Adicionar projeto",
+      "changeAppearance": "Alterar aparência",
+      "changeTheme": "Alterar tema",
+      "copyPrLink": "Copiar link do PR",
+      "copyThreadId": "Copiar ID do thread",
+      "gitUrlDescription": "Clonar a partir de uma URL remota",
+      "goToFile": "Ir para o arquivo",
+      "linkPullRequest": "Vincular pull request ao thread",
+      "localFolder": "Pasta local",
+      "localFolderDescription": "Navegar por uma pasta no disco",
+      "newThreadInPrefix": "Novo thread em",
+      "newThreadInSubmenu": "Novo thread em...",
+      "openPullRequests": "Abrir pull requests",
+      "openSettings": "Abrir configurações",
+      "openUsage": "Abrir uso",
+      "openWslFolder": "Abrir pasta WSL",
+      "projectSettings": "Configurações do projeto",
+      "providerClone": "Clonar {{hint}} do {{provider}}",
+      "providerRepository": "Repositório do {{provider}}",
+      "providerSetupHint": "Abra Configurações -> Controle de versão para configurar este provedor.",
+      "searchProjectContents": "Buscar no conteúdo do projeto",
+      "setupRequired": "Configuração necessária",
+      "showLinkedPullRequests": "Mostrar pull requests vinculados",
+      "toggleThemeEditor": "Abrir ou fechar o editor de temas"
+    },
+    "theme": {
+      "forMode": "Para o modo {{mode}}"
+    },
+    "provider": {
+      "url": "URL do Git",
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "forgejo": "Forgejo / Gitea",
+      "bitbucket": "Bitbucket",
+      "azure-devops": "Azure DevOps"
+    },
+    "clone": {
+      "urlInputPlaceholder": "Informe a URL de clone do Git",
+      "providerInputPlaceholder": "Informe o repositório do {{provider}} ({{hint}})",
+      "providerUnavailableHint": "Status do provedor indisponível. Abra Configurações -> Controle de versão e reescaneie.",
+      "providerNotAuthenticatedHint": "{{provider}} não está autenticado. Abra Configurações -> Controle de versão para ver a orientação de configuração.",
+      "selectDestination": "Selecione onde clonar",
+      "repositoryHeader": "Repositório",
+      "openInFileManager": "Abrir no {{fileManager}}",
+      "emptyUrlHint": "Informe uma URL de clone do Git e pressione Enter para continuar.",
+      "emptyRepositoryHint": "Informe o caminho do repositório e pressione Enter para consultá-lo.",
+      "emptyDestinationHint": "Escolha o caminho de destino e pressione Enter para clonar.",
+      "emptyCreateFolderHint": "Pressione Enter para criar esta pasta e adicioná-la como projeto.",
+      "relativePathRequiresProject": "Caminhos relativos exigem um projeto ativo."
+    },
+    "submit": {
+      "add": "Adicionar",
+      "clone": "Clonar",
+      "createAndAdd": "Criar e adicionar",
+      "createAndClone": "Criar e clonar",
+      "lookup": "Consultar",
+      "working": "Trabalhando",
+      "cloning": "Clonando",
+      "select": "Selecionar"
+    },
+    "filePicker": {
+      "openFile": "Abrir arquivo",
+      "searchPlaceholder": "Buscar arquivos…",
+      "noProject": "Abra um projeto para buscar nos arquivos dele.",
+      "searching": "Buscando arquivos do workspace…",
+      "indexing": "Indexando arquivos do workspace…",
+      "noMatches": "Nenhum arquivo correspondente.",
+      "noFiles": "Nenhum arquivo encontrado."
+    },
+    "contentSearch": {
+      "placeholder": "Buscar no conteúdo do projeto…",
+      "aria": "Buscar no conteúdo dos arquivos de {{project}}",
+      "searchIn": "Buscar em {{project}}",
+      "matchCase": "Diferenciar maiúsculas e minúsculas",
+      "matchWholeWord": "Palavra inteira",
+      "useRegex": "Usar expressão regular",
+      "searching": "Buscando…",
+      "invalidRegex": "Expressão regular inválida",
+      "results": "{{results}} resultados em {{files}} arquivos",
+      "noResults": "Nenhum resultado encontrado.",
+      "typeToSearch": "Digite para buscar em todo o projeto."
+    }
+  },
+  "sidebar": {
+    "action": {
+      "snooze": "Adiar thread",
+      "discardDraft": "Descartar rascunho",
+      "dismissWoke": "Dispensar notificação de retomada",
+      "unpinThread": "Desafixar thread",
+      "wakeThreadNow": "Despertar thread agora",
+      "unsettleThread": "Reabrir thread",
+      "settleThread": "Concluir thread",
+      "pin": "Fixar",
+      "unpin": "Desafixar",
+      "settle": "Concluir",
+      "unsettle": "Reabrir",
+      "wake": "Despertar"
+    },
+    "status": {
+      "working": "Trabalhando",
+      "monitoring": "Monitorando",
+      "approval": "Aprovação",
+      "input": "Entrada",
+      "failed": "Falhou",
+      "woke": "Retomada"
+    },
+    "pill": {
+      "working": "Trabalhando",
+      "monitoring": "Monitorando",
+      "connecting": "Conectando",
+      "completed": "Concluído",
+      "approval": "Aguardando aprovação",
+      "input": "Aguardando entrada",
+      "planReady": "Plano pronto"
+    },
+    "worktree": {
+      "withBranch": "Worktree: {{path}} ({{branch}})",
+      "plain": "Worktree: {{path}}"
+    },
+    "terminalProcessCount_one": "{{count}} processo de terminal em execução",
+    "terminalProcessCount_other": "{{count}} processos de terminal em execução",
+    "terminalRunning": "Processo de terminal em execução",
+    "draft": {
+      "attachmentCount_one": "{{count}} anexo",
+      "attachmentCount_other": "{{count}} anexos"
+    },
+    "snoozePreset": {
+      "hour": "Em 1 hora",
+      "three-hours": "Em 3 horas",
+      "evening": "Nesta noite",
+      "tomorrow": "Amanhã",
+      "next-week": "Semana que vem",
+      "custom": "Personalizada…"
+    },
+    "section": {
+      "pinned": "Fixadas",
+      "active": "Ativas",
+      "snoozed": "Adiadas",
+      "snoozedCount_one": "Adiadas ({{count}})",
+      "snoozedCount_other": "Adiadas ({{count}})",
+      "settled": "Concluídas",
+      "settledCount_one": "Concluídas ({{count}})",
+      "settledCount_other": "Concluídas ({{count}})"
+    },
+    "showMore_one": "Mostrar mais {{count}}",
+    "showMore_other": "Mostrar mais {{count}}",
+    "empty": {
+      "noProjects": "Nenhum projeto ainda",
+      "addProject": "Adicionar projeto",
+      "noThreads": "Nenhuma thread ainda",
+      "noThreadsInProject": "Ainda não há threads em {{project}}"
+    },
+    "search": {
+      "noThreads": "Nenhuma thread encontrada"
+    },
+    "searchResults": "Resultados da pesquisa de threads",
+    "projectScope": {
+      "all": "Todos os projetos",
+      "filter": "Filtrar threads por projeto",
+      "filterNamed": "Filtrar threads por projeto: {{project}}",
+      "searchAria": "Pesquisar projetos",
+      "searchPlaceholder": "Pesquisar projetos...",
+      "noMatching": "Nenhum projeto correspondente.",
+      "settingsFor": "Configurações do projeto {{project}}"
+    },
+    "chrome": {
+      "goToThreads": "Ir para as threads",
+      "settings": "Configurações",
+      "pullRequests": "Pull Requests",
+      "usage": "Uso"
+    },
+    "threadTitle": "Título da thread",
+    "unsentDraft": "Rascunho não enviado",
+    "pinned": "Fixada",
+    "branchMismatch": "Você está em outro branch no momento.",
+    "regeneratingTitle": "Regenerando título",
+    "bulk": {
+      "settle_one": "Concluir ({{count}})",
+      "settle_other": "Concluir ({{count}})",
+      "snooze_one": "Adiar ({{count}})",
+      "snooze_other": "Adiar ({{count}})",
+      "markUnread_one": "Marcar como não lida ({{count}})",
+      "markUnread_other": "Marcar como não lida ({{count}})",
+      "delete_one": "Excluir ({{count}})",
+      "delete_other": "Excluir ({{count}})",
+      "archive_one": "Arquivar ({{count}})",
+      "archive_other": "Arquivar ({{count}})",
+      "unpin_one": "Desafixar ({{count}})",
+      "unpin_other": "Desafixar ({{count}})",
+      "regenerating_one": "Regenerando… ({{count}})",
+      "regenerating_other": "Regenerando… ({{count}})",
+      "regenerateTitles_one": "Regenerar títulos ({{count}})",
+      "regenerateTitles_other": "Regenerar títulos ({{count}})"
+    },
+    "threadAction": {
+      "newThreadOnBranch": "Nova thread em {{branch}}",
+      "unpin": "Desafixar thread",
+      "pin": "Fixar thread",
+      "unsettle": "Reabrir thread",
+      "settle": "Concluir thread",
+      "wake": "Despertar thread",
+      "snooze": "Adiar",
+      "rename": "Renomear thread",
+      "regenerating": "Regenerando…",
+      "regenerateTitle": "Regenerar título",
+      "markUnread": "Marcar como não lida",
+      "showAllProjects": "Mostrar todos os projetos",
+      "filterBy": "Filtrar por {{project}}",
+      "autoSettle": "Comportamento de conclusão automática",
+      "autoSettleEnabled": "Ativado",
+      "autoSettleDisabled": "Desativado",
+      "copy": "Copiar",
+      "copyPath": "Caminho",
+      "copyBranch": "Branch",
+      "copyThreadId": "ID da thread",
+      "projectSettings": "Configurações do projeto",
+      "archive": "Arquivar thread",
+      "delete": "Excluir"
+    },
+    "confirm": {
+      "deleteBulk_one": "Excluir {{count}} thread?",
+      "deleteBulk_other": "Excluir {{count}} threads?",
+      "deleteBulkDescription": "Isso exclui permanentemente o histórico de conversa destas threads.",
+      "archive": "Arquivar a thread \"{{title}}\"?",
+      "delete": "Excluir a thread \"{{title}}\"?",
+      "deleteDescription": "Isso exclui permanentemente o histórico de conversa desta thread."
+    }
+  },
+  "chat": {
+    "actions": {
+      "submitting": "Enviando...",
+      "submit": "Enviar",
+      "next": "Avançar",
+      "nextQuestion": "Próxima pergunta",
+      "submitAnswers": "Enviar respostas",
+      "submitAnswer": "Enviar resposta",
+      "stopGeneration": "Parar geração",
+      "previousQuestion": "Pergunta anterior",
+      "previous": "Anterior",
+      "sending": "Enviando...",
+      "refine": "Refinar",
+      "implement": "Implementar",
+      "implementationActions": "Ações de implementação",
+      "implementInNewThread": "Implementar em uma nova thread",
+      "environmentDisconnected": "Ambiente desconectado",
+      "connecting": "Conectando",
+      "preparingWorktree": "Preparando worktree",
+      "sendingShort": "Enviando",
+      "queueMessage": "Enfileirar mensagem",
+      "sendMessage": "Enviar mensagem"
+    },
+    "runtimeMode": {
+      "supervised": "Supervisionado",
+      "supervisedDescription": "Perguntar antes de comandos e alterações em arquivos.",
+      "autoAcceptEdits": "Aceitar edições automaticamente",
+      "autoAcceptEditsDescription": "Aprovar edições automaticamente, perguntar antes de outras ações.",
+      "auto": "Automático",
+      "autoDescription": "Provedores suportados aprovam ações rotineiras; outros ainda perguntam.",
+      "fullAccess": "Acesso total",
+      "fullAccessDescription": "Permitir comandos e edições sem confirmações."
+    },
+    "controls": {
+      "moreAria": "Mais controles do composer",
+      "mode": "Modo",
+      "modeChat": "Chat",
+      "modePlan": "Plano",
+      "access": "Acesso",
+      "build": "Construir",
+      "runtimeMode": "Modo de execução",
+      "planModeTooltip": "Modo plano — clique para voltar ao modo normal de construção",
+      "defaultModeTooltip": "Modo padrão — clique para entrar no modo plano"
+    },
+    "timeline": {
+      "loadingMessages": "Carregando mensagens...",
+      "syncingMessages": "Sincronizando mensagens...",
+      "empty": "Envie uma mensagem para iniciar a conversa."
+    },
+    "composer": {
+      "placeholderDisconnected": "Solicite mudanças, envie novas mensagens ou anexe imagens",
+      "attachmentUnsupported": "Atualize este servidor para enviar arquivos com respostas de perguntas",
+      "reattachOne": "Anexe novamente o arquivo interrompido ou remova-o",
+      "reattachOther": "Anexe novamente os arquivos interrompidos ou remova-os",
+      "compactUnavailable": "A compactação não está disponível no momento",
+      "selectModelRequired": "Selecione pelo menos um modelo.",
+      "openProviderSettings": "Abrir configurações do provedor",
+      "noProvider": "Nenhum provedor disponível",
+      "writeCustomAnswer": "Escrever resposta personalizada",
+      "expandAria": "Expandir composer",
+      "chooseOption": "Escolha uma opção acima",
+      "typeOwnAnswer": "Digite sua própria resposta, ou deixe em branco para usar a opção selecionada",
+      "enableProvider": "Ative um provedor nas Configurações",
+      "askAnythingShort": "Pergunte qualquer coisa...",
+      "resolveApproval": "Resolva esta solicitação de aprovação para continuar",
+      "planFeedback": "Adicione feedback para refinar o plano, ou deixe em branco para implementá-lo",
+      "chooseProject": "Escolha um projeto acima para iniciar uma thread",
+      "enableProviderSend": "Ative um provedor nas Configurações para enviar uma mensagem",
+      "askAnythingFull": "Pergunte qualquer coisa, marque arquivos/pastas com @, use skills com $, ou / para comandos",
+      "draftAttachmentAria": "O anexo do rascunho pode não ser preservado",
+      "draftAttachmentTooltip": "O anexo do rascunho não pôde ser salvo localmente e pode ser perdido ao navegar.",
+      "attachAgain": "Anexar novamente",
+      "removeToSend": "Remover para enviar",
+      "attachFiles": "Anexar arquivos"
+    },
+    "empty": {
+      "noActiveThread": "Nenhuma thread ativa",
+      "pickThreadTitle": "Escolha uma thread para continuar",
+      "pickThreadDescription": "Selecione uma thread existente ou crie uma nova para começar."
+    },
+    "error": {
+      "dismiss": "Descartar erro"
+    },
+    "feedback": {
+      "copyId": "Copiar ID",
+      "dismissLabel": "Descartar aviso de feedback"
+    },
+    "header": {
+      "breadcrumbAria": "Navegação da thread",
+      "newThreadIn": "Nova thread em {{project}}",
+      "threadTitle": "Título da thread",
+      "threadActions": "Ações da thread para {{title}}",
+      "moreActions": "Mais ações do cabeçalho",
+      "actionsMenu": "Ações do cabeçalho"
+    },
+    "menu": {
+      "switchModel": "Trocar o modelo de resposta desta thread",
+      "switchToPlan": "Trocar esta thread para o modo plano",
+      "switchToBuild": "Trocar esta thread de volta para o modo normal de construção",
+      "runProviderCommand": "Executar comando do provedor",
+      "runProviderSkill": "Executar skill do provedor",
+      "scopeSkill": "Skill {{scope}}",
+      "noSkills": "Nenhuma skill encontrada. Use / para navegar pelos comandos do provedor.",
+      "noPrUnavailable": "Pull requests não estão disponíveis para este projeto.",
+      "noPrUnreadable": "Não foi possível ler os pull requests deste projeto.",
+      "noPrMatches": "Nenhum pull request corresponde a {{query}}.",
+      "noPrFound": "Nenhum pull request encontrado neste repositório.",
+      "noPaths": "Nenhum arquivo ou pasta correspondente.",
+      "noCommands": "Nenhum comando correspondente."
+    },
+    "modelPicker": {
+      "searchPlaceholder": "Buscar modelos...",
+      "noModels": "Nenhum modelo encontrado",
+      "setUpProvider": "Configurar {{displayName}}",
+      "openProviderSetup": "Abrir configuração do provedor",
+      "chooseModel": "Escolher modelo",
+      "chooseModels": "Escolher modelos",
+      "newModelAria": "Novo modelo",
+      "badgeNew": "Novo",
+      "badgeUnavailable": "Indisponível",
+      "addFavorite": "Adicionar aos favoritos",
+      "removeFavorite": "Remover dos favoritos",
+      "statusUnavailable": "Indisponível",
+      "statusLimited": "Limitado",
+      "statusNotReady": "Não pronto",
+      "disabledInSettings": "Desativado nas configurações.",
+      "newBadge": "Novo",
+      "newAria": "novo",
+      "providers": "Provedores",
+      "favorites": "Favoritos"
+    },
+    "usage": {
+      "toggleAccountAria": "Alternar visibilidade do rótulo da conta",
+      "revealAccount": "Clique para revelar a conta",
+      "hideAccount": "Clique para ocultar a conta",
+      "accounts_one": "{{count}} conta",
+      "accounts_other": "{{count}} contas",
+      "title": "Limites de uso",
+      "dismiss": "Descartar limites de uso"
+    },
+    "stash": {
+      "openAria": "Prompts guardados: {{total}}. Abrir reserva.",
+      "label": "Reserva",
+      "emptyCountLabel": "(vazio)",
+      "attachmentCount_one": "({{count}} anexo)",
+      "attachmentCount_other": "({{count}} anexos)",
+      "fileCount_one": "({{count}} arquivo)",
+      "fileCount_other": "({{count}} arquivos)",
+      "imageCount_one": "({{count}} imagem)",
+      "imageCount_other": "({{count}} imagens)",
+      "close": "Fechar reserva",
+      "listAria": "Prompts guardados",
+      "empty": "Nada guardado ainda.",
+      "emptyWithShortcut": "Nada guardado ainda. Pressione {{shortcut}} com um prompt no composer para guardá-lo.",
+      "restoreAria": "Restaurar prompt guardado: {{prompt}}",
+      "savingImages_one": "salvando {{count}} imagem…",
+      "savingImages_other": "salvando {{count}} imagens…",
+      "imagesDropped_one": "{{count}} imagem descartada",
+      "imagesDropped_other": "{{count}} imagens descartadas",
+      "delete": "Excluir prompt guardado"
+    },
+    "tasks": {
+      "pending": "Pendente",
+      "running": "Em execução",
+      "completed": "Concluída",
+      "label": "Tarefas",
+      "expandAria": "Tarefas: {{completed}} de {{total}} concluídas. Tarefa atual: {{step}}",
+      "collapseAria": "Recolher tarefas: {{completed}} de {{total}} concluídas. Tarefa atual: {{step}}",
+      "listAria": "Lista de tarefas. {{completed}} de {{total}} concluídas.",
+      "now": "agora"
+    }
+  },
   "settings": {
     "rootTitle": "Configurações",
     "breadcrumbAria": "Trilha de navegação das configurações",

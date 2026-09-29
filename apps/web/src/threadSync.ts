@@ -1,5 +1,7 @@
 import type { EnvironmentThreadStatus } from "@lmcstools/client/state/threads";
 
+import { translateDynamic } from "./i18n";
+
 export type ThreadSyncPhase = "loading" | "syncing";
 
 export function resolveThreadSyncPhase(input: {
@@ -23,5 +25,7 @@ export function resolveThreadSyncPhase(input: {
 }
 
 export function threadSyncLabel(phase: ThreadSyncPhase): string {
-  return phase === "loading" ? "Loading messages..." : "Syncing messages...";
+  return phase === "loading"
+    ? translateDynamic("chat.timeline.loadingMessages", "Loading messages...")
+    : translateDynamic("chat.timeline.syncingMessages", "Syncing messages...");
 }

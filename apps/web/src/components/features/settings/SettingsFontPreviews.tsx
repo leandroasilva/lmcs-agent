@@ -9,7 +9,7 @@ import {
 import { EMPTY_COMPOSER_CONTEXT_RECORDS } from "../chat/composerContextPresentation";
 import { terminalThemeFromApp } from "../../layout/ThreadTerminalDrawer";
 import { useTheme } from "../../../hooks/useTheme";
-import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../../composerPlaceholder";
+import { disconnectedComposerPlaceholder } from "../../../composerPlaceholder";
 import { resolveDiffThemeName, type DiffThemeName } from "../../../lib/diffRendering";
 import { PREFERRED_HIGHLIGHTER } from "../../../lib/syntaxHighlighting";
 import { GhosttyTerminalSurface } from "~/terminal/ghostty/surface";
@@ -50,7 +50,7 @@ export function PromptFontPreview() {
         contextRecords={EMPTY_COMPOSER_CONTEXT_RECORDS}
         skills={EMPTY_SKILLS}
         disabled={false}
-        placeholder={DISCONNECTED_COMPOSER_PLACEHOLDER}
+        placeholder={disconnectedComposerPlaceholder()}
         className="max-h-42 min-h-14"
         onChange={onChange}
         onPaste={noop}

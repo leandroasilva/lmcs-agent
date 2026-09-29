@@ -8,6 +8,7 @@ import { AsyncResult } from "effect/unstable/reactivity";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Alert, AppState, Linking, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { AppText as Text } from "../../components/AppText";
 import {
@@ -57,15 +58,16 @@ function useDeviceRegistered(): boolean {
 }
 
 export function SettingsNotificationsRouteScreen() {
+  const { t } = useTranslation();
   if (!hasCloudPublicConfig()) {
     return (
-      <SettingsScreen title="Notifications">
+      <SettingsScreen title={t("nav.notifications")}>
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           contentContainerClassName="px-5 pt-4"
         >
           <Text className="text-base text-foreground-muted">
-            Notifications require LMCS Connect in this app build.
+            {t("settings.notifications.requiresConnect")}
           </Text>
         </ScrollView>
       </SettingsScreen>
@@ -76,17 +78,20 @@ export function SettingsNotificationsRouteScreen() {
 }
 
 function ConfiguredSettingsNotificationsRouteScreen() {
+  const { t } = useTranslation();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
   const agentAwarenessPushAvailable = supportsAgentAwarenessPush();
   const agentAwarenessPlatform = resolveAgentAwarenessPlatformPresentation(Platform.OS);
   const agentAwarenessSubtitle =
     Platform.OS === "android" && !agentAwarenessPushAvailable
-      ? "Install a newer app build to enable notifications"
+      ? t("settings.notifications.installNewerBuild")
       : agentAwarenessPlatform.subtitle;
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { getToken, isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
+  const { getToken, isLoaded, isSignedIn } = useAuth({
+    treatPendingAsSignedOut: false,
+  });
   const { savedConnectionsById } = useSavedRemoteConnections();
   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>("checking");
   const [liveActivityStatus, setLiveActivityStatus] = useState<LiveActivityStatus>("checking");
@@ -109,7 +114,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     }
     const result = await settlePromise(() => Notifications.getPermissionsAsync());
     if (result._tag === "Failure") {
-      reportAtomCommandResult(result, { label: "notification permission refresh" });
+      reportAtomCommandResult(result, {
+        label: "notification permission refresh",
+      });
       setNotificationStatus("disabled");
       return;
     }
@@ -135,7 +142,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     }
     if (!AsyncResult.isSuccess(preferencesResult)) {
       if (AsyncResult.isFailure(preferencesResult)) {
-        reportAtomCommandResult(preferencesResult, { label: "live activity preference load" });
+        reportAtomCommandResult(preferencesResult, {
+          label: "live activity preference load",
+        });
         setLiveActivityStatus("enabled");
       } else {
         setLiveActivityStatus("checking");
@@ -245,7 +254,10 @@ function ConfiguredSettingsNotificationsRouteScreen() {
           "Enable notifications in system Settings to show ongoing agent activity.",
           [
             { text: "Cancel", style: "cancel" },
-            { text: "Open Settings", onPress: () => void Linking.openSettings() },
+            {
+              text: "Open Settings",
+              onPress: () => void Linking.openSettings(),
+            },
           ],
         );
         return;
@@ -416,7 +428,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
   );
 
   return (
-    <SettingsScreen title="Notifications">
+    <SettingsScreen title={t("nav.notifications")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -426,10 +438,10 @@ function ConfiguredSettingsNotificationsRouteScreen() {
           paddingBottom: Math.max(insets.bottom, 18) + 18,
         }}
       >
-        <SettingsSection title="Agent activity">
+        <SettingsSection title={t("settings.notifications.agentActivity")}>
           <SettingsSwitchRow
             icon="bell.badge"
-            label="Device Notifications"
+            label={t("settings.notifications.deviceNotifications")}
             disabled={
               !agentAwarenessPlatform.supported ||
               !agentAwarenessPushAvailable ||
@@ -457,9 +469,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
             label={
               Platform.OS === "android"
                 ? supportsAndroidLiveUpdateSettings()
-                  ? "Agent Live Updates"
-                  : "Ongoing Agent Activity"
-                : "Live Activity Updates"
+                  ? t("settings.notifications.agentLiveUpdates")
+                  : t("settings.notifications.ongoingAgentActivity")
+                : t("settings.notifications.liveActivityUpdates")
             }
             subtitle={agentAwarenessSubtitle}
             // Same gate: a saved preference is meaningless until the device
@@ -474,14 +486,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
           {liveActivityStatus === "signed-out" && canClearLiveActivitiesPreference ? (
             <SettingsRow
               icon="bolt.circle"
-              label="Turn off Live Activity preference"
+              label={t("settings.notifications.turnOffPreference")}
               onPress={() => handleLiveActivitiesChange(false)}
             />
           ) : null}
           {supportsAndroidLiveUpdateSettings() ? (
             <SettingsRow
               icon="bolt.circle"
-              label="Live Update Settings"
+              label={t("settings.notifications.liveUpdateSettings")}
               onPress={() => {
                 void openAndroidLiveUpdateSettings().catch(() => {
                   Alert.alert(

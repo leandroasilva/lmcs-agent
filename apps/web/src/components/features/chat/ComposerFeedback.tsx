@@ -2,6 +2,7 @@ import { codexFeedbackNotice, type CodexFeedbackSubmission } from "@lmcstools/cl
 import { MessageSquareIcon } from "lucide-react";
 
 import { writeTextToClipboard } from "../../../hooks/useCopyToClipboard";
+import { translateDynamic } from "../../../i18n";
 import { Button } from "../../ui/button";
 import { toastManager } from "../../ui/toast";
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";
@@ -36,11 +37,14 @@ export function feedbackBannerItem(
             );
           }}
         >
-          Copy ID
+          {translateDynamic("chat.feedback.copyId", "Copy ID")}
         </Button>
       ) : undefined,
     ...(submission.status !== "uploading"
-      ? { dismissLabel: "Dismiss feedback notice", onDismiss }
+      ? {
+          dismissLabel: translateDynamic("chat.feedback.dismissLabel", "Dismiss feedback notice"),
+          onDismiss,
+        }
       : {}),
   };
 }
