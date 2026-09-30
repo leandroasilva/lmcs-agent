@@ -6,6 +6,7 @@ import {
   GrokSettings,
   OpenCodeSettings,
   ProviderDriverKind,
+  QoderSettings,
 } from "@lmcstools/core";
 import type * as Schema from "effect/Schema";
 import {
@@ -16,6 +17,7 @@ import {
   type Icon,
   OpenAI,
   OpenCodeIcon,
+  QoderIcon,
 } from "../../shared/Icons";
 import { translateDynamic } from "../../../i18n";
 
@@ -82,6 +84,13 @@ const PROVIDER_CLIENT_DEFINITIONS: readonly ProviderClientDefinition[] = [
     label: "Antigravity",
     icon: AntigravityIcon,
     settingsSchema: AntigravitySettings,
+  },
+  {
+    value: ProviderDriverKind.make("qoder"),
+    label: "Qoder",
+    icon: QoderIcon,
+    badgeLabel: "SDK",
+    settingsSchema: QoderSettings,
   },
 ];
 

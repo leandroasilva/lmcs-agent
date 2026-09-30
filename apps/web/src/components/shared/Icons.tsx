@@ -846,6 +846,14 @@ export const MacAccessibilityIcon: Icon = (props) => {
   );
 };
 
+export const QoderIcon: Icon = ({ className, ...props }) => (
+  <svg {...props} viewBox="0 0 24 24" fill="none" className={cn("fill-foreground", className)}>
+    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+    <path d="M2 17l10 5 10-5" opacity="0.5" />
+    <path d="M2 12l10 5 10-5" opacity="0.75" />
+  </svg>
+);
+
 // Codex's Computer Use app mark, shown on computer-use rows in the work log.
 export const ComputerUseAppIcon: Icon = (props) => {
   const gradientId = `${useId().replaceAll(":", "")}-computer-use-app-gradient`;
