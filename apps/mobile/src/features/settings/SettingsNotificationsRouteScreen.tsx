@@ -336,8 +336,12 @@ function ConfiguredSettingsNotificationsRouteScreen() {
           : t("settings.notifications.alertLiveActivitiesEnabled"),
         environmentCount > 0
           ? environmentCount === 1
-            ? t("settings.notifications.alertLinkedOne", { total: environmentCount })
-            : t("settings.notifications.alertLinkedMany", { total: environmentCount })
+            ? t("settings.notifications.alertLinkedOne", {
+                total: environmentCount,
+              })
+            : t("settings.notifications.alertLinkedMany", {
+                total: environmentCount,
+              })
           : t("settings.notifications.alertActivityEnabledAddEnvironment"),
       );
     } else {

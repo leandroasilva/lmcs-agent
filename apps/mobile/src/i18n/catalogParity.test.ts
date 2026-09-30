@@ -34,7 +34,10 @@ describe("mobile i18n catalogs", () => {
     const ptKeys = collectLeafPaths(ptBR).sort();
     const missingInPt = enKeys.filter((key) => !ptKeys.includes(key));
     const extraInPt = ptKeys.filter((key) => !enKeys.includes(key));
-    expect({ missingInPt, extraInPt }).toEqual({ missingInPt: [], extraInPt: [] });
+    expect({ missingInPt, extraInPt }).toEqual({
+      missingInPt: [],
+      extraInPt: [],
+    });
   });
 
   it("have no empty translated values", () => {

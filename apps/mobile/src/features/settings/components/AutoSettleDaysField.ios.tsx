@@ -22,7 +22,9 @@ import { useAppearancePreferences } from "../appearance/AppearancePreferencesPro
 import type { AutoSettleDaysFieldProps } from "./AutoSettleDaysField";
 
 const days = Array.from(
-  { length: MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS - MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS + 1 },
+  {
+    length: MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS - MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS + 1,
+  },
   (_, index) => MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS + index,
 );
 

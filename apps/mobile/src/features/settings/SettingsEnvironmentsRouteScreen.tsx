@@ -73,7 +73,10 @@ export function SettingsEnvironmentsRouteScreen() {
     (environmentId: EnvironmentId) => {
       navigation.navigate("SettingsSheet", {
         screen: "SettingsContent",
-        params: { screen: "SettingsEnvironmentDetail", params: { environmentId } },
+        params: {
+          screen: "SettingsEnvironmentDetail",
+          params: { environmentId },
+        },
       });
     },
     [navigation],
