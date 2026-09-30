@@ -3,17 +3,28 @@ import {
   type ModelCapabilities,
   type QoderSettings,
   type ServerProvider,
+  type ServerProviderAuth,
   type ServerProviderModel,
 } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import * as Result from "effect/Result";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { createModelCapabilities } from "@lmcstools/core/model";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
 import {
   buildServerProvider,
+  isCommandMissingCause,
+  parseGenericCliVersion,
   providerModelsFromSettings,
+  spawnAndCollect,
   type ServerProviderDraft,
 } from "../providerSnapshot.ts";
+
+const VERSION_PROBE_TIMEOUT_MS = 4_000;
+const QODER_PAT_ENV = "QODER_PERSONAL_ACCESS_TOKEN";
 
 const QODER_PRESENTATION = {
   displayName: "Qoder",
@@ -84,13 +95,152 @@ export function buildInitialQoderProviderSnapshot(
   });
 }
 
-export function checkQoderProviderStatus(
+const runQoderCliCommand = (
   qoderSettings: QoderSettings,
-  _env: NodeJS.ProcessEnv | undefined,
-  _cwd: string,
-): Effect.Effect<ServerProviderDraft> {
-  return buildInitialQoderProviderSnapshot(qoderSettings);
-}
+  args: ReadonlyArray<string>,
+  environment: NodeJS.ProcessEnv,
+) =>
+  Effect.gen(function* () {
+    const command = qoderSettings.binaryPath || "qoder";
+    const spawnCommand = yield* resolveSpawnCommand(command, args, {
+      env: environment,
+    });
+    return yield* spawnAndCollect(
+      command,
+      ChildProcess.make(spawnCommand.command, spawnCommand.args, {
+        env: environment,
+        shell: spawnCommand.shell,
+      }),
+    );
+  });
+
+export const checkQoderProviderStatus = Effect.fn("checkQoderProviderStatus")(function* (
+  qoderSettings: QoderSettings,
+  environment: NodeJS.ProcessEnv = process.env,
+  _cwd?: string,
+): Effect.fn.Return<ServerProviderDraft, never, ChildProcessSpawner.ChildProcessSpawner> {
+  const checkedAt = DateTime.formatIso(yield* DateTime.now);
+  const models = qoderModelsFromSettings(qoderSettings.customModels);
+
+  if (!qoderSettings.enabled) {
+    return buildServerProvider({
+      presentation: QODER_PRESENTATION,
+      enabled: false,
+      checkedAt,
+      models,
+      probe: {
+        installed: false,
+        version: null,
+        status: "warning",
+        auth: { status: "unknown" },
+        message: "Qoder is disabled in LMCS Code settings.",
+      },
+    });
+  }
+
+  const versionResult = yield* runQoderCliCommand(qoderSettings, ["--version"], environment).pipe(
+    Effect.timeoutOption(VERSION_PROBE_TIMEOUT_MS),
+    Effect.result,
+  );
+
+  if (Result.isFailure(versionResult)) {
+    const error = versionResult.failure;
+    yield* Effect.logWarning("Qoder CLI health check failed.", {
+      errorTag: error._tag,
+    });
+    return buildServerProvider({
+      presentation: QODER_PRESENTATION,
+      enabled: qoderSettings.enabled,
+      checkedAt,
+      models,
+      probe: {
+        installed: !isCommandMissingCause(error),
+        version: null,
+        status: "error",
+        auth: { status: "unknown" },
+        message: isCommandMissingCause(error)
+          ? "Qoder CLI (`qoder`) is not installed or not on PATH."
+          : "Failed to execute Qoder CLI health check.",
+      },
+    });
+  }
+
+  if (Option.isNone(versionResult.success)) {
+    return buildServerProvider({
+      presentation: QODER_PRESENTATION,
+      enabled: qoderSettings.enabled,
+      checkedAt,
+      models,
+      probe: {
+        installed: true,
+        version: null,
+        status: "error",
+        auth: { status: "unknown" },
+        message: "Qoder CLI is installed but timed out while running `qoder --version`.",
+      },
+    });
+  }
+
+  const versionOutput = versionResult.success.value;
+  const version = parseGenericCliVersion(`${versionOutput.stdout}\n${versionOutput.stderr}`);
+  if (versionOutput.code !== 0) {
+    yield* Effect.logWarning("Qoder CLI version probe exited with a non-zero status.", {
+      exitCode: versionOutput.code,
+      stdoutLength: versionOutput.stdout.length,
+      stderrLength: versionOutput.stderr.length,
+    });
+    return buildServerProvider({
+      presentation: QODER_PRESENTATION,
+      enabled: qoderSettings.enabled,
+      checkedAt,
+      models,
+      probe: {
+        installed: true,
+        version,
+        status: "error",
+        auth: { status: "unknown" },
+        message: "Qoder CLI is installed but failed to run.",
+      },
+    });
+  }
+
+  const auth: ServerProviderAuth = environment[QODER_PAT_ENV]?.trim()
+    ? { status: "authenticated", type: "api_key", label: "Qoder PAT (env)" }
+    : qoderSettings.personalAccessToken
+      ? { status: "authenticated", type: "api_key", label: "Qoder PAT" }
+      : { status: "unauthenticated" };
+
+  if (auth.status === "unauthenticated") {
+    return buildServerProvider({
+      presentation: QODER_PRESENTATION,
+      enabled: qoderSettings.enabled,
+      checkedAt,
+      models,
+      probe: {
+        installed: true,
+        version,
+        status: "error",
+        auth,
+        message:
+          "Qoder CLI is installed but not authenticated. Set personalAccessToken in settings or QODER_PERSONAL_ACCESS_TOKEN env.",
+      },
+    });
+  }
+
+  return buildServerProvider({
+    presentation: QODER_PRESENTATION,
+    enabled: qoderSettings.enabled,
+    checkedAt,
+    models,
+    probe: {
+      installed: true,
+      version,
+      status: "ready",
+      auth,
+      message: "Qoder is ready.",
+    },
+  });
+});
 
 export function enrichQoderSnapshot(input: {
   snapshot: ServerProvider;
