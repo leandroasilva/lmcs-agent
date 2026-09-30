@@ -129,6 +129,8 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
 
       const checkProvider = checkQoderProviderStatus(effectiveConfig, processEnv, cwd).pipe(
         Effect.map(stampIdentity),
+        Effect.provideService(FileSystem.FileSystem, fileSystem),
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
       );
 
       const snapshotSettings = makeProviderSnapshotSettingsSource(effectiveConfig, serverSettings);
@@ -138,7 +140,10 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
         streamSettings: snapshotSettings.streamSettings,
         haveSettingsChanged: haveProviderSnapshotSettingsChanged,
         initialSnapshot: (settings) =>
-          buildInitialQoderProviderSnapshot(settings.provider).pipe(Effect.map(stampIdentity)),
+          buildInitialQoderProviderSnapshot(settings.provider, processEnv).pipe(
+            Effect.map(stampIdentity),
+            Effect.provideService(FileSystem.FileSystem, fileSystem),
+          ),
         checkProvider,
         enrichSnapshot: ({ settings, snapshot: currentSnapshot, publishSnapshot }) =>
           resolveMaintenance().pipe(

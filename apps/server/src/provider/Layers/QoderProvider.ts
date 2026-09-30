@@ -8,9 +8,12 @@ import {
 } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import * as NodeOS from "node:os";
+import * as NodePath from "node:path";
 import { createModelCapabilities } from "@lmcstools/core/model";
 import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
@@ -25,6 +28,7 @@ import {
 
 const VERSION_PROBE_TIMEOUT_MS = 4_000;
 const QODER_PAT_ENV = "QODER_PERSONAL_ACCESS_TOKEN";
+const QODER_AUTH_FILE = ".qoder/.auth/user";
 
 const QODER_PRESENTATION = {
   displayName: "Qoder",
@@ -54,7 +58,8 @@ function qoderModelsFromSettings(
 
 export function buildInitialQoderProviderSnapshot(
   qoderSettings: QoderSettings,
-): Effect.Effect<ServerProviderDraft> {
+  environment: NodeJS.ProcessEnv = process.env,
+): Effect.Effect<ServerProviderDraft, never, FileSystem.FileSystem> {
   return Effect.gen(function* () {
     const checkedAt = yield* Effect.map(DateTime.now, DateTime.formatIso);
     const models = qoderModelsFromSettings(qoderSettings.customModels);
@@ -75,6 +80,28 @@ export function buildInitialQoderProviderSnapshot(
       });
     }
 
+    const fs = yield* FileSystem.FileSystem;
+    const homeDir = environment.HOME ?? NodeOS.homedir();
+    const authFilePath = NodePath.join(homeDir, QODER_AUTH_FILE);
+    const hasCliAuth = yield* fs.stat(authFilePath).pipe(
+      Effect.map((stat) => stat.size > 0),
+      Effect.orElseSucceed(() => false),
+    );
+
+    const authStatus = qoderSettings.personalAccessToken
+      ? {
+          status: "authenticated" as const,
+          type: "api_key" as const,
+          label: "Qoder PAT",
+        }
+      : hasCliAuth
+        ? {
+            status: "authenticated" as const,
+            type: "cached_token" as const,
+            label: "Qoder account",
+          }
+        : { status: "unauthenticated" as const };
+
     return buildServerProvider({
       presentation: QODER_PRESENTATION,
       enabled: true,
@@ -83,13 +110,12 @@ export function buildInitialQoderProviderSnapshot(
       probe: {
         installed: true,
         version: null,
-        status: "ready",
-        auth: qoderSettings.personalAccessToken
-          ? { status: "authenticated" }
-          : { status: "unauthenticated" },
-        message: qoderSettings.personalAccessToken
-          ? "Qoder is ready."
-          : "Qoder PAT not configured. Set personalAccessToken in settings.",
+        status: authStatus.status === "authenticated" ? "ready" : "error",
+        auth: authStatus,
+        message:
+          authStatus.status === "authenticated"
+            ? "Qoder is ready."
+            : "Qoder CLI is installed but not authenticated. Run `qoder login` or set personalAccessToken in settings.",
       },
     });
   });
@@ -118,7 +144,11 @@ export const checkQoderProviderStatus = Effect.fn("checkQoderProviderStatus")(fu
   qoderSettings: QoderSettings,
   environment: NodeJS.ProcessEnv = process.env,
   _cwd?: string,
-): Effect.fn.Return<ServerProviderDraft, never, ChildProcessSpawner.ChildProcessSpawner> {
+): Effect.fn.Return<
+  ServerProviderDraft,
+  never,
+  ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem
+> {
   const checkedAt = DateTime.formatIso(yield* DateTime.now);
   const models = qoderModelsFromSettings(qoderSettings.customModels);
 
@@ -204,11 +234,25 @@ export const checkQoderProviderStatus = Effect.fn("checkQoderProviderStatus")(fu
     });
   }
 
+  const fs = yield* FileSystem.FileSystem;
+  const homeDir = environment.HOME ?? NodeOS.homedir();
+  const authFilePath = NodePath.join(homeDir, QODER_AUTH_FILE);
+  const hasCliAuth = yield* fs.stat(authFilePath).pipe(
+    Effect.map((stat) => stat.size > 0),
+    Effect.orElseSucceed(() => false),
+  );
+
   const auth: ServerProviderAuth = environment[QODER_PAT_ENV]?.trim()
     ? { status: "authenticated", type: "api_key", label: "Qoder PAT (env)" }
     : qoderSettings.personalAccessToken
       ? { status: "authenticated", type: "api_key", label: "Qoder PAT" }
-      : { status: "unauthenticated" };
+      : hasCliAuth
+        ? {
+            status: "authenticated",
+            type: "cached_token",
+            label: "Qoder account",
+          }
+        : { status: "unauthenticated" };
 
   if (auth.status === "unauthenticated") {
     return buildServerProvider({
