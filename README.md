@@ -1,6 +1,6 @@
 # LMCS Code
 
-LMCS Code is a control surface for coding agents, forked from [T3 Code](https://github.com/pingdotgg/t3code).
+LMCS Code is a control surface for coding agents, forked from [LMCS Code](https://github.com/leandroasilva/lmcs-agent).
 A local server wraps the provider CLIs installed on your machine — Codex, Claude Code, Cursor, Grok Build,
 OpenCode, and Google Antigravity — and serves web, desktop (Electron), and mobile (React Native) clients over
 authenticated WebSocket RPC. The server runs where your code lives; clients can connect from any machine.

@@ -52,9 +52,9 @@ it.effect("normalizes the hosted app URL to an absolute origin", () =>
   Effect.gen(function* () {
     assert.equal(
       yield* hostedAppUrlConfig.pipe(
-        provideEnv({ LMCS_HOSTED_APP_URL: "https://nightly.app.t3.codes" }),
+        provideEnv({ LMCS_HOSTED_APP_URL: "https://nightly.app.lmcs.codes" }),
       ),
-      "https://nightly.app.t3.codes",
+      "https://nightly.app.lmcs.codes",
     );
     assert.equal(
       yield* hostedAppUrlConfig.pipe(provideEnv({ LMCS_HOSTED_APP_URL: "http://localhost:5733" })),
@@ -66,10 +66,10 @@ it.effect("normalizes the hosted app URL to an absolute origin", () =>
 it.effect("rejects malformed or insecure hosted app URLs", () =>
   Effect.gen(function* () {
     for (const value of [
-      "app.t3.codes",
-      "http://app.t3.codes",
-      "https://app.t3.codes/nested",
-      "https://app.t3.codes?alias=true",
+      "app.lmcs.codes",
+      "http://app.lmcs.codes",
+      "https://app.lmcs.codes/nested",
+      "https://app.lmcs.codes?alias=true",
     ]) {
       const result = yield* hostedAppUrlConfig.pipe(
         provideEnv({ LMCS_HOSTED_APP_URL: value }),

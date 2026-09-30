@@ -3,7 +3,7 @@
 LMCS Code runs coding agents on your computer and lets you control them from its
 desktop, web, or mobile app. Set up the machine where the agents will work first.
 
-LMCS Code is a fork of T3 Code distributed as source and through
+LMCS Code is a fork of LMCS Code distributed as source and through
 [GitHub Releases](https://github.com/leandroasilva/lmcs-agent/releases). There
 are no app-store or system package-manager channels.
 

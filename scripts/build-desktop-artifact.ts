@@ -2744,7 +2744,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       category: "Development",
       synopsis: "Desktop GUI for coding agents",
       // Required by the .deb control file.
-      maintainer: "LMCS Tools <hello@t3.codes>",
+      maintainer: "LMCS Tools <hello@lmcs.codes>",
       // electron-builder turns these into MimeType=x-scheme-handler/<scheme>;
       // in the .desktop entry (Exec already gets %U), so browsers can hand
       // t3code:// OAuth callbacks to the app.
@@ -3668,7 +3668,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     packageManager: rootPackageJson.packageManager,
     description: "LMCS Code desktop build",
     // Required by the .deb control file.
-    homepage: "https://t3.codes",
+    homepage: "https://lmcs.codes",
     author: "LMCS Tools",
     main: "apps/desktop/dist-electron/boot.cjs",
     build: yield* createBuildConfig(
