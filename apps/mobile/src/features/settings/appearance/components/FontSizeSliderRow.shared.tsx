@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { SymbolView } from "../../../../components/AppSymbol";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { View, type AccessibilityActionEvent } from "react-native";
@@ -37,6 +38,7 @@ export function FontSizeSliderRow(props: {
 }) {
   const latest = useRef(props);
   latest.current = props;
+  const { t } = useTranslation();
 
   const { min, max, step, value, disabled } = props;
   const fraction = (value - min) / (max - min);
@@ -121,7 +123,11 @@ export function FontSizeSliderRow(props: {
     width: THUMB_SIZE / 2 + progress.value * Math.max(0, trackWidth.value - THUMB_SIZE),
   }));
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: progress.value * Math.max(0, trackWidth.value - THUMB_SIZE) }],
+    transform: [
+      {
+        translateX: progress.value * Math.max(0, trackWidth.value - THUMB_SIZE),
+      },
+    ],
   }));
 
   const handleAccessibilityAction = (event: AccessibilityActionEvent) => {
@@ -157,13 +163,28 @@ export function FontSizeSliderRow(props: {
           <View
             accessible
             accessibilityActions={[
-              { name: "increment", label: `Increase ${props.label}` },
-              { name: "decrement", label: `Decrease ${props.label}` },
+              {
+                name: "increment",
+                label: t("settings.appearance.increaseAria", {
+                  label: props.label,
+                }),
+              },
+              {
+                name: "decrement",
+                label: t("settings.appearance.decreaseAria", {
+                  label: props.label,
+                }),
+              },
             ]}
             accessibilityLabel={props.label}
             accessibilityRole="adjustable"
             accessibilityState={{ disabled: Boolean(disabled) }}
-            accessibilityValue={{ min, max, now: value, text: props.valueLabel }}
+            accessibilityValue={{
+              min,
+              max,
+              now: value,
+              text: props.valueLabel,
+            }}
             className="h-11 flex-1 justify-center"
             onAccessibilityAction={handleAccessibilityAction}
             onLayout={(event) => {

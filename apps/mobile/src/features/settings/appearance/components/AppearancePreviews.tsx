@@ -1,4 +1,5 @@
 import { Platform, ScrollView, type StyleProp, type TextStyle, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { AppText as Text } from "../../../../components/AppText";
 import {
@@ -21,6 +22,7 @@ export function AppearancePreviewSeparator() {
 
 /** Live sample of body text rendered at the chosen base font size. */
 export function TextAppearancePreview(props: { readonly fontSize: number }) {
+  const { t } = useTranslation();
   const sizes = resolveMarkdownFontSizes(props.fontSize);
 
   return (
@@ -29,13 +31,13 @@ export function TextAppearancePreview(props: { readonly fontSize: number }) {
         className="text-foreground"
         style={{ fontSize: sizes.m, lineHeight: sizes.bodyLineHeight }}
       >
-        The quick brown fox jumps over the lazy dog.
+        {t("settings.appearance.textPreviewSample")}
       </Text>
       <Text
         className="text-foreground-muted"
         style={{ fontSize: sizes.s, lineHeight: Math.round(sizes.s * 1.4) }}
       >
-        Messages, labels, and headings scale with this size.
+        {t("settings.appearance.textPreviewHint")}
       </Text>
     </View>
   );
@@ -121,7 +123,9 @@ const CODE_PREVIEW_LINES: ReadonlyArray<CodePreviewLine> = [
     tokens: [
       { text: "  " },
       { text: "return", keyword: true },
-      { text: " `${user.name} <${user.email}>` // demonstrates how long lines behave" },
+      {
+        text: " `${user.name} <${user.email}>` // demonstrates how long lines behave",
+      },
     ],
   },
   { id: "close", tokens: [{ text: "}" }] },
