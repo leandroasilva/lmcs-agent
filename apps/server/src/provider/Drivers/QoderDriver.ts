@@ -1,4 +1,8 @@
-import { ProviderDriverKind, QoderSettings, TextGenerationError } from "@lmcstools/core";
+import {
+  ProviderDriverKind,
+  QoderSettings,
+  TextGenerationError,
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
@@ -56,7 +60,14 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
   },
   configSchema: QoderSettings,
   defaultConfig: (): QoderSettings => decodeQoderSettings({}),
-  create: ({ instanceId, displayName, accentColor, environment, enabled, config }) =>
+  create: ({
+    instanceId,
+    displayName,
+    accentColor,
+    environment,
+    enabled,
+    config,
+  }) =>
     Effect.gen(function* () {
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
       const fileSystem = yield* FileSystem.FileSystem;
@@ -84,14 +95,19 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
             packageName: null,
           }),
         ).pipe(
-          Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+          Effect.provideService(
+            ChildProcessSpawner.ChildProcessSpawner,
+            spawner,
+          ),
           Effect.provideService(FileSystem.FileSystem, fileSystem),
           Effect.provideService(Path.Path, path),
         ),
       );
       const adapter = yield* makeQoderAdapter(effectiveConfig, {
         environment: processEnv,
-        ...(eventLoggers.native ? { nativeEventLogger: eventLoggers.native } : {}),
+        ...(eventLoggers.native
+          ? { nativeEventLogger: eventLoggers.native }
+          : {}),
         instanceId,
       });
 
@@ -127,14 +143,24 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
           ),
       };
 
-      const checkProvider = checkQoderProviderStatus(effectiveConfig, processEnv, cwd).pipe(
+      const checkProvider = checkQoderProviderStatus(
+        effectiveConfig,
+        processEnv,
+        cwd,
+      ).pipe(
         Effect.map(stampIdentity),
         Effect.provideService(FileSystem.FileSystem, fileSystem),
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+        Effect.provideService(Path.Path, path),
       );
 
-      const snapshotSettings = makeProviderSnapshotSettingsSource(effectiveConfig, serverSettings);
-      const snapshot = yield* makeManagedServerProvider<ProviderSnapshotSettings<QoderSettings>>({
+      const snapshotSettings = makeProviderSnapshotSettingsSource(
+        effectiveConfig,
+        serverSettings,
+      );
+      const snapshot = yield* makeManagedServerProvider<
+        ProviderSnapshotSettings<QoderSettings>
+      >({
         resolveMaintenance,
         getSettings: snapshotSettings.getSettings,
         streamSettings: snapshotSettings.streamSettings,
@@ -143,9 +169,14 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
           buildInitialQoderProviderSnapshot(settings.provider, processEnv).pipe(
             Effect.map(stampIdentity),
             Effect.provideService(FileSystem.FileSystem, fileSystem),
+            Effect.provideService(Path.Path, path),
           ),
         checkProvider,
-        enrichSnapshot: ({ settings, snapshot: currentSnapshot, publishSnapshot }) =>
+        enrichSnapshot: ({
+          settings,
+          snapshot: currentSnapshot,
+          publishSnapshot,
+        }) =>
           resolveMaintenance().pipe(
             Effect.flatMap((maintenanceCapabilities) =>
               enrichQoderSnapshot({

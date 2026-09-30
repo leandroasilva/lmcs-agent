@@ -21,7 +21,10 @@ import * as Ref from "effect/Ref";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 
-import { ProviderAdapterRequestError, ProviderAdapterSessionNotFoundError } from "../Errors.ts";
+import {
+  ProviderAdapterRequestError,
+  ProviderAdapterSessionNotFoundError,
+} from "../Errors.ts";
 import type { QoderAdapterShape } from "../Services/QoderAdapter.ts";
 
 const PROVIDER = ProviderDriverKind.make("qoder");
@@ -59,16 +62,24 @@ const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
  * PAT auth via QODER_PERSONAL_ACCESS_TOKEN).
  */
 export function makeQoderAdapter(
-  _config: QoderSettings,
+  config: QoderSettings,
   options: QoderAdapterLiveOptions = {},
 ): Effect.Effect<QoderAdapterShape, never> {
   return Effect.gen(function* () {
     const sessions = yield* Ref.make(new Map<ThreadId, QoderSessionContext>());
     const eventPubSub = yield* PubSub.unbounded<ProviderRuntimeEvent>();
-    const pendingApprovals = yield* Ref.make(new Map<ApprovalRequestId, PendingApproval>());
-    const pendingUserInputs = yield* Ref.make(new Map<ApprovalRequestId, PendingUserInput>());
+    const pendingApprovals = yield* Ref.make(
+      new Map<ApprovalRequestId, PendingApproval>(),
+    );
+    const pendingUserInputs = yield* Ref.make(
+      new Map<ApprovalRequestId, PendingUserInput>(),
+    );
 
-    const emit = (event: ProviderRuntimeEvent) => PubSub.publish(eventPubSub, event);
+    // Store the favorite model from settings for use in sendTurn
+    const favoriteModel = config.favoriteModel?.trim() || undefined;
+
+    const emit = (event: ProviderRuntimeEvent) =>
+      PubSub.publish(eventPubSub, event);
 
     const asEventId = (suffix: string) =>
       EventId.make(`qoder:${options.instanceId ?? "default"}:${suffix}`);
@@ -142,16 +153,20 @@ export function makeQoderAdapter(
           `qoder-turn-${String(input.threadId)}-${context.turns.length + 1}`,
         );
 
+        // Use the model from input, or fall back to favorite model from settings
+        const selectedModel = input.model || favoriteModel;
+
         context.turns.push({ id: turnId, items: [] });
 
         // TODO: Integrate with Qoder SDK query() here
+        // When SDK is integrated, pass selectedModel to query() options
         yield* emit({
           type: "turn.started",
           eventId: asEventId(`turn-started-${String(turnId)}`),
           provider: PROVIDER,
           createdAt: context.session.updatedAt,
           threadId: input.threadId,
-          payload: {},
+          payload: { model: selectedModel },
         });
 
         return {
