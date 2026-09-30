@@ -834,3 +834,11 @@ export const ComputerUseAppIcon: Icon = (props) => {
     </svg>
   );
 };
+
+export const JujutsuIcon: Icon = (props) => (
+  <svg {...props} viewBox="0 0 24 24" fill="none">
+    <rect width="24" height="24" rx="5" fill="#FF6B35" />
+    <path d="M7 8.5h10M7 12h10M7 15.5h6" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="17.5" cy="15.5" r="2" fill="white" />
+  </svg>
+);

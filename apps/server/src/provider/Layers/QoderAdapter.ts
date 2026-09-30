@@ -11,6 +11,8 @@ import {
   type ThreadId,
   TurnId,
   DEFAULT_RUNTIME_MODE,
+  type ThreadTokenUsageSnapshot,
+  type TurnTokenUsage,
 } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
@@ -20,12 +22,18 @@ import * as PubSub from "effect/PubSub";
 import * as Ref from "effect/Ref";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
+import type {
+  SDKMessage,
+  SDKResultMessage,
+  SDKAssistantMessage,
+  Query,
+  Options as QueryOptions,
+  PermissionResult,
+} from "@qoder-ai/qoder-agent-sdk";
 
-import {
-  ProviderAdapterRequestError,
-  ProviderAdapterSessionNotFoundError,
-} from "../Errors.ts";
+import { ProviderAdapterRequestError, ProviderAdapterSessionNotFoundError } from "../Errors.ts";
 import type { QoderAdapterShape } from "../Services/QoderAdapter.ts";
+import { BUNDLED_QODER_MODEL_CATALOG, calculateQoderCost } from "../QoderModelCatalog.ts";
 
 const PROVIDER = ProviderDriverKind.make("qoder");
 
@@ -40,6 +48,10 @@ interface QoderSessionContext {
   session: ProviderSession;
   readonly scope: Scope.Closeable;
   turns: Array<{ id: TurnId; items: Array<unknown> }>;
+  query: Query | null;
+  abortController: AbortController | null;
+  currentModel: string | undefined;
+  tokenUsage: ThreadTokenUsageSnapshot | null;
 }
 
 interface PendingApproval {
@@ -56,10 +68,10 @@ interface PendingUserInput {
 const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
 
 /**
- * Qoder adapter — stub implementation.
+ * Qoder adapter — Real SDK integration.
  *
- * TODO: Integrate with the Qoder Agent SDK (query() with async iterators,
- * PAT auth via QODER_PERSONAL_ACCESS_TOKEN).
+ * Uses @qoder-ai/qoder-agent-sdk query() with async iterators.
+ * Supports PAT auth via QODER_PERSONAL_ACCESS_TOKEN or qodercliAuth().
  */
 export function makeQoderAdapter(
   config: QoderSettings,
@@ -68,21 +80,122 @@ export function makeQoderAdapter(
   return Effect.gen(function* () {
     const sessions = yield* Ref.make(new Map<ThreadId, QoderSessionContext>());
     const eventPubSub = yield* PubSub.unbounded<ProviderRuntimeEvent>();
-    const pendingApprovals = yield* Ref.make(
-      new Map<ApprovalRequestId, PendingApproval>(),
-    );
-    const pendingUserInputs = yield* Ref.make(
-      new Map<ApprovalRequestId, PendingUserInput>(),
-    );
+    const pendingApprovals = yield* Ref.make(new Map<ApprovalRequestId, PendingApproval>());
+    const pendingUserInputs = yield* Ref.make(new Map<ApprovalRequestId, PendingUserInput>());
 
     // Store the favorite model from settings for use in sendTurn
     const favoriteModel = config.favoriteModel?.trim() || undefined;
 
-    const emit = (event: ProviderRuntimeEvent) =>
-      PubSub.publish(eventPubSub, event);
+    const emit = (event: ProviderRuntimeEvent) => PubSub.publish(eventPubSub, event);
 
     const asEventId = (suffix: string) =>
       EventId.make(`qoder:${options.instanceId ?? "default"}:${suffix}`);
+
+    /**
+     * Build auth options for the SDK query.
+     */
+    const buildAuthOptions = () => {
+      const pat =
+        config.personalAccessToken?.trim() ||
+        options.environment?.QODER_PERSONAL_ACCESS_TOKEN?.trim();
+      if (pat) {
+        return { type: "accessToken" as const, accessToken: pat };
+      }
+      // Fall back to qodercli auth (reads ~/.qoder/.auth/user)
+      return { type: "qodercli" as const };
+    };
+
+    /**
+     * Map SDK messages to ProviderRuntimeEvents.
+     */
+    const processSdkMessage = (
+      message: SDKMessage,
+      context: QoderSessionContext,
+      turnId: TurnId,
+    ): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const now = yield* nowIso();
+
+        if (message.type === "assistant") {
+          const assistantMsg = message as SDKAssistantMessage;
+          const content = assistantMsg.message?.content;
+          if (Array.isArray(content)) {
+            for (const block of content) {
+              if (block.type === "text") {
+                // Use content.delta for text streaming
+                yield* emit({
+                  type: "content.delta",
+                  eventId: asEventId(`content-${String(turnId)}`),
+                  provider: PROVIDER,
+                  createdAt: now,
+                  threadId: context.threadId,
+                  payload: {
+                    streamKind: "assistant_text",
+                    delta: block.text ?? "",
+                  },
+                });
+              } else if (block.type === "tool_use") {
+                // Use item.started for tool invocations
+                yield* emit({
+                  type: "item.started",
+                  eventId: asEventId(`item-started-${block.id}`),
+                  provider: PROVIDER,
+                  createdAt: now,
+                  threadId: context.threadId,
+                  payload: {
+                    itemType: "dynamic_tool_call",
+                    title: block.name ?? "unknown",
+                    data: {
+                      toolName: block.name ?? "unknown",
+                      toolUseId: block.id ?? "",
+                      input: block.input,
+                    },
+                  },
+                });
+              }
+            }
+          }
+        } else if (message.type === "result") {
+          const resultMsg = message as SDKResultMessage;
+          const usage = normalizeQoderTurnTokenUsage(resultMsg, context.currentModel);
+
+          if (usage && usage.usageStatus === "complete") {
+            const totalTokens = usage.inputTokens + usage.outputTokens;
+            context.tokenUsage = {
+              usedTokens: totalTokens,
+              lastUsedTokens: totalTokens,
+              inputTokens: usage.inputTokens,
+              outputTokens: usage.outputTokens,
+            };
+          }
+
+          yield* emit({
+            type: "turn.completed",
+            eventId: asEventId(`turn-completed-${String(turnId)}`),
+            provider: PROVIDER,
+            createdAt: now,
+            threadId: context.threadId,
+            payload: {
+              state: resultMsg.subtype === "success" ? "completed" : "failed",
+              ...(usage ? { tokenUsage: usage } : {}),
+            },
+          });
+        } else if (message.type === "system") {
+          // Handle system messages like init, status changes, etc.
+          if (message.subtype === "init") {
+            yield* emit({
+              type: "session.configured",
+              eventId: asEventId(`session-configured-${String(context.threadId)}`),
+              provider: PROVIDER,
+              createdAt: now,
+              threadId: context.threadId,
+              payload: {
+                config: {},
+              },
+            });
+          }
+        }
+      });
 
     const startSession = (input: {
       threadId: ThreadId;
@@ -116,6 +229,10 @@ export function makeQoderAdapter(
           session,
           scope,
           turns: [],
+          query: null,
+          abortController: null,
+          currentModel: favoriteModel,
+          tokenUsage: null,
         };
 
         yield* Ref.update(sessions, (map) => map.set(input.threadId, context));
@@ -134,9 +251,15 @@ export function makeQoderAdapter(
 
     const sendTurn = (input: {
       threadId: ThreadId;
-      prompt: string;
-      model?: string;
+      continuation?: boolean;
+      input?: string;
       attachments?: ReadonlyArray<unknown>;
+      modelSelection?: {
+        provider: string;
+        model: string;
+        options?: ReadonlyArray<{ id: string; value: unknown }>;
+      };
+      interactionMode?: string;
     }) =>
       Effect.gen(function* () {
         const sessionMap = yield* Ref.get(sessions);
@@ -153,13 +276,12 @@ export function makeQoderAdapter(
           `qoder-turn-${String(input.threadId)}-${context.turns.length + 1}`,
         );
 
-        // Use the model from input, or fall back to favorite model from settings
-        const selectedModel = input.model || favoriteModel;
+        // Use the model from modelSelection, or fall back to favorite model from settings
+        const selectedModel = input.modelSelection?.model || favoriteModel;
+        context.currentModel = selectedModel;
 
         context.turns.push({ id: turnId, items: [] });
 
-        // TODO: Integrate with Qoder SDK query() here
-        // When SDK is integrated, pass selectedModel to query() options
         yield* emit({
           type: "turn.started",
           eventId: asEventId(`turn-started-${String(turnId)}`),
@@ -168,6 +290,117 @@ export function makeQoderAdapter(
           threadId: input.threadId,
           payload: { model: selectedModel },
         });
+
+        // Build SDK query options
+        const abortController = new AbortController();
+        context.abortController = abortController;
+
+        const queryOptions: QueryOptions = {
+          auth: buildAuthOptions(),
+          cwd: context.session.cwd ?? process.cwd(),
+          ...(selectedModel ? { model: selectedModel } : {}),
+          abortController,
+          canUseTool: (toolName, toolInput, _canUseToolOptions): Promise<PermissionResult> =>
+            new Promise((resolve) => {
+              const requestId = ApprovalRequestId.make(
+                `qoder-approval-${String(turnId)}-${toolName}`,
+              );
+
+              // Create deferred synchronously using Effect.runSync
+              const decisionDeferred = Effect.runSync(Deferred.make<ProviderApprovalDecision>());
+              const pending: PendingApproval = { decision: decisionDeferred };
+
+              void Ref.update(pendingApprovals, (map) => {
+                const next = new Map(map);
+                next.set(requestId, pending);
+                return next;
+              });
+
+              void emit({
+                type: "request.opened",
+                eventId: asEventId(`request-${requestId}`),
+                provider: PROVIDER,
+                createdAt: new Date().toISOString(),
+                threadId: input.threadId,
+                payload: {
+                  requestType: "permission_approval",
+                  detail: `Tool approval requested: ${toolName}`,
+                  args: { toolName, toolInput },
+                },
+              });
+
+              void Effect.runPromise(Deferred.await(decisionDeferred)).then(
+                (dec: ProviderApprovalDecision) => {
+                  if (dec === "accept" || dec === "acceptForSession" || dec === "acceptAlways") {
+                    resolve({ behavior: "allow" });
+                  } else {
+                    resolve({
+                      behavior: "deny",
+                      message: "User denied tool execution",
+                    });
+                  }
+                },
+              );
+            }),
+        };
+
+        // Import query dynamically to avoid issues if SDK is not available
+        const { query } = yield* Effect.promise(() => import("@qoder-ai/qoder-agent-sdk"));
+
+        const prompt = input.input ?? "";
+        if (!prompt && !input.continuation) {
+          const now = yield* DateTime.now;
+          yield* emit({
+            type: "turn.aborted",
+            eventId: asEventId(`turn-error-${String(turnId)}`),
+            provider: PROVIDER,
+            createdAt: DateTime.formatIso(now),
+            threadId: input.threadId,
+            payload: { reason: "empty_input" },
+          });
+          return { threadId: input.threadId, turnId };
+        }
+
+        try {
+          const q = query({
+            prompt,
+            options: queryOptions,
+          });
+
+          context.query = q;
+
+          // Process messages in background using async iteration
+          const processMessages = async () => {
+            try {
+              for await (const message of q) {
+                await Effect.runPromise(processSdkMessage(message, context, turnId));
+              }
+            } catch (error) {
+              await Effect.runPromise(Effect.logError("Qoder SDK query error", { error }));
+              await Effect.runPromise(
+                emit({
+                  type: "turn.aborted",
+                  eventId: asEventId(`turn-error-${String(turnId)}`),
+                  provider: PROVIDER,
+                  createdAt: new Date().toISOString(),
+                  threadId: input.threadId,
+                  payload: { reason: "error" },
+                }),
+              );
+            }
+          };
+          void processMessages();
+        } catch (error) {
+          yield* Effect.logError("Failed to start Qoder query", { error });
+          yield* emit({
+            type: "turn.aborted",
+            eventId: asEventId(`turn-error-${String(turnId)}`),
+            provider: PROVIDER,
+            createdAt: new Date().toISOString(),
+            threadId: input.threadId,
+            payload: { reason: "error" },
+          });
+        }
 
         return {
           threadId: input.threadId,
@@ -187,7 +420,11 @@ export function makeQoderAdapter(
           });
         }
 
-        // TODO: Call q.interrupt() from Qoder SDK
+        // Abort the query
+        if (context.abortController) {
+          context.abortController.abort();
+        }
+
         yield* emit({
           type: "turn.aborted",
           eventId: asEventId(`turn-aborted-${String(threadId)}`),
@@ -220,6 +457,18 @@ export function makeQoderAdapter(
           const next = new Map(map);
           next.delete(requestId);
           return next;
+        });
+
+        yield* emit({
+          type: "request.resolved",
+          eventId: asEventId(`request-resolved-${requestId}`),
+          provider: PROVIDER,
+          createdAt: yield* nowIso(),
+          threadId,
+          payload: {
+            requestType: "permission_approval",
+            decision: decision,
+          },
         });
       });
 
@@ -258,6 +507,11 @@ export function makeQoderAdapter(
 
         if (!context) {
           return;
+        }
+
+        // Abort any running query
+        if (context.abortController) {
+          context.abortController.abort();
         }
 
         yield* Scope.close(context.scope, Exit.void);
@@ -319,7 +573,7 @@ export function makeQoderAdapter(
           });
         }
 
-        // TODO: Implement rollback via Qoder SDK
+        // TODO: Implement rollback via Qoder SDK session management
         const context = sessionMap.get(threadId)!;
         return {
           threadId,
@@ -362,4 +616,51 @@ export function makeQoderAdapter(
       streamEvents,
     } satisfies QoderAdapterShape;
   });
+}
+
+/**
+ * Normalize Qoder SDK result message to TurnTokenUsage.
+ */
+function normalizeQoderTurnTokenUsage(
+  result: SDKResultMessage | undefined,
+  model: string | undefined,
+): TurnTokenUsage | undefined {
+  if (!result || result.subtype !== "success") {
+    return undefined;
+  }
+
+  const usage = result.usage as Record<string, unknown> | undefined;
+  if (!usage) {
+    return undefined;
+  }
+
+  const inputTokens = typeof usage.input_tokens === "number" ? usage.input_tokens : 0;
+  const outputTokens = typeof usage.output_tokens === "number" ? usage.output_tokens : 0;
+
+  if (inputTokens === 0 && outputTokens === 0) {
+    return undefined;
+  }
+
+  // Calculate cost if we have model pricing
+  let cost: number | undefined;
+  if (model) {
+    const pricing = calculateQoderCost(
+      BUNDLED_QODER_MODEL_CATALOG,
+      model,
+      inputTokens,
+      outputTokens,
+    );
+    if (pricing !== null) {
+      cost = pricing;
+    }
+  }
+
+  return {
+    usageStatus: "complete",
+    usageScope: "main_agent",
+    hasSubagents: false,
+    inputTokens,
+    outputTokens,
+    ...(cost !== undefined ? { totalCostUsd: cost } : {}),
+  };
 }
