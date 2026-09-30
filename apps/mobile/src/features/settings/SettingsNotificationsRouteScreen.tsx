@@ -170,8 +170,10 @@ function ConfiguredSettingsNotificationsRouteScreen() {
       if (!isAtomCommandInterrupted(result)) {
         const error = squashAtomCommandFailure(result);
         Alert.alert(
-          "Notifications unavailable",
-          error instanceof Error ? error.message : "Could not request notification permission.",
+          t("settings.notifications.alertUnavailableTitle"),
+          error instanceof Error
+            ? error.message
+            : t("settings.notifications.alertRequestPermissionFailed"),
         );
       }
       return;
@@ -181,11 +183,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
       // Permission alone is not enough: the switch stays off until the relay
       // registration succeeds, so tell the user the truth about which happened.
       if (getAgentAwarenessRegistrationStatus() === "registered") {
-        Alert.alert("Notifications enabled", "Agent notifications are enabled for this device.");
+        Alert.alert(
+          t("settings.notifications.alertEnabledTitle"),
+          t("settings.notifications.alertEnabledBody"),
+        );
       } else {
         Alert.alert(
-          "Couldn't finish enabling notifications",
-          "Notification access was granted, but this device could not be registered with LMCS Connect. Notifications will start once registration succeeds.",
+          t("settings.notifications.alertFinishEnableTitle"),
+          t("settings.notifications.alertFinishEnableBody"),
         );
       }
       return;
@@ -193,39 +198,45 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     if (result.value.type === "unsupported") {
       setNotificationStatus("unsupported");
       Alert.alert(
-        "Notifications unavailable",
-        "Agent notifications are unavailable on this platform.",
+        t("settings.notifications.alertUnavailableTitle"),
+        t("settings.notifications.alertUnavailablePlatformBody"),
       );
       return;
     }
     setNotificationStatus("disabled");
     if (result.value.canAskAgain) {
-      Alert.alert("Notifications disabled", "Notifications were not enabled.");
+      Alert.alert(
+        t("settings.notifications.alertDisabledTitle"),
+        t("settings.notifications.alertNotEnabledBody"),
+      );
       return;
     }
     Alert.alert(
-      "Notifications disabled",
-      "Notifications were denied for this app. Open Settings to enable them.",
+      t("settings.notifications.alertDisabledTitle"),
+      t("settings.notifications.alertDeniedBody"),
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Open Settings", onPress: () => void Linking.openSettings() },
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("settings.notifications.alertOpenSettings"),
+          onPress: () => void Linking.openSettings(),
+        },
       ],
     );
-  }, []);
+  }, [t]);
 
   const promptSignIn = useCallback(() => {
     Alert.alert(
-      "Sign in to LMCS Connect",
-      "Live Activity updates require LMCS Connect so relay can deliver updates to this device.",
+      t("settings.notifications.alertSignInTitle"),
+      t("settings.notifications.alertSignInBody"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Continue",
+          text: t("common.continue"),
           onPress: () => navigation.navigate("SettingsSheet", { screen: "SettingsAuth" }),
         },
       ],
     );
-  }, [navigation]);
+  }, [navigation, t]);
 
   const linkEnvironments = useCallback(async () => {
     if (!isSignedIn) {
@@ -242,20 +253,22 @@ function ConfiguredSettingsNotificationsRouteScreen() {
         setLiveActivityStatus("disabled");
         const error = squashAtomCommandFailure(permission);
         Alert.alert(
-          "Ongoing activity unavailable",
-          error instanceof Error ? error.message : "Could not enable agent notifications.",
+          t("settings.notifications.alertOngoingUnavailable"),
+          error instanceof Error
+            ? error.message
+            : t("settings.notifications.alertEnableAgentFailed"),
         );
         return;
       }
       if (permission.value.type !== "granted") {
         setLiveActivityStatus("disabled");
         Alert.alert(
-          "Notification permission needed",
-          "Enable notifications in system Settings to show ongoing agent activity.",
+          t("settings.notifications.alertPermissionNeededTitle"),
+          t("settings.notifications.alertPermissionNeededBody"),
           [
-            { text: "Cancel", style: "cancel" },
+            { text: t("common.cancel"), style: "cancel" },
             {
-              text: "Open Settings",
+              text: t("settings.notifications.alertOpenSettings"),
               onPress: () => void Linking.openSettings(),
             },
           ],
@@ -269,8 +282,12 @@ function ConfiguredSettingsNotificationsRouteScreen() {
       setLiveActivityStatus("disabled");
       const error = squashAtomCommandFailure(tokenResult);
       Alert.alert(
-        Platform.OS === "android" ? "Ongoing activity unavailable" : "Live Activities unavailable",
-        error instanceof Error ? error.message : "Could not enable agent activity updates.",
+        Platform.OS === "android"
+          ? t("settings.notifications.alertOngoingUnavailable")
+          : t("settings.notifications.alertLiveActivitiesUnavailable"),
+        error instanceof Error
+          ? error.message
+          : t("settings.notifications.alertEnableActivityFailed"),
       );
       return;
     }
@@ -296,9 +313,11 @@ function ConfiguredSettingsNotificationsRouteScreen() {
         const error = squashAtomCommandFailure(updateResult);
         Alert.alert(
           Platform.OS === "android"
-            ? "Ongoing activity unavailable"
-            : "Live Activities unavailable",
-          error instanceof Error ? error.message : "Could not enable agent activity updates.",
+            ? t("settings.notifications.alertOngoingUnavailable")
+            : t("settings.notifications.alertLiveActivitiesUnavailable"),
+          error instanceof Error
+            ? error.message
+            : t("settings.notifications.alertEnableActivityFailed"),
         );
       }
       return;
@@ -312,15 +331,19 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     // Activities are live until the device is actually registered.
     if (getAgentAwarenessRegistrationStatus() === "registered") {
       Alert.alert(
-        Platform.OS === "android" ? "Ongoing activity enabled" : "Live Activities enabled",
+        Platform.OS === "android"
+          ? t("settings.notifications.alertOngoingEnabled")
+          : t("settings.notifications.alertLiveActivitiesEnabled"),
         environmentCount > 0
-          ? `${environmentCount} environment${environmentCount === 1 ? "" : "s"} linked for agent activity updates.`
-          : "Agent activity updates are enabled. Add an environment to start receiving updates.",
+          ? environmentCount === 1
+            ? t("settings.notifications.alertLinkedOne", { total: environmentCount })
+            : t("settings.notifications.alertLinkedMany", { total: environmentCount })
+          : t("settings.notifications.alertActivityEnabledAddEnvironment"),
       );
     } else {
       Alert.alert(
-        "Couldn't finish enabling activity updates",
-        "This device could not be registered with LMCS Connect, so activity updates won't appear yet. They'll start once registration succeeds.",
+        t("settings.notifications.alertFinishEnableUpdatesTitle"),
+        t("settings.notifications.alertFinishEnableUpdatesBody"),
       );
     }
   }, [
@@ -331,6 +354,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     liveActivitiesPreferenceEnabled,
     promptSignIn,
     savePreferences,
+    t,
   ]);
 
   const handleDeviceNotificationsChange = useCallback(
@@ -345,15 +369,18 @@ function ConfiguredSettingsNotificationsRouteScreen() {
       }
 
       Alert.alert(
-        "Disable notifications",
-        "Open system Settings to disable notifications for LMCS Code.",
+        t("settings.notifications.alertDisableNotificationsTitle"),
+        t("settings.notifications.alertDisableNotificationsBody"),
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => void Linking.openSettings() },
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("settings.notifications.alertOpenSettings"),
+            onPress: () => void Linking.openSettings(),
+          },
         ],
       );
     },
-    [isSignedIn, promptSignIn, requestNotifications],
+    [isSignedIn, promptSignIn, requestNotifications, t],
   );
 
   const handleLiveActivitiesChange = useCallback(
@@ -497,8 +524,8 @@ function ConfiguredSettingsNotificationsRouteScreen() {
               onPress={() => {
                 void openAndroidLiveUpdateSettings().catch(() => {
                   Alert.alert(
-                    "Couldn't open Settings",
-                    "Open Android Settings, select LMCS Code, then enable Live Updates in Notifications.",
+                    t("settings.notifications.alertCouldNotOpenSettingsTitle"),
+                    t("settings.notifications.alertCouldNotOpenSettingsBody"),
                   );
                 });
               }}

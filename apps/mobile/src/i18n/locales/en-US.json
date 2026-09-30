@@ -6,7 +6,8 @@
     "moreActions": "More actions",
     "project": "Project",
     "environment": "Environment",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "continue": "Continue"
   },
   "nav": {
     "settings": "Settings",
@@ -180,7 +181,37 @@
       "turnOffPreference": "Turn off Live Activity preference",
       "liveUpdateSettings": "Live Update Settings",
       "unavailableOnPlatform": "Unavailable on this platform",
-      "installNewerBuild": "Install a newer app build to enable notifications"
+      "installNewerBuild": "Install a newer app build to enable notifications",
+      "alertOpenSettings": "Open Settings",
+      "alertUnavailableTitle": "Notifications unavailable",
+      "alertRequestPermissionFailed": "Could not request notification permission.",
+      "alertEnabledTitle": "Notifications enabled",
+      "alertEnabledBody": "Agent notifications are enabled for this device.",
+      "alertFinishEnableTitle": "Couldn't finish enabling notifications",
+      "alertFinishEnableBody": "Notification access was granted, but this device could not be registered with LMCS Connect. Notifications will start once registration succeeds.",
+      "alertUnavailablePlatformBody": "Agent notifications are unavailable on this platform.",
+      "alertDisabledTitle": "Notifications disabled",
+      "alertNotEnabledBody": "Notifications were not enabled.",
+      "alertDeniedBody": "Notifications were denied for this app. Open Settings to enable them.",
+      "alertSignInTitle": "Sign in to LMCS Connect",
+      "alertSignInBody": "Live Activity updates require LMCS Connect so relay can deliver updates to this device.",
+      "alertOngoingUnavailable": "Ongoing activity unavailable",
+      "alertLiveActivitiesUnavailable": "Live Activities unavailable",
+      "alertEnableAgentFailed": "Could not enable agent notifications.",
+      "alertPermissionNeededTitle": "Notification permission needed",
+      "alertPermissionNeededBody": "Enable notifications in system Settings to show ongoing agent activity.",
+      "alertEnableActivityFailed": "Could not enable agent activity updates.",
+      "alertOngoingEnabled": "Ongoing activity enabled",
+      "alertLiveActivitiesEnabled": "Live Activities enabled",
+      "alertLinkedOne": "{{total}} environment linked for agent activity updates.",
+      "alertLinkedMany": "{{total}} environments linked for agent activity updates.",
+      "alertActivityEnabledAddEnvironment": "Agent activity updates are enabled. Add an environment to start receiving updates.",
+      "alertFinishEnableUpdatesTitle": "Couldn't finish enabling activity updates",
+      "alertFinishEnableUpdatesBody": "This device could not be registered with LMCS Connect, so activity updates won't appear yet. They'll start once registration succeeds.",
+      "alertDisableNotificationsTitle": "Disable notifications",
+      "alertDisableNotificationsBody": "Open system Settings to disable notifications for LMCS Code.",
+      "alertCouldNotOpenSettingsTitle": "Couldn't open Settings",
+      "alertCouldNotOpenSettingsBody": "Open Android Settings, select LMCS Code, then enable Live Updates in Notifications."
     },
     "projectOverview": {
       "noCheckouts": "This project has no checkout on the selected connected environments. Change the filter above.",
@@ -215,6 +246,7 @@
       "app": "App",
       "version": "Version",
       "versionAria": "Version {{version}}",
+      "updateFailed": "Update failed",
       "status": {
         "checking": "Checking…",
         "downloading": "Downloading…",
@@ -299,6 +331,27 @@
       "themeCardBothHint": "Sets both light and dark appearances",
       "themeCardAria": "{{label}} theme",
       "modeCardAria": "{{label}} appearance"
+    },
+    "environments": {
+      "optionsAria": "Environment options",
+      "refreshCloud": "Refresh cloud environments",
+      "addAria": "Add environment"
+    },
+    "autoSettle": {
+      "daysLabel": "Days before auto-settle",
+      "daysValueAria": "Days before auto-settle: {{value}}",
+      "dayUnit": "{{value}} day",
+      "daysUnit": "{{value}} days",
+      "increaseAria": "Increase days before auto-settle",
+      "decreaseAria": "Decrease days before auto-settle",
+      "valueOneAria": "{{value}} day before auto-settle",
+      "valueOtherAria": "{{value}} days before auto-settle",
+      "done": "Done"
+    },
+    "projectOverrides": {
+      "useDefaultsAria": "Use environment defaults",
+      "useDefaults": "Use defaults",
+      "updateEnvironmentsHint": "Update the selected environments to edit project overrides."
     }
   }
 }

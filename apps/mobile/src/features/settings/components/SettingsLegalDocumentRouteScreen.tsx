@@ -60,12 +60,10 @@ export function SettingsLegalDocumentExternalHeaderButton({
 }
 
 interface SettingsLegalDocumentRouteScreenProps {
-  readonly documentName: string;
   readonly documentUrl: string;
 }
 
 export function SettingsLegalDocumentRouteScreen({
-  documentName,
   documentUrl,
 }: SettingsLegalDocumentRouteScreenProps) {
   const { t } = useTranslation();

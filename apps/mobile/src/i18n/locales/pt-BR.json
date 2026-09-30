@@ -6,7 +6,8 @@
     "moreActions": "Mais ações",
     "project": "Projeto",
     "environment": "Ambiente",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "continue": "Continuar"
   },
   "nav": {
     "settings": "Configurações",
@@ -180,7 +181,37 @@
       "turnOffPreference": "Desativar preferência de Atividade ao Vivo",
       "liveUpdateSettings": "Configurações de Atualizações ao Vivo",
       "unavailableOnPlatform": "Indisponível nesta plataforma",
-      "installNewerBuild": "Instale uma versão mais nova do app para ativar notificações"
+      "installNewerBuild": "Instale uma versão mais nova do app para ativar notificações",
+      "alertOpenSettings": "Abrir Configurações",
+      "alertUnavailableTitle": "Notificações indisponíveis",
+      "alertRequestPermissionFailed": "Não foi possível solicitar permissão de notificação.",
+      "alertEnabledTitle": "Notificações ativadas",
+      "alertEnabledBody": "As notificações do agente estão ativadas para este dispositivo.",
+      "alertFinishEnableTitle": "Não foi possível concluir a ativação das notificações",
+      "alertFinishEnableBody": "O acesso a notificações foi concedido, mas este dispositivo não pôde ser registrado no LMCS Connect. As notificações começarão quando o registro for concluído.",
+      "alertUnavailablePlatformBody": "As notificações do agente estão indisponíveis nesta plataforma.",
+      "alertDisabledTitle": "Notificações desativadas",
+      "alertNotEnabledBody": "As notificações não foram ativadas.",
+      "alertDeniedBody": "As notificações foram negadas para este app. Abra as Configurações para ativá-las.",
+      "alertSignInTitle": "Entrar no LMCS Connect",
+      "alertSignInBody": "As atualizações de Atividade ao Vivo exigem o LMCS Connect para que o relay entregue atualizações a este dispositivo.",
+      "alertOngoingUnavailable": "Atividade contínua indisponível",
+      "alertLiveActivitiesUnavailable": "Atividades ao Vivo indisponíveis",
+      "alertEnableAgentFailed": "Não foi possível ativar as notificações do agente.",
+      "alertPermissionNeededTitle": "Permissão de notificação necessária",
+      "alertPermissionNeededBody": "Ative as notificações nas Configurações do sistema para mostrar a atividade contínua do agente.",
+      "alertEnableActivityFailed": "Não foi possível ativar as atualizações de atividade do agente.",
+      "alertOngoingEnabled": "Atividade contínua ativada",
+      "alertLiveActivitiesEnabled": "Atividades ao Vivo ativadas",
+      "alertLinkedOne": "{{total}} ambiente vinculado para atualizações de atividade do agente.",
+      "alertLinkedMany": "{{total}} ambientes vinculados para atualizações de atividade do agente.",
+      "alertActivityEnabledAddEnvironment": "As atualizações de atividade do agente estão ativadas. Adicione um ambiente para começar a receber atualizações.",
+      "alertFinishEnableUpdatesTitle": "Não foi possível concluir a ativação das atualizações de atividade",
+      "alertFinishEnableUpdatesBody": "Este dispositivo não pôde ser registrado no LMCS Connect, então as atualizações de atividade ainda não aparecerão. Começarão quando o registro for concluído.",
+      "alertDisableNotificationsTitle": "Desativar notificações",
+      "alertDisableNotificationsBody": "Abra as Configurações do sistema para desativar as notificações do LMCS Code.",
+      "alertCouldNotOpenSettingsTitle": "Não foi possível abrir as Configurações",
+      "alertCouldNotOpenSettingsBody": "Abra as Configurações do Android, selecione LMCS Code e ative Atualizações ao Vivo em Notificações."
     },
     "projectOverview": {
       "noCheckouts": "Este projeto não tem checkout nos ambientes conectados selecionados. Altere o filtro acima.",
@@ -215,6 +246,7 @@
       "app": "App",
       "version": "Versão",
       "versionAria": "Versão {{version}}",
+      "updateFailed": "Falha na atualização",
       "status": {
         "checking": "Verificando…",
         "downloading": "Baixando…",
@@ -299,6 +331,27 @@
       "themeCardBothHint": "Define as aparências clara e escura",
       "themeCardAria": "Tema {{label}}",
       "modeCardAria": "Aparência {{label}}"
+    },
+    "environments": {
+      "optionsAria": "Opções do ambiente",
+      "refreshCloud": "Atualizar ambientes da nuvem",
+      "addAria": "Adicionar ambiente"
+    },
+    "autoSettle": {
+      "daysLabel": "Dias antes de resolver automaticamente",
+      "daysValueAria": "Dias antes de resolver automaticamente: {{value}}",
+      "dayUnit": "{{value}} dia",
+      "daysUnit": "{{value}} dias",
+      "increaseAria": "Aumentar dias antes de resolver automaticamente",
+      "decreaseAria": "Diminuir dias antes de resolver automaticamente",
+      "valueOneAria": "{{value}} dia antes de resolver automaticamente",
+      "valueOtherAria": "{{value}} dias antes de resolver automaticamente",
+      "done": "Concluído"
+    },
+    "projectOverrides": {
+      "useDefaultsAria": "Usar padrões do ambiente",
+      "useDefaults": "Usar padrões",
+      "updateEnvironmentsHint": "Atualize os ambientes selecionados para editar as substituições do projeto."
     }
   }
 }

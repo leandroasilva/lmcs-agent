@@ -6,6 +6,7 @@ import type { EnvironmentId } from "@lmcstools/core";
 import { useCallback, useRef, useState } from "react";
 import { Platform, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { SettingsScreen } from "./components/SettingsScreen";
 import { AndroidAnchoredMenu } from "../../components/AndroidAnchoredMenu";
@@ -28,6 +29,7 @@ import {
 const SHOWCASE_ENABLED = process.env.EXPO_PUBLIC_SHOWCASE === "1";
 
 export function SettingsEnvironmentsRouteScreen() {
+  const { t } = useTranslation();
   const {
     connectedEnvironments,
     onReconnectEnvironment,
@@ -105,15 +107,15 @@ export function SettingsEnvironmentsRouteScreen() {
 
   return (
     <SettingsScreen
-      title="Environments"
+      title={t("nav.environments")}
       trailing={
         Platform.OS === "android" && relaySession ? (
           <AndroidAnchoredMenu
-            title="Environment options"
+            title={t("settings.environments.optionsAria")}
             actions={[
               {
                 id: "refresh",
-                title: "Refresh cloud environments",
+                title: t("settings.environments.refreshCloud"),
                 attributes: { disabled: isRefreshingCloud },
               },
             ]}
@@ -123,7 +125,7 @@ export function SettingsEnvironmentsRouteScreen() {
           >
             {(open) => (
               <AndroidHeaderIconButton
-                accessibilityLabel="Environment options"
+                accessibilityLabel={t("settings.environments.optionsAria")}
                 icon="ellipsis"
                 onPress={open}
               />
@@ -133,7 +135,7 @@ export function SettingsEnvironmentsRouteScreen() {
       }
       actions={[
         {
-          accessibilityLabel: "Add environment",
+          accessibilityLabel: t("settings.environments.addAria"),
           icon: "plus",
           tintColor: headerIconColor,
           onPress: () =>

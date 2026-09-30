@@ -1,4 +1,5 @@
 import { Pressable, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { AppText as Text } from "../../../components/AppText";
 import { SettingsSection } from "./SettingsSection";
@@ -10,8 +11,9 @@ export function SettingsProjectOverridesSection(props: {
   readonly pending: boolean;
   readonly onClear: () => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <SettingsSection title="Project">
+    <SettingsSection title={t("common.project")}>
       <View className="min-h-16 flex-row items-center gap-3 px-4 py-3">
         <Text className="min-w-0 flex-1 text-base text-foreground" numberOfLines={2}>
           {props.projectLabel}
@@ -19,17 +21,19 @@ export function SettingsProjectOverridesSection(props: {
         {!props.pending && props.supportsOverrides && props.hasOverrides ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Use environment defaults"
+            accessibilityLabel={t("settings.projectOverrides.useDefaultsAria")}
             onPress={props.onClear}
             className="px-2 py-2 active:opacity-70"
           >
-            <Text className="text-sm font-t3-medium text-primary-text">Use defaults</Text>
+            <Text className="text-sm font-t3-medium text-primary-text">
+              {t("settings.projectOverrides.useDefaults")}
+            </Text>
           </Pressable>
         ) : null}
       </View>
       {!props.supportsOverrides ? (
         <Text className="px-4 pb-3 text-sm text-foreground-muted">
-          Update the selected environments to edit project overrides.
+          {t("settings.projectOverrides.updateEnvironmentsHint")}
         </Text>
       ) : null}
     </SettingsSection>

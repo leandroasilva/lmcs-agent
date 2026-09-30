@@ -72,7 +72,7 @@ function AppSettingsSection() {
       // apply immediately instead of prompting.
       await runAppUpdateCheck({
         applyMode: "immediate",
-        onFailure: (message) => Alert.alert("Update failed", message),
+        onFailure: (message) => Alert.alert(t("settings.about.updateFailed"), message),
         onStateChange: setUpdateState,
       });
     } finally {
