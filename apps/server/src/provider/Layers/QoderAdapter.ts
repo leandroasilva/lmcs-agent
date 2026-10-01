@@ -65,6 +65,8 @@ interface QoderSessionContext {
   activeTurnId: TurnId | undefined;
   stopped: boolean;
   sessionConfigured: boolean;
+  /** Tracks the in-flight message processing promise so we can await it on interrupt/stop */
+  messageProcessingPromise: Promise<void> | null;
 }
 
 interface PendingApproval {
@@ -266,6 +268,7 @@ export function makeQoderAdapter(
           activeTurnId: undefined,
           stopped: false,
           sessionConfigured: false,
+          messageProcessingPromise: null,
         };
 
         yield* Ref.update(sessions, (map) => map.set(input.threadId, context));
@@ -443,22 +446,78 @@ export function makeQoderAdapter(
 
           context.query = q;
 
-          const processMessages = async () => {
+          // Track message processing so we can await it on interrupt/stop
+          const messageProcessingPromise = (async () => {
             try {
               let messageCount = 0;
+              let hasReceivedInit = false;
+
               for await (const message of q) {
+                // Check if we should stop processing (interrupt/stop requested)
+                if (context.stopped || abortController.signal.aborted) {
+                  await Effect.runPromise(
+                    Effect.logInfo("Qoder query processing stopped by user", {
+                      messageCount,
+                    }),
+                  );
+                  break;
+                }
+
                 messageCount++;
+
+                // Track if we received the init message for session.configured
+                if (
+                  message.type === "system" &&
+                  "subtype" in message &&
+                  message.subtype === "init"
+                ) {
+                  hasReceivedInit = true;
+                }
+
                 await Effect.runPromise(processSdkMessage(message, context, turnId));
               }
+
+              // If we never received init, emit session.configured anyway
+              // This ensures the UI doesn't hang waiting for session.configured
+              if (!hasReceivedInit && !context.sessionConfigured && messageCount > 0) {
+                context.sessionConfigured = true;
+                const now = new Date().toISOString();
+                await Effect.runPromise(
+                  emit({
+                    eventId: asEventId(`session-configured-fallback-${String(context.threadId)}`),
+                    provider: PROVIDER,
+                    threadId: context.threadId,
+                    createdAt: now,
+                    type: "session.configured",
+                    payload: { config: {} },
+                  }),
+                );
+              }
+
               await Effect.runPromise(Effect.logInfo("Qoder query completed", { messageCount }));
             } catch (error) {
-              await Effect.runPromise(
-                Effect.logError("Qoder SDK query iteration error", { error }),
-              );
+              if (!context.stopped && !abortController.signal.aborted) {
+                await Effect.runPromise(
+                  Effect.logError("Qoder SDK query iteration error", { error }),
+                );
+                // Emit turn.aborted on unexpected error
+                const now = new Date().toISOString();
+                await Effect.runPromise(
+                  emit({
+                    eventId: asEventId(`turn-error-${String(turnId)}`),
+                    provider: PROVIDER,
+                    threadId: input.threadId,
+                    turnId,
+                    createdAt: now,
+                    type: "turn.aborted",
+                    payload: { reason: "sdk_error" },
+                  }),
+                );
+              }
             }
-          };
+          })();
 
-          void processMessages();
+          context.messageProcessingPromise = messageProcessingPromise;
         } catch (error) {
           yield* Effect.logError("Failed to start Qoder query", { error });
           yield* emit({
@@ -490,8 +549,23 @@ export function makeQoderAdapter(
           });
         }
 
+        // Signal the message processing loop to stop
         if (context.abortController) {
           context.abortController.abort();
+        }
+
+        // Wait for the message processing to finish (with timeout)
+        if (context.messageProcessingPromise) {
+          yield* Effect.tryPromise({
+            try: () =>
+              Promise.race([
+                context.messageProcessingPromise,
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error("interrupt timeout")), 5000),
+                ),
+              ]),
+            catch: () => null, // Ignore timeout errors
+          });
         }
 
         yield* emit({
@@ -580,8 +654,23 @@ export function makeQoderAdapter(
 
         context.stopped = true;
 
+        // Signal the message processing loop to stop
         if (context.abortController) {
           context.abortController.abort();
+        }
+
+        // Wait for the message processing to finish (with timeout)
+        if (context.messageProcessingPromise) {
+          yield* Effect.tryPromise({
+            try: () =>
+              Promise.race([
+                context.messageProcessingPromise,
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error("stop timeout")), 5000),
+                ),
+              ]),
+            catch: () => null, // Ignore timeout errors
+          });
         }
 
         yield* Scope.close(context.scope, Exit.void);
