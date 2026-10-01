@@ -64,6 +64,7 @@ interface QoderSessionContext {
   tokenUsage: ThreadTokenUsageSnapshot | null;
   activeTurnId: TurnId | undefined;
   stopped: boolean;
+  sessionConfigured: boolean;
 }
 
 interface PendingApproval {
@@ -211,7 +212,9 @@ export function makeQoderAdapter(
           });
         } else if (message.type === "system") {
           const systemMsg = message as SDKSystemMessage;
-          if (systemMsg.subtype === "init") {
+          // Only emit session.configured once on the first init message
+          if (systemMsg.subtype === "init" && !context.sessionConfigured) {
+            context.sessionConfigured = true;
             yield* emit({
               eventId: asEventId(`session-configured-${String(context.threadId)}`),
               provider: PROVIDER,
@@ -262,6 +265,7 @@ export function makeQoderAdapter(
           tokenUsage: null,
           activeTurnId: undefined,
           stopped: false,
+          sessionConfigured: false,
         };
 
         yield* Ref.update(sessions, (map) => map.set(input.threadId, context));
