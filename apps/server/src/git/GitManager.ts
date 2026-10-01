@@ -2048,9 +2048,23 @@ export const make = Effect.gen(function* () {
       };
     }
 
-    const baseBranch = userBaseBranch
-      ? yield* Effect.succeed(userBaseBranch)
-      : yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext);
+    // Log the userBaseBranch value for debugging
+    yield* Effect.logInfo("runPrStep: userBaseBranch received", {
+      userBaseBranch,
+      hasValue: !!userBaseBranch,
+      trimmedLength: userBaseBranch?.trim().length ?? 0,
+    });
+
+    const baseBranch =
+      userBaseBranch && userBaseBranch.trim().length > 0
+        ? yield* Effect.succeed(userBaseBranch.trim())
+        : yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext);
+
+    yield* Effect.logInfo("runPrStep: resolved baseBranch", {
+      baseBranch,
+      source:
+        userBaseBranch && userBaseBranch.trim().length > 0 ? "user-provided" : "auto-resolved",
+    });
     yield* emit({
       kind: "phase_started",
       phase: "pr",

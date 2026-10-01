@@ -1006,13 +1006,14 @@ export default function GitActionsControl({
     [activeEnvironmentId, gitCwd],
   );
   // Fetch branches for PR base branch selector (only when dialog is open)
+  // Use remote refs to avoid showing deleted local branches
   const prBaseBranchesQuery = useEnvironmentQuery(
     pendingPrAction !== null && activeEnvironmentId !== null && gitCwd !== null
       ? vcsEnvironment.listRefs({
           environmentId: activeEnvironmentId,
           input: {
             cwd: gitCwd,
-            refKind: "local",
+            refKind: "remote",
             includeMatchingRemoteRefs: false,
             limit: 100,
           },
@@ -1566,6 +1567,19 @@ export default function GitActionsControl({
     if (!pendingDefaultBranchAction) return;
     const { action, commitMessage, onConfirmed, filePaths } = pendingDefaultBranchAction;
     setPendingDefaultBranchAction(null);
+
+    // For PR actions, show the base branch selector dialog first
+    if (action === "create_pr" || action === "commit_push_pr") {
+      setSelectedPrBaseBranch("");
+      setPendingPrAction({
+        action,
+        ...(commitMessage ? { commitMessage } : {}),
+        ...(onConfirmed ? { onConfirmed } : {}),
+        ...(filePaths ? { filePaths } : {}),
+      });
+      return;
+    }
+
     void runGitActionWithToast({
       action,
       ...(commitMessage ? { commitMessage } : {}),
@@ -1579,6 +1593,19 @@ export default function GitActionsControl({
     if (!pendingDefaultBranchAction) return;
     const { action, commitMessage, onConfirmed, filePaths } = pendingDefaultBranchAction;
     setPendingDefaultBranchAction(null);
+
+    // For PR actions, show the base branch selector dialog first
+    if (action === "create_pr" || action === "commit_push_pr") {
+      setSelectedPrBaseBranch("");
+      setPendingPrAction({
+        action,
+        ...(commitMessage ? { commitMessage } : {}),
+        ...(onConfirmed ? { onConfirmed } : {}),
+        ...(filePaths ? { filePaths } : {}),
+      });
+      return;
+    }
+
     void runGitActionWithToast({
       action,
       ...(commitMessage ? { commitMessage } : {}),
@@ -2264,12 +2291,20 @@ export default function GitActionsControl({
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <label
-              htmlFor="pr-base-branch"
-              className="mb-1.5 block text-sm font-medium text-muted-foreground"
-            >
-              Base branch
-            </label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="pr-base-branch" className="text-sm font-medium text-muted-foreground">
+                Base branch
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => prBaseBranchesQuery.refresh()}
+                disabled={prBaseBranchesQuery.isPending}
+              >
+                <CloudDownloadIcon className="mr-1 h-3 w-3" />
+                {prBaseBranchesQuery.isPending ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
             <select
               id="pr-base-branch"
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
@@ -2279,12 +2314,16 @@ export default function GitActionsControl({
               <option value="" disabled>
                 {prBaseBranchesQuery.isPending ? "Loading branches..." : "Select a branch..."}
               </option>
-              {prBaseBranchesQuery.data?.refs.map((ref) => (
-                <option key={ref.name} value={ref.name}>
-                  {ref.name}
-                  {ref.isDefault ? " (default)" : ""}
-                </option>
-              ))}
+              {prBaseBranchesQuery.data?.refs.map((ref) => {
+                // Remove remote prefix (e.g., "origin/") for display
+                const displayName = ref.name.replace(/^origin\//, "");
+                return (
+                  <option key={ref.name} value={displayName}>
+                    {displayName}
+                    {ref.isDefault ? " (default)" : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <DialogFooter variant="bare" className="sm:flex-wrap sm:items-center">
