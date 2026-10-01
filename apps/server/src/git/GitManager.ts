@@ -2893,3 +2893,11 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(GitManager, make);
+// Log the input for debugging
+yield *
+  Effect.logInfo("runStackedAction: input received", {
+    action: input.action,
+    baseBranch: input.baseBranch,
+    hasBaseBranch: !!input.baseBranch,
+    cwd: input.cwd,
+  });

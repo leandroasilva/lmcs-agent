@@ -1625,7 +1625,7 @@ export default function GitActionsControl({
       ...(commitMessage ? { commitMessage } : {}),
       ...(onConfirmed ? { onConfirmed } : {}),
       ...(filePaths ? { filePaths } : {}),
-      baseBranch: selectedPrBaseBranch.trim(),
+      baseBranch: baseBranchValue,
     });
   };
 
@@ -1732,6 +1732,12 @@ export default function GitActionsControl({
       setPendingPrAction({ action: "create_pr" });
       return;
     }
+    const baseBranchValue = selectedPrBaseBranch.trim();
+    console.log("[GitActionsControl] confirmPrActionWithBaseBranch", {
+      action,
+      baseBranch: baseBranchValue,
+      hasBaseBranch: !!baseBranchValue,
+    });
     setExcludedFiles(new Set());
     setIsEditingFiles(false);
     setIsCommitDialogOpen(true);
