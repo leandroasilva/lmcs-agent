@@ -2149,7 +2149,7 @@ function OpenCommandPaletteDialog(props: {
         "grouping",
         "checkout",
         "remove",
-        "t3.json",
+        "lmcs.json",
       ],
       title: t("palette.action.projectSettings"),
       description: contextualProjectGroup.displayName,

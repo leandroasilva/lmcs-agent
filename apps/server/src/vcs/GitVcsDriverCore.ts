@@ -174,7 +174,11 @@ function parseBranchAb(value: string): { ahead: number; behind: number } {
 function parseNumstatEntries(
   stdout: string,
 ): Array<{ path: string; insertions: number; deletions: number }> {
-  const entries: Array<{ path: string; insertions: number; deletions: number }> = [];
+  const entries: Array<{
+    path: string;
+    insertions: number;
+    deletions: number;
+  }> = [];
   for (const line of stdout.split(/\r?\n/g)) {
     if (line.trim().length === 0) continue;
     const [addedRaw, deletedRaw, ...pathParts] = line.split("\t");
@@ -610,7 +614,10 @@ const createTrace2Monitor = Effect.fn("createTrace2Monitor")(function* (
 
     if (event === "child_start") {
       const now = yield* DateTime.now;
-      hookStartByChildKey.set(childKey, { hookName, startedAtMs: DateTime.toEpochMillis(now) });
+      hookStartByChildKey.set(childKey, {
+        hookName,
+        startedAtMs: DateTime.toEpochMillis(now),
+      });
       yield* addCurrentSpanEvent("git.hook.started", {
         hookName,
       });
@@ -1888,7 +1895,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     const numstatEntries = parseNumstatEntries(numstatStdout);
     const fileStatMap = new Map<string, { insertions: number; deletions: number }>();
     for (const entry of numstatEntries) {
-      fileStatMap.set(entry.path, { insertions: entry.insertions, deletions: entry.deletions });
+      fileStatMap.set(entry.path, {
+        insertions: entry.insertions,
+        deletions: entry.deletions,
+      });
     }
 
     let insertions = 0;
@@ -1897,7 +1907,11 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       .map(([filePath, stat]) => {
         insertions += stat.insertions;
         deletions += stat.deletions;
-        return { path: filePath, insertions: stat.insertions, deletions: stat.deletions };
+        return {
+          path: filePath,
+          insertions: stat.insertions,
+          deletions: stat.deletions,
+        };
       })
       .toSorted((a, b) => a.path.localeCompare(b.path));
 
@@ -2037,9 +2051,15 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         : {
             ...options.progress,
             onStdoutLine: (line: string) =>
-              options.progress?.onOutputLine?.({ stream: "stdout", text: line }) ?? Effect.void,
+              options.progress?.onOutputLine?.({
+                stream: "stdout",
+                text: line,
+              }) ?? Effect.void,
             onStderrLine: (line: string) =>
-              options.progress?.onOutputLine?.({ stream: "stderr", text: line }) ?? Effect.void,
+              options.progress?.onOutputLine?.({
+                stream: "stderr",
+                text: line,
+              }) ?? Effect.void,
           };
     yield* executeGit("GitVcsDriver.commit.commit", cwd, args, {
       ...(options?.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
@@ -2218,7 +2238,9 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       };
     }
 
-    yield* runGit("GitVcsDriver.pushCurrentBranch.push", cwd, ["push"], { timeoutMs: null });
+    yield* runGit("GitVcsDriver.pushCurrentBranch.push", cwd, ["push"], {
+      timeoutMs: null,
+    });
     return {
       status: "pushed" as const,
       branch,
@@ -2334,7 +2356,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
           "GitVcsDriver.readUnifiedWorkingTreeReviewDiff.stagedDeletions",
           cwd,
           ["diff", "--cached", "--name-only", "--diff-filter=D", "-z", "HEAD", "--"],
-          { allowNonZeroExit: true, maxOutputBytes: REVIEW_METADATA_MAX_OUTPUT_BYTES },
+          {
+            allowNonZeroExit: true,
+            maxOutputBytes: REVIEW_METADATA_MAX_OUTPUT_BYTES,
+          },
         ),
         runGitStdout("GitVcsDriver.readUnifiedWorkingTreeReviewDiff.indexPath", cwd, [
           "rev-parse",
@@ -2448,7 +2473,11 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         "GitVcsDriver.getReviewDiffPreview.stat",
         cwd,
         [...args, ref, "--", ...pathArgs],
-        { allowNonZeroExit: true, maxOutputBytes: REVIEW_METADATA_MAX_OUTPUT_BYTES, env },
+        {
+          allowNonZeroExit: true,
+          maxOutputBytes: REVIEW_METADATA_MAX_OUTPUT_BYTES,
+          env,
+        },
       );
       if (result.exitCode === 0) return { ref, files: parseReviewNumstat(result.stdout) };
       if (ref === "HEAD" && isUnbornHeadStderr(result.stderr)) {
@@ -2832,8 +2861,14 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       { concurrency: 16 },
     );
     const worktreeMap = new Map(existingWorktreeEntries);
-    const localBranches: Array<{ readonly ref: VcsRef; readonly lastCommit: number }> = [];
-    const remoteBranches: Array<{ readonly ref: VcsRef; readonly lastCommit: number }> = [];
+    const localBranches: Array<{
+      readonly ref: VcsRef;
+      readonly lastCommit: number;
+    }> = [];
+    const remoteBranches: Array<{
+      readonly ref: VcsRef;
+      readonly lastCommit: number;
+    }> = [];
 
     for (const line of refsResult.stdout.split("\n")) {
       if (line.length === 0) continue;
@@ -2937,7 +2972,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         const epoch = bumpListRefsEpoch(cacheKey.gitCommonDir);
         return Cache.get(
           listRefsSnapshotCache,
-          new GitRefsSnapshotCacheKey({ gitCommonDir: cacheKey.gitCommonDir, epoch }),
+          new GitRefsSnapshotCacheKey({
+            gitCommonDir: cacheKey.gitCommonDir,
+            epoch,
+          }),
         );
       }),
     {
@@ -2965,7 +3003,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
             )
           : yield* Cache.get(
               listRefsSnapshotCache,
-              new GitRefsSnapshotCacheKey({ gitCommonDir, epoch: currentEpoch }),
+              new GitRefsSnapshotCacheKey({
+                gitCommonDir,
+                epoch: currentEpoch,
+              }),
             );
       if (currentListRefsGeneration(gitCommonDir) === generation) {
         return snapshot;
@@ -3102,7 +3143,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     // `.git/modules`, but a first-ever clone needs the network, and failing to
     // populate a submodule must not roll back the caller's thread. Repos with
     // hundreds of nested submodules opt out or stop at the top level; the
-    // caller resolves that from settings, or the checkout's t3.json decides.
+    // caller resolves that from settings, or the checkout's lmcs.json decides.
     const hasSubmodules = yield* fileSystem
       .exists(path.join(worktreePath, ".gitmodules"))
       .pipe(Effect.orElseSucceed(() => false));
@@ -3117,9 +3158,12 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
                 Effect.flatMap((contents) => {
                   const file = parseT3ProjectFile(contents);
                   return file === null
-                    ? Effect.logWarning("t3.json is invalid; initializing submodules recursively", {
-                        worktreePath,
-                      }).pipe(Effect.as(null))
+                    ? Effect.logWarning(
+                        "lmcs.json is invalid; initializing submodules recursively",
+                        {
+                          worktreePath,
+                        },
+                      ).pipe(Effect.as(null))
                     : Effect.succeed(file);
                 }),
                 Effect.orElseSucceed(() => null),
@@ -3127,7 +3171,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         );
     if (hasSubmodules && submoduleMode.value === "none" && progress?.onSubmodulesDisabled) {
       yield* progress.onSubmodulesDisabled({
-        source: submoduleMode.source === "t3.json" ? "t3.json" : "settings",
+        source: submoduleMode.source === "lmcs.json" ? "lmcs.json" : "settings",
       });
     }
     if (submoduleMode.value !== "none") {
@@ -3144,7 +3188,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         onSubmoduleLine
           ? {
               env: { LC_ALL: "C" },
-              progress: { onStdoutLine: onSubmoduleLine, onStderrLine: onSubmoduleLine },
+              progress: {
+                onStdoutLine: onSubmoduleLine,
+                onStderrLine: onSubmoduleLine,
+              },
             }
           : {},
       ).pipe(
@@ -3156,7 +3203,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
             }).pipe(
               Effect.andThen(
                 progress?.onSubmodulesFinished
-                  ? progress.onSubmodulesFinished({ ok: false, detail: cause.message })
+                  ? progress.onSubmodulesFinished({
+                      ok: false,
+                      detail: cause.message,
+                    })
                   : Effect.void,
               ),
             ),
@@ -3240,7 +3290,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
 
   const refreshCheckedOutBranch: GitVcsDriver.GitVcsDriver["Service"]["refreshCheckedOutBranch"] =
     Effect.fn("refreshCheckedOutBranch")(function* (input) {
-      const { commitSha: headCommit } = yield* resolveCommit({ cwd: input.cwd, revision: "HEAD" });
+      const { commitSha: headCommit } = yield* resolveCommit({
+        cwd: input.cwd,
+        revision: "HEAD",
+      });
       if (headCommit === input.targetCommit) {
         return { headCommit, moved: false, onTarget: true };
       }
@@ -3275,7 +3328,9 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
           "GitVcsDriver.refreshCheckedOutBranch.keepPrevious",
           input.cwd,
           ["update-ref", "refs/t3code/pre-refresh", headCommit],
-          { fallbackErrorDetail: "git failed to record the previous checkout commit" },
+          {
+            fallbackErrorDetail: "git failed to record the previous checkout commit",
+          },
         );
       }
 
@@ -3470,7 +3525,11 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       `GitVcsDriver.removeWorktree: git worktree remove exited with code ${result.exitCode} for ${input.path} (stderr length ${result.stderr.length}).`,
     );
     return yield* new GitCommandError({
-      ...gitCommandContext({ operation: "GitVcsDriver.removeWorktree", cwd: input.cwd, args }),
+      ...gitCommandContext({
+        operation: "GitVcsDriver.removeWorktree",
+        cwd: input.cwd,
+        args,
+      }),
       detail: "git worktree remove failed",
       ...(result.exitCode === null ? {} : { exitCode: result.exitCode }),
       stdoutLength: result.stdout.length,

@@ -961,7 +961,7 @@
       "inheritance": {
         "mixed": "Mixed across selected environments",
         "overridden": "Overridden for this project",
-        "t3json": "Inherited from the repository's t3.json",
+        "t3json": "Inherited from the repository's lmcs.json",
         "inheritedFrom": "Inherited from {{source}}",
         "environmentFallback": "environment",
         "setOnEnvironment": "Set on the environment",
@@ -1054,14 +1054,14 @@
         "rowTitle": "Actions",
         "rowDescription": "Commands that run in this project's checkout or its worktree, with optional shortcuts.",
         "importScripts": "Import scripts",
-        "importGroupLabel": "Import from t3.json",
+        "importGroupLabel": "Import from lmcs.json",
         "importHint": "Add actions declared by this checkout without editing them first.",
         "importFailed": "Failed to import action.",
         "addAction": "Add action",
         "mixedTitle": "Different actions across environments",
         "mixedDescription": "Choose one environment to edit its list. Adding an action here adds it on every selected environment.",
-        "invalidFileTitle": "t3.json is invalid",
-        "invalidFileDescription": "A t3.json exists in this checkout but fails to parse, so every action and icon it declares is ignored. Check the JSON syntax and icon values.",
+        "invalidFileTitle": "lmcs.json is invalid",
+        "invalidFileDescription": "A lmcs.json exists in this checkout but fails to parse, so every action and icon it declares is ignored. Check the JSON syntax and icon values.",
         "empty": "No actions configured.",
         "setupBadge": "setup",
         "previewBadge": "preview · desktop only",
@@ -1112,7 +1112,7 @@
         "workspace": {
           "title": "Workspace",
           "descriptionProject": "Where new threads in this project start.",
-          "descriptionEnvironment": "Where new threads start. Projects and their t3.json can override it.",
+          "descriptionEnvironment": "Where new threads start. Projects and their lmcs.json can override it.",
           "aria": "Default workspace",
           "resetLabel": "default workspace"
         },
@@ -1124,7 +1124,7 @@
         },
         "submodules": {
           "descriptionProject": "How new worktrees in this project populate git submodules.",
-          "descriptionEnvironment": "How new worktrees populate git submodules. Projects and their t3.json can override it.",
+          "descriptionEnvironment": "How new worktrees populate git submodules. Projects and their lmcs.json can override it.",
           "aria": "Worktree submodules",
           "resetLabel": "worktree submodules"
         },
@@ -1187,7 +1187,7 @@
       },
       "scriptsControl": {
         "importFailed": "Failed to import action.",
-        "fromT3Json": "From t3.json",
+        "fromT3Json": "From lmcs.json",
         "importAria": "Import",
         "setupName": "{{name}} (setup)",
         "editAria": "Edit {{name}}",

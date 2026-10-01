@@ -3,6 +3,8 @@ import * as Schema from "effect/Schema";
 import { NonNegativeInt, PositiveInt, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import { SourceControlProviderError, SourceControlProviderInfo } from "./sourceControl.ts";
 import { VcsDriverKind } from "./vcs.ts";
+import { ModelSelection } from "./orchestration.ts";
+import { EnvironmentAuthorizationError } from "./auth.ts";
 
 const TrimmedNonEmptyStringSchema = TrimmedNonEmptyString;
 const GIT_LIST_BRANCHES_MAX_LIMIT = 200;
@@ -462,3 +464,47 @@ export const GitActionProgressEvent = Schema.Union([
   GitActionFailedEvent,
 ]);
 export type GitActionProgressEvent = typeof GitActionProgressEvent.Type;
+
+// ---------------------------------------------------------------------------
+// AI commit message generation
+// ---------------------------------------------------------------------------
+
+export const TextGenerationPolicyKind = Schema.Literals([
+  "default",
+  "conventional_commits",
+  "repo_conventions",
+  "custom",
+]);
+export type TextGenerationPolicyKind = typeof TextGenerationPolicyKind.Type;
+
+export const TextGenerationPolicy = Schema.Struct({
+  kind: TextGenerationPolicyKind,
+  commitInstructions: Schema.optional(Schema.String),
+  changeRequestInstructions: Schema.optional(Schema.String),
+  branchInstructions: Schema.optional(Schema.String),
+  threadTitleInstructions: Schema.optional(Schema.String),
+  inferRepositoryConventions: Schema.Boolean,
+});
+export type TextGenerationPolicy = typeof TextGenerationPolicy.Type;
+
+export const GitGenerateCommitMessageInput = Schema.Struct({
+  cwd: TrimmedNonEmptyStringSchema,
+  branch: Schema.NullOr(TrimmedNonEmptyStringSchema),
+  stagedSummary: TrimmedNonEmptyStringSchema,
+  stagedPatch: Schema.String,
+  modelSelection: ModelSelection,
+  policy: Schema.optional(TextGenerationPolicy),
+});
+export type GitGenerateCommitMessageInput = typeof GitGenerateCommitMessageInput.Type;
+
+export const GitGenerateCommitMessageResult = Schema.Struct({
+  subject: Schema.String,
+  body: Schema.String,
+});
+export type GitGenerateCommitMessageResult = typeof GitGenerateCommitMessageResult.Type;
+
+export const GitGenerateCommitMessageError = Schema.Union([
+  TextGenerationError,
+  EnvironmentAuthorizationError,
+]);
+export type GitGenerateCommitMessageError = typeof GitGenerateCommitMessageError.Type;

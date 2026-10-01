@@ -1399,7 +1399,11 @@ export const make = Effect.gen(function* () {
 
   const resolveBranchHeadContext = Effect.fn("resolveBranchHeadContext")(function* (
     cwd: string,
-    details: { branch: string; upstreamRef: string | null; remoteName?: string },
+    details: {
+      branch: string;
+      upstreamRef: string | null;
+      remoteName?: string;
+    },
   ) {
     const remoteName =
       details.remoteName ??
@@ -2442,7 +2446,10 @@ export const make = Effect.gen(function* () {
           // head. The branch's upstream does not: configuring it is best-effort, so a branch cut
           // from `origin/main` whose head branch has since been deleted still resolves — and
           // following it would move the checkout onto main and call that the pull request.
-          .fetchPullRequestHeadCommit({ cwd: worktreePath, prNumber: pullRequest.number })
+          .fetchPullRequestHeadCommit({
+            cwd: worktreePath,
+            prNumber: pullRequest.number,
+          })
           .pipe(
             // A host that publishes no `refs/pull/<n>/head` leaves the remote-tracking branch,
             // taken only where it is the head branch's own rather than whatever the checkout
@@ -2582,7 +2589,7 @@ export const make = Effect.gen(function* () {
           path: null,
         },
         {
-          // Best effort: a settings read failure falls back to the checkout's t3.json.
+          // Best effort: a settings read failure falls back to the checkout's lmcs.json.
           submodules: yield* projectSettingsFor(input).pipe(
             Effect.map((settings) => settings.worktreeSubmodules),
             Effect.orElseSucceed(() => null),
@@ -2699,7 +2706,10 @@ export const make = Effect.gen(function* () {
           });
         }
 
-        let branchStep: { status: "created" | "skipped_not_requested"; name?: string };
+        let branchStep: {
+          status: "created" | "skipped_not_requested";
+          name?: string;
+        };
         let commitMessageForStep = input.commitMessage;
         let preResolvedCommitSuggestion: CommitAndBranchSuggestion | undefined = undefined;
 

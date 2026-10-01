@@ -8,7 +8,7 @@ const decode = Schema.decodeUnknownSync(T3ProjectFile);
 describe("T3ProjectFile", () => {
   it("decodes a full project file", () => {
     const decoded = decode({
-      $schema: "https://lmcs.codes/schema/t3.json",
+      $schema: "https://lmcs.codes/schema/lmcs.json",
       iconPath: "assets/logo.svg",
       scripts: [
         {
@@ -20,13 +20,21 @@ describe("T3ProjectFile", () => {
           autoOpenPreview: true,
         },
         { name: "Test", command: "pnpm test" },
-        { name: "Setup", command: "pnpm i", runOnWorktreeCreate: true, async: false },
+        {
+          name: "Setup",
+          command: "pnpm i",
+          runOnWorktreeCreate: true,
+          async: false,
+        },
       ],
     });
 
     expect(decoded.iconPath).toBe("assets/logo.svg");
     expect(decoded.scripts).toHaveLength(3);
-    expect(decoded.scripts?.[1]).toEqual({ name: "Test", command: "pnpm test" });
+    expect(decoded.scripts?.[1]).toEqual({
+      name: "Test",
+      command: "pnpm test",
+    });
     expect(decoded.scripts?.[2]?.async).toBe(false);
   });
 
@@ -51,7 +59,9 @@ describe("T3ProjectFile", () => {
 
   it("rejects unknown script icons", () => {
     expect(() =>
-      decode({ scripts: [{ name: "Dev", command: "pnpm dev", icon: "rocket" }] }),
+      decode({
+        scripts: [{ name: "Dev", command: "pnpm dev", icon: "rocket" }],
+      }),
     ).toThrow();
   });
 

@@ -12,11 +12,7 @@ import {
   TrimmedString,
 } from "./baseSchemas.ts";
 import { UsageLimitSourceId } from "./usageLimitSourceId.ts";
-import {
-  EnvironmentMachineKind,
-  ThreadEnvMode,
-  WorktreeSubmodules,
-} from "./environment.ts";
+import { EnvironmentMachineKind, ThreadEnvMode, WorktreeSubmodules } from "./environment.ts";
 import { KeybindingShortcut } from "./keybindings.ts";
 import {
   CustomModelSetting,
@@ -30,11 +26,7 @@ import {
   ProjectScript,
   RuntimeMode,
 } from "./orchestration.ts";
-import {
-  BrowserProfile,
-  BrowserProfileId,
-  DEFAULT_BROWSER_PROFILE_ID,
-} from "./browserProfile.ts";
+import { BrowserProfile, BrowserProfileId, DEFAULT_BROWSER_PROFILE_ID } from "./browserProfile.ts";
 import {
   DEFAULT_PREVIEW_APPEARANCE,
   DEFAULT_PREVIEW_ZOOM_FACTOR,
@@ -52,11 +44,7 @@ import { PullRequestMergeMethod } from "./pullRequest.ts";
 
 // ── Client Settings (local-only) ───────────────────────────────
 
-export const TimestampFormat = Schema.Literals([
-  "locale",
-  "12-hour",
-  "24-hour",
-]);
+export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"]);
 export type TimestampFormat = typeof TimestampFormat.Type;
 const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
 
@@ -73,19 +61,11 @@ export const DiffLayout = Schema.Literals(["stacked", "split"]);
 export type DiffLayout = typeof DiffLayout.Type;
 const DEFAULT_DIFF_LAYOUT: DiffLayout = "stacked";
 
-export const SidebarProjectSortOrder = Schema.Literals([
-  "updated_at",
-  "created_at",
-  "manual",
-]);
+export const SidebarProjectSortOrder = Schema.Literals(["updated_at", "created_at", "manual"]);
 export type SidebarProjectSortOrder = typeof SidebarProjectSortOrder.Type;
-export const DEFAULT_SIDEBAR_PROJECT_SORT_ORDER: SidebarProjectSortOrder =
-  "updated_at";
+export const DEFAULT_SIDEBAR_PROJECT_SORT_ORDER: SidebarProjectSortOrder = "updated_at";
 
-export const SidebarThreadSortOrder = Schema.Literals([
-  "updated_at",
-  "created_at",
-]);
+export const SidebarThreadSortOrder = Schema.Literals(["updated_at", "created_at"]);
 export type SidebarThreadSortOrder = typeof SidebarThreadSortOrder.Type;
 // Not exported: mobile was the last consumer of the value itself; the
 // wire field keeps its decoding default below.
@@ -97,8 +77,7 @@ export const SidebarProjectGroupingMode = Schema.Literals([
   "separate",
 ]);
 export type SidebarProjectGroupingMode = typeof SidebarProjectGroupingMode.Type;
-const DEFAULT_SIDEBAR_PROJECT_GROUPING_MODE: SidebarProjectGroupingMode =
-  "repository";
+const DEFAULT_SIDEBAR_PROJECT_GROUPING_MODE: SidebarProjectGroupingMode = "repository";
 export const MIN_SIDEBAR_THREAD_PREVIEW_COUNT = 1;
 export const MAX_SIDEBAR_THREAD_PREVIEW_COUNT = 15;
 export const SidebarThreadPreviewCount = Schema.Int.check(
@@ -199,15 +178,9 @@ export const TerminalFontSize = Schema.Int.check(
 export type TerminalFontSize = typeof TerminalFontSize.Type;
 const DEFAULT_TERMINAL_FONT_SIZE: TerminalFontSize = 12;
 
-export const EnvironmentIdentificationMode = Schema.Literals([
-  "artwork",
-  "pill",
-  "none",
-]);
-export type EnvironmentIdentificationMode =
-  typeof EnvironmentIdentificationMode.Type;
-export const DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE: EnvironmentIdentificationMode =
-  "artwork";
+export const EnvironmentIdentificationMode = Schema.Literals(["artwork", "pill", "none"]);
+export type EnvironmentIdentificationMode = typeof EnvironmentIdentificationMode.Type;
+export const DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE: EnvironmentIdentificationMode = "artwork";
 
 export const SnapShotKeyChord = KeybindingShortcut.check(
   Schema.makeFilter(
@@ -237,10 +210,7 @@ export const SnapShotSound = Schema.Literals(["soft-pop", "camera-shutter"]);
 export type SnapShotSound = typeof SnapShotSound.Type;
 const DEFAULT_SNAP_SHOT_SOUND: SnapShotSound = "soft-pop";
 
-export type SnapShotModifierPairShortcut = Extract<
-  SnapShotShortcut,
-  { readonly kind: string }
->;
+export type SnapShotModifierPairShortcut = Extract<SnapShotShortcut, { readonly kind: string }>;
 
 export function isModifierPairShortcut(
   shortcut: SnapShotShortcut,
@@ -267,13 +237,8 @@ const OTHER_MODIFIER_LABELS: Record<SnapShotModifier, string> = {
   alt: "Alt",
 };
 
-export function snapShotModifierPairLabel(
-  modifier: SnapShotModifier,
-  apple: boolean,
-): string {
-  const label = (apple ? APPLE_MODIFIER_LABELS : OTHER_MODIFIER_LABELS)[
-    modifier
-  ];
+export function snapShotModifierPairLabel(modifier: SnapShotModifier, apple: boolean): string {
+  const label = (apple ? APPLE_MODIFIER_LABELS : OTHER_MODIFIER_LABELS)[modifier];
   return `${label} + ${label}`;
 }
 const DEFAULT_SNAP_SHOT_SHORTCUT: SnapShotShortcut = {
@@ -288,11 +253,7 @@ export const NotificationMode = Schema.Literals([
 ]);
 export type NotificationMode = typeof NotificationMode.Type;
 
-export const QuitConfirmationMode = Schema.Literals([
-  "direct",
-  "hold",
-  "double-click",
-]);
+export const QuitConfirmationMode = Schema.Literals(["direct", "hold", "double-click"]);
 export type QuitConfirmationMode = typeof QuitConfirmationMode.Type;
 const DEFAULT_QUIT_CONFIRMATION_MODE: QuitConfirmationMode = "hold";
 
@@ -300,25 +261,19 @@ const LegacyConfirmQuit = Schema.Boolean.pipe(
   Schema.decodeTo(
     QuitConfirmationMode,
     SchemaTransformation.transform({
-      decode: (confirmQuit): QuitConfirmationMode =>
-        confirmQuit ? "hold" : "direct",
+      decode: (confirmQuit): QuitConfirmationMode => (confirmQuit ? "hold" : "direct"),
       encode: (mode) => mode === "hold",
     }),
   ),
 );
 
-const QuitConfirmationModeSetting = Schema.Union([
-  QuitConfirmationMode,
-  LegacyConfirmQuit,
-]);
+const QuitConfirmationModeSetting = Schema.Union([QuitConfirmationMode, LegacyConfirmQuit]);
 
 /**
  * A user-chosen font family (a single name or a comma-separated list). Empty
  * means "use the app default"; clients compose their own fallback stacks.
  */
-export const FontFamilyPreference = Schema.String.check(
-  Schema.isMaxLength(200),
-);
+export const FontFamilyPreference = Schema.String.check(Schema.isMaxLength(200));
 export type FontFamilyPreference = typeof FontFamilyPreference.Type;
 
 /**
@@ -328,9 +283,7 @@ export type FontFamilyPreference = typeof FontFamilyPreference.Type;
  * afterwards sticks until the next set. Empty means "no environment theme",
  * which is also how it is cleared.
  */
-export const DefaultThemePreference = Schema.String.check(
-  Schema.isMaxLength(64),
-);
+export const DefaultThemePreference = Schema.String.check(Schema.isMaxLength(64));
 // Deliberately absent from ServerSettingsPatch: `t3 theme set` checks that an
 // id is syntactically valid and actually resolvable, and a generic RPC patch
 // would let a client write a theme no client can resolve, bypassing both.
@@ -343,13 +296,10 @@ export type DefaultThemePreference = typeof DefaultThemePreference.Type;
  * client-local for the same reason: the Chromium guest being captured belongs
  * to the desktop app.
  */
-export const DEFAULT_BROWSER_VIEWPORT: PreviewViewportSetting =
-  FILL_PREVIEW_VIEWPORT;
+export const DEFAULT_BROWSER_VIEWPORT: PreviewViewportSetting = FILL_PREVIEW_VIEWPORT;
 export const DEFAULT_BROWSER_AUTO_SHOW_FLOATING_PREVIEW = true;
 export const BROWSER_RECORDING_FRAME_RATES = [30, 60] as const;
-export const BrowserRecordingFrameRate = Schema.Literals(
-  BROWSER_RECORDING_FRAME_RATES,
-);
+export const BrowserRecordingFrameRate = Schema.Literals(BROWSER_RECORDING_FRAME_RATES);
 export type BrowserRecordingFrameRate = typeof BrowserRecordingFrameRate.Type;
 export const DEFAULT_BROWSER_RECORDING_FRAME_RATE: BrowserRecordingFrameRate = 30;
 /**
@@ -372,27 +322,19 @@ export const ClientSettingsSchema = Schema.Struct({
   notificationMode: NotificationMode.pipe(
     Schema.withDecodingDefault(Effect.succeed("off" as const)),
   ),
-  inAppNotificationsEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  inAppNotificationsEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   diffColorScheme: DiffColorScheme.pipe(
     Schema.withDecodingDefault(Effect.succeed("red-green" as const)),
   ),
-  loadBalancingEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
-  loadBalancingWeights: LoadBalancingWeights.pipe(
-    Schema.withDecodingDefault(Effect.succeed({})),
-  ),
+  loadBalancingEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  loadBalancingWeights: LoadBalancingWeights.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   appearanceContrast: AppearanceContrast.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_APPEARANCE_CONTRAST)),
   ),
   // Panel motion defaults to zero because width and height transitions cause
   // layout work on every frame, which is noticeable on lower-power clients.
   panelAnimationDurationMs: PanelAnimationDurationMs.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_PANEL_ANIMATION_DURATION_MS),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_PANEL_ANIMATION_DURATION_MS)),
   ),
   browserDefaultViewport: PreviewViewportSetting.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_BROWSER_VIEWPORT)),
@@ -404,9 +346,7 @@ export const ClientSettingsSchema = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_PREVIEW_APPEARANCE)),
   ),
   browserRecordingFrameRate: BrowserRecordingFrameRate.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_BROWSER_RECORDING_FRAME_RATE),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_BROWSER_RECORDING_FRAME_RATE)),
   ),
   browserRecordingShowKeyPresses: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(false)),
@@ -428,9 +368,7 @@ export const ClientSettingsSchema = Schema.Struct({
    * deliberately showing or hiding its work.
    */
   browserAutoShowFloatingPreview: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_BROWSER_AUTO_SHOW_FLOATING_PREVIEW),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_BROWSER_AUTO_SHOW_FLOATING_PREVIEW)),
   ),
   /**
    * User-created browser profiles. The built-in Default and Incognito profiles
@@ -449,31 +387,17 @@ export const ClientSettingsSchema = Schema.Struct({
   confirmQuit: QuitConfirmationModeSetting.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_QUIT_CONFIRMATION_MODE)),
   ),
-  confirmThreadArchive: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
+  confirmThreadArchive: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  confirmThreadDelete: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  confirmThreadUnpin: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  dismissedProviderUpdateNotificationKeys: Schema.Array(TrimmedNonEmptyString).pipe(
+    Schema.withDecodingDefault(Effect.succeed([])),
   ),
-  confirmThreadDelete: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
-  confirmThreadUnpin: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
-  dismissedProviderUpdateNotificationKeys: Schema.Array(
-    TrimmedNonEmptyString,
-  ).pipe(Schema.withDecodingDefault(Effect.succeed([]))),
-  diffFilesCollapsed: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
-  diffIgnoreWhitespace: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
-  diffLayout: DiffLayout.pipe(
-    Schema.withDecodingDefault(Effect.succeed(DEFAULT_DIFF_LAYOUT)),
-  ),
+  diffFilesCollapsed: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  diffIgnoreWhitespace: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  diffLayout: DiffLayout.pipe(Schema.withDecodingDefault(Effect.succeed(DEFAULT_DIFF_LAYOUT))),
   environmentIdentificationMode: EnvironmentIdentificationMode.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE)),
   ),
   glassOpacity: GlassOpacity.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_GLASS_OPACITY)),
@@ -490,23 +414,13 @@ export const ClientSettingsSchema = Schema.Struct({
   fontSizeTerminal: TerminalFontSize.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_TERMINAL_FONT_SIZE)),
   ),
-  fontFamilyCode: FontFamilyPreference.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
-  fontFamilyComposer: FontFamilyPreference.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
-  fontFamilySans: FontFamilyPreference.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
-  fontFamilyTerminal: FontFamilyPreference.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
+  fontFamilyCode: FontFamilyPreference.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  fontFamilyComposer: FontFamilyPreference.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  fontFamilySans: FontFamilyPreference.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  fontFamilyTerminal: FontFamilyPreference.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
   // Grayscale `-webkit-font-smoothing: antialiased` (thinner strokes);
   // disabling restores the platform's heavier default. No effect off macOS.
-  fontSmoothing: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  fontSmoothing: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   // When the first-run welcome wizard finished (or was skipped), as an ISO
   // timestamp. `null` alone does not mean "show the wizard" — every install
   // that predates this field decodes to `null` — so the gate also requires an
@@ -536,9 +450,7 @@ export const ClientSettingsSchema = Schema.Struct({
       hiddenModels: Schema.Array(Schema.String).pipe(
         Schema.withDecodingDefault(Effect.succeed([])),
       ),
-      modelOrder: Schema.Array(Schema.String).pipe(
-        Schema.withDecodingDefault(Effect.succeed([])),
-      ),
+      modelOrder: Schema.Array(Schema.String).pipe(Schema.withDecodingDefault(Effect.succeed([]))),
     }),
   ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   pullRequestMergeMethodOverrides: Schema.Record(
@@ -548,104 +460,66 @@ export const ClientSettingsSchema = Schema.Struct({
   // Legacy plan mode. The composer's Build/Plan toggle was removed from the
   // default UI; this beta flag restores it (plus the /plan and /default slash
   // commands) for users who still rely on the old workflow.
-  planModeEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  planModeEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   // Legacy context window meter. The composer hides it by default; users who
   // still want the old usage indicator can restore it from Settings.
-  contextWindowMeterEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  contextWindowMeterEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   // Desktop resting composer: scrolling an existing thread's conversation
   // settles the composer into its single-line layout. Losing focus never does.
-  composerCollapseOnScroll: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  composerCollapseOnScroll: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   // Rich text is the default; users can opt out for literal Markdown editing.
-  composerRichTextEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
+  composerRichTextEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  sendShortcut: Schema.Literals(["enter", "mod-enter-multiline", "mod-enter"]).pipe(
+    Schema.withDecodingDefault(Effect.succeed("enter")),
   ),
-  sendShortcut: Schema.Literals([
-    "enter",
-    "mod-enter-multiline",
-    "mod-enter",
-  ]).pipe(Schema.withDecodingDefault(Effect.succeed("enter"))),
   followUpBehavior: Schema.Literals(["queue", "steer"]).pipe(
     Schema.withDecodingDefault(Effect.succeed("queue")),
   ),
-  proactivePanelsEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
-  showSkillsInSlashMenu: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  proactivePanelsEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  showSkillsInSlashMenu: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   // Legacy sidebar (the original per-project tree). Deliberately a fresh key
   // (was `sidebarV2Enabled` + `sidebarV2ConfiguredByUser`): decoding drops the
   // old keys, so everyone, including prior beta opt-outs, resets to the new
   // default sidebar.
-  legacySidebarEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  legacySidebarEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   sidebarProjectGroupingMode: SidebarProjectGroupingMode.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_SIDEBAR_PROJECT_GROUPING_MODE),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_SIDEBAR_PROJECT_GROUPING_MODE)),
   ),
   sidebarProjectGroupingOverrides: Schema.Record(
     TrimmedNonEmptyString,
     SidebarProjectGroupingMode,
   ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   sidebarProjectSortOrder: SidebarProjectSortOrder.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_SIDEBAR_PROJECT_SORT_ORDER),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_SIDEBAR_PROJECT_SORT_ORDER)),
   ),
   sidebarThreadSortOrder: SidebarThreadSortOrder.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_SIDEBAR_THREAD_SORT_ORDER),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_SIDEBAR_THREAD_SORT_ORDER)),
   ),
   sidebarThreadPreviewCount: SidebarThreadPreviewCount.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_SIDEBAR_THREAD_PREVIEW_COUNT),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_SIDEBAR_THREAD_PREVIEW_COUNT)),
   ),
   timestampFormat: TimestampFormat.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_TIMESTAMP_FORMAT)),
   ),
-  locale: Locale.pipe(
-    Schema.withDecodingDefault(Effect.succeed(DEFAULT_LOCALE)),
-  ),
-  snapShotEnabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  locale: Locale.pipe(Schema.withDecodingDefault(Effect.succeed(DEFAULT_LOCALE))),
+  snapShotEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   snapShotIncludeAccessibility: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(true)),
   ),
   snapShotShortcut: SnapShotShortcut.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_SNAP_SHOT_SHORTCUT)),
   ),
-  snapShotPlaySound: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  snapShotPlaySound: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   snapShotSound: SnapShotSound.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_SNAP_SHOT_SOUND)),
   ),
-  snapShotFlash: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
-  snapShotAnimations: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
-  wordWrap: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  snapShotFlash: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  snapShotAnimations: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  wordWrap: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
 });
 export type ClientSettings = typeof ClientSettingsSchema.Type;
 
-export const DEFAULT_CLIENT_SETTINGS: ClientSettings = Schema.decodeSync(
-  ClientSettingsSchema,
-)({});
+export const DEFAULT_CLIENT_SETTINGS: ClientSettings = Schema.decodeSync(ClientSettingsSchema)({});
 
 // ── Server Settings (server-authoritative) ────────────────────
 
@@ -675,12 +549,7 @@ const makeBinaryPathSetting = (fallback: string) =>
     Schema.withDecodingDefault(Effect.succeed(fallback)),
   );
 
-export type ProviderSettingsFormControl =
-  | "text"
-  | "password"
-  | "textarea"
-  | "switch"
-  | "select";
+export type ProviderSettingsFormControl = "text" | "password" | "textarea" | "switch" | "select";
 
 export interface ProviderSettingsFormOption {
   readonly value: string;
@@ -703,18 +572,16 @@ export interface ProviderSettingsFormSchemaAnnotation {
 declare module "effect/Schema" {
   namespace Annotations {
     interface Annotations {
-      readonly providerSettingsForm?:
-        | ProviderSettingsFormAnnotation
-        | undefined;
-      readonly providerSettingsFormSchema?:
-        | ProviderSettingsFormSchemaAnnotation
-        | undefined;
+      readonly providerSettingsForm?: ProviderSettingsFormAnnotation | undefined;
+      readonly providerSettingsFormSchema?: ProviderSettingsFormSchemaAnnotation | undefined;
     }
   }
 }
 
-export type ProviderSettingsOrder<Fields extends Schema.Struct.Fields> =
-  readonly Extract<keyof Fields, string>[];
+export type ProviderSettingsOrder<Fields extends Schema.Struct.Fields> = readonly Extract<
+  keyof Fields,
+  string
+>[];
 
 function makeProviderSettingsSchema<const Fields extends Schema.Struct.Fields>(
   fields: Fields,
@@ -770,8 +637,7 @@ export const CodexSettings = makeProviderSettingsSchema(
       Schema.withDecodingDefault(Effect.succeed("")),
       Schema.annotateKey({
         title: "Launch arguments",
-        description:
-          "Additional CLI arguments passed to codex app-server on session start.",
+        description: "Additional CLI arguments passed to codex app-server on session start.",
       }),
     ),
     customModels: Schema.Array(CustomModelSetting).pipe(
@@ -990,8 +856,7 @@ export const AntigravitySettings = makeProviderSettingsSchema(
       Schema.withDecodingDefault(Effect.succeed("")),
       Schema.annotateKey({
         title: "Binary path",
-        description:
-          "Custom ACP executable. Leave empty to select automatically.",
+        description: "Custom ACP executable. Leave empty to select automatically.",
         providerSettingsForm: {
           placeholder: "Automatic",
           clearWhenEmpty: "persist",
@@ -1031,8 +896,7 @@ export const OpenCodeSettings = makeProviderSettingsSchema(
       Schema.withDecodingDefault(Effect.succeed("")),
       Schema.annotateKey({
         title: "Server URL",
-        description:
-          "Leave blank to let LMCS Code spawn the server when needed.",
+        description: "Leave blank to let LMCS Code spawn the server when needed.",
         providerSettingsForm: {
           placeholder: "http://127.0.0.1:4096",
           clearWhenEmpty: "omit",
@@ -1079,8 +943,7 @@ export const QoderSettings = makeProviderSettingsSchema(
       Schema.withDecodingDefault(Effect.succeed("")),
       Schema.annotateKey({
         title: "Personal Access Token",
-        description:
-          "Qoder PAT for authentication. Generate at qoder.com/account/integrations",
+        description: "Qoder PAT for authentication. Generate at qoder.com/account/integrations",
         providerSettingsForm: {
           control: "password",
           placeholder: "Optional",
@@ -1096,8 +959,7 @@ export const QoderSettings = makeProviderSettingsSchema(
       Schema.withDecodingDefault(Effect.succeed("")),
       Schema.annotateKey({
         title: "Favorite Model",
-        description:
-          "Default model to use for Qoder sessions. Leave empty to use Auto.",
+        description: "Default model to use for Qoder sessions. Leave empty to use Auto.",
         providerSettingsForm: {
           placeholder: "auto",
           clearWhenEmpty: "omit",
@@ -1121,25 +983,15 @@ export const UsageLimitSourceConfig = Schema.Struct({
   kind: Schema.Literal("cliproxy"),
   label: Schema.optional(TrimmedNonEmptyString),
   url: TrimmedNonEmptyString,
-  managementKey: TrimmedString.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
-  enabled: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  managementKey: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  enabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
 });
 export type UsageLimitSourceConfig = typeof UsageLimitSourceConfig.Type;
 
 export const ObservabilitySettings = Schema.Struct({
-  otlpTracesUrl: TrimmedString.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
-  otlpMetricsUrl: TrimmedString.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
-  otlpLogsUrl: TrimmedString.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
+  otlpTracesUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  otlpMetricsUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  otlpLogsUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
 });
 export type ObservabilitySettings = typeof ObservabilitySettings.Type;
 
@@ -1148,22 +1000,18 @@ export const SourceControlWritingStyleMode = Schema.Literals([
   "conventional_commits",
   "custom",
 ]);
-export type SourceControlWritingStyleMode =
-  typeof SourceControlWritingStyleMode.Type;
+export type SourceControlWritingStyleMode = typeof SourceControlWritingStyleMode.Type;
 
 export const SourceControlWritingStyleSettings = Schema.Struct({
   mode: SourceControlWritingStyleMode.pipe(
     Schema.withDecodingDefault(Effect.succeed("repo_conventions" as const)),
   ),
-  customInstructions: TrimmedString.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
+  customInstructions: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
   followChangeRequestTemplates: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(true)),
   ),
 });
-export type SourceControlWritingStyleSettings =
-  typeof SourceControlWritingStyleSettings.Type;
+export type SourceControlWritingStyleSettings = typeof SourceControlWritingStyleSettings.Type;
 
 export const DEFAULT_AUTOMATIC_GIT_FETCH_INTERVAL = Duration.seconds(30);
 export const DEFAULT_PROVIDER_HEALTH_REFRESH_INTERVAL = Duration.minutes(5);
@@ -1174,8 +1022,7 @@ export const BackgroundActivityProfile = Schema.Literals([
   "battery-saver",
 ]);
 export type BackgroundActivityProfile = typeof BackgroundActivityProfile.Type;
-export const DEFAULT_BACKGROUND_ACTIVITY_PROFILE: BackgroundActivityProfile =
-  "balanced";
+export const DEFAULT_BACKGROUND_ACTIVITY_PROFILE: BackgroundActivityProfile = "balanced";
 
 export const BackgroundActivityProfileSelection = Schema.Literals([
   "balanced",
@@ -1183,8 +1030,7 @@ export const BackgroundActivityProfileSelection = Schema.Literals([
   "battery-saver",
   "custom",
 ]);
-export type BackgroundActivityProfileSelection =
-  typeof BackgroundActivityProfileSelection.Type;
+export type BackgroundActivityProfileSelection = typeof BackgroundActivityProfileSelection.Type;
 
 export const BackgroundActivityOverrides = Schema.Struct({
   automaticGitFetchInterval: Schema.optionalKey(Schema.DurationFromMillis),
@@ -1197,22 +1043,15 @@ export const BackgroundActivityOverrides = Schema.Struct({
   pauseWhenClientLowPower: Schema.optionalKey(Schema.Boolean),
   pauseWhenOnBattery: Schema.optionalKey(Schema.Boolean),
 });
-export type BackgroundActivityOverrides =
-  typeof BackgroundActivityOverrides.Type;
+export type BackgroundActivityOverrides = typeof BackgroundActivityOverrides.Type;
 
 export const BackgroundActivitySettings = Schema.Struct({
-  schemaVersion: Schema.Literal(1).pipe(
-    Schema.withDecodingDefault(Effect.succeed(1 as const)),
-  ),
+  schemaVersion: Schema.Literal(1).pipe(Schema.withDecodingDefault(Effect.succeed(1 as const))),
   profile: BackgroundActivityProfileSelection.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_BACKGROUND_ACTIVITY_PROFILE),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_BACKGROUND_ACTIVITY_PROFILE)),
   ),
   baseProfile: Schema.optionalKey(BackgroundActivityProfile),
-  overrides: BackgroundActivityOverrides.pipe(
-    Schema.withDecodingDefault(Effect.succeed({})),
-  ),
+  overrides: BackgroundActivityOverrides.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
 }).pipe(Schema.withDecodingDefault(Effect.succeed({})));
 export type BackgroundActivitySettings = typeof BackgroundActivitySettings.Type;
 
@@ -1228,11 +1067,7 @@ export type BackgroundActivitySettings = typeof BackgroundActivitySettings.Type;
  * - `paragraph`: deliver each finished paragraph or closed code block.
  * - `token`: forward every provider delta. Legacy, kept for compatibility.
  */
-export const ResponseStreamingMode = Schema.Literals([
-  "turn",
-  "paragraph",
-  "token",
-]);
+export const ResponseStreamingMode = Schema.Literals(["turn", "paragraph", "token"]);
 export type ResponseStreamingMode = typeof ResponseStreamingMode.Type;
 
 const StorageRetentionDays = Schema.NullOr(
@@ -1278,8 +1113,7 @@ export const PROJECT_SCOPED_SERVER_SETTING_KEYS = [
   "continueThreadsAfterServerUpdate",
   "responseStreamingMode",
 ] as const;
-export type ProjectScopedServerSettingKey =
-  (typeof PROJECT_SCOPED_SERVER_SETTING_KEYS)[number];
+export type ProjectScopedServerSettingKey = (typeof PROJECT_SCOPED_SERVER_SETTING_KEYS)[number];
 
 /**
  * One project's overrides. An absent key inherits the environment value;
@@ -1298,19 +1132,11 @@ export const ProjectSettingsOverrides = Schema.Struct({
   enableAgentBrowserAccess: Schema.optionalKey(Schema.Boolean),
   enableAgentDeviceAccess: Schema.optionalKey(Schema.Boolean),
   textGenerationModelSelection: Schema.optionalKey(ModelSelection),
-  sourceControlWriterModelSelection: Schema.optionalKey(
-    Schema.NullOr(ModelSelection),
-  ),
-  sourceControlWritingStyle: Schema.optionalKey(
-    SourceControlWritingStyleSettings,
-  ),
-  pullRequestMergeMethod: Schema.optionalKey(
-    Schema.NullOr(PullRequestMergeMethod),
-  ),
+  sourceControlWriterModelSelection: Schema.optionalKey(Schema.NullOr(ModelSelection)),
+  sourceControlWritingStyle: Schema.optionalKey(SourceControlWritingStyleSettings),
+  pullRequestMergeMethod: Schema.optionalKey(Schema.NullOr(PullRequestMergeMethod)),
   sidebarAutoSettleOnMerge: Schema.optionalKey(Schema.Boolean),
-  sidebarAutoSettleAfterDays: Schema.optionalKey(
-    Schema.NullOr(SidebarAutoSettleAfterDays),
-  ),
+  sidebarAutoSettleAfterDays: Schema.optionalKey(Schema.NullOr(SidebarAutoSettleAfterDays)),
   continueThreadsAfterServerUpdate: Schema.optionalKey(Schema.Boolean),
   responseStreamingMode: Schema.optionalKey(ResponseStreamingMode),
 } satisfies Record<ProjectScopedServerSettingKey, unknown>);
@@ -1322,55 +1148,36 @@ export type ProjectSettingsOverrides = typeof ProjectSettingsOverrides.Type;
  * request to remove the override, so a picker's "Inherit" item and the row's
  * reset do the same thing.
  */
-export function isNullableProjectSettingsOverride(
-  key: ProjectScopedServerSettingKey,
-): boolean {
+export function isNullableProjectSettingsOverride(key: ProjectScopedServerSettingKey): boolean {
   return NULLABLE_PROJECT_SETTINGS_OVERRIDES.has(key);
 }
-const NULLABLE_PROJECT_SETTINGS_OVERRIDES: ReadonlySet<ProjectScopedServerSettingKey> =
-  new Set<
-    {
-      [K in ProjectScopedServerSettingKey]: null extends ProjectSettingsOverrides[K]
-        ? K
-        : never;
-    }[ProjectScopedServerSettingKey]
-  >([
-    "defaultModelSelection",
-    "sourceControlWriterModelSelection",
-    "pullRequestMergeMethod",
-    "sidebarAutoSettleAfterDays",
-  ]);
+const NULLABLE_PROJECT_SETTINGS_OVERRIDES: ReadonlySet<ProjectScopedServerSettingKey> = new Set<
+  {
+    [K in ProjectScopedServerSettingKey]: null extends ProjectSettingsOverrides[K] ? K : never;
+  }[ProjectScopedServerSettingKey]
+>([
+  "defaultModelSelection",
+  "sourceControlWriterModelSelection",
+  "pullRequestMergeMethod",
+  "sidebarAutoSettleAfterDays",
+]);
 
 export const StorageCleanupSettings = Schema.Struct({
-  worktreeAfterDays: StorageRetentionDays.pipe(
-    Schema.withDecodingDefault(Effect.succeed(null)),
-  ),
-  worktreeOnMerge: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
-  worktreeOnDelete: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
-  worktreeUnchanged: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  worktreeAfterDays: StorageRetentionDays.pipe(Schema.withDecodingDefault(Effect.succeed(null))),
+  worktreeOnMerge: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  worktreeOnDelete: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  worktreeUnchanged: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   browserArtifactsAfterDays: StorageRetentionDays.pipe(
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
-  logsAfterDays: StorageRetentionDays.pipe(
-    Schema.withDecodingDefault(Effect.succeed(null)),
-  ),
+  logsAfterDays: StorageRetentionDays.pipe(Schema.withDecodingDefault(Effect.succeed(null))),
 });
 export type StorageCleanupSettings = typeof StorageCleanupSettings.Type;
 
 export const ServerSettings = Schema.Struct({
-  worktreeCleanup: WorktreeCleanup.pipe(
-    Schema.withDecodingDefault(Effect.succeed(null)),
-  ),
+  worktreeCleanup: WorktreeCleanup.pipe(Schema.withDecodingDefault(Effect.succeed(null))),
   storageCleanup: StorageCleanupSettings.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(Schema.decodeSync(StorageCleanupSettings)({})),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(Schema.decodeSync(StorageCleanupSettings)({}))),
   ),
   // How assistant text reaches clients during a turn. Deliberately a fresh
   // key (was `enableLegacyTokenStreaming`, before that
@@ -1379,9 +1186,7 @@ export const ServerSettings = Schema.Struct({
   responseStreamingMode: ResponseStreamingMode.pipe(
     Schema.withDecodingDefault(Effect.succeed("paragraph" as const)),
   ),
-  enableProviderUpdateChecks: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  enableProviderUpdateChecks: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   // Retain the update-era key; recovery now needs an environment-owned opt-in.
   continueThreadsAfterServerUpdate: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(false)),
@@ -1397,23 +1202,17 @@ export const ServerSettings = Schema.Struct({
    * construction both happen on the server, and the answer must not differ
    * between a desktop window and a phone attached to the same server.
    */
-  enableAgentBrowserAccess: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
+  enableAgentBrowserAccess: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  projectAgentBrowserAccessOverrides: Schema.Record(ProjectId, Schema.Boolean).pipe(
+    Schema.withDecodingDefault(Effect.succeed({})),
   ),
-  projectAgentBrowserAccessOverrides: Schema.Record(
-    ProjectId,
-    Schema.Boolean,
-  ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
-  defaultAutoPull: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  defaultAutoPull: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   defaultProjectScripts: Schema.Array(ProjectScript).pipe(
     Schema.withDecodingDefault(Effect.succeed([])),
   ),
-  projectScriptOverrides: Schema.Record(
-    ProjectId,
-    Schema.NullOr(Schema.Array(ProjectScript)),
-  ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+  projectScriptOverrides: Schema.Record(ProjectId, Schema.NullOr(Schema.Array(ProjectScript))).pipe(
+    Schema.withDecodingDefault(Effect.succeed({})),
+  ),
   projectAutoPullOverrides: Schema.Record(ProjectId, Schema.Boolean).pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
@@ -1429,18 +1228,15 @@ export const ServerSettings = Schema.Struct({
    * `projectAutoPullOverrides` and `projectScriptOverrides` are derived views
    * kept for one release so older clients keep reading them.
    */
-  projectSettingsOverrides: Schema.Record(
-    ProjectId,
-    ProjectSettingsOverrides,
-  ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+  projectSettingsOverrides: Schema.Record(ProjectId, ProjectSettingsOverrides).pipe(
+    Schema.withDecodingDefault(Effect.succeed({})),
+  ),
   /**
    * Whether the legacy per-project fields have been folded into
    * `projectSettingsOverrides`. The fold runs once so a later reset in the
    * settings UI is not undone by the next server start.
    */
-  projectSettingsFolded: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  projectSettingsFolded: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   /**
    * Whether agents may drive simulators and emulators. Gates the `device_*`
    * MCP tools and the preconfigured `agent-device` CLI the same way
@@ -1448,32 +1244,20 @@ export const ServerSettings = Schema.Struct({
    * when the provider session is prepared. The user's own Device panel is
    * unaffected.
    */
-  enableAgentDeviceAccess: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  enableAgentDeviceAccess: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   /**
    * Whether this server may install and run LMCS Code's device helper processes.
    * Kept separate from agent access so enabling the user's Device panel does
    * not also grant providers control of simulators and emulators.
    */
-  enableDeviceSupport: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
+  enableDeviceSupport: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   /** Whether the server-local Device panel setup flow has been completed. */
-  deviceOnboardingCompleted: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(false)),
-  ),
-  deviceHosts: SshDeviceHostConfigs.pipe(
-    Schema.withDecodingDefault(Effect.succeed([])),
-  ),
+  deviceOnboardingCompleted: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  deviceHosts: SshDeviceHostConfigs.pipe(Schema.withDecodingDefault(Effect.succeed([]))),
   sidebarAutoSettleAfterDays: Schema.NullOr(SidebarAutoSettleAfterDays).pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_SIDEBAR_AUTO_SETTLE_AFTER_DAYS),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_SIDEBAR_AUTO_SETTLE_AFTER_DAYS)),
   ),
-  sidebarAutoSettleOnMerge: Schema.Boolean.pipe(
-    Schema.withDecodingDefault(Effect.succeed(true)),
-  ),
+  sidebarAutoSettleOnMerge: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   backgroundActivity: BackgroundActivitySettings,
   // Legacy flat fields retained for old settings files and old clients. New
   // consumers should resolve `backgroundActivity` instead.
@@ -1484,19 +1268,13 @@ export const ServerSettings = Schema.Struct({
   ),
   providerHealthRefreshInterval: Schema.DurationFromMillis.pipe(
     Schema.withDecodingDefault(
-      Effect.succeed(
-        Duration.toMillis(DEFAULT_PROVIDER_HEALTH_REFRESH_INTERVAL),
-      ),
+      Effect.succeed(Duration.toMillis(DEFAULT_PROVIDER_HEALTH_REFRESH_INTERVAL)),
     ),
   ),
   backgroundActivityProfile: BackgroundActivityProfile.pipe(
-    Schema.withDecodingDefault(
-      Effect.succeed(DEFAULT_BACKGROUND_ACTIVITY_PROFILE),
-    ),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_BACKGROUND_ACTIVITY_PROFILE)),
   ),
-  defaultTheme: DefaultThemePreference.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
+  defaultTheme: DefaultThemePreference.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
   /**
    * When the environment's theme was last set, so clients can tell a re-set
    * of the same value from one they already applied: `t3 theme set` must act
@@ -1518,10 +1296,10 @@ export const ServerSettings = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
   /**
-   * Null means inherit: the repository's t3.json, then "local". The old
+   * Null means inherit: the repository's lmcs.json, then "local". The old
    * default "local" was never persisted (defaults are stripped on write), so
    * it now decodes as inherit, which resolves the same way because the old
-   * chain also let t3.json outrank the environment. Null stays off the wire
+   * chain also let lmcs.json outrank the environment. Null stays off the wire
    * so older clients, which require a literal here, keep decoding.
    */
   defaultThreadEnvMode: OmittedWhenNull(ThreadEnvMode),
@@ -1529,16 +1307,14 @@ export const ServerSettings = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed(true)),
   ),
   /**
-   * Null defers to the repository's t3.json, then to recursive. A value
+   * Null defers to the repository's lmcs.json, then to recursive. A value
    * picked on a newer server decodes as null here rather than failing the
    * whole settings snapshot for an older client.
    */
   worktreeSubmodules: ForwardCompatibleNullable(WorktreeSubmodules).pipe(
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
-  addProjectBaseDirectory: TrimmedString.pipe(
-    Schema.withDecodingDefault(Effect.succeed("")),
-  ),
+  addProjectBaseDirectory: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
   textGenerationModelSelection: ModelSelection.pipe(
     Schema.withDecodingDefault(
       Effect.succeed({
@@ -1576,17 +1352,11 @@ export const ServerSettings = Schema.Struct({
   // is removed entirely.
   providers: Schema.Struct({
     codex: CodexSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
-    claudeAgent: ClaudeSettings.pipe(
-      Schema.withDecodingDefault(Effect.succeed({})),
-    ),
+    claudeAgent: ClaudeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     cursor: CursorSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     grok: GrokSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
-    opencode: OpenCodeSettings.pipe(
-      Schema.withDecodingDefault(Effect.succeed({})),
-    ),
-    antigravity: AntigravitySettings.pipe(
-      Schema.withDecodingDefault(Effect.succeed({})),
-    ),
+    opencode: OpenCodeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+    antigravity: AntigravitySettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     qoder: QoderSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   }).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   // New driver-agnostic instance map. Keyed by `ProviderInstanceId`; values
@@ -1594,34 +1364,27 @@ export const ServerSettings = Schema.Struct({
   // is `Schema.Unknown` at this layer so envelopes with unknown drivers
   // (forks, downgrades, in-flight PR branches) round-trip without loss.
   // See providerInstance.ts for the forward/backward compatibility invariant.
-  providerInstances: Schema.Record(
-    ProviderInstanceId,
-    ProviderInstanceConfig,
-  ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
-  observability: ObservabilitySettings.pipe(
+  providerInstances: Schema.Record(ProviderInstanceId, ProviderInstanceConfig).pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
+  observability: ObservabilitySettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   // Keyed by a user-chosen id so a source keeps its rows across edits. Entries
   // this build cannot decode round-trip untouched, as provider instances do.
-  usageLimitSources: Schema.Record(
-    UsageLimitSourceId,
-    UsageLimitSourceConfig,
-  ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+  usageLimitSources: Schema.Record(UsageLimitSourceId, UsageLimitSourceConfig).pipe(
+    Schema.withDecodingDefault(Effect.succeed({})),
+  ),
   /** Allows this server to read the Cursor CLI's macOS Keychain login for account usage. */
   cursorKeychainUsageEnabled: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(false)),
   ),
   /** Exact model IDs, applied to past and future usage on this environment. */
-  usagePriceOverrides: Schema.Record(
-    TrimmedNonEmptyString,
-    UsageModelPriceOverride,
-  ).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+  usagePriceOverrides: Schema.Record(TrimmedNonEmptyString, UsageModelPriceOverride).pipe(
+    Schema.withDecodingDefault(Effect.succeed({})),
+  ),
 });
 export type ServerSettings = typeof ServerSettings.Type;
 
-export const DEFAULT_SERVER_SETTINGS: ServerSettings = Schema.decodeSync(
-  ServerSettings,
-)({});
+export const DEFAULT_SERVER_SETTINGS: ServerSettings = Schema.decodeSync(ServerSettings)({});
 
 /**
  * Read the legacy `enabled` flag embedded in a provider instance config
@@ -1629,9 +1392,7 @@ export const DEFAULT_SERVER_SETTINGS: ServerSettings = Schema.decodeSync(
  * flag going forward; this reader exists for legacy `providers.<kind>`
  * blobs and old settings files that still carry the flag in-config.
  */
-export const providerInstanceConfigEnabledFlag = (
-  config: unknown,
-): boolean | undefined => {
+export const providerInstanceConfigEnabledFlag = (config: unknown): boolean | undefined => {
   if (config === null || typeof config !== "object" || Array.isArray(config)) {
     return undefined;
   }
@@ -1666,11 +1427,7 @@ export const resolveProviderInstanceEnabled = (
   if (instance.enabled === false || configEnabled === false) {
     return false;
   }
-  return (
-    instance.enabled ??
-    configEnabled ??
-    defaultEnabledForDriver(instance.driver)
-  );
+  return instance.enabled ?? configEnabled ?? defaultEnabledForDriver(instance.driver);
 };
 
 export const ServerSettingsOperation = Schema.Literals([
@@ -1700,9 +1457,7 @@ export class ServerSettingsError extends Schema.TaggedError<ServerSettingsError>
 ) {
   override get message(): string {
     const provider =
-      this.providerInstanceId === undefined
-        ? ""
-        : ` for provider ${this.providerInstanceId}`;
+      this.providerInstanceId === undefined ? "" : ` for provider ${this.providerInstanceId}`;
     const variable =
       this.environmentVariable === undefined
         ? ""
@@ -1847,9 +1602,7 @@ export const ServerSettingsPatch = Schema.Struct({
   enableDeviceSupport: Schema.optionalKey(Schema.Boolean),
   deviceOnboardingCompleted: Schema.optionalKey(Schema.Boolean),
   deviceHosts: Schema.optionalKey(SshDeviceHostConfigs),
-  sidebarAutoSettleAfterDays: Schema.optionalKey(
-    Schema.NullOr(SidebarAutoSettleAfterDays),
-  ),
+  sidebarAutoSettleAfterDays: Schema.optionalKey(Schema.NullOr(SidebarAutoSettleAfterDays)),
   sidebarAutoSettleOnMerge: Schema.optionalKey(Schema.Boolean),
   backgroundActivity: Schema.optionalKey(
     Schema.Struct({
@@ -1875,12 +1628,8 @@ export const ServerSettingsPatch = Schema.Struct({
       followChangeRequestTemplates: Schema.optionalKey(Schema.Boolean),
     }),
   ),
-  sourceControlWriterModelSelection: Schema.optionalKey(
-    Schema.NullOr(ModelSelection),
-  ),
-  pullRequestMergeMethod: Schema.optionalKey(
-    Schema.NullOr(PullRequestMergeMethod),
-  ),
+  sourceControlWriterModelSelection: Schema.optionalKey(Schema.NullOr(ModelSelection)),
+  pullRequestMergeMethod: Schema.optionalKey(Schema.NullOr(PullRequestMergeMethod)),
   observability: Schema.optionalKey(
     Schema.Struct({
       otlpTracesUrl: Schema.optionalKey(TrimmedString),
@@ -1903,9 +1652,7 @@ export const ServerSettingsPatch = Schema.Struct({
   // entries is intentionally out of scope: the map is small, and partial
   // patches risk leaving driver-specific config in a half-merged state.
   // The web UI sends a fully-formed map every time it edits this field.
-  providerInstances: Schema.optionalKey(
-    Schema.Record(ProviderInstanceId, ProviderInstanceConfig),
-  ),
+  providerInstances: Schema.optionalKey(Schema.Record(ProviderInstanceId, ProviderInstanceConfig)),
   // Per-entry, unlike `providerInstances`: a client only ever adds or removes
   // one source, and sending the whole map races another edit that has not
   // echoed back yet. `null` removes; the server merges into its current map.
@@ -1915,10 +1662,7 @@ export const ServerSettingsPatch = Schema.Struct({
   cursorKeychainUsageEnabled: Schema.optionalKey(Schema.Boolean),
   /** Each entry replaces one model's rates; `null` restores automatic pricing. */
   usagePriceOverrides: Schema.optionalKey(
-    Schema.Record(
-      TrimmedNonEmptyString,
-      Schema.NullOr(UsageModelPriceOverride),
-    ),
+    Schema.Record(TrimmedNonEmptyString, Schema.NullOr(UsageModelPriceOverride)),
   ),
 });
 export type ServerSettingsPatch = typeof ServerSettingsPatch.Type;
@@ -1948,9 +1692,7 @@ export const ClientSettingsPatch = Schema.Struct({
   diffFilesCollapsed: Schema.optionalKey(Schema.Boolean),
   diffIgnoreWhitespace: Schema.optionalKey(Schema.Boolean),
   diffLayout: Schema.optionalKey(DiffLayout),
-  environmentIdentificationMode: Schema.optionalKey(
-    EnvironmentIdentificationMode,
-  ),
+  environmentIdentificationMode: Schema.optionalKey(EnvironmentIdentificationMode),
   glassOpacity: Schema.optionalKey(GlassOpacity),
   onboardingCompletedAt: Schema.optionalKey(Schema.NullOr(Schema.String)),
   fontSizeInterface: Schema.optionalKey(InterfaceFontSize),
@@ -1990,9 +1732,7 @@ export const ClientSettingsPatch = Schema.Struct({
   contextWindowMeterEnabled: Schema.optionalKey(Schema.Boolean),
   composerCollapseOnScroll: Schema.optionalKey(Schema.Boolean),
   composerRichTextEnabled: Schema.optionalKey(Schema.Boolean),
-  sendShortcut: Schema.optionalKey(
-    Schema.Literals(["enter", "mod-enter-multiline", "mod-enter"]),
-  ),
+  sendShortcut: Schema.optionalKey(Schema.Literals(["enter", "mod-enter-multiline", "mod-enter"])),
   followUpBehavior: Schema.optionalKey(Schema.Literals(["queue", "steer"])),
   proactivePanelsEnabled: Schema.optionalKey(Schema.Boolean),
   showSkillsInSlashMenu: Schema.optionalKey(Schema.Boolean),

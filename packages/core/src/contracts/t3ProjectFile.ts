@@ -6,10 +6,10 @@ import { ProjectScriptIcon } from "./orchestration.ts";
 import type { ProjectScopedServerSettingKey, ServerSettings } from "./settings.ts";
 
 /** File name of the checked-in LMCS project file, resolved at the workspace root. */
-export const T3_PROJECT_FILE_NAME = "t3.json";
+export const T3_PROJECT_FILE_NAME = "lmcs.json";
 
 /** Public URL of the published JSON Schema for {@link T3ProjectFile}. */
-export const T3_PROJECT_FILE_SCHEMA_URL = "https://lmcs.codes/schema/t3.json";
+export const T3_PROJECT_FILE_SCHEMA_URL = "https://lmcs.codes/schema/lmcs.json";
 
 const T3_PROJECT_FILE_PATH_MAX_LENGTH = 512;
 const T3_PROJECT_FILE_MAX_SCRIPTS = 50;
@@ -103,15 +103,15 @@ export const T3ProjectFile = Schema.Struct({
 }).annotate({
   title: "LMCS project file",
   description:
-    "Checked-in project configuration for LMCS Code (t3.json at the repository root). See https://lmcs.codes for documentation.",
+    "Checked-in project configuration for LMCS Code (lmcs.json at the repository root). See https://lmcs.codes for documentation.",
 });
 export type T3ProjectFile = typeof T3ProjectFile.Type;
 
 /**
- * Settings a repository can also declare in t3.json. A key here must be
+ * Settings a repository can also declare in lmcs.json. A key here must be
  * nullable on `ServerSettings` (null means inherit) so both the project
  * override and the environment value can defer to the file; `field` names
- * the t3.json field carrying the same value and `builtIn` is what applies
+ * the lmcs.json field carrying the same value and `builtIn` is what applies
  * when every tier is unset. `resolveProjectSettings` walks project override,
  * environment value, file, built-in, so listing a key here is the whole
  * change for a new file-backed setting.
@@ -135,7 +135,7 @@ export type ProjectFileBackedSettingKey = keyof typeof PROJECT_FILE_BACKED_SETTI
 
 /**
  * `ServerSettings` with every file-backed key resolved to a concrete value.
- * What `resolveProjectSettings(...).settings` produces once a t3.json (or
+ * What `resolveProjectSettings(...).settings` produces once a lmcs.json (or
  * its absence) has been accounted for.
  */
 export type ResolvedServerSettings = Omit<ServerSettings, ProjectFileBackedSettingKey> & {

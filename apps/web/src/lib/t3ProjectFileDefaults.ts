@@ -9,7 +9,7 @@ import {
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 
 /**
- * Read and decode the project's checked-in `t3.json`.
+ * Read and decode the project's checked-in `lmcs.json`.
  *
  * Imperative counterpart to `useT3ProjectFileState` for the new-thread path,
  * which resolves defaults at call time rather than render time. The file

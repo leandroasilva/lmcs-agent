@@ -55,7 +55,7 @@ describe("settingInheritanceLayers", () => {
     ]);
   });
 
-  it("shows the checkout's t3.json as a layer for file-backed keys", () => {
+  it("shows the checkout's lmcs.json as a layer for file-backed keys", () => {
     const file = { defaultThreadEnvMode: "worktree" as const };
     const fromFile = settingInheritanceLayers(
       {
@@ -70,10 +70,13 @@ describe("settingInheritanceLayers", () => {
     expect(fromFile.map((layer) => [layer.label, layer.value, layer.effective])).toEqual([
       ["Project", "Inherits", false],
       ["Laptop", "Inherits", false],
-      ["t3.json", "New worktree", true],
+      ["lmcs.json", "New worktree", true],
       ["Default", "Current checkout", false],
     ]);
-    const settings = { ...DEFAULT_SERVER_SETTINGS, defaultThreadEnvMode: "local" as const };
+    const settings = {
+      ...DEFAULT_SERVER_SETTINGS,
+      defaultThreadEnvMode: "local" as const,
+    };
     const fromEnvironment = settingInheritanceLayers(
       {
         environmentId,

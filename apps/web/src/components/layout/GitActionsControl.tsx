@@ -13,6 +13,7 @@ import type {
   SourceControlProviderKind,
   SourceControlPublishRepositoryResult,
   SourceControlRepositoryVisibility,
+  TextGenerationPolicyKind,
   VcsStatusResult,
 } from "@lmcstools/core";
 import { useNavigate } from "@tanstack/react-router";
@@ -37,6 +38,7 @@ import {
   InfoIcon,
   LockIcon,
   GlobeIcon,
+  SparklesIcon,
 } from "lucide-react";
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import {
@@ -103,6 +105,8 @@ import {
   useVcsPullAction,
 } from "~/lib/sourceControlActions";
 import { useThreadShell } from "~/state/entities";
+import { gitEnvironment } from "~/state/git";
+import { reviewEnvironment } from "~/state/review";
 import { useEnvironmentQuery } from "~/state/query";
 import { serverEnvironment } from "~/state/server";
 import { sourceControlEnvironment } from "~/state/sourceControl";
@@ -979,6 +983,9 @@ export default function GitActionsControl({
   const [excludedFiles, setExcludedFiles] = useState<ReadonlySet<string>>(new Set());
   const [isEditingFiles, setIsEditingFiles] = useState(false);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [isGeneratingCommitMessage, setIsGeneratingCommitMessage] = useState(false);
+  const [commitStyle, setCommitStyle] = useState<TextGenerationPolicyKind>("default");
+  const [commitStyleOpen, setCommitStyleOpen] = useState(false);
   const [pendingDefaultBranchAction, setPendingDefaultBranchAction] =
     useState<PendingDefaultBranchAction | null>(null);
   const activeGitActionProgressRef = useRef<ActiveGitActionProgress | null>(null);
@@ -1086,6 +1093,74 @@ export default function GitActionsControl({
   const selectedFiles = allFiles.filter((f) => !excludedFiles.has(f.path));
   const allSelected = excludedFiles.size === 0;
   const noneSelected = selectedFiles.length === 0;
+
+  const diffPreviewQuery = useEnvironmentQuery(
+    activeEnvironmentId !== null && gitCwd !== null && isCommitDialogOpen
+      ? reviewEnvironment.diffPreview({
+          environmentId: activeEnvironmentId,
+          input: { cwd: gitCwd },
+        })
+      : null,
+  );
+  const generateCommitMessageCommand = useAtomCommand(
+    gitEnvironment.generateCommitMessage,
+    "generate commit message",
+  );
+
+  const handleGenerateCommitMessage = useCallback(async () => {
+    if (
+      !activeEnvironmentId ||
+      !gitCwd ||
+      !activeServerThread?.modelSelection ||
+      selectedFiles.length === 0
+    ) {
+      return;
+    }
+    setIsGeneratingCommitMessage(true);
+    try {
+      const diffData = diffPreviewQuery.data;
+      const diffSource = diffData?.sources.find((s) => s.kind === "working-tree");
+      const stagedPatch = diffSource?.diff ?? "";
+      const stagedSummary = selectedFiles
+        .map((f) => `${f.path} (+${f.insertions} -${f.deletions})`)
+        .join("\n");
+      const result = await generateCommitMessageCommand({
+        environmentId: activeEnvironmentId,
+        input: {
+          cwd: gitCwd,
+          branch: activeServerThread.branch,
+          stagedSummary: stagedSummary || "No staged changes summary available.",
+          stagedPatch,
+          modelSelection: activeServerThread.modelSelection,
+          policy: {
+            kind: commitStyle,
+            inferRepositoryConventions: commitStyle === "repo_conventions",
+          },
+        },
+      });
+      if (result._tag === "Success") {
+        const { subject, body } = result.value;
+        setDialogCommitMessage(body ? `${subject}\n\n${body}` : subject);
+      } else {
+        const error = squashAtomCommandFailure(result);
+        toastManager.update("generate-commit-message", {
+          type: "error",
+          title: "Failed to generate commit message",
+          description: String(error),
+        });
+      }
+    } finally {
+      setIsGeneratingCommitMessage(false);
+    }
+  }, [
+    activeEnvironmentId,
+    gitCwd,
+    activeServerThread,
+    selectedFiles,
+    diffPreviewQuery,
+    generateCommitMessageCommand,
+    commitStyle,
+  ]);
 
   const initAction = useVcsInitAction(sourceControlScope);
   const runImmediateGitAction = useGitStackedAction(sourceControlScope);
@@ -1743,7 +1818,6 @@ export default function GitActionsControl({
         !isRepo ? (
           <MenuItem
             density={presentation === "menu" ? "touch" : "default"}
-
             disabled={initAction.isPending}
             onClick={initializeGit}
           >
@@ -1756,7 +1830,6 @@ export default function GitActionsControl({
           <>
             <MenuItem
               density={presentation === "menu" ? "touch" : "default"}
-
               disabled={isGitActionRunning || quickAction.disabled || !!quickActionDisabledReason}
               onClick={runQuickAction}
             >
@@ -1977,7 +2050,68 @@ export default function GitActionsControl({
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium">Commit message (optional)</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Commit message (optional)</p>
+                <div className="flex items-center gap-1.5">
+                  <Popover open={commitStyleOpen} onOpenChange={setCommitStyleOpen}>
+                    <PopoverTrigger>
+                      <Button variant="ghost" size="xs">
+                        {commitStyle === "conventional_commits"
+                          ? "Conventional"
+                          : commitStyle === "repo_conventions"
+                            ? "Repo conventions"
+                            : "Default"}
+                        <ChevronDownIcon className="size-3" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverPopup className="min-w-[10rem]" align="end">
+                      <div className="flex flex-col gap-0.5 p-1">
+                        {(
+                          [
+                            ["default", "Default"],
+                            ["conventional_commits", "Conventional Commits"],
+                            ["repo_conventions", "Repository Conventions"],
+                          ] as const
+                        ).map(([kind, label]) => (
+                          <button
+                            key={kind}
+                            type="button"
+                            className={cn(
+                              "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs",
+                              "hover:bg-accent",
+                              commitStyle === kind && "bg-accent font-medium",
+                            )}
+                            onClick={() => {
+                              setCommitStyle(kind);
+                              setCommitStyleOpen(false);
+                            }}
+                          >
+                            {commitStyle === kind && <CheckIcon className="size-3 text-primary" />}
+                            <span className={commitStyle !== kind ? "pl-5" : ""}>{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverPopup>
+                  </Popover>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    disabled={
+                      isGeneratingCommitMessage ||
+                      !activeServerThread?.modelSelection ||
+                      selectedFiles.length === 0
+                    }
+                    onClick={handleGenerateCommitMessage}
+                  >
+                    {isGeneratingCommitMessage ? (
+                      <Spinner className="size-3" />
+                    ) : (
+                      <SparklesIcon className="size-3" />
+                    )}
+                    Generate with AI
+                  </Button>
+                </div>
+              </div>
               <Textarea
                 value={dialogCommitMessage}
                 onChange={(event) => setDialogCommitMessage(event.target.value)}

@@ -141,7 +141,7 @@ export function useNewThreadHandler() {
             currentRouteTarget?.kind === "draft" ? currentRouteTarget.draftId : null,
           destinationDraftId,
         });
-      // The shared resolver owns the priority order. The t3.json read is
+      // The shared resolver owns the priority order. The lmcs.json read is
       // skipped entirely when a higher-priority source decides, and its
       // query atom caches per project after the first call.
       const resolveDefaultEnvMode = async (): Promise<DraftThreadEnvMode> => {
@@ -416,7 +416,9 @@ export function useNewThreadHandler() {
         if (modelSelectionOverride) {
           // Project defaults and carried selections both outrank global sticky
           // state. The project default wins when both are present.
-          setModelSelection(draftId, modelSelectionOverride, { replaceOptions: true });
+          setModelSelection(draftId, modelSelectionOverride, {
+            replaceOptions: true,
+          });
         }
         await router.navigate({
           to: "/draft/$draftId",

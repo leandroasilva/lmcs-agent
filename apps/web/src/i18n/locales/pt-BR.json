@@ -961,7 +961,7 @@
       "inheritance": {
         "mixed": "Diferente entre os ambientes selecionados",
         "overridden": "Substituído para este projeto",
-        "t3json": "Herdado do t3.json do repositório",
+        "t3json": "Herdado do lmcs.json do repositório",
         "inheritedFrom": "Herdado de {{source}}",
         "environmentFallback": "ambiente",
         "setOnEnvironment": "Definido no ambiente",
@@ -1054,14 +1054,14 @@
         "rowTitle": "Ações",
         "rowDescription": "Comandos executados no checkout deste projeto ou em seu worktree, com atalhos opcionais.",
         "importScripts": "Importar scripts",
-        "importGroupLabel": "Importar de t3.json",
+        "importGroupLabel": "Importar de lmcs.json",
         "importHint": "Adicione ações declaradas por este checkout sem editá-las antes.",
         "importFailed": "Falha ao importar ação.",
         "addAction": "Adicionar ação",
         "mixedTitle": "Ações diferentes entre ambientes",
         "mixedDescription": "Escolha um ambiente para editar sua lista. Adicionar uma ação aqui a adiciona em todos os ambientes selecionados.",
-        "invalidFileTitle": "t3.json é inválido",
-        "invalidFileDescription": "Há um t3.json neste checkout, mas ele falha ao ser analisado, então toda ação e ícone que ele declara é ignorado. Verifique a sintaxe do JSON e os valores de ícone.",
+        "invalidFileTitle": "lmcs.json é inválido",
+        "invalidFileDescription": "Há um lmcs.json neste checkout, mas ele falha ao ser analisado, então toda ação e ícone que ele declara é ignorado. Verifique a sintaxe do JSON e os valores de ícone.",
         "empty": "Nenhuma ação configurada.",
         "setupBadge": "setup",
         "previewBadge": "preview · somente desktop",
@@ -1112,7 +1112,7 @@
         "workspace": {
           "title": "Workspace",
           "descriptionProject": "Onde novas threads neste projeto começam.",
-          "descriptionEnvironment": "Onde novas threads começam. Projetos e seus t3.json podem substituí-la.",
+          "descriptionEnvironment": "Onde novas threads começam. Projetos e seus lmcs.json podem substituí-la.",
           "aria": "Workspace padrão",
           "resetLabel": "workspace padrão"
         },
@@ -1124,7 +1124,7 @@
         },
         "submodules": {
           "descriptionProject": "Como novos worktrees neste projeto populam submódulos git.",
-          "descriptionEnvironment": "Como novos worktrees populam submódulos git. Projetos e seus t3.json podem substituí-lo.",
+          "descriptionEnvironment": "Como novos worktrees populam submódulos git. Projetos e seus lmcs.json podem substituí-lo.",
           "aria": "Submódulos do worktree",
           "resetLabel": "submódulos do worktree"
         },
@@ -1187,7 +1187,7 @@
       },
       "scriptsControl": {
         "importFailed": "Falha ao importar a ação.",
-        "fromT3Json": "Do t3.json",
+        "fromT3Json": "Do lmcs.json",
         "importAria": "Importar",
         "setupName": "{{name}} (setup)",
         "editAria": "Editar {{name}}",

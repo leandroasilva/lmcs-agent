@@ -12,7 +12,7 @@ import { resolveScopedSettingsTargets, selectScopedSettingsEnvironments } from "
 import { resolveSettingsScope, type SettingsScopeSearch } from "./settingsScope";
 
 /**
- * Each member's decoded t3.json, so file-backed settings show the file as a
+ * Each member's decoded lmcs.json, so file-backed settings show the file as a
  * layer in the inheritance chain. A member is only present once its read has
  * settled; the query atom caches per (environment, cwd).
  */

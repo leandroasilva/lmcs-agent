@@ -88,7 +88,7 @@ export function ProjectActionsSettings() {
     }),
   );
 
-  // A project's t3.json can declare actions to import. Read it from the
+  // A project's lmcs.json can declare actions to import. Read it from the
   // representative checkout; the imported action still fans out.
   const representativeMember = target?.projectId ? memberById.get(target.projectId) : undefined;
   const t3File = useT3ProjectFileState(

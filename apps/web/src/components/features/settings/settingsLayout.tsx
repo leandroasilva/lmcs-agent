@@ -409,7 +409,7 @@ export function SettingsRow({
           state: "overridden",
           summary: t("settings.shared.inheritance.overridden"),
         }
-      : source === "t3.json"
+      : source === "lmcs.json"
         ? {
             state: "inherited",
             summary: t("settings.shared.inheritance.t3json"),
