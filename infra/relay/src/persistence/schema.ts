@@ -3,7 +3,7 @@ import type {
   RelayAgentActivityState,
   RelayAgentAwarenessPreferences,
   RelayManagedEndpointOrigin,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import {
   boolean,
   index,

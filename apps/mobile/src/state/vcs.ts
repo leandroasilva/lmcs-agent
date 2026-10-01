@@ -1,7 +1,4 @@
-import {
-  createVcsActionManager,
-  createVcsEnvironmentAtoms,
-} from "@lmcstools/client-runtime/state/vcs";
+import { createVcsActionManager, createVcsEnvironmentAtoms } from "@lmcstools/client/state/vcs";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

@@ -1,4 +1,4 @@
-import type { DesktopUpdateRemoteOutcome, DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopUpdateRemoteOutcome, DesktopUpdateState } from "@lmcstools/core";
 
 /**
  * What a server-triggered update run should do next, given the updater's

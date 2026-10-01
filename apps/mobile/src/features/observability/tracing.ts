@@ -1,5 +1,5 @@
 import Constants from "expo-constants";
-import { makeRelayClientTracingLayer } from "@lmcstools/shared/relayTracing";
+import { makeRelayClientTracingLayer } from "@lmcstools/core/relayTracing";
 
 import { hasTracingPublicConfig, resolveCloudPublicConfig } from "../cloud/publicConfig";
 

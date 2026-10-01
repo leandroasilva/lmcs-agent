@@ -4,20 +4,20 @@ import type {
   OrchestrationProjectShell,
   OrchestrationThreadShell,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   RelayApi,
   type RelayAgentActivityPublishProofPayload,
   type RelayAgentActivityState,
-} from "@lmcstools/contracts/relay";
-import { projectThreadAwareness } from "@lmcstools/shared/agentAwareness";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
-import { withRelayClientTracing } from "@lmcstools/shared/relayTracing";
+} from "@lmcstools/core/relay";
+import { projectThreadAwareness } from "@lmcstools/core/agentAwareness";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
+import { withRelayClientTracing } from "@lmcstools/core/relayTracing";
 import {
   normalizeRelayIssuer,
   RELAY_ACTIVITY_PUBLISH_TYP,
   signRelayJwt,
-} from "@lmcstools/shared/relayJwt";
+} from "@lmcstools/core/relayJwt";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";

@@ -1,0 +1,69 @@
+import { BookmarkIcon } from "lucide-react";
+import { memo } from "react";
+import { useTranslation } from "react-i18next";
+
+import { cn } from "~/lib/utils";
+import "../../../i18n";
+import { ComposerBanner } from "./ComposerBanner";
+
+/**
+ * Bookmark tab that shows the stash count beside the composer's other attachments
+ * and opens the stash menu.
+ *
+ * On save the badge gives one quiet acknowledgement: it lifts to full
+ * opacity and the count ticks over. `pulseKey` changes per stash, remounting
+ * the count so the transition replays without a continuous animation.
+ */
+export const ComposerStashBadge = memo(function ComposerStashBadge(props: {
+  count: number;
+  menuOpen: boolean;
+  pulseKey: number;
+  pulsing: boolean;
+  onToggleMenu: () => void;
+}) {
+  const { t } = useTranslation();
+  if (props.count === 0) return null;
+  const count = (
+    <ComposerBanner.Count
+      key={props.pulseKey}
+      className={cn(
+        props.pulsing
+          ? "text-primary transition-[opacity,translate] duration-180 ease-out starting:translate-y-0.5 starting:opacity-0 motion-reduce:transition-none"
+          : "text-muted-foreground",
+      )}
+    >
+      {props.count}
+    </ComposerBanner.Count>
+  );
+
+  return (
+    <ComposerBanner.Root
+      density="comfortable"
+      width="content"
+      data-composer-shoulder-tab
+      className="ml-auto"
+    >
+      <ComposerBanner.Row
+        render={<button type="button" />}
+        data-prompt-stash-badge="true"
+        aria-label={t("chat.stash.openAria", { total: props.count })}
+        aria-expanded={props.menuOpen}
+        className={cn(
+          "transition-colors duration-200",
+          props.menuOpen && "pointer-events-none",
+          props.menuOpen || props.pulsing
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+        onPointerDown={(event) => event.preventDefault()}
+        onClick={props.onToggleMenu}
+      >
+        <ComposerBanner.Icon>
+          <BookmarkIcon />
+        </ComposerBanner.Icon>
+        <ComposerBanner.Content>{t("chat.stash.label")}</ComposerBanner.Content>
+        <ComposerBanner.Actions>{count}</ComposerBanner.Actions>
+      </ComposerBanner.Row>
+    </ComposerBanner.Root>
+  );
+});

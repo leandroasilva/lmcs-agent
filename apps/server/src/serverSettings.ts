@@ -27,7 +27,7 @@ import {
   ServerSettings,
   ServerSettingsError,
   type ServerSettingsPatch,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cache from "effect/Cache";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -49,16 +49,16 @@ import * as Stream from "effect/Stream";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import { writeFileStringAtomically } from "./atomicWrite.ts";
 import * as ServerConfig from "./config.ts";
-import { type DeepPartial, deepMerge } from "@lmcstools/shared/Struct";
-import { fromJsonStringPretty, fromLenientJson } from "@lmcstools/shared/schemaJson";
+import { type DeepPartial, deepMerge } from "@lmcstools/core/Struct";
+import { fromJsonStringPretty, fromLenientJson } from "@lmcstools/core/schemaJson";
 import {
   applyServerSettingsPatch,
   deriveLegacyProjectOverrides,
   isModelSelectionProviderEnabled,
-} from "@lmcstools/shared/serverSettings";
+} from "@lmcstools/core/serverSettings";
 import * as ServerSecretStore from "./auth/ServerSecretStore.ts";
 
-export { resolveSourceControlWriterModelSelection } from "@lmcstools/shared/serverSettings";
+export { resolveSourceControlWriterModelSelection } from "@lmcstools/core/serverSettings";
 
 const encodeServerSettings = Schema.encodeEffect(ServerSettings);
 const encodeServerSettingsJson = Schema.encodeUnknownEffect(fromJsonStringPretty(ServerSettings));

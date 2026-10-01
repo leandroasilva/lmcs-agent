@@ -14,7 +14,7 @@
  *
  * @module usageScanCache
  */
-import type { UsageProviderKind } from "@lmcstools/contracts";
+import type { UsageProviderKind } from "@lmcstools/core";
 
 import { GUARD_LENGTH, type TranscriptParsePosition } from "./usageTranscriptReader.ts";
 import type { CodexScanState, UsageRecord } from "./usageTranscripts.ts";

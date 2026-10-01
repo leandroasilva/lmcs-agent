@@ -34,9 +34,9 @@ import {
   type DeviceHostSummary,
   LOCAL_DEVICE_HOST_ID,
   type ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as FileSystem from "effect/FileSystem";
-import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@lmcstools/shared/nodeRuntime";
+import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@lmcstools/core/nodeRuntime";
 import * as Path from "effect/Path";
 import { ensureAgentDevice, ensureDeviceHub } from "./DeviceToolchain.ts";
 import * as ServerConfig from "../config.ts";

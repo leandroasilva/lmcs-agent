@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ProviderInstanceId } from "@lmcstools/contracts";
+import { ProviderInstanceId } from "@lmcstools/core";
 
 import {
   providerModelKey,

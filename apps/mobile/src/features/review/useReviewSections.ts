@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import * as DateTime from "effect/DateTime";
 
-import type { EnvironmentId, OrchestrationCheckpointSummary, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, OrchestrationCheckpointSummary, ThreadId } from "@lmcstools/core";
 
 import { useCheckpointDiff } from "../../state/queries";
 import { useEnvironmentQuery } from "../../state/query";

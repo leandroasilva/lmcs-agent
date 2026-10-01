@@ -5,16 +5,16 @@ import { LegendList } from "@legendapp/list/react-native";
 import {
   type EnvironmentProject,
   type EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
+} from "@lmcstools/client/state/shell";
 import {
   threadSearchMatchKey,
   type EnvironmentThreadSearchMatch,
-} from "@lmcstools/client-runtime/state/thread-search";
+} from "@lmcstools/client/state/thread-search";
 import {
   type EnvironmentId,
   resolveEnvironmentMachineKind,
   type SidebarProjectGroupingMode,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

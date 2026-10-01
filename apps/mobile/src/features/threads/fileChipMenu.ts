@@ -1,8 +1,8 @@
-import { fileBasename } from "@lmcstools/client-runtime/markdown-links";
-import type { ThreadId } from "@lmcstools/contracts";
+import { fileBasename } from "@lmcstools/client/markdown-links";
+import type { ThreadId } from "@lmcstools/core";
 import { resolveMarkdownLinkPresentation } from "@lmcstools/mobile-markdown-text/links";
 import type { MarkdownFileContextMenu } from "@lmcstools/mobile-markdown-text/types";
-import { hostPreviewMimeTypeFromExtension } from "@lmcstools/shared/filePreview";
+import { hostPreviewMimeTypeFromExtension } from "@lmcstools/core/filePreview";
 
 import {
   isAbsolutePath,

@@ -1,18 +1,18 @@
 import {
   AVAILABLE_CONNECTION_STATE,
   connectionProjectionPhase,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   createEnvironmentShellAtoms,
   createEnvironmentSnapshotAtom,
   createShellEnvironmentAtoms,
   type EnvironmentShellState,
-} from "@lmcstools/client-runtime/state/shell";
+} from "@lmcstools/client/state/shell";
 import {
   type EnvironmentCatalogState,
   enabledEnvironmentIds,
-} from "@lmcstools/client-runtime/state/connections";
-import type { EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/connections";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 

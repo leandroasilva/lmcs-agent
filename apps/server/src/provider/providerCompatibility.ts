@@ -4,8 +4,8 @@ import {
   type ProviderDriverKind,
   type ServerProvider,
   type ServerProviderCompatibilityAdvisory,
-} from "@lmcstools/contracts";
-import { satisfiesSemverRange } from "@lmcstools/shared/semver";
+} from "@lmcstools/core";
+import { satisfiesSemverRange } from "@lmcstools/core/semver";
 import * as Schema from "effect/Schema";
 import packageJson from "../../package.json" with { type: "json" };
 

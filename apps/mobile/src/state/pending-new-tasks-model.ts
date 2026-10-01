@@ -1,4 +1,4 @@
-import type { EnvironmentId, ProjectId } from "@lmcstools/contracts";
+import type { EnvironmentId, ProjectId } from "@lmcstools/core";
 
 import { deriveThreadTitleFromPrompt } from "../lib/projectThreadStartTurn";
 import type { QueuedThreadCreation, QueuedThreadMessage } from "./thread-outbox-model";

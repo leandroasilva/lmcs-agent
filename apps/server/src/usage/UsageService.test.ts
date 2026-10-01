@@ -7,15 +7,15 @@ import * as NodeSqlite from "node:sqlite";
 
 import { assert, describe, it } from "@effect/vitest";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { mergeUsage } from "@lmcstools/shared/usageMerge";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { mergeUsage } from "@lmcstools/core/usageMerge";
 import {
   EnvironmentId,
   ProviderDriverKind,
   ProviderInstanceId,
   UsageDay,
   type UsageSummaryInput,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Duration from "effect/Duration";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";

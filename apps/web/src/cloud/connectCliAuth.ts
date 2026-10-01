@@ -3,8 +3,8 @@ import {
   connectLoopbackRedirectUri,
   CONNECT_OAUTH_SCOPES,
   type ConnectAuthorizeRequest,
-} from "@lmcstools/shared/connectAuth";
-import { clerkFrontendApiUrlFromPublishableKey } from "@lmcstools/shared/relayAuth";
+} from "@lmcstools/core/connectAuth";
+import { clerkFrontendApiUrlFromPublishableKey } from "@lmcstools/core/relayAuth";
 
 import { isHostedStaticApp } from "../hostedPairing";
 import { hasCloudPublicConfig, resolveCloudPublicConfig, trimNonEmpty } from "./publicConfig";

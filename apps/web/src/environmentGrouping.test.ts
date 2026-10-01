@@ -1,4 +1,4 @@
-import { EnvironmentId, ProjectId, ProviderInstanceId } from "@lmcstools/contracts";
+import { EnvironmentId, ProjectId, ProviderInstanceId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -14,7 +14,7 @@ import {
   buildSidebarProjectSnapshots,
   projectGroupsSpanEnvironments,
 } from "./sidebarProjectGrouping";
-import { orderItemsByPreferredIds } from "./components/Sidebar.logic";
+import { orderItemsByPreferredIds } from "./components/layout/Sidebar.logic";
 import { legacyProjectCwdPreferenceKey } from "./uiStateStore";
 import type { Project } from "./types";
 

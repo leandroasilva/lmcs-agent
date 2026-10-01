@@ -11,10 +11,11 @@ import {
   type WorktreeSubmodules,
   PROJECT_SCOPED_SERVER_SETTING_KEYS,
   type ProjectScopedServerSettingKey,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useRef, useState, type ComponentProps } from "react";
 import { Alert, Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { RUNTIME_MODE_CHOICES } from "../threads/thread-settings-options";
 import { serverEnvironment } from "../../state/server";
@@ -38,11 +39,14 @@ import {
 
 type SettingsPage = "new-threads" | "source-control" | "agent-behavior" | "maintenance";
 
-const PAGE_TITLES: Record<SettingsPage, string> = {
-  "new-threads": "New threads",
-  "source-control": "Source control",
-  "agent-behavior": "Agent behavior",
-  maintenance: "Maintenance",
+const PAGE_TITLE_KEYS: Record<
+  SettingsPage,
+  "newThreads" | "sourceControl" | "agentBehavior" | "maintenance"
+> = {
+  "new-threads": "newThreads",
+  "source-control": "sourceControl",
+  "agent-behavior": "agentBehavior",
+  maintenance: "maintenance",
 };
 
 const PAGE_PROJECT_KEYS: Record<SettingsPage, readonly ProjectScopedServerSettingKey[]> = {
@@ -54,66 +58,80 @@ const PAGE_PROJECT_KEYS: Record<SettingsPage, readonly ProjectScopedServerSettin
 
 const SUBMODULE_CHOICES: ReadonlyArray<{
   readonly mode: WorktreeSubmodules | null;
-  readonly label: string;
-  readonly description: string;
+  readonly labelKey: "inherit" | "recursive" | "topLevelOnly" | "skip";
+  readonly descriptionKey:
+    | "inheritSubmoduleDescription"
+    | "recursiveDescription"
+    | "topLevelOnlyDescription"
+    | "skipDescription";
 }> = [
   // Only offered at environment scope; a project falls back through "Use defaults".
   {
     mode: null,
-    label: "Inherit",
-    description: "Use the repository's t3.json, or initialize recursively.",
+    labelKey: "inherit",
+    descriptionKey: "inheritSubmoduleDescription",
   },
-  { mode: "recursive", label: "Recursive", description: "Initialize nested submodules too." },
+  {
+    mode: "recursive",
+    labelKey: "recursive",
+    descriptionKey: "recursiveDescription",
+  },
   {
     mode: "top-level",
-    label: "Top level only",
-    description: "Skip submodules declared inside other submodules.",
+    labelKey: "topLevelOnly",
+    descriptionKey: "topLevelOnlyDescription",
   },
-  { mode: "none", label: "Skip", description: "Leave submodules empty for a setup script." },
+  { mode: "none", labelKey: "skip", descriptionKey: "skipDescription" },
 ];
 
 const WORKSPACE_CHOICES: ReadonlyArray<{
   readonly mode: ThreadEnvMode | null;
-  readonly label: string;
-  readonly description: string;
+  readonly labelKey: "inherit" | "currentCheckout" | "newWorktree";
+  readonly descriptionKey:
+    | "inheritWorkspaceDescription"
+    | "currentCheckoutDescription"
+    | "newWorktreeDescription";
 }> = [
   // Only offered at environment scope; a project falls back through "Use defaults".
   {
     mode: null,
-    label: "Inherit",
-    description: "Use the repository's t3.json, or the current checkout.",
+    labelKey: "inherit",
+    descriptionKey: "inheritWorkspaceDescription",
   },
   {
     mode: "local",
-    label: "Current checkout",
-    description: "Start new threads in the existing workspace.",
+    labelKey: "currentCheckout",
+    descriptionKey: "currentCheckoutDescription",
   },
   {
     mode: "worktree",
-    label: "New worktree",
-    description: "Give each new thread a separate checkout.",
+    labelKey: "newWorktree",
+    descriptionKey: "newWorktreeDescription",
   },
 ];
 
 const STREAMING_CHOICES: ReadonlyArray<{
   readonly mode: ResponseStreamingMode;
-  readonly label: string;
-  readonly description: string;
+  readonly labelKey: "afterTheTurn" | "finishedParagraphs" | "tokenByToken";
+  readonly descriptionKey:
+    | "afterTheTurnDescription"
+    | "finishedParagraphsDescription"
+    | "tokenByTokenDescription";
 }> = [
   {
     mode: "turn",
-    label: "After the turn",
-    description: "Show the answer when the agent finishes.",
+    labelKey: "afterTheTurn",
+    descriptionKey: "afterTheTurnDescription",
   },
   {
     mode: "paragraph",
-    label: "Finished paragraphs",
-    description: "Show each paragraph or code block as it completes.",
+    labelKey: "finishedParagraphs",
+    descriptionKey: "finishedParagraphsDescription",
   },
   {
     mode: "token",
-    label: "Token by token (legacy)",
-    description: "Repaint for every token; this can be slower.",
+    labelKey: "tokenByToken",
+    descriptionKey: "tokenByTokenDescription",
   },
 ];
 
@@ -134,6 +152,7 @@ export function SettingsEnvironmentMaintenanceRouteScreen() {
 }
 
 function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
@@ -173,7 +192,10 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
     setPendingWrites((count) => count + 1);
     void Promise.allSettled(
       writes.map((entry) =>
-        updateSettings({ environmentId: entry.environmentId, input: { patch: entry.patch } }),
+        updateSettings({
+          environmentId: entry.environmentId,
+          input: { patch: entry.patch },
+        }),
       ),
     ).finally(() => {
       writeInFlight.current = false;
@@ -190,7 +212,10 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
     setPendingWrites((count) => count + 1);
     void Promise.allSettled(
       writes.map((entry) =>
-        updateSettings({ environmentId: entry.environmentId, input: { patch: entry.patch } }),
+        updateSettings({
+          environmentId: entry.environmentId,
+          input: { patch: entry.patch },
+        }),
       ),
     ).finally(() => {
       writeInFlight.current = false;
@@ -219,7 +244,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
     <>
       <SettingsEnvironmentFilterHeader />
       <SettingsScreen
-        title={PAGE_TITLES[props.page]}
+        title={t(`nav.${PAGE_TITLE_KEYS[props.page]}`)}
         trailing={<AndroidSettingsEnvironmentFilter />}
       >
         <ScrollView
@@ -227,19 +252,23 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
           showsVerticalScrollIndicator={false}
           className="flex-1"
           contentContainerClassName="gap-6 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+          contentContainerStyle={{
+            paddingBottom: Math.max(insets.bottom, 18) + 18,
+          }}
         >
           {!hasConnectedSelection || reference === null ? (
             <Text className="px-2 text-base text-foreground-muted">
               {projectSelected
-                ? "Select a project with a checkout on a connected environment."
-                : "Use the filter above to select a connected environment."}
+                ? t("settings.serverControls.emptyProject")
+                : t("settings.serverControls.emptyEnvironment")}
             </Text>
           ) : (
             <>
               {projectSelected ? (
                 <SettingsProjectOverridesSection
-                  projectLabel={selectedProject?.label ?? "Unavailable project"}
+                  projectLabel={
+                    selectedProject?.label ?? t("settings.serverControls.unavailableProject")
+                  }
                   hasOverrides={targets.some((target) =>
                     PAGE_PROJECT_KEYS[props.page].some((key) => target.sources[key] === "project"),
                   )}
@@ -251,7 +280,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
               {props.page === "new-threads" ? (
                 <>
                   <SettingsSection
-                    title="Default workspace"
+                    title={t("settings.serverControls.defaultWorkspace")}
                     trailing={
                       pendingWrites === 0 && isMixed("defaultThreadEnvMode") ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -263,8 +292,8 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ).map((choice, index) => (
                       <ChoiceRow
                         key={choice.mode ?? "inherit"}
-                        label={choice.label}
-                        description={choice.description}
+                        label={t(`settings.serverControls.${choice.labelKey}`)}
+                        description={t(`settings.serverControls.${choice.descriptionKey}`)}
                         selected={
                           !isMixed("defaultThreadEnvMode") &&
                           uniform("defaultThreadEnvMode") === choice.mode
@@ -276,7 +305,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ))}
                   </SettingsSection>
                   <SettingsSection
-                    title="Worktree submodules"
+                    title={t("settings.serverControls.worktreeSubmodules")}
                     trailing={
                       pendingWrites === 0 && isMixed("worktreeSubmodules") ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -288,8 +317,8 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ).map((choice, index) => (
                       <ChoiceRow
                         key={choice.mode ?? "inherit"}
-                        label={choice.label}
-                        description={choice.description}
+                        label={t(`settings.serverControls.${choice.labelKey}`)}
+                        description={t(`settings.serverControls.${choice.descriptionKey}`)}
                         selected={
                           !isMixed("worktreeSubmodules") &&
                           uniform("worktreeSubmodules") === choice.mode
@@ -301,7 +330,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ))}
                   </SettingsSection>
                   <SettingsSection
-                    title="Default permissions"
+                    title={t("settings.serverControls.defaultPermissions")}
                     trailing={
                       pendingWrites === 0 && uniform("defaultRuntimeMode") === null ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -325,21 +354,21 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
 
               {props.page === "source-control" ? (
                 <>
-                  <SettingsSection title="Default branch">
+                  <SettingsSection title={t("settings.serverControls.defaultBranch")}>
                     <FanoutSwitchRow
                       icon="arrow.down.circle"
-                      label="Automatically pull"
-                      subtitle="Keep the default branch current when there are no local changes."
+                      label={t("settings.serverControls.automaticallyPull")}
+                      subtitle={t("settings.serverControls.automaticallyPullSubtitle")}
                       value={uniform("defaultAutoPull")}
                       disabled={disabledFor("defaultAutoPull")}
                       onValueChange={(value) => write({ defaultAutoPull: value })}
                     />
                   </SettingsSection>
-                  <SettingsSection title="Worktrees">
+                  <SettingsSection title={t("settings.serverControls.worktrees")}>
                     <FanoutSwitchRow
                       icon="arrow.triangle.branch"
-                      label="Start from origin"
-                      subtitle="Base new worktrees on the remote branch."
+                      label={t("settings.serverControls.startFromOrigin")}
+                      subtitle={t("settings.serverControls.startFromOriginSubtitle")}
                       value={uniform("newWorktreesStartFromOrigin")}
                       disabled={disabledFor("newWorktreesStartFromOrigin")}
                       onValueChange={(value) => write({ newWorktreesStartFromOrigin: value })}
@@ -351,7 +380,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
               {props.page === "agent-behavior" ? (
                 <>
                   <SettingsSection
-                    title="Response streaming"
+                    title={t("settings.serverControls.responseStreaming")}
                     trailing={
                       pendingWrites === 0 && uniform("responseStreamingMode") === null ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -361,8 +390,8 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     {STREAMING_CHOICES.map((choice, index) => (
                       <ChoiceRow
                         key={choice.mode}
-                        label={choice.label}
-                        description={choice.description}
+                        label={t(`settings.serverControls.${choice.labelKey}`)}
+                        description={t(`settings.serverControls.${choice.descriptionKey}`)}
                         selected={uniform("responseStreamingMode") === choice.mode}
                         separated={index > 0}
                         disabled={disabledFor("responseStreamingMode")}
@@ -372,12 +401,12 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                             return;
                           }
                           Alert.alert(
-                            "Use legacy token streaming?",
-                            "Repainting every token can make the app slower.",
+                            t("settings.serverControls.legacyAlertTitle"),
+                            t("settings.serverControls.legacyAlertBody"),
                             [
-                              { text: "Cancel", style: "cancel" },
+                              { text: t("common.cancel"), style: "cancel" },
                               {
-                                text: "Use token streaming",
+                                text: t("settings.serverControls.legacyAlertConfirm"),
                                 onPress: () => write({ responseStreamingMode: "token" }),
                               },
                             ],
@@ -386,11 +415,11 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                       />
                     ))}
                   </SettingsSection>
-                  <SettingsSection title="Preview browser">
+                  <SettingsSection title={t("settings.serverControls.previewBrowser")}>
                     <FanoutSwitchRow
                       icon="globe"
-                      label="Agent browser access"
-                      subtitle="Allow agents to use the in-app preview browser."
+                      label={t("settings.serverControls.agentBrowserAccess")}
+                      subtitle={t("settings.serverControls.agentBrowserAccessSubtitle")}
                       value={uniform("enableAgentBrowserAccess")}
                       disabled={disabledFor("enableAgentBrowserAccess")}
                       onValueChange={(value) => write({ enableAgentBrowserAccess: value })}
@@ -402,13 +431,13 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
               {props.page === "maintenance" ? (
                 <>
                   {!projectSelected ? (
-                    <SettingsSection title="Manage environments">
+                    <SettingsSection title={t("settings.serverControls.manageEnvironments")}>
                       {selectedTargets.map((target) => (
                         <SettingsRow
                           key={target.environmentId}
                           icon="server.rack"
                           label={target.label}
-                          value="Server and provider updates"
+                          value={t("settings.serverControls.serverAndProviderUpdates")}
                           onPress={() =>
                             navigation.navigate("SettingsSheet", {
                               screen: "SettingsContent",
@@ -422,14 +451,14 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                       ))}
                     </SettingsSection>
                   ) : null}
-                  <SettingsSection title="Updates">
+                  <SettingsSection title={t("settings.serverControls.updates")}>
                     <FanoutSwitchRow
                       icon="arrow.clockwise"
-                      label="Check provider updates"
+                      label={t("settings.serverControls.checkProviderUpdates")}
                       subtitle={
                         projectSelected
-                          ? "Environment-wide setting. Select All projects to change it."
-                          : "Check installed provider CLIs for newer versions."
+                          ? t("settings.serverControls.checkProviderUpdatesProjectScoped")
+                          : t("settings.serverControls.checkProviderUpdatesSubtitle")
                       }
                       value={uniform("enableProviderUpdateChecks")}
                       disabled={disabledFor("enableProviderUpdateChecks")}
@@ -438,11 +467,11 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     <View className="border-t border-border-subtle">
                       <FanoutSwitchRow
                         icon="arrow.uturn.forward"
-                        label="Continue after restart"
+                        label={t("settings.serverControls.continueAfterRestart")}
                         subtitle={
                           supportsContinuation
-                            ? "Resume interrupted threads after an update or restart."
-                            : "Update older servers to control restart continuation."
+                            ? t("settings.serverControls.continueAfterRestartSubtitle")
+                            : t("settings.serverControls.continueAfterRestartUnavailable")
                         }
                         value={uniform("continueThreadsAfterServerUpdate")}
                         disabled={
@@ -508,16 +537,17 @@ function ChoiceRow(props: {
 }
 
 function MixedValuesLabel(props: { readonly projectSelected: boolean }) {
+  const { t } = useTranslation();
   return (
     <Text
       accessibilityLabel={
         props.projectSelected
-          ? "Selected project checkouts use different values"
-          : "Selected environments use different values"
+          ? t("settings.serverControls.mixedProjectAria")
+          : t("settings.serverControls.mixedEnvironmentAria")
       }
       className="px-2 text-sm text-foreground-muted android:px-4"
     >
-      Mixed
+      {t("settings.serverControls.mixed")}
     </Text>
   );
 }
@@ -530,6 +560,7 @@ function FanoutSwitchRow(props: {
   readonly disabled: boolean;
   readonly onValueChange: (value: boolean) => void;
 }) {
+  const { t } = useTranslation();
   if (props.value !== null) {
     return (
       <SettingsSwitchRow
@@ -551,13 +582,17 @@ function FanoutSwitchRow(props: {
       subtitle={props.subtitle}
     >
       <Pressable
-        accessibilityLabel={`Set ${props.label} on for selected environments`}
+        accessibilityLabel={t("settings.serverControls.mixedSetOnAria", {
+          label: props.label,
+        })}
         accessibilityRole="button"
         disabled={props.disabled}
         className="rounded-full bg-subtle px-3 py-2 active:opacity-70"
         onPress={() => props.onValueChange(true)}
       >
-        <Text className="text-sm font-t3-medium text-foreground">Mixed · Set on</Text>
+        <Text className="text-sm font-t3-medium text-foreground">
+          {t("settings.serverControls.mixedSetOn")}
+        </Text>
       </Pressable>
     </SettingsControlRow>
   );

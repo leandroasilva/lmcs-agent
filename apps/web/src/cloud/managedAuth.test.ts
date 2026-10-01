@@ -1,4 +1,4 @@
-import { managedRelaySessionAtom, setManagedRelaySession } from "@lmcstools/client-runtime/relay";
+import { managedRelaySessionAtom, setManagedRelaySession } from "@lmcstools/client/relay";
 import * as Effect from "effect/Effect";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 

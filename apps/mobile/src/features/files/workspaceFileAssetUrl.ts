@@ -1,4 +1,4 @@
-import type { AssetResource, EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { AssetResource, EnvironmentId, ThreadId } from "@lmcstools/core";
 import { useMemo } from "react";
 
 import { useAssetUrlState, useRefreshAssetUrl } from "../../state/assets";

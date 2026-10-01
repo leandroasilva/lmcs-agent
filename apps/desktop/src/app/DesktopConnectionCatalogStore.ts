@@ -5,13 +5,13 @@ import {
   RelayConnectionTarget,
   SshConnectionProfile,
   SshConnectionTarget,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   ConnectionCatalogDocument as RuntimeConnectionCatalogDocument,
   type ConnectionCatalogDocument as RuntimeConnectionCatalogDocumentType,
-} from "@lmcstools/client-runtime/platform";
-import type { PersistedSavedEnvironmentRecord } from "@lmcstools/contracts";
-import { fromLenientJson } from "@lmcstools/shared/schemaJson";
+} from "@lmcstools/client/platform";
+import type { PersistedSavedEnvironmentRecord } from "@lmcstools/core";
+import { fromLenientJson } from "@lmcstools/core/schemaJson";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

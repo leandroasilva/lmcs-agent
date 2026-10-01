@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { createHashHistory, createBrowserHistory } from "@tanstack/react-router";
 
 import "./index.css";
+import "./i18n";
 
 import { isElectron } from "./env";
 import { hasCloudPublicConfig } from "./cloud/publicConfig";
@@ -47,8 +48,8 @@ const app = <AppRoot router={router} />;
 const managedAuthShellModule =
   clerkPublishableKey && hasCloudPublicConfig()
     ? isElectron
-      ? import("./components/clerk/ElectronManagedAuthShell")
-      : import("./components/clerk/BrowserManagedAuthShell")
+      ? import("./components/features/clerk/ElectronManagedAuthShell")
+      : import("./components/features/clerk/BrowserManagedAuthShell")
     : null;
 
 // The index.html boot splash lives inside #root, and React's first commit

@@ -1,14 +1,11 @@
-import {
-  ConnectionPersistenceError,
-  EnvironmentCacheStore,
-} from "@lmcstools/client-runtime/platform";
+import { ConnectionPersistenceError, EnvironmentCacheStore } from "@lmcstools/client/platform";
 import {
   type EnvironmentId,
   OrchestrationShellSnapshot,
   OrchestrationThreadDetailSnapshot,
   ServerConfig,
   VcsListRefsResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";

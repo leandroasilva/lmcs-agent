@@ -1,9 +1,9 @@
-import type { ComposerContextId, ComposerContextKind } from "@lmcstools/contracts";
+import type { ComposerContextId, ComposerContextKind } from "@lmcstools/core";
 import {
   collectComposerContextReferences,
   formatComposerContextReference,
   replaceComposerContextReferences,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 
 /**
  * Prompt-string operations on inline context references, independent of kind. Each context

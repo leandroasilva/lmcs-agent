@@ -7,7 +7,7 @@ import {
   type VcsError,
   type VcsInitInput,
   VcsUnsupportedOperationError,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as VcsDriverRegistry from "./VcsDriverRegistry.ts";
 
 export class VcsProvisioningService extends Context.Service<

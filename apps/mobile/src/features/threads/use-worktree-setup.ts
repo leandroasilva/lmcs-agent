@@ -1,8 +1,8 @@
-import type { EnvironmentId, ThreadId, WorktreeSetupSnapshot } from "@lmcstools/contracts";
+import type { EnvironmentId, ThreadId, WorktreeSetupSnapshot } from "@lmcstools/core";
 import {
   findRecordedWorktreeSetup,
   resolveVisibleWorktreeSetup,
-} from "@lmcstools/client-runtime/worktree-setup";
+} from "@lmcstools/client/worktree-setup";
 import { useEffect, useState } from "react";
 import { useEnvironmentQuery } from "../../state/query";
 import { vcsEnvironment } from "../../state/vcs";

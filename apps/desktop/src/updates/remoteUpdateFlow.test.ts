@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import type { DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopUpdateState } from "@lmcstools/core";
 
 import {
   MAX_REMOTE_UPDATE_CHECKS,

@@ -1,5 +1,5 @@
-import { EnvironmentId } from "@lmcstools/contracts";
-import type { RelayClientEnvironmentRecord } from "@lmcstools/contracts/relay";
+import { EnvironmentId } from "@lmcstools/core";
+import type { RelayClientEnvironmentRecord } from "@lmcstools/core/relay";
 import { describe, expect, it } from "vite-plus/test";
 import type { ConnectedEnvironmentSummary } from "../../state/remote-runtime-types";
 import { relayManagedEnvironmentIds, splitEnvironmentSections } from "./environmentSections";

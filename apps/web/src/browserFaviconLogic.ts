@@ -1,4 +1,4 @@
-import { FAVICON_CAPTURED_AT_MAX, FAVICON_DATA_URL_MAX_LENGTH } from "@lmcstools/contracts";
+import { FAVICON_CAPTURED_AT_MAX, FAVICON_DATA_URL_MAX_LENGTH } from "@lmcstools/core";
 
 import { isLocalLoopbackHost, normalizeHostname } from "./browser/browserTargetResolver";
 

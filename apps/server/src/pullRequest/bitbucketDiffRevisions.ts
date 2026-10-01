@@ -1,4 +1,4 @@
-import { unquoteGitPatchPath } from "@lmcstools/shared/gitPatchPath";
+import { unquoteGitPatchPath } from "@lmcstools/core/gitPatchPath";
 
 const ENTRY = "diff --git ";
 const QUOTE = '"';

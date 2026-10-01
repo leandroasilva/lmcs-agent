@@ -1,4 +1,4 @@
-import { OrchestrationGetSnapshotError } from "@lmcstools/contracts";
+import { OrchestrationGetSnapshotError } from "@lmcstools/core";
 import * as Arr from "effect/Array";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";

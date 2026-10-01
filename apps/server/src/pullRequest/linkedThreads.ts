@@ -1,12 +1,12 @@
 import {
   normalizeThreadPullRequestKey,
   threadPullRequestKeysEqual,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 import {
   PullRequestLinkedThreadsResult,
   PullRequestOperationError,
   type ThreadPullRequestKey,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/unstable/sql/SqlClient";

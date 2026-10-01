@@ -5,7 +5,7 @@ import {
   TurnId,
   OrchestrationEvent,
   type OrchestrationThreadActivity,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { it } from "@effect/vitest";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";

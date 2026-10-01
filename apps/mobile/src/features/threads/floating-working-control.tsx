@@ -1,4 +1,4 @@
-import { formatDuration } from "@lmcstools/shared/orchestrationTiming";
+import { formatDuration } from "@lmcstools/core/orchestrationTiming";
 import { GlassContainer, GlassView } from "expo-glass-effect";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {

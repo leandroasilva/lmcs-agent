@@ -13,7 +13,7 @@
  *
  * @module CheckpointStore
  */
-import { VcsUnsupportedOperationError, type CheckpointRef } from "@lmcstools/contracts";
+import { VcsUnsupportedOperationError, type CheckpointRef } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

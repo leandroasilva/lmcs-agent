@@ -4,7 +4,7 @@ import {
   type ProviderRuntimeTaskProgressEvent,
   type ProviderRuntimeTaskCompletedEvent,
   type TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 type TaskEvent =
   | Pick<ProviderRuntimeTaskStartedEvent, "type" | "payload" | "turnId">

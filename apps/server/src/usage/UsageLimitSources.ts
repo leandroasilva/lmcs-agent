@@ -20,8 +20,8 @@ import {
   type UsageLimitSourceConfig,
   type UsageLimitSourceId,
   type UsageLimitSourceSnapshot,
-} from "@lmcstools/contracts";
-import { resolveServerBackgroundActivitySettings } from "@lmcstools/shared/backgroundActivitySettings";
+} from "@lmcstools/core";
+import { resolveServerBackgroundActivitySettings } from "@lmcstools/core/backgroundActivitySettings";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";

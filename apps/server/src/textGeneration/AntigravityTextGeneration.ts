@@ -1,10 +1,6 @@
-import {
-  type ModelSelection,
-  type ProviderSetupError,
-  TextGenerationError,
-} from "@lmcstools/contracts";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/shared/git";
-import { extractJsonObject } from "@lmcstools/shared/schemaJson";
+import { type ModelSelection, type ProviderSetupError, TextGenerationError } from "@lmcstools/core";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
+import { extractJsonObject } from "@lmcstools/core/schemaJson";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -15,7 +11,7 @@ import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
-import { type AcpError, AcpRequestError } from "effect-acp/errors";
+import { type AcpError, AcpRequestError } from "@lmcstools/providers/acp/errors";
 
 import { applyAntigravityAcpModelSelection } from "../provider/acp/AntigravityAcpSupport.ts";
 import { removeAntigravitySessionFiles } from "../provider/acp/AntigravitySessionFiles.ts";

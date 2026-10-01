@@ -3,7 +3,7 @@
 
 import * as NodeChildProcess from "node:child_process";
 
-import type { SnapShotModifier } from "@lmcstools/contracts";
+import type { SnapShotModifier } from "@lmcstools/core";
 
 export function startGlobalShiftShortcutProcess(
   workerPath: string,

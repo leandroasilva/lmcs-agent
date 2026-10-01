@@ -6,7 +6,7 @@ import {
   ProjectId,
   ProviderInstanceId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { canonicalizeClientCommandTimestamps } from "./Normalizer.ts";
 

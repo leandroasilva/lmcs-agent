@@ -8,7 +8,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
 import { HttpClient, HttpClientResponse } from "effect/unstable/http";
-import { GrokSettings } from "@lmcstools/contracts";
+import { GrokSettings } from "@lmcstools/core";
 
 import {
   buildGrokModelCapabilities,

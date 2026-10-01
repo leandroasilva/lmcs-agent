@@ -8,7 +8,7 @@ import {
   type OrchestrationCommand,
   type OrchestrationReadModel,
   ProviderInstanceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 
 import { listThreadsByProjectId, requireThread, requireThreadAbsent } from "./commandInvariants.ts";

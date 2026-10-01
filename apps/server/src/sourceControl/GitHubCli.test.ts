@@ -9,7 +9,7 @@ import * as PlatformError from "effect/PlatformError";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import { ChildProcessSpawner } from "effect/unstable/process";
-import { VcsProcessExitError, VcsProcessSpawnError } from "@lmcstools/contracts";
+import { VcsProcessExitError, VcsProcessSpawnError } from "@lmcstools/core";
 
 import * as VcsProcess from "../vcs/VcsProcess.ts";
 import * as GitHubCli from "./GitHubCli.ts";

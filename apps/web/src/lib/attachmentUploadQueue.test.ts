@@ -1,4 +1,4 @@
-import { EnvironmentId } from "@lmcstools/contracts";
+import { EnvironmentId } from "@lmcstools/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { Atom, AsyncResult } from "effect/unstable/reactivity";
 import { appAtomRegistry } from "../rpc/atomRegistry";
@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
   readPreparedConnection: vi.fn(),
 }));
 
-vi.mock("@lmcstools/client-runtime/state/runtime", () => ({
+vi.mock("@lmcstools/client/state/runtime", () => ({
   executeAtomQuery: mocks.executeAtomQuery,
   runAtomCommand: mocks.runAtomCommand,
   squashAtomCommandFailure: (result: { readonly error: unknown }) => result.error,

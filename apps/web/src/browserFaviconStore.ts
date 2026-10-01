@@ -1,9 +1,5 @@
-import {
-  scopedProjectKey,
-  scopedThreadKey,
-  scopeProjectRef,
-} from "@lmcstools/client-runtime/environment";
-import type { DesktopPreviewFavicon, ScopedProjectRef, ScopedThreadRef } from "@lmcstools/contracts";
+import { scopedProjectKey, scopedThreadKey, scopeProjectRef } from "@lmcstools/client/environment";
+import type { DesktopPreviewFavicon, ScopedProjectRef, ScopedThreadRef } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { useMemo } from "react";
 import { create } from "zustand";

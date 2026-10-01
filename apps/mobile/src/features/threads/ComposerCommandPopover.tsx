@@ -1,13 +1,13 @@
 import {
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
-} from "@lmcstools/client-runtime/providerSkills";
+} from "@lmcstools/client/providerSkills";
 import type {
   PullRequestContextMetadata,
   ServerProviderSkill,
   ServerProviderSlashCommand,
-} from "@lmcstools/contracts";
-import type { ComposerTriggerKind } from "@lmcstools/shared/composerTrigger";
+} from "@lmcstools/core";
+import type { ComposerTriggerKind } from "@lmcstools/core/composerTrigger";
 import { memo } from "react";
 import { Pressable, ScrollView, StyleSheet, View, type ViewStyle } from "react-native";
 

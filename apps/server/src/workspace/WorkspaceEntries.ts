@@ -18,10 +18,10 @@ import type {
   ProjectSearchContentsResult,
   ProjectSearchEntriesInput,
   ProjectSearchEntriesResult,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { isExplicitRelativePath, isWindowsAbsolutePath } from "@lmcstools/shared/path";
-import { normalizeSearchQuery } from "@lmcstools/shared/searchRanking";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { isExplicitRelativePath, isWindowsAbsolutePath } from "@lmcstools/core/path";
+import { normalizeSearchQuery } from "@lmcstools/core/searchRanking";
 
 import { expandHomePathWith } from "../pathExpansion.ts";
 import * as VcsProcess from "../vcs/VcsProcess.ts";

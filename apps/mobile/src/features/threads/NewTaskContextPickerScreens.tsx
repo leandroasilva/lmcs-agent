@@ -1,11 +1,11 @@
 import { MaterialListRow } from "../../components/MaterialListRow";
-import type { VcsRef } from "@lmcstools/client-runtime/state/vcs";
-import { resolveEnvironmentMachineKind } from "@lmcstools/contracts";
+import type { VcsRef } from "@lmcstools/client/state/vcs";
+import { resolveEnvironmentMachineKind } from "@lmcstools/core";
 import { LegendList } from "@legendapp/list/react-native";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import * as Haptics from "expo-haptics";
 import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";

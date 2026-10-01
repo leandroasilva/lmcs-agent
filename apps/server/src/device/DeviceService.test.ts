@@ -6,7 +6,7 @@ import {
   LOCAL_DEVICE_HOST_ID,
   ThreadId,
   type DeviceServiceState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Deferred from "effect/Deferred";
@@ -18,7 +18,7 @@ import * as Stream from "effect/Stream";
 import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { ServerSettingsService } from "../serverSettings.ts";
 import * as DeviceHost from "./DeviceHost.ts";
-import { NodeRuntimeUnavailableError } from "@lmcstools/shared/nodeRuntime";
+import { NodeRuntimeUnavailableError } from "@lmcstools/core/nodeRuntime";
 
 import { type DeviceService, makeWithHosts, stateStream } from "./DeviceService.ts";
 

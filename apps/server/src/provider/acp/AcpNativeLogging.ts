@@ -1,10 +1,10 @@
-import type { ProviderDriverKind, ThreadId } from "@lmcstools/contracts";
-import { causeErrorTag, errorTag } from "@lmcstools/shared/observability";
+import type { ProviderDriverKind, ThreadId } from "@lmcstools/core";
+import { causeErrorTag, errorTag } from "@lmcstools/core/observability";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import type * as EffectAcpProtocol from "effect-acp/protocol";
+import type * as EffectAcpProtocol from "@lmcstools/providers/acp/protocol";
 
 import type { EventNdjsonLogger } from "../Layers/EventNdjsonLogger.ts";
 import type * as AcpSessionRuntime from "./AcpSessionRuntime.ts";

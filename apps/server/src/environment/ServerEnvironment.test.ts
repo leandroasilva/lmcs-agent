@@ -1,5 +1,5 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { ORCHESTRATION_PROTOCOL_VERSION } from "@lmcstools/contracts";
+import { ORCHESTRATION_PROTOCOL_VERSION } from "@lmcstools/core";
 import { expect, it } from "@effect/vitest";
 import * as Crypto from "effect/Crypto";
 import * as Deferred from "effect/Deferred";
@@ -9,8 +9,8 @@ import * as Layer from "effect/Layer";
 import * as PlatformError from "effect/PlatformError";
 import * as Schema from "effect/Schema";
 
-import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
+import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 
 import * as ServerSecretStore from "../auth/ServerSecretStore.ts";
 import {

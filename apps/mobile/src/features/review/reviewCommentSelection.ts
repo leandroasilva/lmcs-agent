@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { replaceComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
+import { replaceComposerContextReferences } from "@lmcstools/core/composerContextReferences";
 
 import type { ReviewRenderableLineRow } from "./reviewModel";
 

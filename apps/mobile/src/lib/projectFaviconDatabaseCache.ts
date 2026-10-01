@@ -4,7 +4,7 @@ import {
   PROJECT_FAVICON_MAX_DATA_URL_LENGTH,
   PROJECT_FAVICON_THUMBNAIL_SIZE,
   type ProjectFaviconEntry,
-} from "@lmcstools/client-runtime/project-favicon-cache";
+} from "@lmcstools/client/project-favicon-cache";
 import * as Effect from "effect/Effect";
 
 import * as MobileDatabase from "../persistence/mobile-database";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { BUILT_IN_THEMES } from "@lmcstools/shared/themePalettes";
+import { BUILT_IN_THEMES } from "@lmcstools/core/themePalettes";
 
 import {
   applyThemeColorPreview,

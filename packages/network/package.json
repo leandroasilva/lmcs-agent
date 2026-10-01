@@ -1,0 +1,45 @@
+{
+  "name": "@lmcstools/network",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./ssh/auth": {
+      "types": "./src/ssh/auth.ts",
+      "import": "./src/ssh/auth.ts"
+    },
+    "./ssh/command": {
+      "types": "./src/ssh/command.ts",
+      "import": "./src/ssh/command.ts"
+    },
+    "./ssh/config": {
+      "types": "./src/ssh/config.ts",
+      "import": "./src/ssh/config.ts"
+    },
+    "./ssh/errors": {
+      "types": "./src/ssh/errors.ts",
+      "import": "./src/ssh/errors.ts"
+    },
+    "./ssh/tunnel": {
+      "types": "./src/ssh/tunnel.ts",
+      "import": "./src/ssh/tunnel.ts"
+    },
+    "./tailscale": {
+      "types": "./src/tailscale/index.ts",
+      "import": "./src/tailscale/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "@lmcstools/core": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

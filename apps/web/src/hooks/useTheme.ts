@@ -1,5 +1,5 @@
-import type { DesktopBridge } from "@lmcstools/contracts";
-import { safeErrorLogAttributes } from "@lmcstools/client-runtime/errors";
+import type { DesktopBridge } from "@lmcstools/core";
+import { safeErrorLogAttributes } from "@lmcstools/client/errors";
 import * as Schema from "effect/Schema";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import {

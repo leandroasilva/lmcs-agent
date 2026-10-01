@@ -1,4 +1,4 @@
-import type { EnvironmentId, ProjectId, ServerSettings } from "@lmcstools/contracts";
+import type { EnvironmentId, ProjectId, ServerSettings } from "@lmcstools/core";
 
 export type AutoSettleSettings = Pick<
   ServerSettings,

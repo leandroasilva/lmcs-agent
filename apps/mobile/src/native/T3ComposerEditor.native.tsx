@@ -1,6 +1,6 @@
-import { PASTED_TEXT_ATTACHMENT_THRESHOLD_BYTES } from "@lmcstools/client-runtime/text-paste";
-import { PROVIDER_SEND_TURN_MAX_INPUT_CHARS } from "@lmcstools/contracts";
-import { collectComposerInlineTokens } from "@lmcstools/shared/composerInlineTokens";
+import { PASTED_TEXT_ATTACHMENT_THRESHOLD_BYTES } from "@lmcstools/client/text-paste";
+import { PROVIDER_SEND_TURN_MAX_INPUT_CHARS } from "@lmcstools/core";
+import { collectComposerInlineTokens } from "@lmcstools/core/composerInlineTokens";
 import { composerContextEditorTokens } from "../lib/composerContext";
 import { requireNativeView } from "expo";
 import { TextInputWrapper } from "expo-paste-input";

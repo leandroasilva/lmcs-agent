@@ -1,5 +1,5 @@
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
+import type { EnvironmentId } from "@lmcstools/core";
 
 import { scopedProjectKey } from "../../lib/scopedEntities";
 import type { HomeProjectScope } from "../home/homeThreadList";

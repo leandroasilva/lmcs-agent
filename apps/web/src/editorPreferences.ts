@@ -1,9 +1,9 @@
-import { EDITORS, EditorId, EnvironmentId } from "@lmcstools/contracts";
+import { EDITORS, EditorId, EnvironmentId } from "@lmcstools/core";
 import {
   mapAtomCommandResult,
   type AtomCommandFailure,
   type AtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import * as Cause from "effect/Cause";
 import * as Schema from "effect/Schema";
 import { AsyncResult } from "effect/unstable/reactivity";

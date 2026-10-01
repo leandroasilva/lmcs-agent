@@ -1,7 +1,7 @@
 import { useAtomValue } from "@effect/atom-react";
-import type { EnvironmentPresentation } from "@lmcstools/client-runtime/connection";
-import { createEnvironmentPresentationAtoms } from "@lmcstools/client-runtime/state/presentation";
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentPresentation } from "@lmcstools/client/connection";
+import { createEnvironmentPresentationAtoms } from "@lmcstools/client/state/presentation";
+import type { EnvironmentId } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 
 import { environmentCatalog } from "../connection/catalog";

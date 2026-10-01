@@ -15,12 +15,12 @@
  *
  * @module provider/Drivers/GrokSkills
  */
-import type { GrokSettings, ServerProviderSkill } from "@lmcstools/contracts";
+import type { GrokSettings, ServerProviderSkill } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { ChildProcess } from "effect/unstable/process";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
 import { spawnAndCollect } from "../providerSnapshot.ts";
 

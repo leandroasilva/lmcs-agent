@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import type { ResolvedKeybindingsConfig } from "@lmcstools/contracts";
+import type { ResolvedKeybindingsConfig } from "@lmcstools/core";
 
 import {
   preventRepeatedTerminalCloseShortcut,

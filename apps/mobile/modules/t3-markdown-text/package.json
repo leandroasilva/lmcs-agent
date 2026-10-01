@@ -29,8 +29,8 @@
     "./types": "./src/SelectableMarkdownText.types.ts"
   },
   "peerDependencies": {
-    "@lmcstools/client-runtime": "*",
-    "@lmcstools/shared": "*",
+    "@lmcstools/client": "*",
+    "@lmcstools/core": "*",
     "expo": "*",
     "expo-asset": "*",
     "expo-clipboard": "*",

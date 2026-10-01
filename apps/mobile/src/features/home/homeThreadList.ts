@@ -1,18 +1,12 @@
-import { buildProjectGroups } from "@lmcstools/client-runtime/state/project-grouping";
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
-import {
-  getThreadSortTimestamp,
-  toSortableTimestamp,
-} from "@lmcstools/client-runtime/state/thread-sort";
+import { buildProjectGroups } from "@lmcstools/client/state/project-grouping";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { getThreadSortTimestamp, toSortableTimestamp } from "@lmcstools/client/state/thread-sort";
 import type {
   EnvironmentId,
   ScopedProjectRef,
   SidebarProjectGroupingMode,
   SidebarProjectSortOrder,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
 

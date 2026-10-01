@@ -1,5 +1,5 @@
-import { ClientSettingsSchema, type ClientSettings } from "@lmcstools/contracts";
-import { fromLenientJson } from "@lmcstools/shared/schemaJson";
+import { ClientSettingsSchema, type ClientSettings } from "@lmcstools/core";
+import { fromLenientJson } from "@lmcstools/core/schemaJson";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

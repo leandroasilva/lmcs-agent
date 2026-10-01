@@ -1,17 +1,17 @@
 import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { scopeProjectRef } from "@lmcstools/client-runtime/environment";
+import { scopeProjectRef } from "@lmcstools/client/environment";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LinkIcon, PlusIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
 import { isElectron } from "../env";
-import { NoProjectsHero } from "../components/NoProjectsHero";
-import { sortScopedProjectsForSidebar } from "../components/Sidebar.logic";
+import { NoProjectsHero } from "../components/layout/NoProjectsHero";
+import { sortScopedProjectsForSidebar } from "../components/layout/Sidebar.logic";
 import { Button } from "../components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "../components/ui/empty";
 import { SidebarInset } from "../components/ui/sidebar";
-import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
+import { WorkspacePageHeader } from "../components/layout/WorkspacePageHeader";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 import {
   useAllEnvironmentShellsBootstrapped,

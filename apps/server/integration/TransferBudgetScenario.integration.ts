@@ -11,7 +11,7 @@ import {
   ProjectId,
   ProviderDriverKind,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Queue from "effect/Queue";
 import * as Scope from "effect/Scope";

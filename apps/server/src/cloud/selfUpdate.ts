@@ -5,8 +5,8 @@ import {
   type ServerSelfUpdateProgressStage,
   type ServerSelfUpdateResult,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Cause from "effect/Cause";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -20,7 +20,7 @@ import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import { HttpClient } from "effect/unstable/http";
 
-import { CLI_RELEASE_BASE_URL_ENV } from "@lmcstools/shared/cliRelease";
+import { CLI_RELEASE_BASE_URL_ENV } from "@lmcstools/core/cliRelease";
 
 import * as ServerConfig from "../config.ts";
 import * as DesktopAppUpdate from "../desktopUpdate/DesktopAppUpdate.ts";

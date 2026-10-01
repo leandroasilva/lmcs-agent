@@ -2,7 +2,7 @@ import {
   ProviderSetupError,
   type ProviderAuthState,
   type ProviderInstanceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Crypto from "effect/Crypto";
@@ -17,7 +17,7 @@ import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
-import * as AcpErrors from "effect-acp/errors";
+import * as AcpErrors from "@lmcstools/providers/acp/errors";
 
 import type { AcpSessionRuntime, AcpSessionRuntimeStartResult } from "./acp/AcpSessionRuntime.ts";
 import {

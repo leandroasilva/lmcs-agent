@@ -1,4 +1,4 @@
-import { ManagedRelay } from "@lmcstools/client-runtime/relay";
+import { ManagedRelay } from "@lmcstools/client/relay";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as SecureStore from "expo-secure-store";

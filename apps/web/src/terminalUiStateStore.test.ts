@@ -1,5 +1,5 @@
-import { scopeThreadRef, scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import { ThreadId } from "@lmcstools/contracts";
+import { scopeThreadRef, scopedThreadKey } from "@lmcstools/client/environment";
+import { ThreadId } from "@lmcstools/core";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import {

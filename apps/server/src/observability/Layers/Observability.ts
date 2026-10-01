@@ -1,10 +1,10 @@
-import { httpHeaderRedactionLayer } from "@lmcstools/shared/httpObservability";
+import { httpHeaderRedactionLayer } from "@lmcstools/core/httpObservability";
 import {
   makeLocalFileTracer,
   makeTraceSink,
   otlpSerializationLayer,
-} from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
+} from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as References from "effect/References";

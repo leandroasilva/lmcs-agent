@@ -1,5 +1,5 @@
 import { PROJECT_ICON_COLORS } from "./projectIconColors";
-import type { ProjectIconColor } from "@lmcstools/contracts";
+import type { ProjectIconColor } from "@lmcstools/core";
 
 /** Visual identity tokens for a generated project badge. */
 export interface ProjectIdentity {

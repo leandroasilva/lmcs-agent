@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "@effect/vitest";
-import { type OrchestrationProject, ProjectId, type TerminalEvent } from "@lmcstools/contracts";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { type OrchestrationProject, ProjectId, type TerminalEvent } from "@lmcstools/core";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -115,8 +115,8 @@ describe("ProjectSetupScriptRunner", () => {
         cwd: "/repo/worktrees/a",
         worktreePath: "/repo/worktrees/a",
         env: {
-          T3CODE_PROJECT_ROOT: "/repo/project",
-          T3CODE_WORKTREE_PATH: "/repo/worktrees/a",
+          LMCS_PROJECT_ROOT: "/repo/project",
+          LMCS_WORKTREE_PATH: "/repo/worktrees/a",
           NO_COLOR: "1",
           FORCE_COLOR: "0",
         },
@@ -220,8 +220,8 @@ describe("ProjectSetupScriptRunner", () => {
           env: {
             NO_COLOR: "1",
             FORCE_COLOR: "0",
-            T3CODE_PROJECT_ROOT: "/repo/project",
-            T3CODE_WORKTREE_PATH: "/repo/worktrees/a",
+            LMCS_PROJECT_ROOT: "/repo/project",
+            LMCS_WORKTREE_PATH: "/repo/worktrees/a",
           },
         });
         expect(write).toHaveBeenCalledWith({

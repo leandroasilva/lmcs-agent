@@ -1,10 +1,10 @@
 import { withAgentDeviceEnvironment } from "../../mcp/McpProviderSession.ts";
-import { AntigravitySettings, ProviderDriverKind, ProviderSetupError } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { AntigravitySettings, ProviderDriverKind, ProviderSetupError } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import {
   NodeRuntimeUnavailableError,
   nodeRuntimeUnavailableMessage,
-} from "@lmcstools/shared/nodeRuntime";
+} from "@lmcstools/core/nodeRuntime";
 import * as Crypto from "effect/Crypto";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -15,7 +15,7 @@ import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import type { AcpError } from "effect-acp/errors";
+import type { AcpError } from "@lmcstools/providers/acp/errors";
 
 import * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
 import { ServerConfig } from "../../config.ts";

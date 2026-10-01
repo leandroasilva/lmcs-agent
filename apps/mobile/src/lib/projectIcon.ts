@@ -1,4 +1,4 @@
-import type { ProjectIconColor, ProjectIconOverride } from "@lmcstools/contracts";
+import type { ProjectIconColor, ProjectIconOverride } from "@lmcstools/core";
 
 export type ProjectIconGlyph =
   | { readonly kind: "emoji"; readonly emoji: string }

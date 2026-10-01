@@ -1,4 +1,4 @@
-import type { ProviderDriverKind } from "@lmcstools/contracts";
+import type { ProviderDriverKind } from "@lmcstools/core";
 
 import type {
   HttpTransferMeasurement,

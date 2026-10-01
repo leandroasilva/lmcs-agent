@@ -1,4 +1,4 @@
-import { EnvironmentId, ProjectId, type AgentSessionProjectCandidate } from "@lmcstools/contracts";
+import { EnvironmentId, ProjectId, type AgentSessionProjectCandidate } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

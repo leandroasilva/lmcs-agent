@@ -4,7 +4,7 @@ import {
   type DesktopAppActivationFailure,
   type DesktopAppActivationRequest,
   type DesktopAppActivationResponse,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 interface PendingActivation {
   readonly request: DesktopAppActivationRequest;

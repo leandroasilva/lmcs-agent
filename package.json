@@ -1,7 +1,7 @@
 {
   "name": "lmcs-agent",
   "private": true,
-  "description": "LMCS Code, a desktop application for local coding agents based on T3 Code.",
+  "description": "LMCS Code, a desktop application for local coding agents based on LMCS Code.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -18,7 +18,7 @@
     "start": "vp run --filter t3 start",
     "start:desktop": "vp run --filter @lmcstools/desktop start",
     "start:marketing": "vp run --filter @lmcstools/marketing preview",
-    "start:mock-update-server": "node scripts/mock-update-server.ts",
+    "start:mock-update-server": "node apps/server/scripts/mock-update-server.ts",
     "screenshots:mobile": "node scripts/mobile-showcase.ts",
     "icons:export": "node scripts/export-brand-icons.ts",
     "icons:check": "node scripts/export-brand-icons.ts --check",

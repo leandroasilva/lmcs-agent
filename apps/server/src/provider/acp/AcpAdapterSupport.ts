@@ -2,9 +2,9 @@ import {
   type ProviderApprovalDecision,
   type ProviderDriverKind,
   type ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
-import * as EffectAcpErrors from "effect-acp/errors";
+import * as EffectAcpErrors from "@lmcstools/providers/acp/errors";
 
 import {
   ProviderAdapterProcessError,

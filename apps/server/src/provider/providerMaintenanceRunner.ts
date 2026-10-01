@@ -6,8 +6,8 @@ import {
   type ServerProvider,
   type ServerProviderUpdatedPayload,
   type ServerProviderUpdateState,
-} from "@lmcstools/contracts";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+} from "@lmcstools/core";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";

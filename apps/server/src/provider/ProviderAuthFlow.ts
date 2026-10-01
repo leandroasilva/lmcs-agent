@@ -5,7 +5,7 @@ import {
   type ProviderAuthResponse,
   type ProviderAuthState,
   type ProviderInstanceId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";

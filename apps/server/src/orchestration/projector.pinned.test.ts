@@ -1,10 +1,4 @@
-import {
-  CommandId,
-  EventId,
-  ProjectId,
-  ThreadId,
-  type OrchestrationEvent,
-} from "@lmcstools/contracts";
+import { CommandId, EventId, ProjectId, ThreadId, type OrchestrationEvent } from "@lmcstools/core";
 import { expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 

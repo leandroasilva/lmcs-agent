@@ -2,7 +2,7 @@ import type {
   PullRequestAction,
   PullRequestMergeMethod,
   PullRequestStackHead,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Clock from "effect/Clock";
 import * as Result from "effect/Result";

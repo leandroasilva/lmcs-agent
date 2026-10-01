@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
-import { EnvironmentId, MessageId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, MessageId, ThreadId } from "@lmcstools/core";
 import {
   collectAssistantCitations,
   serializeAssistantCitation,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 
 import { removeLocalStorageItem } from "./hooks/useLocalStorage";
 

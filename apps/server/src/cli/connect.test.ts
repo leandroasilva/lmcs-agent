@@ -1,4 +1,4 @@
-import * as RelayClient from "@lmcstools/shared/relayClient";
+import * as RelayClient from "@lmcstools/core/relayClient";
 import { assert, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as ConfigProvider from "effect/ConfigProvider";

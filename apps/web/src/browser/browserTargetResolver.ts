@@ -1,10 +1,6 @@
-import type {
-  BrowserNavigationTarget,
-  EnvironmentId,
-  PreviewUrlResolution,
-} from "@lmcstools/contracts";
-import { isLoopbackHost, normalizePreviewUrl } from "@lmcstools/shared/preview";
-import { isLocalLoopbackHost, isPrivateNetworkHost } from "@lmcstools/shared/hostClassification";
+import type { BrowserNavigationTarget, EnvironmentId, PreviewUrlResolution } from "@lmcstools/core";
+import { isLoopbackHost, normalizePreviewUrl } from "@lmcstools/core/preview";
+import { isLocalLoopbackHost, isPrivateNetworkHost } from "@lmcstools/core/hostClassification";
 
 import { readPreparedConnection } from "~/state/session";
 
@@ -13,7 +9,7 @@ export {
   isLocalLoopbackHost,
   isPrivateNetworkHost,
   isPublicFaviconHost,
-} from "@lmcstools/shared/hostClassification";
+} from "@lmcstools/core/hostClassification";
 
 const readEnvironmentUrl = (environmentId: EnvironmentId): URL => {
   const connection = readPreparedConnection(environmentId);

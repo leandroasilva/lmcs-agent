@@ -85,9 +85,9 @@ Messages sent before this feature carry trailing `<terminal_context>`, `<element
 Event history is never rewritten. Existing web parsers in `apps/web/src/lib/` stay until the
 transcript renderer moves to records.
 
-[contract]: ../../packages/contracts/src/composerContext.ts
-[shared]: ../../packages/shared/src/composerContextReferences.ts
-[legacy]: ../../packages/shared/src/composerContextLegacy.ts
+[contract]: ../../packages/core/src/contracts/composerContext.ts
+[shared]: ../../packages/core/src/shared/composerContextReferences.ts
+[legacy]: ../../packages/core/src/shared/composerContextLegacy.ts
 
 ## Editor model (web and desktop)
 

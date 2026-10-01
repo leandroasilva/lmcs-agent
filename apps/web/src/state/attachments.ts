@@ -1,4 +1,4 @@
-import { createAttachmentEnvironmentAtoms } from "@lmcstools/client-runtime/state/attachments";
+import { createAttachmentEnvironmentAtoms } from "@lmcstools/client/state/attachments";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

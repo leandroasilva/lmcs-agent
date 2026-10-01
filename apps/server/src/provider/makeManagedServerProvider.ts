@@ -2,8 +2,8 @@ import {
   DEFAULT_PROVIDER_HEALTH_REFRESH_INTERVAL,
   type ServerProvider,
   ServerSettingsError,
-} from "@lmcstools/contracts";
-import { resolveServerBackgroundActivitySettings } from "@lmcstools/shared/backgroundActivitySettings";
+} from "@lmcstools/core";
+import { resolveServerBackgroundActivitySettings } from "@lmcstools/core/backgroundActivitySettings";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";

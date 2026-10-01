@@ -1,4 +1,4 @@
-import { DesktopThemeSchema, type DesktopTheme } from "@lmcstools/contracts";
+import { DesktopThemeSchema, type DesktopTheme } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

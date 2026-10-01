@@ -2,8 +2,8 @@ import {
   canonicalRepositoryKey,
   isSshRemoteUrl,
   sourceControlRepositorySelector,
-} from "@lmcstools/shared/sourceControl";
-import { normalizeGitRemoteUrl } from "@lmcstools/shared/git";
+} from "@lmcstools/core/sourceControl";
+import { normalizeGitRemoteUrl } from "@lmcstools/core/git";
 import * as Cache from "effect/Cache";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
@@ -69,8 +69,8 @@ import {
   type PullRequestUpdateInput,
   type SourceControlProviderInfo,
   type SourceControlProviderKind,
-} from "@lmcstools/contracts";
-import { detectSourceControlProviderFromRemoteUrl } from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core";
+import { detectSourceControlProviderFromRemoteUrl } from "@lmcstools/core/sourceControl";
 
 import { AllowGitHubReserve } from "../sourceControl/GitHubCli.ts";
 import * as ProjectionSnapshotQuery from "../orchestration/Services/ProjectionSnapshotQuery.ts";

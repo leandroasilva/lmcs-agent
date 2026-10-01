@@ -1,4 +1,4 @@
-import type { VcsListRefsResult } from "@lmcstools/contracts";
+import type { VcsListRefsResult } from "@lmcstools/core";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { describe, expect, it } from "vite-plus/test";
 

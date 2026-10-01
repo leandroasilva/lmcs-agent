@@ -3,11 +3,11 @@ import {
   EnvironmentHttpApi,
   type RelayClientInstallProgressEvent,
   type RelayClientInstallProgressStage,
-} from "@lmcstools/contracts";
-import { RelayOkResponse } from "@lmcstools/contracts/relay";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import * as RelayClient from "@lmcstools/shared/relayClient";
-import { withRelayClientTracing } from "@lmcstools/shared/relayTracing";
+} from "@lmcstools/core";
+import { RelayOkResponse } from "@lmcstools/core/relay";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import * as RelayClient from "@lmcstools/core/relayClient";
+import { withRelayClientTracing } from "@lmcstools/core/relayTracing";
 import * as Cause from "effect/Cause";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";

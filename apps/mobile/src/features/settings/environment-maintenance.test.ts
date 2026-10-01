@@ -1,4 +1,4 @@
-import { AuthOrchestrationOperateScope, ServerProvider } from "@lmcstools/contracts";
+import { AuthOrchestrationOperateScope, ServerProvider } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 

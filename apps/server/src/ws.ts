@@ -1,7 +1,7 @@
 import {
   sameUsageLimitCommandCoverage,
   withUsageLimitsCommands,
-} from "@lmcstools/shared/usageLimits";
+} from "@lmcstools/core/usageLimits";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -79,9 +79,9 @@ import {
   WORKTREE_SETUP_ACTIVITY_KIND,
   worktreeSetupActivityId,
   type WorktreeSetupSnapshot,
-} from "@lmcstools/contracts";
-import { resolveServerBackgroundActivitySettings } from "@lmcstools/shared/backgroundActivitySettings";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core";
+import { resolveServerBackgroundActivitySettings } from "@lmcstools/core/backgroundActivitySettings";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import { HttpRouter, HttpServerRequest, HttpServerRespondable } from "effect/unstable/http";
 import { RpcSerialization, RpcServer } from "effect/unstable/rpc";
 
@@ -137,6 +137,7 @@ import * as WorkspacePaths from "./workspace/WorkspacePaths.ts";
 import * as VcsStatusBroadcaster from "./vcs/VcsStatusBroadcaster.ts";
 import * as VcsProvisioningService from "./vcs/VcsProvisioningService.ts";
 import * as GitWorkflowService from "./git/GitWorkflowService.ts";
+import * as TextGeneration from "./textGeneration/TextGeneration.ts";
 import { linkCreatedPullRequest } from "./git/linkCreatedPullRequest.ts";
 import * as ReviewService from "./review/ReviewService.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
@@ -177,7 +178,7 @@ import * as VcsProjectConfig from "./vcs/VcsProjectConfig.ts";
 import * as PairingGrantStore from "./auth/PairingGrantStore.ts";
 import * as SessionStore from "./auth/SessionStore.ts";
 import { failEnvironmentAuthInvalid, failEnvironmentInternal } from "./auth/http.ts";
-import * as RelayClient from "@lmcstools/shared/relayClient";
+import * as RelayClient from "@lmcstools/core/relayClient";
 const isOrchestrationDispatchCommandError = Schema.is(OrchestrationDispatchCommandError);
 
 const nowIso = Effect.map(DateTime.now, DateTime.formatIso);
@@ -553,6 +554,7 @@ const makeWsRpcLayer = (
       const externalLauncher = yield* ExternalLauncher.ExternalLauncher;
       const remoteOpenTargets = yield* RemoteOpenTargets.RemoteOpenTargets;
       const gitWorkflow = yield* GitWorkflowService.GitWorkflowService;
+      const textGeneration = yield* TextGeneration.TextGeneration;
       const review = yield* ReviewService.ReviewService;
       const vcsProvisioning = yield* VcsProvisioningService.VcsProvisioningService;
       const vcsStatusBroadcaster = yield* VcsStatusBroadcaster.VcsStatusBroadcaster;
@@ -1046,7 +1048,7 @@ const makeWsRpcLayer = (
         });
 
       // Project setting > environment setting; null when neither is set so
-      // the driver reads the freshly created checkout's own t3.json (the
+      // the driver reads the freshly created checkout's own lmcs.json (the
       // branch being checked out may declare something the project root does
       // not). Settings that fail to load fall through the same way.
       const resolveBootstrapWorktreeSubmodules = Effect.fnUntraced(function* (input: {
@@ -1412,7 +1414,11 @@ const makeWsRpcLayer = (
                   ...snapshot,
                   stages: snapshot.stages.map((stage) =>
                     stage.id === "fetch" || stage.id === "checkout" || stage.id === "submodules"
-                      ? { ...stage, status: "skipped", detail: "using project checkout" }
+                      ? {
+                          ...stage,
+                          status: "skipped",
+                          detail: "using project checkout",
+                        }
                       : stage,
                   ),
                 })),
@@ -1700,7 +1706,10 @@ const makeWsRpcLayer = (
                               force: true,
                             })
                             .pipe(
-                              Effect.retry({ times: 4, schedule: Schedule.spaced("500 millis") }),
+                              Effect.retry({
+                                times: 4,
+                                schedule: Schedule.spaced("500 millis"),
+                              }),
                             ),
                         ),
                         Effect.ignoreCause({ log: true }),
@@ -2043,7 +2052,9 @@ const makeWsRpcLayer = (
                 });
               yield* Effect.addFinalizer(() => closeLiveBuffer());
               yield* liveBudget.failed.pipe(
-                Effect.catchTags({ OrchestrationGetSnapshotError: closeLiveBuffer }),
+                Effect.catchTags({
+                  OrchestrationGetSnapshotError: closeLiveBuffer,
+                }),
                 Effect.forkScoped,
               );
               yield* Effect.forkScoped(
@@ -2058,7 +2069,9 @@ const makeWsRpcLayer = (
                   // Stop the PubSub consumer even if RPC delivery is waiting
                   // for an ACK and never pulls the failed buffer again.
                   Effect.raceFirst(liveBudget.failed),
-                  Effect.catchTags({ OrchestrationGetSnapshotError: () => Effect.void }),
+                  Effect.catchTags({
+                    OrchestrationGetSnapshotError: () => Effect.void,
+                  }),
                 ),
                 { startImmediately: true },
               );
@@ -2205,7 +2218,9 @@ const makeWsRpcLayer = (
                 liveStream.pipe(
                   Stream.runForEachArray(liveBuffer.offerAll),
                   Effect.raceFirst(liveBuffer.failed),
-                  Effect.catchTags({ OrchestrationGetSnapshotError: () => Effect.void }),
+                  Effect.catchTags({
+                    OrchestrationGetSnapshotError: () => Effect.void,
+                  }),
                 ),
                 { startImmediately: true },
               );
@@ -2259,7 +2274,10 @@ const makeWsRpcLayer = (
                   replayStats.payloadBytes <= ORCHESTRATION_REPLAY_PAYLOAD_BUDGET_BYTES
                 ) {
                   const catchUpStream = orchestrationEngine
-                    .readThreadEvents({ ...range, limit: THREAD_RESUME_MAX_EVENTS })
+                    .readThreadEvents({
+                      ...range,
+                      limit: THREAD_RESUME_MAX_EVENTS,
+                    })
                     .pipe(
                       Stream.filter(isThisThreadDetailEvent),
                       Stream.map((event) => ({
@@ -3365,6 +3383,26 @@ const makeWsRpcLayer = (
               .pipe(Effect.tap(() => refreshGitStatus(input.cwd))),
             { "rpc.aggregate": "git" },
           ),
+        [WS_METHODS.gitGenerateCommitMessage]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.gitGenerateCommitMessage,
+            textGeneration
+              .generateCommitMessage({
+                cwd: input.cwd,
+                branch: input.branch,
+                stagedSummary: input.stagedSummary,
+                stagedPatch: input.stagedPatch,
+                modelSelection: input.modelSelection,
+                ...(input.policy ? { policy: input.policy } : {}),
+              })
+              .pipe(
+                Effect.map((result) => ({
+                  subject: result.subject,
+                  body: result.body,
+                })),
+              ),
+            { "rpc.aggregate": "git" },
+          ),
         [WS_METHODS.vcsListRefs]: (input) =>
           observeRpcEffect(WS_METHODS.vcsListRefs, gitWorkflow.listRefs(input), {
             "rpc.aggregate": "vcs",
@@ -3698,7 +3736,11 @@ const makeWsRpcLayer = (
               );
 
               return Stream.concat(
-                Stream.make({ version: 1 as const, type: "snapshot" as const, config }),
+                Stream.make({
+                  version: 1 as const,
+                  type: "snapshot" as const,
+                  config,
+                }),
                 liveUpdates,
               );
             }),

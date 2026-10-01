@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import {
   normalizeProviderAccentColor,
   resolveProviderInstanceDisplayName,
   shouldShowInstanceBadge,
-} from "@lmcstools/client-runtime/state/provider-instance-display";
-import type { EnvironmentId, ProviderDriverKind, ServerConfig } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/provider-instance-display";
+import type { EnvironmentId, ProviderDriverKind, ServerConfig } from "@lmcstools/core";
 
 /** What a thread row needs to draw the provider glyph and its account badge. */
 export interface ThreadRowProviderInstance {

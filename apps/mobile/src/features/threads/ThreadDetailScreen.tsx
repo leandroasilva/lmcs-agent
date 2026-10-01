@@ -1,16 +1,16 @@
 import type { WorktreeSetupCardProps } from "./worktree-setup-card";
 import type { ComposerTextPaste } from "../../native/T3ComposerEditor.types";
-import { type EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
+import { type EnvironmentConnectionPhase } from "@lmcstools/client/connection";
 import {
   appendCodexArtifactTemplateUsePrompt,
   type CodexArtifactTemplate,
-} from "@lmcstools/client-runtime/codex-artifact-templates";
+} from "@lmcstools/client/codex-artifact-templates";
 import type {
   CodexFeedbackSubmission,
   EnvironmentThreadStatus,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/client/state/threads";
 import { useKeyboardChatComposerInset, useKeyboardScrollToEnd } from "@legendapp/list/keyboard";
-import { resolveProviderSkillsForCwd } from "@lmcstools/client-runtime/providerSkills";
+import { resolveProviderSkillsForCwd } from "@lmcstools/client/providerSkills";
 import type { LegendListRef } from "@legendapp/list/react-native";
 import { HeaderHeightContext } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
@@ -27,7 +27,7 @@ import type {
   ThreadId,
   UsageLimitsReport,
   UserInputQuestion,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Haptics from "expo-haptics";
 import {
   memo,
@@ -66,7 +66,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWorkspaceContentWidth } from "../layout/workspace-content-width";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
-import { collectProviderUsageLimits } from "@lmcstools/shared/usageLimits";
+import { collectProviderUsageLimits } from "@lmcstools/core/usageLimits";
 import type { ComposerEditorHandle } from "../../components/ComposerEditor";
 import type { StatusTone } from "../../components/StatusPill";
 import type { DraftComposerAttachment } from "../../lib/composerImages";

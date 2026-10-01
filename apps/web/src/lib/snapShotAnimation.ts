@@ -1,5 +1,5 @@
-import { scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import type { ScopedThreadRef, SnapShotSource } from "@lmcstools/contracts";
+import { scopedThreadKey } from "@lmcstools/client/environment";
+import type { ScopedThreadRef, SnapShotSource } from "@lmcstools/core";
 
 import type { DraftId } from "../composerDraftStore";
 import { getDesktopSnapShotBridge } from "./desktopSnapShot";

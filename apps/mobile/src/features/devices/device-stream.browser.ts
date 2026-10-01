@@ -1,7 +1,4 @@
-import {
-  createDeviceStreamClient,
-  type DeviceScreenSize,
-} from "@lmcstools/client-runtime/device/stream";
+import { createDeviceStreamClient, type DeviceScreenSize } from "@lmcstools/client/device/stream";
 
 import type { DeviceStreamConfiguration } from "./device-stream-document";
 

@@ -14,7 +14,7 @@ import type {
   RelayManagedEndpoint,
   RelayManagedEndpointOrigin,
   RelayManagedEndpointRuntimeConfig,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 
 import * as RelayConfiguration from "../Config.ts";
 import {

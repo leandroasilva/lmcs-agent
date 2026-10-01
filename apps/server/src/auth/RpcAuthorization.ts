@@ -11,7 +11,7 @@ import {
   type AuthEnvironmentScope,
   WS_METHODS,
   WsRpcGroup,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 
 type WsRpcMethod = RpcGroup.Rpcs<typeof WsRpcGroup>["_tag"];
@@ -128,6 +128,7 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.gitRunStackedAction]: AuthOrchestrationOperateScope,
   [WS_METHODS.gitResolvePullRequest]: AuthOrchestrationOperateScope,
   [WS_METHODS.gitPreparePullRequestThread]: AuthOrchestrationOperateScope,
+  [WS_METHODS.gitGenerateCommitMessage]: AuthOrchestrationOperateScope,
   [WS_METHODS.vcsListRefs]: AuthOrchestrationReadScope,
   [WS_METHODS.vcsCreateWorktree]: AuthOrchestrationOperateScope,
   [WS_METHODS.vcsRemoveWorktree]: AuthOrchestrationOperateScope,

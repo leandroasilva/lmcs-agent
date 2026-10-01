@@ -12,10 +12,10 @@ import {
   type ProviderSession,
   type RuntimeMode,
   type TurnId,
-} from "@lmcstools/contracts";
-import { assistantCitationsToPlainText } from "@lmcstools/shared/assistantCitations";
-import { projectComposerContextForProvider } from "@lmcstools/shared/composerContextReferences";
-import { isTemporaryWorktreeBranch, WORKTREE_BRANCH_PREFIX } from "@lmcstools/shared/git";
+} from "@lmcstools/core";
+import { assistantCitationsToPlainText } from "@lmcstools/core/assistantCitations";
+import { projectComposerContextForProvider } from "@lmcstools/core/composerContextReferences";
+import { isTemporaryWorktreeBranch, WORKTREE_BRANCH_PREFIX } from "@lmcstools/core/git";
 import * as Cache from "effect/Cache";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
@@ -31,7 +31,7 @@ import * as Path from "effect/Path";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
 
 import { resolveThreadWorkspaceCwd } from "../../checkpointing/Utils.ts";
 import { increment, orchestrationEventsProcessedTotal } from "../../observability/Metrics.ts";
@@ -62,7 +62,7 @@ import {
   resolveSourceControlWriterModelSelection,
   ServerSettingsService,
 } from "../../serverSettings.ts";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
 import { VcsStatusBroadcaster } from "../../vcs/VcsStatusBroadcaster.ts";
 import { GitWorkflowService } from "../../git/GitWorkflowService.ts";
 const isProviderAdapterProcessError = Schema.is(ProviderAdapterProcessError);
@@ -320,7 +320,12 @@ const make = Effect.gen(function* () {
         turnId: null,
         createdAt: DateTime.formatIso(yield* DateTime.now),
         requestId: event.payload.messageId,
-      }).pipe(Effect.ignore({ log: true, message: "failed to report canceled queued message" }));
+      }).pipe(
+        Effect.ignore({
+          log: true,
+          message: "failed to report canceled queued message",
+        }),
+      );
     }
   });
 
@@ -502,7 +507,7 @@ const make = Effect.gen(function* () {
     // A directory deleted without `git worktree remove` leaves an admin entry
     // that makes `git worktree add` refuse the path; prune clears it.
     // Best effort like the rest of this recovery: a settings read failure
-    // falls back to the checkout's t3.json.
+    // falls back to the checkout's lmcs.json.
     const submodules = yield* projectSettingsForThread(thread.id).pipe(
       Effect.map((settings) => settings.worktreeSubmodules),
       Effect.orElseSucceed(() => null),
@@ -707,7 +712,10 @@ const make = Effect.gen(function* () {
     });
     const refreshWorkspaceSnapshot = effectiveCwd
       ? providerRegistry
-          .refreshWorkspaceSnapshot({ instanceId: desiredInstanceId, cwd: effectiveCwd })
+          .refreshWorkspaceSnapshot({
+            instanceId: desiredInstanceId,
+            cwd: effectiveCwd,
+          })
           .pipe(Effect.forkDetach)
       : Effect.void;
 
@@ -930,7 +938,11 @@ const make = Effect.gen(function* () {
       const targetBranch = buildGeneratedWorktreeBranchName(generated.branch);
       if (targetBranch === oldBranch) return;
 
-      const renamed = yield* gitWorkflow.renameBranch({ cwd, oldBranch, newBranch: targetBranch });
+      const renamed = yield* gitWorkflow.renameBranch({
+        cwd,
+        oldBranch,
+        newBranch: targetBranch,
+      });
       yield* orchestrationEngine.dispatch({
         type: "thread.meta.update",
         commandId: yield* serverCommandId("worktree-branch-rename"),
@@ -1117,7 +1129,10 @@ const make = Effect.gen(function* () {
   const clearInterruptedThreadTitleRegenerations = Effect.fn(
     "clearInterruptedThreadTitleRegenerations",
   )(function* (
-    interrupted: ReadonlyArray<{ readonly threadId: ThreadId; readonly requestId: CommandId }>,
+    interrupted: ReadonlyArray<{
+      readonly threadId: ThreadId;
+      readonly requestId: CommandId;
+    }>,
   ) {
     yield* Effect.forEach(
       interrupted,
@@ -1433,7 +1448,10 @@ const make = Effect.gen(function* () {
           event.payload.threadId,
           event.payload.createdAt,
           event.payload.modelSelection !== undefined
-            ? { modelSelection: event.payload.modelSelection, pendingTurnStart: true }
+            ? {
+                modelSelection: event.payload.modelSelection,
+                pendingTurnStart: true,
+              }
             : { pendingTurnStart: true },
         );
         compactionSessionEnsured = true;
@@ -1873,7 +1891,12 @@ const make = Effect.gen(function* () {
         return Effect.logWarning("provider command reactor failed to find pending thread titles", {
           failureKind: Cause.hasDies(cause) ? "defect" : "failure",
           reasonCount: cause.reasons.length,
-        }).pipe(Effect.as({ interruptedRegenerations: [], refinementThreadIds: [] }));
+        }).pipe(
+          Effect.as({
+            interruptedRegenerations: [],
+            refinementThreadIds: [],
+          }),
+        );
       }),
     );
     const processEvent = Effect.fn("processEvent")(function* (event: OrchestrationEvent) {

@@ -2,7 +2,7 @@ import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeSocket from "@effect/platform-node/NodeSocket";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeCrypto from "node:crypto";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 import {
   type DeviceServiceState,
@@ -46,14 +46,14 @@ import {
   EditorId,
   WorktreeSetupSnapshot,
   type WorktreeSetupStageId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   computeDpopAccessTokenHash,
   computeDpopJwkThumbprint,
   type DpopPublicJwk,
-} from "@lmcstools/shared/dpop";
-import { RELAY_HEALTH_REQUEST_TYP, RELAY_MINT_REQUEST_TYP } from "@lmcstools/shared/relayJwt";
-import * as RelayClient from "@lmcstools/shared/relayClient";
+} from "@lmcstools/core/dpop";
+import { RELAY_HEALTH_REQUEST_TYP, RELAY_MINT_REQUEST_TYP } from "@lmcstools/core/relayJwt";
+import * as RelayClient from "@lmcstools/core/relayClient";
 import { assert, it } from "@effect/vitest";
 import { assertFailure, assertInclude, assertTrue } from "@effect/vitest/utils";
 import * as Clock from "effect/Clock";
@@ -221,9 +221,9 @@ import {
   type TransferBudgetRun,
   transferBudgetViolations,
 } from "../integration/TransferBudgetReport.integration.ts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
-import { DEFAULT_SIGNAL_EXPORT, otlpSerializationLayer } from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
+import { DEFAULT_SIGNAL_EXPORT, otlpSerializationLayer } from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 
 const defaultProjectId = ProjectId.make("project-default");
 const defaultThreadId = ThreadId.make("thread-default");
@@ -12929,14 +12929,14 @@ it.live(
 
       const report = formatTransferBudgetReport(runs);
       yield* Effect.logInfo(`\n${report}`);
-      const reportPath = yield* Config.String("T3CODE_TRANSFER_BUDGET_REPORT_PATH").pipe(
+      const reportPath = yield* Config.String("LMCS_TRANSFER_BUDGET_REPORT_PATH").pipe(
         Config.option,
       );
       if (Option.isSome(reportPath)) {
         const fileSystem = yield* FileSystem.FileSystem;
         yield* fileSystem.writeFileString(reportPath.value, report);
       }
-      const resultPath = yield* Config.String("T3CODE_TRANSFER_BUDGET_RESULT_PATH").pipe(
+      const resultPath = yield* Config.String("LMCS_TRANSFER_BUDGET_RESULT_PATH").pipe(
         Config.option,
       );
       if (Option.isSome(resultPath)) {

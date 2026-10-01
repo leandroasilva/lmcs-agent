@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import type { ScopedThreadRef } from "@lmcstools/core";
 
 /**
  * Field-wise ref equality. `scopedThreadKey` joins with `:`, so two distinct

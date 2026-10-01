@@ -1,4 +1,4 @@
-import type { DesktopWslState } from "@lmcstools/contracts";
+import type { DesktopWslState } from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { AtomRegistry } from "effect/unstable/reactivity";

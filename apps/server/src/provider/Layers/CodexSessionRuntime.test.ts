@@ -4,10 +4,10 @@ import { it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { describe } from "vite-plus/test";
-import { DEFAULT_MODEL, ThreadId } from "@lmcstools/contracts";
-import * as CodexErrors from "effect-codex-app-server/errors";
-import * as CodexRpc from "effect-codex-app-server/rpc";
-import * as EffectCodexSchema from "effect-codex-app-server/schema";
+import { DEFAULT_MODEL, ThreadId } from "@lmcstools/core";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
+import * as CodexRpc from "@lmcstools/providers/codex/rpc";
+import * as EffectCodexSchema from "@lmcstools/providers/codex/schema";
 
 import {
   buildCodexAdditionalContext,

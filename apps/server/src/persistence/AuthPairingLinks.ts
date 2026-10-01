@@ -6,7 +6,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import * as SqlSchema from "effect/unstable/sql/SqlSchema";
 
-import { AuthEnvironmentScopes } from "@lmcstools/contracts";
+import { AuthEnvironmentScopes } from "@lmcstools/core";
 
 import {
   type AuthPairingLinkRepositoryError,

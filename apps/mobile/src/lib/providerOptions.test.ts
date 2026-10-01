@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import type { ModelCapabilities } from "@lmcstools/contracts";
+import type { ModelCapabilities } from "@lmcstools/core";
 
 import { applyProviderOptionSelection, resolveProviderOptionDescriptors } from "./providerOptions";
 

@@ -6,10 +6,10 @@ import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
-import { createModelSelection } from "@lmcstools/shared/model";
+import { createModelSelection } from "@lmcstools/core/model";
 import { expect } from "vite-plus/test";
 
-import { CodexSettings, ProviderInstanceId, TextGenerationError } from "@lmcstools/contracts";
+import { CodexSettings, ProviderInstanceId, TextGenerationError } from "@lmcstools/core";
 
 import * as ServerConfig from "../config.ts";
 import * as TextGeneration from "./TextGeneration.ts";
@@ -258,7 +258,7 @@ it.layer(CodexTextGenerationTestLayer)("CodexTextGeneration", (it) => {
     ),
   );
 
-  it.effect("uses T3CODE_CODEX_LAUNCH_ARGS for codex exec over settings", () =>
+  it.effect("uses LMCS_CODEX_LAUNCH_ARGS for codex exec over settings", () =>
     withFakeCodexEnv(
       {
         output: JSON.stringify({
@@ -266,7 +266,7 @@ it.layer(CodexTextGenerationTestLayer)("CodexTextGeneration", (it) => {
           body: "",
         }),
         launchArgs: "--enable settings-feature",
-        environment: { ...process.env, T3CODE_CODEX_LAUNCH_ARGS: " --strict-config --listen off " },
+        environment: { ...process.env, LMCS_CODEX_LAUNCH_ARGS: " --strict-config --listen off " },
         requireArg: "--strict-config",
         forbidArg: "settings-feature",
       },

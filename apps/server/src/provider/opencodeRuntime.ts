@@ -1,6 +1,6 @@
 import * as NodeURL from "node:url";
 
-import type { ChatAttachment, ProviderApprovalDecision, RuntimeMode } from "@lmcstools/contracts";
+import type { ChatAttachment, ProviderApprovalDecision, RuntimeMode } from "@lmcstools/core";
 import {
   createOpencodeClient,
   type Agent,
@@ -32,10 +32,10 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { isWindowsCommandNotFound } from "../processRunner.ts";
 import { collectStreamAsString } from "./providerSnapshot.ts";
-import * as NetService from "@lmcstools/shared/Net";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { compareSemverVersions, parseSemver } from "@lmcstools/shared/semver";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import * as NetService from "@lmcstools/core/Net";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { compareSemverVersions, parseSemver } from "@lmcstools/core/semver";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 const encodeUnknownJsonStringExit = Schema.encodeUnknownExit(Schema.fromJsonString(Schema.Unknown));
 const OPENCODE_EMPTY_CONFIG_CONTENT = "{}";
 

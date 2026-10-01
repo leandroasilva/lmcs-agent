@@ -12,8 +12,8 @@ import {
   removeConnectionFromCatalog,
   setConnectionEnabledInCatalog,
   replaceCatalogValue,
-} from "@lmcstools/client-runtime/platform";
-import { TokenStore } from "@lmcstools/client-runtime/authorization";
+} from "@lmcstools/client/platform";
+import { TokenStore } from "@lmcstools/client/authorization";
 import {
   ConnectionTransientError,
   ConnectionBlockedError,
@@ -23,7 +23,7 @@ import {
   StoredGitHubRoutingPermission,
   gitHubRoutingConnectionKey,
   gitHubRoutingPermissionFor,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   EnvironmentId,
   OrchestrationShellSnapshot,
@@ -31,7 +31,7 @@ import {
   ServerConfig,
   ThreadId,
   VcsListRefsResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

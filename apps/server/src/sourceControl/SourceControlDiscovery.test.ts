@@ -9,7 +9,7 @@ import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import { ChildProcessSpawner } from "effect/unstable/process";
 import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
-import { VcsProcessSpawnError } from "@lmcstools/contracts";
+import { VcsProcessSpawnError } from "@lmcstools/core";
 
 import * as ServerConfig from "../config.ts";
 import * as VcsDriverRegistry from "../vcs/VcsDriverRegistry.ts";
@@ -423,7 +423,7 @@ it.effect("reports implemented tools separately from locally available executabl
             account: Option.none(),
             host: Option.some("bitbucket.org"),
             detail: Option.some(
-              "Set T3CODE_BITBUCKET_EMAIL and T3CODE_BITBUCKET_API_TOKEN, or T3CODE_BITBUCKET_ACCESS_TOKEN.",
+              "Set LMCS_BITBUCKET_EMAIL and LMCS_BITBUCKET_API_TOKEN, or LMCS_BITBUCKET_ACCESS_TOKEN.",
             ),
           }),
         },

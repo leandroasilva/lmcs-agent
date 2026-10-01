@@ -1,4 +1,4 @@
-import { createOrchestrationEnvironmentAtoms } from "@lmcstools/client-runtime/state/orchestration";
+import { createOrchestrationEnvironmentAtoms } from "@lmcstools/client/state/orchestration";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

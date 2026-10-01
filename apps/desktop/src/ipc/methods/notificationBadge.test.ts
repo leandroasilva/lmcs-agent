@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect";
 import { beforeEach, expect, vi } from "vite-plus/test";
 import { it } from "@effect/vitest";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 const native = vi.hoisted(() => ({
   setBadgeCount: vi.fn(),

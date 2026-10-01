@@ -1,5 +1,5 @@
 import type { ModelOption, ProviderGroup } from "../../lib/modelOptions";
-import type { ProviderInstanceId } from "@lmcstools/contracts";
+import type { ProviderInstanceId } from "@lmcstools/core";
 
 export type ModelFavorite = {
   readonly provider: ProviderInstanceId;

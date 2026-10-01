@@ -1,15 +1,15 @@
 import {
   canonicalRepositoryKey,
   sourceControlRepositorySelector,
-} from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core/sourceControl";
 import {
   CommandId,
   type OrchestrationEvent,
   type OrchestrationProjectShell,
   type ThreadId,
   type ThreadLinkedPullRequest,
-} from "@lmcstools/contracts";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
+} from "@lmcstools/core";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";

@@ -1,5 +1,5 @@
 /**
- * T3ProjectFileLoader - Effect service that loads the checked-in `t3.json`
+ * T3ProjectFileLoader - Effect service that loads the checked-in `lmcs.json`
  * project file from a workspace root.
  *
  * Loading is best-effort: a missing file resolves to `Option.none`, and
@@ -16,8 +16,8 @@ import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
-import { T3_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/contracts";
-import { T3ProjectFileFromJson } from "@lmcstools/shared/t3ProjectFile";
+import { T3_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/core";
+import { T3ProjectFileFromJson } from "@lmcstools/core/t3ProjectFile";
 
 const decodeT3ProjectFileJson = Schema.decodeEffect(T3ProjectFileFromJson);
 
@@ -35,12 +35,12 @@ export class T3ProjectFileLoadError extends Schema.TaggedError<T3ProjectFileLoad
   }
 }
 
-/** Service tag for t3.json project file loading. */
+/** Service tag for lmcs.json project file loading. */
 export class T3ProjectFileLoader extends Context.Service<
   T3ProjectFileLoader,
   {
     /**
-     * Load and decode `t3.json` at the workspace root.
+     * Load and decode `lmcs.json` at the workspace root.
      *
      * Never fails: missing, unreadable, or invalid files resolve to
      * `Option.none` (invalid files are logged as warnings).

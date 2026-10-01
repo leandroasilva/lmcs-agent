@@ -31,9 +31,9 @@ import type {
   PullRequestLabelCandidateList,
   PullRequestState,
   PullRequestThreadComment,
-} from "@lmcstools/contracts";
-import { quoteGitPatchPath } from "@lmcstools/shared/gitPatchPath";
-import { decodeJsonResult } from "@lmcstools/shared/schemaJson";
+} from "@lmcstools/core";
+import { quoteGitPatchPath } from "@lmcstools/core/gitPatchPath";
+import { decodeJsonResult } from "@lmcstools/core/schemaJson";
 
 import { dedupeChecks } from "./pullRequestChecks.ts";
 

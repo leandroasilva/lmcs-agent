@@ -1,4 +1,4 @@
-import type { EnvironmentId, ScopedThreadRef, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ScopedThreadRef, ThreadId } from "@lmcstools/core";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import type { DraftId } from "../composerDraftStore";

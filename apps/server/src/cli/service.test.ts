@@ -1,7 +1,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, expect, it } from "@effect/vitest";
-import { HostProcessEnvironment } from "@lmcstools/shared/hostProcess";
-import * as NetService from "@lmcstools/shared/Net";
+import { HostProcessEnvironment } from "@lmcstools/core/hostProcess";
+import * as NetService from "@lmcstools/core/Net";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

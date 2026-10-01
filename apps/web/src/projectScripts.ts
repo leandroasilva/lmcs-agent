@@ -3,7 +3,7 @@ import {
   SCRIPT_RUN_COMMAND_PATTERN,
   type KeybindingCommand,
   type ProjectScript,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 const isScriptRunCommand = Schema.is(SCRIPT_RUN_COMMAND_PATTERN);
 

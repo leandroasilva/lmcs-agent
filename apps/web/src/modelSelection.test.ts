@@ -3,12 +3,12 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
-import { DEFAULT_UNIFIED_SETTINGS, type UnifiedSettings } from "@lmcstools/contracts/settings";
+} from "@lmcstools/core";
+import { DEFAULT_UNIFIED_SETTINGS, type UnifiedSettings } from "@lmcstools/core/settings";
 import { describe, expect, it } from "vite-plus/test";
-import { createModelSelection } from "@lmcstools/shared/model";
+import { createModelSelection } from "@lmcstools/core/model";
 import { deriveEffectiveComposerModelState } from "./composerDraftStore";
-import { getComposerProviderState } from "./components/chat/composerProviderState";
+import { getComposerProviderState } from "./components/features/chat/composerProviderState";
 import { deriveProviderInstanceEntries, NO_PROVIDER_MODEL_SELECTION } from "./providerInstances";
 import {
   getCustomModelOptionsByInstance,

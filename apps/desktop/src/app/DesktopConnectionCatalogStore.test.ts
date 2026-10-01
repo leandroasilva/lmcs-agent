@@ -1,7 +1,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
-import { ConnectionCatalogDocument } from "@lmcstools/client-runtime/platform";
-import { EnvironmentId, type PersistedSavedEnvironmentRecord } from "@lmcstools/contracts";
+import { ConnectionCatalogDocument } from "@lmcstools/client/platform";
+import { EnvironmentId, type PersistedSavedEnvironmentRecord } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Encoding from "effect/Encoding";
 import * as FileSystem from "effect/FileSystem";
@@ -68,7 +68,7 @@ function makeLayer(
     runningUnderArm64Translation: false,
   }).pipe(
     Layer.provide(
-      Layer.mergeAll(NodeServices.layer, DesktopConfig.layerTest({ T3CODE_HOME: baseDir })),
+      Layer.mergeAll(NodeServices.layer, DesktopConfig.layerTest({ LMCS_HOME: baseDir })),
     ),
   );
   const safeStorageLayer = makeSafeStorageLayer(encryptionAvailable, failDecrypt);

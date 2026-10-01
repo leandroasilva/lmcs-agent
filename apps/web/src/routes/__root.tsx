@@ -1,6 +1,6 @@
-import { type ServerLifecycleWelcomePayload } from "@lmcstools/contracts";
-import { scopedProjectKey, scopeProjectRef } from "@lmcstools/client-runtime/environment";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+import { type ServerLifecycleWelcomePayload } from "@lmcstools/core";
+import { scopedProjectKey, scopeProjectRef } from "@lmcstools/client/environment";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import {
   Outlet,
   Link,
@@ -16,22 +16,22 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 import { APP_BASE_NAME, APP_DISPLAY_NAME, APP_STAGE_LABEL, APP_VERSION } from "../branding";
 import { resolveServerBackedAppDisplayName } from "../branding.logic";
-import { AppSidebarLayout } from "../components/AppSidebarLayout";
-import { CommandPalette } from "../components/CommandPalette";
-import { CustomSnoozeDialogHost } from "../components/CustomSnoozeDialog";
-import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
-import { FirstRunGate } from "../components/onboarding/FirstRunGate";
-import { ConnectOnboardingDialog } from "../components/cloud/ConnectOnboardingDialog";
-import { RelayClientInstallDialog } from "../components/cloud/RelayClientInstallDialog";
-import { SshPasswordPromptDialog } from "../components/desktop/SshPasswordPromptDialog";
-import { SnapShotCoordinator } from "../components/desktop/SnapShotCoordinator";
-import { DesktopAppActivationCoordinator } from "../components/desktop/DesktopAppActivationCoordinator";
-import { RunningThreadKeepAlive } from "../components/desktop/RunningThreadKeepAlive";
-import { ProviderUpdateLaunchNotification } from "../components/ProviderUpdateLaunchNotification";
-import { ThreadNotificationCoordinator } from "../components/ThreadNotificationCoordinator";
-import { ProjectCloneToastCoordinator } from "../components/ProjectCloneToastCoordinator";
-import { SlowRpcRequestToastCoordinator } from "../components/SlowRpcRequestToastCoordinator";
-import { ThemeEditorHost } from "../components/settings/ThemeEditorHost";
+import { AppSidebarLayout } from "../components/layout/AppSidebarLayout";
+import { CommandPalette } from "../components/layout/CommandPalette";
+import { CustomSnoozeDialogHost } from "../components/layout/CustomSnoozeDialog";
+import { ConfirmDialogHost } from "../components/layout/ConfirmDialogHost";
+import { FirstRunGate } from "../components/features/onboarding/FirstRunGate";
+import { ConnectOnboardingDialog } from "../components/features/cloud/ConnectOnboardingDialog";
+import { RelayClientInstallDialog } from "../components/features/cloud/RelayClientInstallDialog";
+import { SshPasswordPromptDialog } from "../components/features/desktop/SshPasswordPromptDialog";
+import { SnapShotCoordinator } from "../components/features/desktop/SnapShotCoordinator";
+import { DesktopAppActivationCoordinator } from "../components/features/desktop/DesktopAppActivationCoordinator";
+import { RunningThreadKeepAlive } from "../components/features/desktop/RunningThreadKeepAlive";
+import { ProviderUpdateLaunchNotification } from "../components/features/settings/ProviderUpdateLaunchNotification";
+import { ThreadNotificationCoordinator } from "../components/layout/ThreadNotificationCoordinator";
+import { ProjectCloneToastCoordinator } from "../components/layout/ProjectCloneToastCoordinator";
+import { SlowRpcRequestToastCoordinator } from "../components/layout/SlowRpcRequestToastCoordinator";
+import { ThemeEditorHost } from "../components/features/settings/ThemeEditorHost";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import { useDefaultThemeAdoption } from "../hooks/useDefaultTheme";
 import { useEnvironmentThemeSync } from "../hooks/useEnvironmentTheme";
@@ -73,7 +73,7 @@ import { readProject, setActiveEnvironmentId, useActiveEnvironmentId } from "../
 import {
   createKeybindingsUpdateToastController,
   type KeybindingsUpdateToastController,
-} from "../components/KeybindingsUpdateToast.logic";
+} from "../components/features/settings/KeybindingsUpdateToast.logic";
 
 import { getDesktopSnapShotBridge } from "../lib/desktopSnapShot";
 import { installDesktopPasteAsText } from "../lib/desktopPasteAsText";

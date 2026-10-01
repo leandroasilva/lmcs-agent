@@ -3,14 +3,14 @@ import {
   compileResolvedKeybindingsConfig,
   DEFAULT_RESOLVED_KEYBINDINGS,
   mergeWithDefaultKeybindings,
-} from "@lmcstools/shared/keybindings";
+} from "@lmcstools/core/keybindings";
 
 import {
   type KeybindingCommand,
   type KeybindingShortcut,
   type KeybindingWhenNode,
   type ResolvedKeybindingsConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   formatShortcutLabel,
   isDiffToggleShortcut,

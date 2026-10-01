@@ -1,4 +1,4 @@
-import type { AssetResource, EnvironmentId } from "@lmcstools/contracts";
+import type { AssetResource, EnvironmentId } from "@lmcstools/core";
 import { createContext, useContext, useEffect, useId, useState } from "react";
 import {
   ActivityIndicator,

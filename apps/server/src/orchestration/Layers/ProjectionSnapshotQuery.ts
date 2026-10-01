@@ -35,8 +35,8 @@ import {
   ThreadPullRequestSnapshot,
   ThreadPullRequestStack,
   type ThreadPullRequestLink,
-} from "@lmcstools/contracts";
-import { legacyLinkedPullRequestOf } from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core";
+import { legacyLinkedPullRequestOf } from "@lmcstools/core/threadPullRequests";
 import * as Arr from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

@@ -1,4 +1,4 @@
-import { EventId, type OrchestrationThreadActivity } from "@lmcstools/contracts";
+import { EventId, type OrchestrationThreadActivity } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

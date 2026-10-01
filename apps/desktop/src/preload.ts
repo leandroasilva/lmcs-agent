@@ -5,7 +5,7 @@ import type {
   DesktopPreviewRecordingFrame,
   DesktopPreviewTabState,
   DesktopSnapShotEvent,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { exposeClerkBridge } from "@clerk/electron/preload";
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
 

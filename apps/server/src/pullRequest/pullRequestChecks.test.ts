@@ -1,4 +1,4 @@
-import type { PullRequestCheck, PullRequestCheckStatus } from "@lmcstools/contracts";
+import type { PullRequestCheck, PullRequestCheckStatus } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { dedupeChecks } from "./pullRequestChecks.ts";

@@ -1,6 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
-import type { ScopedProjectRef } from "@lmcstools/contracts";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
+import type { ScopedProjectRef } from "@lmcstools/core";
 import { useCallback } from "react";
 
 import { useComposerDraftStore } from "../composerDraftStore";

@@ -1,5 +1,5 @@
-import { EnvironmentId, ORCHESTRATION_PROTOCOL_VERSION } from "@lmcstools/contracts";
-import type { RelayEnvironmentStatusResponse } from "@lmcstools/contracts/relay";
+import { EnvironmentId, ORCHESTRATION_PROTOCOL_VERSION } from "@lmcstools/core";
+import type { RelayEnvironmentStatusResponse } from "@lmcstools/core/relay";
 import { describe, expect, it } from "vite-plus/test";
 
 import { availableCloudEnvironmentPresentation } from "./cloudEnvironmentPresentation";

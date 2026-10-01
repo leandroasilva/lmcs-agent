@@ -1,5 +1,5 @@
 import * as NodeOS from "node:os";
-import type { ServerProviderUsageWindow } from "@lmcstools/contracts";
+import type { ServerProviderUsageWindow } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

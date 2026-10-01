@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { DeviceActionInput } from "@lmcstools/contracts";
+import type { DeviceActionInput } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 
 import { readDeviceDetail, runDeviceAction, supportsAction } from "./DeviceActions.ts";

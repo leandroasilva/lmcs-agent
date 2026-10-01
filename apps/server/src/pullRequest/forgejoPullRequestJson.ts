@@ -9,7 +9,7 @@ import type {
   PullRequestReaction,
   PullRequestReactionContent,
   PullRequestReviewThread,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type { ProviderChangeRequest } from "./PullRequestProvider.ts";
 import { dedupeChecks } from "./pullRequestChecks.ts";
 

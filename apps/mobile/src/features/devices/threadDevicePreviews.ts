@@ -1,4 +1,4 @@
-import type { DeviceServiceState, ThreadId } from "@lmcstools/contracts";
+import type { DeviceServiceState, ThreadId } from "@lmcstools/core";
 
 /** Host identity is part of the selection because Android serials repeat across hosts. */
 export function threadDevicePreviews(state: DeviceServiceState | null, threadId: ThreadId) {

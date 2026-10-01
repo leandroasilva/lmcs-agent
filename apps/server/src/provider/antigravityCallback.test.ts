@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { ProviderInstanceId } from "@lmcstools/contracts";
+import { ProviderInstanceId } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 

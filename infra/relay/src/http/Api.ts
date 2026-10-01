@@ -19,8 +19,8 @@ import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
 import * as HttpTraceContext from "effect/unstable/http/HttpTraceContext";
 import * as HttpApiBuilder from "effect/unstable/httpapi/HttpApiBuilder";
 import * as HttpApiError from "effect/unstable/httpapi/HttpApiError";
-import { encodeOAuthScope } from "@lmcstools/shared/oauthScope";
-import { httpHeaderRedactionLayer } from "@lmcstools/shared/httpObservability";
+import { encodeOAuthScope } from "@lmcstools/core/oauthScope";
+import { httpHeaderRedactionLayer } from "@lmcstools/core/httpObservability";
 
 import {
   RelayApi,
@@ -51,12 +51,12 @@ import {
   RelayManagedEndpointRecoveryProofPayload,
   type RelayDpopAccessTokenScope,
   RelayInternalError,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import {
   normalizeRelayIssuer,
   RELAY_MANAGED_TUNNEL_RECOVERY_TYP,
   verifyRelayJwt,
-} from "@lmcstools/shared/relayJwt";
+} from "@lmcstools/core/relayJwt";
 
 import * as DeliveryAttempts from "../agentActivity/DeliveryAttempts.ts";
 import * as AgentActivityRows from "../agentActivity/AgentActivityRows.ts";

@@ -7,10 +7,10 @@ import {
   type ServerLifecycleWelcomePayload,
   type ServerProvider,
   type ServerSettings,
-} from "@lmcstools/contracts";
-import { createServerEnvironmentAtoms } from "@lmcstools/client-runtime/state/server";
-import { createEnvironmentServerConfigsAtom } from "@lmcstools/client-runtime/state/shell";
-import { mergeWithDefaultKeybindings } from "@lmcstools/shared/keybindings";
+} from "@lmcstools/core";
+import { createServerEnvironmentAtoms } from "@lmcstools/client/state/server";
+import { createEnvironmentServerConfigsAtom } from "@lmcstools/client/state/shell";
+import { mergeWithDefaultKeybindings } from "@lmcstools/core/keybindings";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 

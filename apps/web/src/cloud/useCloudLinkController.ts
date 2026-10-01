@@ -1,10 +1,10 @@
 import { useAuth } from "@clerk/react";
-import { findErrorTraceId } from "@lmcstools/client-runtime/errors";
+import { findErrorTraceId } from "@lmcstools/client/errors";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { useState } from "react";
 
 import { toastManager } from "../components/ui/toast";
@@ -51,7 +51,8 @@ export function useCloudLinkController() {
   const [operationError, setOperationError] = useState<string | null>(null);
 
   const reportUpdateFailure = (cause: unknown) => {
-    const message = cause instanceof Error ? cause.message : "Could not update LMCS Connect access.";
+    const message =
+      cause instanceof Error ? cause.message : "Could not update LMCS Connect access.";
     const traceId = findErrorTraceId(cause);
     console.error("[t3-connect] Could not update LMCS Connect", { message, traceId, cause });
     setOperationError(traceId ? `${message} Trace ID: ${traceId}` : message);

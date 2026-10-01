@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
   MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import { AppTextInput } from "../../../components/AppText";
 
@@ -13,6 +14,7 @@ export interface AutoSettleDaysFieldProps {
 }
 
 export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState<string | null>(null);
   const commit = () => {
     if (props.disabled) {
@@ -41,7 +43,7 @@ export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
       onChangeText={setDraft}
       onBlur={commit}
       onSubmitEditing={commit}
-      accessibilityLabel="Days before auto-settle"
+      accessibilityLabel={t("settings.autoSettle.daysLabel")}
       editable={!props.disabled}
     />
   );

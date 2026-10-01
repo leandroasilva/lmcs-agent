@@ -7,6 +7,11 @@ import {
   type RefObject,
 } from "react";
 
+import { useTranslation } from "react-i18next";
+
+// Side-effect init so leaf imports (tests) get a working i18n instance.
+import "../../i18n";
+
 import type { HsvColor } from "../../lib/color";
 import { cn } from "../../lib/utils";
 
@@ -38,7 +43,9 @@ function useColorDrag(
       onPointerDown(event: PointerEvent<HTMLDivElement>) {
         if (pointerId.current !== null || event.button !== 0) return;
         pointerId.current = event.pointerId;
-        (focusTarget?.current ?? event.currentTarget).focus({ preventScroll: true });
+        (focusTarget?.current ?? event.currentTarget).focus({
+          preventScroll: true,
+        });
         event.currentTarget.setPointerCapture(event.pointerId);
         setIsDragging(true);
         update(event);
@@ -70,6 +77,7 @@ export function ColorSaturationValuePlane({
   className,
   variant = "inset",
 }: ColorControlProps<HsvColor> & { variant?: "inset" | "edge" }) {
+  const { t } = useTranslation();
   const instructionsId = useId();
   const saturationRef = useRef<HTMLInputElement>(null);
   const { handlers, thumbTransition } = useColorDrag(
@@ -111,9 +119,22 @@ export function ColorSaturationValuePlane({
     onChange({ ...value, [axis]: nextValue });
   };
 
+  const axes = [
+    {
+      axis: "s" as const,
+      label: t("common.colorPicker.saturation"),
+      aria: t("common.colorPicker.saturationAria", { label }),
+    },
+    {
+      axis: "v" as const,
+      label: t("common.colorPicker.brightness"),
+      aria: t("common.colorPicker.brightnessAria", { label }),
+    },
+  ];
+
   return (
     <div
-      aria-label={`${label} saturation and brightness`}
+      aria-label={t("common.colorPicker.planeAria", { label })}
       role="group"
       className={cn(
         "relative cursor-crosshair touch-none overflow-hidden bg-[linear-gradient(to_top,#000,transparent),linear-gradient(to_right,#fff,transparent)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-popover",
@@ -126,37 +147,37 @@ export function ColorSaturationValuePlane({
       {...handlers}
     >
       <span id={instructionsId} className="sr-only">
-        Use arrow keys to adjust the focused value. Hold Shift for larger steps. Use Home and End
-        for the minimum and maximum. Press Tab to move between saturation and brightness.
+        {t("common.colorPicker.instructions")}
       </span>
-      {(
-        [
-          ["s", "Saturation"],
-          ["v", "Brightness"],
-        ] as const
-      ).map(([axis, axisLabel]) => (
-        <label key={axis} className="contents">
+      {axes.map((item) => (
+        <label key={item.axis} className="contents">
           <input
-            ref={axis === "s" ? saturationRef : undefined}
+            ref={item.axis === "s" ? saturationRef : undefined}
             type="range"
             min={0}
             max={100}
             step="any"
-            value={value[axis] * 100}
-            aria-label={`${label} ${axisLabel.toLowerCase()}`}
+            value={value[item.axis] * 100}
+            aria-label={item.aria}
             aria-describedby={instructionsId}
-            aria-valuetext={`${Math.round(value[axis] * 100)}%`}
+            aria-valuetext={`${Math.round(value[item.axis] * 100)}%`}
             className="peer sr-only"
-            onKeyDown={(event) => handleKeyDown(event, axis)}
+            onKeyDown={(event) => handleKeyDown(event, item.axis)}
             onChange={(event) =>
-              onChange({ ...value, [axis]: event.currentTarget.valueAsNumber / 100 })
+              onChange({
+                ...value,
+                [item.axis]: event.currentTarget.valueAsNumber / 100,
+              })
             }
           />
           <span
             aria-hidden
             className="pointer-events-none invisible absolute bottom-2 left-2 z-10 rounded bg-popover px-1.5 py-0.5 text-xs text-popover-foreground peer-focus-visible:visible"
           >
-            {axisLabel} {Math.round(value[axis] * 100)}%
+            {t("common.colorPicker.axisPercent", {
+              axis: item.label,
+              percent: Math.round(value[item.axis] * 100),
+            })}
           </span>
         </label>
       ))}

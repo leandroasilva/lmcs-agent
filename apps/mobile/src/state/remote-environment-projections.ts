@@ -1,9 +1,6 @@
-import type {
-  EnvironmentPresentation,
-  PreparedConnection,
-} from "@lmcstools/client-runtime/connection";
-import { connectionCatalogDisplayUrl } from "@lmcstools/client-runtime/connection";
-import type { EnvironmentId, ServerConfig } from "@lmcstools/contracts";
+import type { EnvironmentPresentation, PreparedConnection } from "@lmcstools/client/connection";
+import { connectionCatalogDisplayUrl } from "@lmcstools/client/connection";
+import type { EnvironmentId, ServerConfig } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { Atom } from "effect/unstable/reactivity";
 

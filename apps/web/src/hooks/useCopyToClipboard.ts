@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
-} from "@lmcstools/shared/composerContextClipboard";
+} from "@lmcstools/core/composerContextClipboard";
 
 export class ClipboardApiUnavailableError extends Schema.TaggedError<ClipboardApiUnavailableError>()(
   "ClipboardApiUnavailableError",

@@ -1,4 +1,4 @@
-import { MessageId, ProjectId, ThreadId } from "@lmcstools/contracts";
+import { MessageId, ProjectId, ThreadId } from "@lmcstools/core";
 import { type CxOptions, cx } from "class-variance-authority";
 import * as Encoding from "effect/Encoding";
 import { extendTailwindMerge } from "tailwind-merge";

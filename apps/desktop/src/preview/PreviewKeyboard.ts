@@ -1,4 +1,4 @@
-import type { PreviewAutomationPressInput } from "@lmcstools/contracts";
+import type { PreviewAutomationPressInput } from "@lmcstools/core";
 
 interface KeyDefinition {
   readonly code: string;

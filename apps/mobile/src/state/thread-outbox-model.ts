@@ -1,9 +1,9 @@
-import { isTransportConnectionErrorMessage } from "@lmcstools/client-runtime/errors";
+import { isTransportConnectionErrorMessage } from "@lmcstools/client/errors";
 import {
   clampFileAttachmentUploadBytes,
   fileAttachmentTooLargeMessage,
-} from "@lmcstools/client-runtime/state/attachments";
-import type { EnvironmentShellStatus } from "@lmcstools/client-runtime/state/shell";
+} from "@lmcstools/client/state/attachments";
+import type { EnvironmentShellStatus } from "@lmcstools/client/state/shell";
 import {
   CommandId,
   EnvironmentId,
@@ -20,7 +20,7 @@ import {
   type ProviderInteractionMode as ProviderInteractionModeType,
   type RuntimeMode as RuntimeModeType,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 import { DraftComposerAttachmentSchema } from "../lib/composer-image-schema";

@@ -1,5 +1,5 @@
 import type { FileDiffMetadata, SelectedLineRange, SelectionSide } from "@pierre/diffs";
-import { PullRequestContextMetadata, type PullRequestReviewPosition } from "@lmcstools/contracts";
+import { PullRequestContextMetadata, type PullRequestReviewPosition } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 const ReviewCommentSelectionSchema = Schema.Struct({

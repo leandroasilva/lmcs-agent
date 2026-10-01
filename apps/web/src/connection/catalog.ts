@@ -1,4 +1,4 @@
-import { createEnvironmentCatalogAtoms } from "@lmcstools/client-runtime/state/connections";
+import { createEnvironmentCatalogAtoms } from "@lmcstools/client/state/connections";
 
 import { connectionAtomRuntime } from "./runtime";
 

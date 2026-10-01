@@ -1,0 +1,60 @@
+{
+  "name": "@lmcstools/providers",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./acp/client": {
+      "types": "./src/acp/client.ts",
+      "import": "./src/acp/client.ts"
+    },
+    "./acp/agent": {
+      "types": "./src/acp/agent.ts",
+      "import": "./src/acp/agent.ts"
+    },
+    "./acp/schema": {
+      "types": "./src/acp/schema.ts",
+      "import": "./src/acp/schema.ts"
+    },
+    "./acp/protocol": {
+      "types": "./src/acp/protocol.ts",
+      "import": "./src/acp/protocol.ts"
+    },
+    "./acp/errors": {
+      "types": "./src/acp/errors.ts",
+      "import": "./src/acp/errors.ts"
+    },
+    "./codex/client": {
+      "types": "./src/codex/client.ts",
+      "import": "./src/codex/client.ts"
+    },
+    "./codex/schema": {
+      "types": "./src/codex/schema.ts",
+      "import": "./src/codex/schema.ts"
+    },
+    "./codex/rpc": {
+      "types": "./src/codex/rpc.ts",
+      "import": "./src/codex/rpc.ts"
+    },
+    "./codex/errors": {
+      "types": "./src/codex/errors.ts",
+      "import": "./src/codex/errors.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run",
+    "generate:acp": "node scripts/acp/generate.ts",
+    "generate:codex": "node scripts/codex/generate.ts",
+    "probe:codex": "node test/codex/examples/codex-app-server-probe.ts"
+  },
+  "dependencies": {
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/openapi-generator": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

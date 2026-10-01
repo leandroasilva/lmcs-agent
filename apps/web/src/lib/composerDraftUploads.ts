@@ -1,5 +1,5 @@
-import type { ScopedProjectRef, ScopedThreadRef } from "@lmcstools/contracts";
-import { scopedThreadKey } from "@lmcstools/client-runtime/environment";
+import type { ScopedProjectRef, ScopedThreadRef } from "@lmcstools/core";
+import { scopedThreadKey } from "@lmcstools/client/environment";
 
 import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
 import { releaseDraftAttachments } from "./attachmentUploadQueue";

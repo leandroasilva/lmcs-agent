@@ -9,7 +9,7 @@ import {
   ProviderInstanceId,
   ThreadId,
   type AgentSessionImportSource,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { assert, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

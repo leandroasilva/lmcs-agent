@@ -1,7 +1,7 @@
 import {
   decodeThirdPartyLicenseManifest,
   type ThirdPartyLicenseManifest,
-} from "@lmcstools/shared/thirdPartyLicenses";
+} from "@lmcstools/core/thirdPartyLicenses";
 
 let cachedManifest: ThirdPartyLicenseManifest | undefined;
 

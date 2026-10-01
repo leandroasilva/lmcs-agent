@@ -6,11 +6,11 @@ import {
   type ProjectScopedServerSettingKey,
   type ServerSettings,
   type ServerSettingsPatch,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   clearProjectSettingsOverrides,
   resolveProjectSettings,
-} from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core/projectSettings";
 
 import type { SettingsTarget } from "./settings-environment-filter";
 

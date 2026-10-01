@@ -1,4 +1,4 @@
-import type { ClientSettings } from "@lmcstools/contracts/settings";
+import type { ClientSettings } from "@lmcstools/core/settings";
 
 import completionUrl from "./assets/notification-completion.mp3";
 import inputUrl from "./assets/notification-input.mp3";

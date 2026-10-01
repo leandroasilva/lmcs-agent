@@ -1,4 +1,4 @@
-import type { AssetResource } from "@lmcstools/contracts";
+import type { AssetResource } from "@lmcstools/core";
 import {
   AssetAttachmentNotFoundError,
   AssetGitHubMediaUrlValidationError,
@@ -14,7 +14,7 @@ import {
   AssetWorkspaceResolutionError,
   AssetWorkspaceRootNormalizationError,
   ToolActivityNativeAppReference,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   audioMimeTypeFromExtension,
   hostPreviewMimeTypeFromExtension,
@@ -22,14 +22,14 @@ import {
   isWorkspacePreviewEntryPath,
   WORKSPACE_BROWSER_PREVIEW_EXTENSIONS,
   WORKSPACE_IMAGE_PREVIEW_EXTENSIONS,
-} from "@lmcstools/shared/filePreview";
+} from "@lmcstools/core/filePreview";
 import {
   IMAGE_DIMENSIONS_HEADER_BYTES,
   readImageDimensions,
   type ImageDimensions,
-} from "@lmcstools/shared/imageDimensions";
-import { githubMediaFetchUrl, githubMediaFileName } from "@lmcstools/shared/githubMedia";
-import { PROJECT_FAVICON_FALLBACK_MARKER } from "@lmcstools/shared/projectFavicon";
+} from "@lmcstools/core/imageDimensions";
+import { githubMediaFetchUrl, githubMediaFileName } from "@lmcstools/core/githubMedia";
+import { PROJECT_FAVICON_FALLBACK_MARKER } from "@lmcstools/core/projectFavicon";
 import * as Clock from "effect/Clock";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";

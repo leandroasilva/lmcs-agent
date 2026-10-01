@@ -1,7 +1,7 @@
 import * as NodeOS from "node:os";
-import type { CursorSettings, ServerProviderUsageWindow } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { CURSOR_USAGE_WINDOWS } from "@lmcstools/shared/usageLimits";
+import type { CursorSettings, ServerProviderUsageWindow } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { CURSOR_USAGE_WINDOWS } from "@lmcstools/core/usageLimits";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

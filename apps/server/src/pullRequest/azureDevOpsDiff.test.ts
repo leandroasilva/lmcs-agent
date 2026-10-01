@@ -1,4 +1,4 @@
-import { unquoteGitPatchPath } from "@lmcstools/shared/gitPatchPath";
+import { unquoteGitPatchPath } from "@lmcstools/core/gitPatchPath";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

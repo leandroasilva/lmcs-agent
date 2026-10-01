@@ -2,8 +2,8 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeHttpPlatform from "@effect/platform-node/NodeHttpPlatform";
 import * as NodeFSP from "node:fs/promises";
-import { AssetAccessError, AssetPreviewTypeValidationError, ThreadId } from "@lmcstools/contracts";
-import { PROJECT_FAVICON_FALLBACK_MARKER } from "@lmcstools/shared/projectFavicon";
+import { AssetAccessError, AssetPreviewTypeValidationError, ThreadId } from "@lmcstools/core";
+import { PROJECT_FAVICON_FALLBACK_MARKER } from "@lmcstools/core/projectFavicon";
 import { describe, expect, it } from "@effect/vitest";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -26,7 +26,7 @@ import { assetFileResponse } from "../http.ts";
 import { ASSET_ROUTE_PREFIX, issueAssetUrl, resolveAsset } from "./AssetAccess.ts";
 import * as NativeAppIconResolver from "./NativeAppIconResolver.ts";
 import { openMediaFile } from "./MediaFile.ts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 import * as GitHubCli from "../sourceControl/GitHubCli.ts";
 import { githubMediaResponse } from "./GitHubMediaFetch.ts";
 

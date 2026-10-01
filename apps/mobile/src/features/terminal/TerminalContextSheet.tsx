@@ -3,8 +3,8 @@ import {
   COMPOSER_CONTEXT_TERMINAL_TEXT_MAX_CHARS,
   type EnvironmentId,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { formatComposerContextReference } from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core";
+import { formatComposerContextReference } from "@lmcstools/core/composerContextReferences";
 import { useState } from "react";
 import { Alert, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

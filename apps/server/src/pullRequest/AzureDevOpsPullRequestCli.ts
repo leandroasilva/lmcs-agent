@@ -9,7 +9,7 @@ import type {
   PullRequestInvolvement,
   PullRequestListState,
   PullRequestMergeMethod,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as AzureDevOpsCli from "../sourceControl/AzureDevOpsCli.ts";
 import {

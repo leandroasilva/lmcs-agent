@@ -3,10 +3,10 @@ import type {
   ProjectId,
   ProviderInteractionMode,
   ServerProvider,
-} from "@lmcstools/contracts";
-import { COMPOSER_CONTEXT_MAX_RECORDS } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { COMPOSER_CONTEXT_MAX_RECORDS } from "@lmcstools/core";
 import { Alert } from "react-native";
-import { formatComposerContextReference } from "@lmcstools/shared/composerContextReferences";
+import { formatComposerContextReference } from "@lmcstools/core/composerContextReferences";
 import { pullRequestComposerContext } from "../../lib/composerContext";
 import { uuidv4 } from "../../lib/uuid";
 import {
@@ -14,18 +14,18 @@ import {
   readComposerDraftSelection,
   setComposerDraftContext,
 } from "../../state/use-composer-drafts";
-import { USAGE_LIMITS_COMMAND } from "@lmcstools/shared/usageLimits";
+import { USAGE_LIMITS_COMMAND } from "@lmcstools/core/usageLimits";
 import {
   detectComposerTrigger,
   replaceTextRange,
   serializeComposerFileLink,
   type ComposerTrigger,
-} from "@lmcstools/shared/composerTrigger";
+} from "@lmcstools/core/composerTrigger";
 import {
   insertRankedSearchResult,
   normalizeSearchQuery,
   scoreQueryMatch,
-} from "@lmcstools/shared/searchRanking";
+} from "@lmcstools/core/searchRanking";
 import {
   dedupeProviderSkillsByName,
   getProviderSkillsForSlashMenu,
@@ -33,7 +33,7 @@ import {
   isProviderSkillUserInvocable,
   resolveProviderSkillsForCwd,
   resolveProviderSlashCommandsForCwd,
-} from "@lmcstools/client-runtime/providerSkills";
+} from "@lmcstools/client/providerSkills";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ComposerEditorSelection } from "../../components/ComposerEditor";

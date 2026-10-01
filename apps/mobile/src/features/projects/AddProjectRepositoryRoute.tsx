@@ -1,6 +1,6 @@
 import type { StaticScreenProps } from "@react-navigation/native";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
-import { addProjectRemoteSourceLabel } from "@lmcstools/client-runtime/operations/projects";
+import { addProjectRemoteSourceLabel } from "@lmcstools/client/operations/projects";
 
 import { AddProjectRepositoryScreen } from "./AddProjectScreen";
 

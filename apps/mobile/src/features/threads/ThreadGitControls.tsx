@@ -6,12 +6,12 @@ import {
   type ProjectScript,
   ThreadId,
   type VcsStatusResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   type GitActionRequestInput,
   requiresDefaultBranchConfirmation,
   resolveQuickAction,
-} from "@lmcstools/client-runtime/state/vcs";
+} from "@lmcstools/client/state/vcs";
 import { useNavigation } from "@react-navigation/native";
 import { NativeHeaderToolbar } from "../../native/StackHeader";
 import { useCallback, useMemo } from "react";

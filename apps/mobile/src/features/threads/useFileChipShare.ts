@@ -1,5 +1,5 @@
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { Alert } from "react-native";

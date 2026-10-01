@@ -1,11 +1,11 @@
 import * as Option from "effect/Option";
-import { foldUserInputActivities } from "@lmcstools/client-runtime/work-log/user-input";
+import { foldUserInputActivities } from "@lmcstools/client/work-log/user-input";
 import * as Schema from "effect/Schema";
 import {
   requestKindFromRequestType,
   type PendingApproval,
-} from "@lmcstools/client-runtime/pending-requests";
-import { UserInputAttachmentAnswerPayload, isToolLifecycleItemType } from "@lmcstools/contracts";
+} from "@lmcstools/client/pending-requests";
+import { UserInputAttachmentAnswerPayload, isToolLifecycleItemType } from "@lmcstools/core";
 import type {
   OrchestrationLatestTurn,
   OrchestrationThread,
@@ -13,8 +13,8 @@ import type {
   ToolLifecycleItemType,
   TurnId,
   UserInputQuestion,
-} from "@lmcstools/contracts";
-import { formatDuration } from "@lmcstools/shared/orchestrationTiming";
+} from "@lmcstools/core";
+import { formatDuration } from "@lmcstools/core/orchestrationTiming";
 import {
   commandDetailRepeatsCommand,
   extractCommandOutputText,
@@ -32,14 +32,14 @@ import {
   workLogEntryIsToolLike,
   type ToolGroupSummaryKind,
   type WorkLogToolLifecycleStatus,
-} from "@lmcstools/client-runtime/work-log/presentation";
-import { extractToolActivityPresentation } from "@lmcstools/client-runtime/work-log/tool-presentation";
-import { commandProgramName } from "@lmcstools/client-runtime/work-log/command-label";
+} from "@lmcstools/client/work-log/presentation";
+import { extractToolActivityPresentation } from "@lmcstools/client/work-log/tool-presentation";
+import { commandProgramName } from "@lmcstools/client/work-log/command-label";
 
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
 
-export type { PendingApproval, PendingUserInput } from "@lmcstools/client-runtime/pending-requests";
+export type { PendingApproval, PendingUserInput } from "@lmcstools/client/pending-requests";
 
 export interface PendingUserInputDraftAnswer {
   readonly selectedOptionValues?: ReadonlyArray<string>;
@@ -94,9 +94,9 @@ export interface WorkLogEntry {
   changedFiles?: ReadonlyArray<string>;
   tone: "thinking" | "tool" | "info" | "error";
   toolTitle?: string;
-  toolSurface?: import("@lmcstools/contracts").ToolActivitySurface;
-  toolIcon?: import("@lmcstools/contracts").ToolActivityIcon;
-  toolSource?: import("@lmcstools/contracts").ToolActivitySource;
+  toolSurface?: import("@lmcstools/core").ToolActivitySurface;
+  toolIcon?: import("@lmcstools/core").ToolActivityIcon;
+  toolSource?: import("@lmcstools/core").ToolActivitySource;
   itemType?: ToolLifecycleItemType;
   requestKind?: PendingApproval["requestKind"];
   toolLifecycleStatus?: WorkLogToolLifecycleStatus;

@@ -1,7 +1,7 @@
 import type {
   RelayAgentActivityState,
   RelayDeviceRegistrationRequest,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import type { SignedApnsDeliveryJob } from "./apnsDeliveryJobs.ts";
 import * as NodeCryptoLayer from "@effect/platform-node/NodeCrypto";
 import { describe, expect, it } from "@effect/vitest";

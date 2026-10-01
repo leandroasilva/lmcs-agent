@@ -9,9 +9,9 @@ import * as Path from "effect/Path";
 import * as Stream from "effect/Stream";
 import type * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
 import { describe, expect, it } from "vite-plus/test";
-import type * as EffectAcpSchema from "effect-acp/schema";
-import { ProviderDriverKind, ProviderInstanceId, type CursorSettings } from "@lmcstools/contracts";
-import { createModelCapabilities } from "@lmcstools/shared/model";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
+import { ProviderDriverKind, ProviderInstanceId, type CursorSettings } from "@lmcstools/core";
+import { createModelCapabilities } from "@lmcstools/core/model";
 
 import {
   buildCursorProviderSnapshot,
@@ -34,7 +34,7 @@ import {
   rewriteCursorSkillMentions,
 } from "../Drivers/CursorSkills.ts";
 import { execScriptSource, writeFakeCli } from "../../testUtils/fakeCli.ts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { cursorUsageResponseToLimits, readCursorUsageLimits } from "./cursorUsageLimits.ts";
 

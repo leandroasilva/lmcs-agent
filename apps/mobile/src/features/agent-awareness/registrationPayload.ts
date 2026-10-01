@@ -1,4 +1,4 @@
-import type { RelayDeviceRegistrationRequest } from "@lmcstools/contracts/relay";
+import type { RelayDeviceRegistrationRequest } from "@lmcstools/core/relay";
 
 import type { Preferences } from "../../persistence/mobile-preferences";
 import { supportsAgentAwarenessPush } from "./capabilities";

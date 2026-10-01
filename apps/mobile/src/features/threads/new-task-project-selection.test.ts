@@ -1,7 +1,7 @@
-import { EnvironmentId, ProjectId } from "@lmcstools/contracts";
+import { EnvironmentId, ProjectId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import type { HomeProjectScope } from "../home/homeThreadList";
 import {
   filterProjectScopes,
@@ -41,9 +41,7 @@ function makeProject(
   };
 }
 
-function makeScope(
-  projects: ReadonlyArray<EnvironmentProject>,
-): HomeProjectScope {
+function makeScope(projects: ReadonlyArray<EnvironmentProject>): HomeProjectScope {
   return {
     key: "github.com/t3tools/t3code",
     title: "LMCS Code",
@@ -58,29 +56,17 @@ function makeScope(
 
 describe("getProjectScopeSelectionTarget", () => {
   it("keeps the current environment when it hosts the selected logical project", () => {
-    const projects = [
-      makeProject("t3code-mac", "mac"),
-      makeProject("t3code-server", "server"),
-    ];
-    expect(
-      getProjectScopeSelectionTarget(
-        makeScope(projects),
-        EnvironmentId.make("server"),
-      ),
-    ).toBe(projects[1]);
+    const projects = [makeProject("t3code-mac", "mac"), makeProject("t3code-server", "server")];
+    expect(getProjectScopeSelectionTarget(makeScope(projects), EnvironmentId.make("server"))).toBe(
+      projects[1],
+    );
   });
 
   it("falls back to the representative when the current environment does not host the project", () => {
-    const projects = [
-      makeProject("t3code-mac", "mac"),
-      makeProject("t3code-server", "server"),
-    ];
-    expect(
-      getProjectScopeSelectionTarget(
-        makeScope(projects),
-        EnvironmentId.make("other"),
-      ),
-    ).toBe(projects[0]);
+    const projects = [makeProject("t3code-mac", "mac"), makeProject("t3code-server", "server")];
+    expect(getProjectScopeSelectionTarget(makeScope(projects), EnvironmentId.make("other"))).toBe(
+      projects[0],
+    );
   });
 });
 
@@ -108,9 +94,7 @@ describe("resolveEnvironmentProjectMatch", () => {
       makeProject("other", "server"),
       makeProject("srv", "server", { workspaceRoot: "/home/me/t3code" }),
     ];
-    expect(resolveEnvironmentProjectMatch(byBasename, selected)).toBe(
-      byBasename[1],
-    );
+    expect(resolveEnvironmentProjectMatch(byBasename, selected)).toBe(byBasename[1]);
 
     const byTitle = [
       makeProject("other", "server"),
@@ -132,9 +116,7 @@ describe("resolveEnvironmentProjectMatch", () => {
     const unindexed = makeProject("unindexed", "server", {
       workspaceRoot: "/srv/t3code",
     });
-    expect(resolveEnvironmentProjectMatch([fork, unindexed], selected)).toBe(
-      unindexed,
-    );
+    expect(resolveEnvironmentProjectMatch([fork, unindexed], selected)).toBe(unindexed);
     // Without any weaker match the fork is still the first-project fallback.
     expect(resolveEnvironmentProjectMatch([fork], selected)).toBe(fork);
   });
@@ -143,10 +125,7 @@ describe("resolveEnvironmentProjectMatch", () => {
     const selected = makeProject("t3code", "mac", {
       repositoryKey: "github.com/t3tools/t3code",
     });
-    const target = [
-      makeProject("unrelated", "server"),
-      makeProject("also-unrelated", "server"),
-    ];
+    const target = [makeProject("unrelated", "server"), makeProject("also-unrelated", "server")];
     expect(resolveEnvironmentProjectMatch(target, selected)).toBe(target[0]);
     expect(resolveEnvironmentProjectMatch([], selected)).toBeNull();
   });
@@ -156,33 +135,21 @@ describe("resolveDraftProjectSelection", () => {
   it("preserves an explicit project selection", () => {
     const project = makeProject("t3code");
     expect(
-      resolveDraftProjectSelection(
-        "environment:t3code",
-        [project],
-        [makeScope([project])],
-      ),
+      resolveDraftProjectSelection("environment:t3code", [project], [makeScope([project])]),
     ).toEqual({ kind: "preserve" });
   });
 
   it("selects the only physical project when no project was explicitly selected", () => {
     const project = makeProject("t3code");
-    expect(
-      resolveDraftProjectSelection(null, [project], [makeScope([project])]),
-    ).toEqual({
+    expect(resolveDraftProjectSelection(null, [project], [makeScope([project])])).toEqual({
       kind: "select",
       project,
     });
   });
 
   it("selects one logical project even when it has multiple physical workspaces", () => {
-    const projects = [
-      makeProject("t3code"),
-      makeProject("t3code-2"),
-      makeProject("t3code-3"),
-    ];
-    expect(
-      resolveDraftProjectSelection(null, projects, [makeScope(projects)]),
-    ).toEqual({
+    const projects = [makeProject("t3code"), makeProject("t3code-2"), makeProject("t3code-3")];
+    expect(resolveDraftProjectSelection(null, projects, [makeScope(projects)])).toEqual({
       kind: "select",
       project: projects[0],
     });
@@ -191,11 +158,7 @@ describe("resolveDraftProjectSelection", () => {
   it("does not preserve a project key that is missing from the catalog", () => {
     const project = makeProject("t3code");
     expect(
-      resolveDraftProjectSelection(
-        "environment:removed",
-        [project],
-        [makeScope([project])],
-      ),
+      resolveDraftProjectSelection("environment:removed", [project], [makeScope([project])]),
     ).toEqual({
       kind: "select",
       project,
@@ -232,9 +195,7 @@ describe("filterProjectScopes", () => {
   it("preserves the whole logical project and preferred environment when a workspace matches", () => {
     const matches = filterProjectScopes(scopes, "REMOTE-WORKSPACE");
     expect(matches[0]).toBe(code);
-    expect(
-      getProjectScopeSelectionTarget(matches[0]!, EnvironmentId.make("mac")),
-    ).toBe(mac);
+    expect(getProjectScopeSelectionTarget(matches[0]!, EnvironmentId.make("mac"))).toBe(mac);
     expect(code.projects).toEqual([mac, server]);
   });
 });

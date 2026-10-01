@@ -2,14 +2,14 @@ import {
   RelayAgentActivityPublishProofPayload,
   RelayAgentActivityPublishProofInvalidReason,
   type RelayAgentActivityPublishRequest,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import {
   decodeRelayJwt,
   normalizeRelayIssuer,
   RELAY_ACTIVITY_PUBLISH_TYP,
   verifyRelayJwt,
-} from "@lmcstools/shared/relayJwt";
-import { stableStringify } from "@lmcstools/shared/relaySigning";
+} from "@lmcstools/core/relayJwt";
+import { stableStringify } from "@lmcstools/core/relaySigning";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";

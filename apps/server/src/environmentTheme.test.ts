@@ -1,4 +1,4 @@
-import { EnvironmentThemeFile } from "@lmcstools/contracts";
+import { EnvironmentThemeFile } from "@lmcstools/core";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
@@ -13,7 +13,7 @@ import * as Stream from "effect/Stream";
 
 import * as ServerConfig from "./config.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 const encodeThemeFile = Schema.encodeSync(Schema.fromJsonString(EnvironmentThemeFile));
 

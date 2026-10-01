@@ -5,9 +5,9 @@ import {
   OrchestrationMessageContext,
   ThreadId,
   type PreviewAnnotationPayload,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
-import { upgradeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacy";
+import { upgradeLegacyContextMessage } from "@lmcstools/core/composerContextLegacy";
 
 import {
   formatInlineContextReference,

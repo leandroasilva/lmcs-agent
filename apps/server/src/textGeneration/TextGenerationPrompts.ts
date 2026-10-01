@@ -9,7 +9,7 @@
 import * as Schema from "effect/Schema";
 import * as Effect from "effect/Effect";
 import { limitTitleMessage } from "./ThreadTitleContext.ts";
-import type { ChatAttachment } from "@lmcstools/contracts";
+import type { ChatAttachment } from "@lmcstools/core";
 
 import { limitSection } from "./TextGenerationUtils.ts";
 import type { TextGenerationPolicy } from "./TextGenerationPolicy.ts";

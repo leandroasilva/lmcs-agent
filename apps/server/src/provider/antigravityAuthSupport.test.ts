@@ -4,12 +4,12 @@ import * as NodeChildProcess from "node:child_process";
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodePath from "@effect/platform-node/NodePath";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { ProviderInstanceId } from "@lmcstools/contracts";
+import { ProviderInstanceId } from "@lmcstools/core";
 import {
   HostProcessExecutablePath,
   HostProcessIsExecutable,
   HostProcessPlatform,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -21,8 +21,8 @@ import * as Stream from "effect/Stream";
 import * as Ndjson from "effect/unstable/encoding/Ndjson";
 import * as ChildProcess from "effect/unstable/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as AcpErrors from "effect-acp/errors";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import * as AcpErrors from "@lmcstools/providers/acp/errors";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 import {
   ANTIGRAVITY_AUTH_BROWSER_MARKER,

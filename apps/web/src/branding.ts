@@ -1,4 +1,4 @@
-import type { DesktopAppBranding } from "@lmcstools/contracts";
+import type { DesktopAppBranding } from "@lmcstools/core";
 import { formatAppDisplayName } from "./branding.logic";
 
 function readInjectedDesktopAppBranding(): DesktopAppBranding | null {

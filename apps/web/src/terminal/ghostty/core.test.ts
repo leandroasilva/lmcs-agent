@@ -7,9 +7,9 @@ import {
   readTerminalOutputUpdate,
   terminalOutputText,
   type TerminalBufferState,
-} from "@lmcstools/client-runtime/state/terminal";
+} from "@lmcstools/client/state/terminal";
 
-import { writeTerminalOutputUpdate } from "../../components/ThreadTerminalDrawer";
+import { writeTerminalOutputUpdate } from "../../components/layout/ThreadTerminalDrawer";
 import { GHOSTTY_CELL_WIDE, GhosttyTerminalCore, ghosttyCellText } from "./core";
 import { loadGhosttyRuntime } from "./runtime";
 
@@ -235,7 +235,7 @@ describe("GhosttyTerminalCore snapshots", () => {
       "\u0301界🙂",
       "\x1b[0",
       "m\r\n",
-      "\x1b]8;;https://t3.codes\x1b",
+      "\x1b]8;;https://lmcs.codes\x1b",
       "\\link",
       "\x1b]8;;\x1b",
       "\\\x1b[?1049h",

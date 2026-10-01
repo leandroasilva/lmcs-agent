@@ -2,11 +2,11 @@ import type {
   ModelCapabilities,
   ProviderOptionDescriptor,
   ProviderOptionSelection,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   buildProviderOptionSelectionsFromDescriptors,
   getProviderOptionDescriptors,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 
 export function resolveProviderOptionDescriptors(input: {
   readonly capabilities: ModelCapabilities | null | undefined;

@@ -1,4 +1,4 @@
-import type { ConfirmDialogOptions, ContextMenuItem, LocalApi } from "@lmcstools/contracts";
+import type { ConfirmDialogOptions, ContextMenuItem, LocalApi } from "@lmcstools/core";
 
 import { requestConfirmDialog } from "./confirmDialog";
 import { dismissContextMenu, showContextMenuFallback } from "./contextMenuFallback";

@@ -5,9 +5,9 @@ import {
   ThreadId,
   TurnId,
   type OrchestrationThreadActivity,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
-import { resolveWorkEntryToolPresentation } from "@lmcstools/client-runtime/work-log/presentation";
+import { resolveWorkEntryToolPresentation } from "@lmcstools/client/work-log/presentation";
 
 import {
   createMessageAttachmentPreviewProjector,

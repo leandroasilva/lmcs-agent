@@ -3,20 +3,20 @@ import {
   type EnvironmentId,
   type T3ProjectFile,
   type T3ProjectFileScript,
-} from "@lmcstools/contracts";
-import { parseT3ProjectFile } from "@lmcstools/shared/t3ProjectFile";
+} from "@lmcstools/core";
+import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import { useMemo } from "react";
 
-import { useProjectFileQuery } from "~/components/files/projectFilesQueryState";
+import { useProjectFileQuery } from "~/components/features/files/projectFilesQueryState";
 
 const NO_SCRIPTS: ReadonlyArray<T3ProjectFileScript> = [];
 
 export interface T3ProjectFileState {
   /**
-   * - `valid`: t3.json exists and decoded.
-   * - `invalid`: t3.json exists but fails to decode (the server then ignores
+   * - `valid`: lmcs.json exists and decoded.
+   * - `invalid`: lmcs.json exists but fails to decode (the server then ignores
    *   the whole file, including `iconPath` and every script).
-   * - `missing`: no readable t3.json at the workspace root.
+   * - `missing`: no readable lmcs.json at the workspace root.
    * - `loading`: the file query has not settled yet.
    */
   status: "loading" | "missing" | "invalid" | "valid";
@@ -26,7 +26,7 @@ export interface T3ProjectFileState {
 }
 
 /**
- * Decoded state of the project's checked-in `t3.json`, including whether the
+ * Decoded state of the project's checked-in `lmcs.json`, including whether the
  * file exists but is broken — which the runtime otherwise swallows silently.
  */
 export function useT3ProjectFileState(
@@ -48,12 +48,16 @@ export function useT3ProjectFileState(
     if (file === null) {
       return { status: "invalid", file: null, scripts: NO_SCRIPTS } as const;
     }
-    return { status: "valid", file, scripts: file.scripts ?? NO_SCRIPTS } as const;
+    return {
+      status: "valid",
+      file,
+      scripts: file.scripts ?? NO_SCRIPTS,
+    } as const;
   }, [contents, isPending]);
 }
 
 /**
- * Scripts declared in the project's checked-in `t3.json`, offered in the
+ * Scripts declared in the project's checked-in `lmcs.json`, offered in the
  * scripts menu for import. Missing, truncated, or invalid files resolve to
  * an empty list.
  */

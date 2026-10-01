@@ -5,7 +5,7 @@ import type {
   ProviderOptionDescriptor,
   ProviderOptionSelection,
   RuntimeMode,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
@@ -13,7 +13,7 @@ import {
   getProviderOptionCurrentLabel,
   getProviderOptionCurrentValue,
   getProviderOptionDescriptors,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import {
   createNativeStackNavigator,

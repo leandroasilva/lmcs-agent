@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { GeneralSettingsPanel } from "../components/settings/SettingsPanels";
+import { GeneralSettingsPanel } from "../components/features/settings/SettingsPanels";
 
 function SettingsGeneralRoute() {
   return <GeneralSettingsPanel />;

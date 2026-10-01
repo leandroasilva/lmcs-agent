@@ -6,7 +6,7 @@ import {
   PrimaryEnvironmentAuth,
   RelayDeviceIdentity,
   SshEnvironmentGateway,
-} from "@lmcstools/client-runtime/platform";
+} from "@lmcstools/client/platform";
 import {
   BearerConnectionCredential,
   BearerConnectionProfile,
@@ -20,18 +20,18 @@ import {
   PrimaryConnectionRegistration,
   PrimaryConnectionTarget,
   Wakeups,
-} from "@lmcstools/client-runtime/connection";
-import { bootstrapRemoteBearerSession } from "@lmcstools/client-runtime/authorization";
-import { fetchRemoteEnvironmentDescriptor } from "@lmcstools/client-runtime/environment";
-import { managedRelayAccountChanges, managedRelaySessionAtom } from "@lmcstools/client-runtime/relay";
-import { EnvironmentRpcRequestObserver } from "@lmcstools/client-runtime/rpc";
+} from "@lmcstools/client/connection";
+import { bootstrapRemoteBearerSession } from "@lmcstools/client/authorization";
+import { fetchRemoteEnvironmentDescriptor } from "@lmcstools/client/environment";
+import { managedRelayAccountChanges, managedRelaySessionAtom } from "@lmcstools/client/relay";
+import { EnvironmentRpcRequestObserver } from "@lmcstools/client/rpc";
 import {
   AuthStandardClientScopes,
   type DesktopBridge,
   type DesktopEnvironmentBootstrap,
   type DesktopSshEnvironmentTarget,
   PRIMARY_LOCAL_ENVIRONMENT_ID,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";

@@ -1,4 +1,4 @@
-import type { ProviderUsageLimitsUpdate, ServerProvider } from "@lmcstools/contracts";
+import type { ProviderUsageLimitsUpdate, ServerProvider } from "@lmcstools/core";
 import type * as Effect from "effect/Effect";
 import type * as Stream from "effect/Stream";
 import type { ProviderMaintenanceCapabilities } from "../providerMaintenance.ts";

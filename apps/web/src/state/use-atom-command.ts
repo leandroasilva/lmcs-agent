@@ -4,7 +4,7 @@ import {
   type AtomCommandOptions,
   type AtomCommandResult,
   runAtomCommand,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { useCallback, useContext } from "react";
 
 export function useAtomCommand<A, E, W>(

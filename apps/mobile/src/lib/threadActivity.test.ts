@@ -1,4 +1,4 @@
-import { derivePendingRequests } from "@lmcstools/client-runtime/pending-requests";
+import { derivePendingRequests } from "@lmcstools/client/pending-requests";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import {
@@ -11,7 +11,7 @@ import {
   TurnId,
   type OrchestrationThread,
   type OrchestrationThreadActivity,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   agentSpawnSummary,
@@ -2085,7 +2085,7 @@ describe("buildThreadFeed", () => {
       createdAt: string,
       status: ThreadFeedActivity["status"] = "success",
       toolSurface?: "browser" | "computer",
-      toolIcon?: import("@lmcstools/contracts").ToolActivityIcon,
+      toolIcon?: import("@lmcstools/core").ToolActivityIcon,
     ): ThreadFeedActivity => ({
       id,
       createdAt,

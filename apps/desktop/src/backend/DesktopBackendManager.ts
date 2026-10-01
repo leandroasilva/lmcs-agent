@@ -47,8 +47,8 @@ import {
   PRIMARY_LOCAL_ENVIRONMENT_ID,
   DesktopTelemetryControlMessage,
   type DesktopTelemetryControlMessage as DesktopTelemetryControlMessageValue,
-} from "@lmcstools/contracts";
-import { waitForHttpReady as waitForHttpReadyShared } from "@lmcstools/shared/httpReadiness";
+} from "@lmcstools/core";
+import { waitForHttpReady as waitForHttpReadyShared } from "@lmcstools/core/httpReadiness";
 
 import * as DesktopObservability from "../app/DesktopObservability.ts";
 import * as DesktopTelemetryPublisher from "../telemetry/DesktopTelemetryPublisher.ts";
@@ -90,7 +90,7 @@ export interface DesktopBackendStartConfig extends BackendProcessContext {
   readonly env: Record<string, string | undefined>;
   // When true the spawner merges the desktop process.env on top of `env`;
   // when false `env` is passed verbatim. WSL mode opts out so a leaking
-  // T3CODE_HOME can't pin the WSL backend to /mnt/c/...\.t3.
+  // LMCS_HOME can't pin the WSL backend to /mnt/c/...\.t3.
   readonly extendEnv: boolean;
   readonly bootstrap: DesktopBackendBootstrapValue;
   readonly bootstrapDelivery: DesktopBackendBootstrapDelivery;

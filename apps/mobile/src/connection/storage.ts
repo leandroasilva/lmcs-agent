@@ -8,15 +8,15 @@ import {
   setConnectionEnabledInCatalog,
   removeCatalogValue,
   replaceCatalogValue,
-} from "@lmcstools/client-runtime/platform";
-import { TokenStore } from "@lmcstools/client-runtime/authorization";
+} from "@lmcstools/client/platform";
+import { TokenStore } from "@lmcstools/client/authorization";
 import {
   ConnectionTransientError,
   CredentialStore,
   ProfileStore,
   GitHubRoutingPermissions,
   makeGitHubRoutingPermissions,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

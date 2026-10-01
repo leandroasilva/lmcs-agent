@@ -7,7 +7,7 @@ import {
   SourceControlProviderError,
   type ChangeRequest,
   type ChangeRequestState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as GitHubCli from "./GitHubCli.ts";
 import { findAuthenticatedGitHubAccount, parseGitHubAuthStatus } from "./gitHubAuthStatus.ts";

@@ -1,4 +1,4 @@
-import { DesktopWslStateSchema, type DesktopWslState } from "@lmcstools/contracts";
+import { DesktopWslStateSchema, type DesktopWslState } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";

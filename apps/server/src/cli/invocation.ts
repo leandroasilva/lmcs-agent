@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 
-import { HostProcessArguments } from "@lmcstools/shared/hostProcess";
+import { HostProcessArguments } from "@lmcstools/core/hostProcess";
 
 import packageJson from "../../package.json" with { type: "json" };
 

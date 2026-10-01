@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import {
   BASE_FONT_SIZE_STEP,
   MAX_BASE_FONT_SIZE,
@@ -12,16 +14,17 @@ import {
 import { FontSizeSliderRow } from "../components/FontSizeSliderRow";
 
 export function TextAppearanceSection() {
+  const { t } = useTranslation();
   const { isReady, appearance, setBaseFontSize } = useAppearancePreferences();
 
   return (
-    <SettingsSection title="Text">
+    <SettingsSection title={t("settings.appearance.textTitle")}>
       <TextAppearancePreview fontSize={appearance.baseFontSize} />
       <AppearancePreviewSeparator />
       <FontSizeSliderRow
         disabled={!isReady}
         icon="textformat.size"
-        label="Text size"
+        label={t("settings.appearance.textSize")}
         max={MAX_BASE_FONT_SIZE}
         min={MIN_BASE_FONT_SIZE}
         onChange={setBaseFontSize}

@@ -17,8 +17,8 @@ import {
   type ProviderUserInputAnswers,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it, vi } from "@effect/vitest";
 
@@ -33,7 +33,7 @@ import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
-import * as CodexErrors from "effect-codex-app-server/errors";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
 
 import { ServerConfig } from "../../config.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
@@ -527,14 +527,14 @@ sessionErrorLayer("CodexAdapterLive session errors", (it) => {
     }).pipe(Effect.provide(layer));
   });
 
-  it.effect("uses T3CODE_CODEX_LAUNCH_ARGS for the session runtime", () => {
+  it.effect("uses LMCS_CODEX_LAUNCH_ARGS for the session runtime", () => {
     const runtimeFactory = makeRuntimeFactory();
     const layer = Layer.effect(
       CodexAdapter,
       Effect.gen(function* () {
         const codexConfig = decodeCodexSettings({ launchArgs: "--enable settings-feature" });
         return yield* makeCodexAdapter(codexConfig, {
-          environment: { T3CODE_CODEX_LAUNCH_ARGS: " --strict-config --enable env-feature " },
+          environment: { LMCS_CODEX_LAUNCH_ARGS: " --strict-config --enable env-feature " },
           makeRuntime: runtimeFactory.factory,
         });
       }),

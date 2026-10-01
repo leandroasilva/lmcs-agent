@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { ProviderInstanceId, type ModelSelection, type ServerConfig } from "@lmcstools/contracts";
+import { ProviderInstanceId, type ModelSelection, type ServerConfig } from "@lmcstools/core";
 
 import {
   buildModelOptions,

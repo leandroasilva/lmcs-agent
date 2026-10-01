@@ -1,8 +1,8 @@
-import type { RelayEnvironmentStatusResponse } from "@lmcstools/contracts/relay";
+import type { RelayEnvironmentStatusResponse } from "@lmcstools/core/relay";
 import {
   orchestrationProtocolCompatibilityError,
   type EnvironmentConnectionPhase,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 
 export interface AvailableCloudEnvironmentPresentation {
   readonly connectionError: string | null;

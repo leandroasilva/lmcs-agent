@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import type { DesktopBridge, DesktopUpdateState } from "@lmcstools/contracts";
+import type { DesktopBridge, DesktopUpdateState } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { PROVIDER_SEND_TURN_MAX_IMAGE_BYTES } from "@lmcstools/contracts";
+import { PROVIDER_SEND_TURN_MAX_IMAGE_BYTES } from "@lmcstools/core";
 import type { ImagePickerAsset } from "expo-image-picker";
 
 const mocks = vi.hoisted(() => ({

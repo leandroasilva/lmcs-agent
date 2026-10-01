@@ -1,4 +1,4 @@
-import { DesktopAppActivationResponse } from "@lmcstools/contracts";
+import { DesktopAppActivationResponse } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 

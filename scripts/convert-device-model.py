@@ -14,7 +14,7 @@ from mathutils import Matrix, Vector
 model_id, source, output = sys.argv[sys.argv.index("--") + 1 :]
 manifest_path = (
     Path(__file__).resolve().parents[1]
-    / "apps/web/src/components/device/models/sources.json"
+    / "apps/web/src/components/features/device/models/sources.json"
 )
 manifest = json.loads(manifest_path.read_text())
 model = next(m for m in manifest["models"] if m["id"] == model_id)

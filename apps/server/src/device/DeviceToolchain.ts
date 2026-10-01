@@ -1,4 +1,4 @@
-import type { DeviceToolVersions } from "@lmcstools/contracts";
+import type { DeviceToolVersions } from "@lmcstools/core";
 /**
  * Pinned installs of the two external tools device support is built on.
  *

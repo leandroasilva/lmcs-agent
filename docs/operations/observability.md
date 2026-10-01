@@ -54,7 +54,7 @@ Important fields common to both record types:
 records instead carry OTLP resource, scope, and optional status fields.
 
 The `TraceRecord`, `EffectTraceRecord`, and `OtlpTraceRecord` schemas live in
-`packages/shared/src/observability.ts`.
+`packages/core/src/shared/observability.ts`.
 
 DPoP proof failures include the safe `environment.dpop.failure_code` span
 attribute. A `time_window` failure means that a signed proof was too old or too
@@ -92,7 +92,7 @@ You do not need any extra env vars. Just run the app normally and inspect `serve
 Examples:
 
 ```bash
-npx t3
+t3
 ```
 
 ```bash
@@ -126,17 +126,17 @@ Default Grafana login:
 #### 2. Export OTLP env vars
 
 ```bash
-export T3CODE_OTLP_TRACES_URL=http://localhost:4318/v1/traces
-export T3CODE_OTLP_METRICS_URL=http://localhost:4318/v1/metrics
-export T3CODE_OTLP_LOGS_URL=http://localhost:4318/v1/logs
-export T3CODE_OTLP_SERVICE_NAME=t3-local
+export LMCS_OTLP_TRACES_URL=http://localhost:4318/v1/traces
+export LMCS_OTLP_METRICS_URL=http://localhost:4318/v1/metrics
+export LMCS_OTLP_LOGS_URL=http://localhost:4318/v1/logs
+export LMCS_OTLP_SERVICE_NAME=t3-local
 ```
 
 Optional:
 
 ```bash
-export T3CODE_TRACE_MIN_LEVEL=Info
-export T3CODE_TRACE_TIMING_ENABLED=true
+export LMCS_TRACE_MIN_LEVEL=Info
+export LMCS_TRACE_TIMING_ENABLED=true
 ```
 
 #### 3. Launch the app from that same shell
@@ -144,7 +144,7 @@ export T3CODE_TRACE_TIMING_ENABLED=true
 CLI:
 
 ```bash
-npx t3
+t3
 ```
 
 Monorepo web/server dev:
@@ -161,25 +161,25 @@ node --run dev:desktop
 
 Packaged desktop app:
 
-Launch the actual app executable from the same shell so the desktop app and embedded backend inherit `T3CODE_OTLP_*`.
+Launch the actual app executable from the same shell so the desktop app and embedded backend inherit `LMCS_OTLP_*`.
 
 macOS app bundle example:
 
 ```bash
-T3CODE_OTLP_TRACES_URL=http://localhost:4318/v1/traces \
-T3CODE_OTLP_METRICS_URL=http://localhost:4318/v1/metrics \
-T3CODE_OTLP_LOGS_URL=http://localhost:4318/v1/logs \
-T3CODE_OTLP_SERVICE_NAME=t3-desktop \
+LMCS_OTLP_TRACES_URL=http://localhost:4318/v1/traces \
+LMCS_OTLP_METRICS_URL=http://localhost:4318/v1/metrics \
+LMCS_OTLP_LOGS_URL=http://localhost:4318/v1/logs \
+LMCS_OTLP_SERVICE_NAME=t3-desktop \
 "/Applications/LMCS Code.app/Contents/MacOS/LMCS Code"
 ```
 
 Direct binary example:
 
 ```bash
-T3CODE_OTLP_TRACES_URL=http://localhost:4318/v1/traces \
-T3CODE_OTLP_METRICS_URL=http://localhost:4318/v1/metrics \
-T3CODE_OTLP_LOGS_URL=http://localhost:4318/v1/logs \
-T3CODE_OTLP_SERVICE_NAME=t3-desktop \
+LMCS_OTLP_TRACES_URL=http://localhost:4318/v1/traces \
+LMCS_OTLP_METRICS_URL=http://localhost:4318/v1/metrics \
+LMCS_OTLP_LOGS_URL=http://localhost:4318/v1/logs \
+LMCS_OTLP_SERVICE_NAME=t3-desktop \
 ./path/to/your/desktop-app-binary
 ```
 
@@ -199,7 +199,7 @@ Resolve the path for the launch mode once. Production and explicitly configured 
 state under the base directory's `userdata` folder:
 
 ```bash
-TRACE_FILE="${T3CODE_HOME:-$HOME/.t3}/userdata/logs/server.trace.ndjson"
+TRACE_FILE="${LMCS_HOME:-$HOME/.t3}/userdata/logs/server.trace.ndjson"
 ```
 
 A dev server started from a linked worktree defaults to that worktree's local home:
@@ -401,7 +401,7 @@ If you need those later, add client-side instrumentation or a dedicated server f
 
 Usually one of these is true:
 
-- `T3CODE_OTLP_TRACES_URL` was not set
+- `LMCS_OTLP_TRACES_URL` was not set
 - the app was launched from a different environment than the one where you exported the vars
 - the app was not fully restarted after changing env
 - Grafana is looking at the wrong time range or service name
@@ -523,10 +523,10 @@ It provides:
 - Effect trace-level and timing refs
 
 The desktop main process is a second producer, assembled in
-`apps/desktop/src/app/DesktopObservability.ts`. It reads the same `T3CODE_OTLP_*` names and the same
+`apps/desktop/src/app/DesktopObservability.ts`. It reads the same `LMCS_OTLP_*` names and the same
 Settings entries as the backend it supervises, and covers work the backend cannot see: app startup,
 window and menu handling, backend supervision, and updates. It reports as service `desktop`
-regardless of `T3CODE_OTLP_SERVICE_NAME`, so a collector shows it alongside the backend rather than
+regardless of `LMCS_OTLP_SERVICE_NAME`, so a collector shows it alongside the backend rather than
 mixed into it. It exports traces and logs only; the main process records no metrics, so the metrics
 endpoint applies to the backend alone.
 
@@ -534,34 +534,34 @@ endpoint applies to the backend alone.
 
 Local trace file:
 
-- `T3CODE_TRACE_FILE`: override trace file path
-- `T3CODE_TRACE_MAX_BYTES`: per-file rotation size, default `10485760`
-- `T3CODE_TRACE_MAX_FILES`: rotated file count, default `10`
-- `T3CODE_TRACE_BATCH_WINDOW_MS`: flush window, default `200`
-- `T3CODE_TRACE_MIN_LEVEL`: minimum trace level, default `Info`
-- `T3CODE_TRACE_TIMING_ENABLED`: enable timing metadata, default `true`
+- `LMCS_TRACE_FILE`: override trace file path
+- `LMCS_TRACE_MAX_BYTES`: per-file rotation size, default `10485760`
+- `LMCS_TRACE_MAX_FILES`: rotated file count, default `10`
+- `LMCS_TRACE_BATCH_WINDOW_MS`: flush window, default `200`
+- `LMCS_TRACE_MIN_LEVEL`: minimum trace level, default `Info`
+- `LMCS_TRACE_TIMING_ENABLED`: enable timing metadata, default `true`
 
 OTLP export:
 
-- `T3CODE_OTLP_TRACES_URL`: OTLP trace endpoint
-- `T3CODE_OTLP_METRICS_URL`: OTLP metric endpoint
-- `T3CODE_OTLP_LOGS_URL`: OTLP log endpoint
-- `T3CODE_OTLP_EXPORT_INTERVAL_MS`: export interval, default `10000`
-- `T3CODE_OTLP_SERVICE_NAME`: service name, default `t3-server`
-- `T3CODE_OTLP_HEADERS`: extra headers for all three exporters, same format as
+- `LMCS_OTLP_TRACES_URL`: OTLP trace endpoint
+- `LMCS_OTLP_METRICS_URL`: OTLP metric endpoint
+- `LMCS_OTLP_LOGS_URL`: OTLP log endpoint
+- `LMCS_OTLP_EXPORT_INTERVAL_MS`: export interval, default `10000`
+- `LMCS_OTLP_SERVICE_NAME`: service name, default `t3-server`
+- `LMCS_OTLP_HEADERS`: extra headers for all three exporters, same format as
   `OTEL_EXPORTER_OTLP_HEADERS`: comma-separated `key=value` pairs with percent-encoded values.
-- `T3CODE_OTLP_PROTOCOL`: `http/json` (default) or `http/protobuf`
+- `LMCS_OTLP_PROTOCOL`: `http/json` (default) or `http/protobuf`
 
 If the OTLP URLs are unset, local tracing still works, metrics stay in-process only, and logs stay
 on stdout only.
 
 ### The Kill Switch
 
-`T3CODE_OTEL_SDK_DISABLED` and `OTEL_SDK_DISABLED` turn off every OTLP export in both the server and
+`LMCS_OTEL_SDK_DISABLED` and `OTEL_SDK_DISABLED` turn off every OTLP export in both the server and
 the desktop main process, overriding any endpoint from the environment or Settings. Local trace
 files and stdout logs are unaffected.
 
-`T3CODE_OTEL_SDK_DISABLED` wins when set, so `T3CODE_OTEL_SDK_DISABLED=false` re-enables export on a
+`LMCS_OTEL_SDK_DISABLED` wins when set, so `LMCS_OTEL_SDK_DISABLED=false` re-enables export on a
 machine that sets `OTEL_SDK_DISABLED` for everything else. It accepts the usual boolean spellings
 (`true`/`false`, `yes`/`no`, `on`/`off`, `1`/`0`, `y`/`n`). `OTEL_SDK_DISABLED` follows the
 OpenTelemetry specification and only `true` disables export, so `OTEL_SDK_DISABLED=1` does not.

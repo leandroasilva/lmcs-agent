@@ -24,7 +24,7 @@ import {
   localSnoozeTime,
   resolveCustomSnooze,
   type CustomSnoozeInput,
-} from "@lmcstools/client-runtime/state/thread-settled";
+} from "@lmcstools/client/state/thread-settled";
 import { requireNativeModule } from "expo";
 import { useEffect, useState } from "react";
 import { AppState, useWindowDimensions } from "react-native";

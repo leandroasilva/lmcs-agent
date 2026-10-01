@@ -1,0 +1,31 @@
+import { WS_METHODS } from "@lmcstools/core";
+import { Atom } from "effect/unstable/reactivity";
+
+import { createEnvironmentRpcCommand, createEnvironmentRpcQueryAtomFamily } from "./runtime.ts";
+import type { EnvironmentRegistry } from "../connection/registry.ts";
+import { vcsCommandConcurrency, vcsCommandScheduler } from "./vcsCommandScheduler.ts";
+
+export function createGitEnvironmentAtoms<R, E>(
+  runtime: Atom.AtomRuntime<EnvironmentRegistry | R, E>,
+) {
+  return {
+    pullRequestResolution: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:git:resolve-pull-request",
+      tag: WS_METHODS.gitResolvePullRequest,
+    }),
+    preparePullRequestThread: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:git:prepare-pull-request-thread",
+      tag: WS_METHODS.gitPreparePullRequestThread,
+      scheduler: vcsCommandScheduler,
+      concurrency: vcsCommandConcurrency,
+    }),
+    generateCommitMessage: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:git:generate-commit-message",
+      tag: WS_METHODS.gitGenerateCommitMessage,
+      concurrency: {
+        mode: "latest",
+        key: ({ environmentId }) => environmentId,
+      },
+    }),
+  };
+}

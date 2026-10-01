@@ -3,7 +3,7 @@ import type {
   PullRequestCapabilities,
   PullRequestReaction,
   PullRequestViewerPermissions,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as GitLabPullRequestCli from "./GitLabPullRequestCli.ts";
 import {

@@ -11,7 +11,7 @@ import {
   prepareImageForAttachment,
 } from "./imageCompression";
 
-import type { SnapShotSource } from "@lmcstools/contracts";
+import type { SnapShotSource } from "@lmcstools/core";
 import { hydrateImagesFromPersisted } from "../composerDraftStore";
 import { resizeSnapShotSource } from "./snapShotSource";
 

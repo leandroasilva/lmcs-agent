@@ -3,9 +3,9 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
-import type * as EffectAcpSchema from "effect-acp/schema";
-import { deriveToolActivityPresentation } from "@lmcstools/shared/toolActivity";
-import type { ToolLifecycleItemType } from "@lmcstools/contracts";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
+import { deriveToolActivityPresentation } from "@lmcstools/core/toolActivity";
+import type { ToolLifecycleItemType } from "@lmcstools/core";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

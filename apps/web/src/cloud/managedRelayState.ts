@@ -5,16 +5,10 @@ import {
   ManagedRelay,
   managedRelaySessionAtom,
   readManagedRelaySnapshotState,
-} from "@lmcstools/client-runtime/relay";
-import {
-  createAtomCommandScheduler,
-  createRuntimeCommand,
-} from "@lmcstools/client-runtime/state/runtime";
-import type {
-  RelayClientDeviceRecord,
-  RelayClientEnvironmentRecord,
-} from "@lmcstools/contracts/relay";
-import type { EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/relay";
+import { createAtomCommandScheduler, createRuntimeCommand } from "@lmcstools/client/state/runtime";
+import type { RelayClientDeviceRecord, RelayClientEnvironmentRecord } from "@lmcstools/core/relay";
+import type { EnvironmentId } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

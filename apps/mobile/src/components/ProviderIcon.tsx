@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { Path, Svg } from "react-native-svg";
 import { View } from "react-native";
-import { providerInstanceInitials } from "@lmcstools/client-runtime/state/provider-instance-display";
+import { providerInstanceInitials } from "@lmcstools/client/state/provider-instance-display";
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { AppText as Text } from "./AppText";
 
@@ -91,7 +91,7 @@ export function ProviderIcon(props: ProviderIconProps) {
  * initials bubble in the bottom-right corner, drawn when `showBadge` is set
  * (accent color present, or several instances share this driver). The glyph
  * dims to 60% opacity while the badge stays fully saturated, matching
- * `apps/web/src/components/chat/ProviderInstanceIcon.tsx`.
+ * `apps/web/src/components/features/chat/ProviderInstanceIcon.tsx`.
  */
 export function ProviderInstanceIcon(props: {
   readonly provider: string | null | undefined;

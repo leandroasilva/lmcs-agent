@@ -4,13 +4,10 @@ import {
   deregisterManagedRelayEnvironment,
   managedRelaySessionAtom,
   readManagedRelaySnapshotState,
-} from "@lmcstools/client-runtime/relay";
-import {
-  createAtomCommandScheduler,
-  createRuntimeCommand,
-} from "@lmcstools/client-runtime/state/runtime";
-import type { EnvironmentId } from "@lmcstools/contracts";
-import type { RelayClientEnvironmentRecord } from "@lmcstools/contracts/relay";
+} from "@lmcstools/client/relay";
+import { createAtomCommandScheduler, createRuntimeCommand } from "@lmcstools/client/state/runtime";
+import type { EnvironmentId } from "@lmcstools/core";
+import type { RelayClientEnvironmentRecord } from "@lmcstools/core/relay";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useCallback, useEffect } from "react";
 

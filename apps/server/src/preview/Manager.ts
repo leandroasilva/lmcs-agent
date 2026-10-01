@@ -25,12 +25,12 @@ import {
   PreviewSessionLookupError,
   type PreviewSessionSnapshot,
   type PreviewViewportSetting,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   isPreviewUrlNormalizationError,
   newPreviewTabId,
   normalizePreviewUrl,
-} from "@lmcstools/shared/preview";
+} from "@lmcstools/core/preview";
 import * as NodeCrypto from "node:crypto";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";

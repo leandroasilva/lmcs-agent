@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 
-import { ProviderInstanceId } from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
+import { ProviderInstanceId } from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
 
 import { getCodexServiceTierOptionValue } from "./codexModelOptions.ts";
 

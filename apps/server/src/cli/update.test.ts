@@ -9,7 +9,7 @@ import {
   HostProcessInvokedAs,
   HostProcessPlatform,
   HostProcessWorkingDirectory,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 
 import { repointLauncher, resolveLauncherPath } from "./update.ts";
 

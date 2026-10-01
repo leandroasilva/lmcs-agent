@@ -2,8 +2,8 @@ import {
   attachEnvironmentDescriptor,
   createKnownEnvironment,
   type KnownEnvironment,
-} from "@lmcstools/client-runtime/environment";
-import type { ExecutionEnvironmentDescriptor } from "@lmcstools/contracts";
+} from "@lmcstools/client/environment";
+import type { ExecutionEnvironmentDescriptor } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 
 import { PrimaryEnvironmentRequestError, retryTransientBootstrap } from "./auth";

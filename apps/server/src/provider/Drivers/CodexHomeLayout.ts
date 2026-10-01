@@ -1,6 +1,6 @@
 import * as NodeOS from "node:os";
 
-import { ProviderDriverKind, type CodexSettings } from "@lmcstools/contracts";
+import { ProviderDriverKind, type CodexSettings } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";

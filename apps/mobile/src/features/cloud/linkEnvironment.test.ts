@@ -2,10 +2,10 @@ import { beforeEach, vi } from "vite-plus/test";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { EnvironmentId } from "@lmcstools/contracts";
-import { RelayMobileClientId } from "@lmcstools/contracts/relay";
-import { ManagedRelay } from "@lmcstools/client-runtime/relay";
-import { remoteHttpClientLayer } from "@lmcstools/client-runtime/rpc";
+import { EnvironmentId } from "@lmcstools/core";
+import { RelayMobileClientId } from "@lmcstools/core/relay";
+import { ManagedRelay } from "@lmcstools/client/relay";
+import { remoteHttpClientLayer } from "@lmcstools/client/rpc";
 import { HttpClient } from "effect/unstable/http";
 
 import { MobileStorage } from "../../persistence/mobile-storage";

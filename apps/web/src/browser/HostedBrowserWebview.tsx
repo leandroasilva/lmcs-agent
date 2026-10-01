@@ -1,11 +1,11 @@
 "use client";
 
-import type { PreviewViewportSetting, ScopedThreadRef } from "@lmcstools/contracts";
+import type { PreviewViewportSetting, ScopedThreadRef } from "@lmcstools/core";
 import { useShallow } from "zustand/react/shallow";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { previewBridge } from "~/components/preview/previewBridge";
-import { usePreviewBridge } from "~/components/preview/usePreviewBridge";
+import { previewBridge } from "~/components/features/preview/previewBridge";
+import { usePreviewBridge } from "~/components/features/preview/usePreviewBridge";
 import { useClientSettingsHydrated } from "~/hooks/useSettings";
 import { cn, isMacPlatform } from "~/lib/utils";
 

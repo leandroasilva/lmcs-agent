@@ -1,7 +1,7 @@
 import {
   isWorkspaceAudioPreviewPath,
   isWorkspaceVideoPreviewPath,
-} from "@lmcstools/shared/filePreview";
+} from "@lmcstools/core/filePreview";
 
 export interface FileBreadcrumb {
   readonly label: string;

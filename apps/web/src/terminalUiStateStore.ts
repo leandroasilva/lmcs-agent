@@ -5,8 +5,8 @@
  * API constrained to store actions/selectors.
  */
 
-import { parseScopedThreadKey, scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import { type ScopedThreadRef } from "@lmcstools/contracts";
+import { parseScopedThreadKey, scopedThreadKey } from "@lmcstools/client/environment";
+import { type ScopedThreadRef } from "@lmcstools/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { resolveStorage } from "./lib/storage";

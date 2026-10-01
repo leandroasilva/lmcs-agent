@@ -1,8 +1,8 @@
-import type { AssistantCitation } from "@lmcstools/contracts";
+import type { AssistantCitation } from "@lmcstools/core";
 import {
   formatAssistantCitationHref,
   parseAssistantCitationHref,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 import * as Encoding from "effect/Encoding";
 import * as Result from "effect/Result";
 

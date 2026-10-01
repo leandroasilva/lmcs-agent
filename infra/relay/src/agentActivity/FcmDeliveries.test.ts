@@ -1,5 +1,5 @@
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
-import type { RelayAgentActivityState } from "@lmcstools/contracts/relay";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
+import type { RelayAgentActivityState } from "@lmcstools/core/relay";
 import { describe, expect, it } from "@effect/vitest";
 import * as NodeCryptoLayer from "@effect/platform-node/NodeCrypto";
 import * as Effect from "effect/Effect";

@@ -1,4 +1,4 @@
-import * as CodexErrors from "effect-codex-app-server/errors";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

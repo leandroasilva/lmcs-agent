@@ -1,9 +1,9 @@
-import type { ConnectionTarget } from "@lmcstools/client-runtime/connection";
+import type { ConnectionTarget } from "@lmcstools/client/connection";
 import {
   PRIMARY_LOCAL_ENVIRONMENT_ID,
   type DesktopBridge,
   type DesktopEnvironmentBootstrap,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 /**
  * Desktop-local secondary backends (e.g. a parallel WSL backend) are registered

@@ -38,10 +38,10 @@ import {
   ClaudeSettings,
   CodexSettings,
   ProviderInstanceId,
-} from "@lmcstools/contracts";
-import { makeKeyedCoalescingWorker } from "@lmcstools/shared/KeyedCoalescingWorker";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { getTerminalLabel } from "@lmcstools/shared/terminalLabels";
+} from "@lmcstools/core";
+import { makeKeyedCoalescingWorker } from "@lmcstools/core/KeyedCoalescingWorker";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { getTerminalLabel } from "@lmcstools/core/terminalLabels";
 import * as DateTime from "effect/DateTime";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -1215,7 +1215,7 @@ function toSessionKey(threadId: string, terminalId: string): string {
 
 function shouldExcludeTerminalEnvKey(key: string): boolean {
   const normalizedKey = key.toUpperCase();
-  if (normalizedKey.startsWith("T3CODE_")) {
+  if (normalizedKey.startsWith("LMCS_")) {
     return true;
   }
   if (normalizedKey.startsWith("VITE_")) {

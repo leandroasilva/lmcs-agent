@@ -7,9 +7,9 @@ import type {
   ServerProviderAuth,
   ServerProviderModel,
   ServerProviderState,
-} from "@lmcstools/contracts";
-import type * as EffectAcpSchema from "effect-acp/schema";
-import { causeErrorTag } from "@lmcstools/shared/observability";
+} from "@lmcstools/core";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
+import { causeErrorTag } from "@lmcstools/core/observability";
 import * as Cache from "effect/Cache";
 import * as Duration from "effect/Duration";
 import * as Crypto from "effect/Crypto";
@@ -31,8 +31,8 @@ import {
   createModelCapabilities,
   getProviderOptionBooleanSelectionValue,
   getProviderOptionStringSelectionValue,
-} from "@lmcstools/shared/model";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+} from "@lmcstools/core/model";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
 import {
   buildBooleanOptionDescriptor,

@@ -1,7 +1,7 @@
 import {
   EMPTY_ENVIRONMENT_THREAD_STATE,
   type EnvironmentThreadState,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/client/state/threads";
 import {
   EnvironmentId,
   ProjectId,
@@ -10,7 +10,7 @@ import {
   type OrchestrationSessionStatus,
   type OrchestrationThread,
   type OrchestrationThreadShell,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom, AtomRegistry } from "effect/unstable/reactivity";
 import { describe, expect, it } from "vite-plus/test";

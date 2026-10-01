@@ -8,7 +8,7 @@ import type {
   ProviderOptionSelection,
   RuntimeMode,
   ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   CommandId,
   DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -17,10 +17,10 @@ import {
   MessageId,
   T3_PROJECT_FILE_NAME,
   ThreadId,
-} from "@lmcstools/contracts";
-import { sanitizeNewRefName } from "@lmcstools/shared/git";
-import { resolveProjectSettings } from "@lmcstools/shared/projectSettings";
-import { parseT3ProjectFile } from "@lmcstools/shared/t3ProjectFile";
+} from "@lmcstools/core";
+import { sanitizeNewRefName } from "@lmcstools/core/git";
+import { resolveProjectSettings } from "@lmcstools/core/projectSettings";
+import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import * as Arr from "effect/Array";
 import { pipe } from "effect/Function";
 
@@ -79,8 +79,8 @@ import {
   setPendingConnectionError,
   useSavedRemoteConnections,
 } from "../../state/use-remote-environment-registry";
-import { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
-import { type VcsRef } from "@lmcstools/client-runtime/state/vcs";
+import { EnvironmentProject } from "@lmcstools/client/state/shell";
+import { type VcsRef } from "@lmcstools/client/state/vcs";
 import {
   buildHomeProjectScopes,
   sortHomeProjectScopes,
@@ -422,12 +422,15 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
   const attachments = selectedProjectDraft.attachments;
   // Default mode until the user picks one explicitly — same resolution web
   // uses for new draft threads: per-project setting, then the repo's
-  // checked-in t3.json, then the server's configured default.
+  // checked-in lmcs.json, then the server's configured default.
   const t3ProjectFileQuery = useEnvironmentQuery(
     selectedProject !== null && selectedProject.workspaceRoot !== ""
       ? projectEnvironment.readFile({
           environmentId: selectedProject.environmentId,
-          input: { cwd: selectedProject.workspaceRoot, relativePath: T3_PROJECT_FILE_NAME },
+          input: {
+            cwd: selectedProject.workspaceRoot,
+            relativePath: T3_PROJECT_FILE_NAME,
+          },
         })
       : null,
   );
@@ -439,7 +442,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
         : parseT3ProjectFile(t3ProjectFileData.contents),
     [t3ProjectFileData],
   );
-  // Environment settings with the project's overrides and its t3.json
+  // Environment settings with the project's overrides and its lmcs.json
   // applied; the aggregate's own legacy fields still count until the server
   // folds them.
   const projectSettings = useMemo(
@@ -456,7 +459,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
   // While the file read is pending and nothing above it decided, the
   // resolved default is provisional. Nothing may write it into the draft
   // during that window (the auto-branch effect does), or the frozen interim
-  // value beats the t3.json default once it loads.
+  // value beats the lmcs.json default once it loads.
   const defaultWorkspaceModeSettled =
     selectedProjectDraft.workspaceSelection?.mode !== undefined ||
     projectSettings.sources.defaultThreadEnvMode !== "environment" ||
@@ -685,7 +688,10 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
   // user. A pending-task edit owns its own key and is untouched here.
   const carryDraftContentTo = useCallback(
     (project: EnvironmentProject) => {
-      const target = { environmentId: project.environmentId, projectId: project.id };
+      const target = {
+        environmentId: project.environmentId,
+        projectId: project.id,
+      };
       if (activeDraftKey !== null && isNewTaskDraftKey(activeDraftKey)) {
         retargetNewTaskDraft(activeDraftKey, target);
       } else if (!editingPendingTaskRef.current) {
@@ -901,7 +907,9 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
   const setRuntimeMode = useCallback(
     (value: RuntimeMode) => {
       if (selectedProjectDraftKey) {
-        updateComposerDraftSettings(selectedProjectDraftKey, { runtimeMode: value });
+        updateComposerDraftSettings(selectedProjectDraftKey, {
+          runtimeMode: value,
+        });
       }
     },
     [selectedProjectDraftKey],

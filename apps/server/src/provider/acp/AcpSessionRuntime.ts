@@ -16,11 +16,11 @@ import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import * as ChildProcess from "effect/unstable/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as EffectAcpClient from "effect-acp/client";
-import * as EffectAcpErrors from "effect-acp/errors";
-import type * as EffectAcpSchema from "effect-acp/schema";
-import type * as EffectAcpProtocol from "effect-acp/protocol";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import * as EffectAcpClient from "@lmcstools/providers/acp/client";
+import * as EffectAcpErrors from "@lmcstools/providers/acp/errors";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
+import type * as EffectAcpProtocol from "@lmcstools/providers/acp/protocol";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
 import { appendAcpStderrTail, sanitizeAcpStderrExcerpt } from "./AcpStderr.ts";
 import {

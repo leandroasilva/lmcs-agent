@@ -1,6 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
-import { enabledEnvironmentIds } from "@lmcstools/client-runtime/state/connections";
-import { arrayElementsEqual } from "@lmcstools/client-runtime/state/entities";
+import { enabledEnvironmentIds } from "@lmcstools/client/state/connections";
+import { arrayElementsEqual } from "@lmcstools/client/state/entities";
 import {
   createEnvironmentThreadDetailAtoms,
   createEnvironmentThreadShellAtoms,
@@ -9,8 +9,8 @@ import {
   type EnvironmentThreadState,
   createThreadEnvironmentAtoms,
   isThreadSessionRunning,
-} from "@lmcstools/client-runtime/state/threads";
-import type { EnvironmentId, OrchestrationThreadShell, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/threads";
+import type { EnvironmentId, OrchestrationThreadShell, ThreadId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 

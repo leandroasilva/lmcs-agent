@@ -12,10 +12,10 @@ import {
   SystemSettingsPaneSchema,
   type DesktopEnvironmentBootstrap,
   type PickedThemeFile,
-} from "@lmcstools/contracts";
-import { WORKSPACE_IMAGE_PREVIEW_EXTENSIONS } from "@lmcstools/shared/filePreview";
-import { resolveEditorCommand } from "@lmcstools/shared/editor";
-import * as HostProcess from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { WORKSPACE_IMAGE_PREVIEW_EXTENSIONS } from "@lmcstools/core/filePreview";
+import { resolveEditorCommand } from "@lmcstools/core/editor";
+import * as HostProcess from "@lmcstools/core/hostProcess";
 import * as NodeOS from "node:os";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";

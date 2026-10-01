@@ -1,11 +1,11 @@
 import * as NodeVM from "node:vm";
 import { it as effectIt } from "@effect/vitest";
-import { DESKTOP_PREVIEW_RECORDING_CAPTURE_TRIGGER } from "@lmcstools/contracts";
+import { DESKTOP_PREVIEW_RECORDING_CAPTURE_TRIGGER } from "@lmcstools/core";
 import type {
   DesktopPreviewRecordingFrame,
   DesktopPreviewRecordingInputEvent,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Cause from "effect/Cause";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";

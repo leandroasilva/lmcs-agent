@@ -1,6 +1,6 @@
-import { type KnownTerminalSession } from "@lmcstools/client-runtime/state/terminal";
-import { DEFAULT_TERMINAL_ID, type ProjectScript } from "@lmcstools/contracts";
-import { nextTerminalId, resolveTerminalSessionLabel } from "@lmcstools/shared/terminalLabels";
+import { type KnownTerminalSession } from "@lmcstools/client/state/terminal";
+import { DEFAULT_TERMINAL_ID, type ProjectScript } from "@lmcstools/core";
+import { nextTerminalId, resolveTerminalSessionLabel } from "@lmcstools/core/terminalLabels";
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
 
@@ -8,7 +8,7 @@ export {
   getTerminalLabel,
   nextTerminalId,
   resolveTerminalSessionLabel,
-} from "@lmcstools/shared/terminalLabels";
+} from "@lmcstools/core/terminalLabels";
 
 export interface TerminalMenuSession {
   readonly terminalId: string;

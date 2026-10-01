@@ -5,13 +5,13 @@ import {
   selectRunningSubprocessTerminalIds,
   type KnownTerminalSession,
   type TerminalSessionState,
-} from "@lmcstools/client-runtime/state/terminal";
+} from "@lmcstools/client/state/terminal";
 import {
   ThreadId,
   type EnvironmentId,
   type TerminalAttachInput,
   type TerminalSummary,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useMemo } from "react";
 
 import { useEnvironmentQuery } from "./query";

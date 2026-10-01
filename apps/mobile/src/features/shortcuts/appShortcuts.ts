@@ -1,6 +1,6 @@
 import type { Action } from "expo-quick-actions";
 import type { NavigationState } from "@react-navigation/native";
-import { EnvironmentId, ThreadId, type ScopedThreadRef } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId, type ScopedThreadRef } from "@lmcstools/core";
 
 import type { RecentThreadShortcut } from "../../persistence/imperative";
 

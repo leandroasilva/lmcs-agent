@@ -21,7 +21,7 @@ import {
   type ScopedThreadRef,
   ThreadId,
   SnapShotSource,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   parseScopedProjectKey,
   parseScopedThreadKey,
@@ -29,12 +29,12 @@ import {
   scopeProjectRef,
   scopedThreadKey,
   scopeThreadRef,
-} from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/client/environment";
 import * as Schema from "effect/Schema";
 import * as Equal from "effect/Equal";
 import * as Effect from "effect/Effect";
 import { DeepMutable } from "effect/Types";
-import { createModelSelection, normalizeModelSlug } from "@lmcstools/shared/model";
+import { createModelSelection, normalizeModelSlug } from "@lmcstools/core/model";
 import { useMemo } from "react";
 import { getLocalStorageItem } from "./hooks/useLocalStorage";
 import { resolveAppModelSelection, resolveAppModelSelectionForInstance } from "./modelSelection";
@@ -72,8 +72,8 @@ import { persist, type PersistStorage, type StorageValue } from "zustand/middlew
 import { useShallow } from "zustand/react/shallow";
 import { createDeferredStorage, createMemoryStorage } from "./lib/storage";
 import { getDefaultServerModel } from "./providerModels";
-import { replaceComposerContextReferences } from "@lmcstools/shared/composerContextReferences";
-import { UnifiedSettings } from "@lmcstools/contracts/settings";
+import { replaceComposerContextReferences } from "@lmcstools/core/composerContextReferences";
+import { UnifiedSettings } from "@lmcstools/core/settings";
 import { ReviewCommentContextSchema, type ReviewCommentContext } from "./reviewCommentContext";
 const isRuntimeMode = Schema.is(RuntimeMode);
 const isProviderDriverKind = Schema.is(ProviderDriverKind);

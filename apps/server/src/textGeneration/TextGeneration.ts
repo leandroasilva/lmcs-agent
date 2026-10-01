@@ -1,8 +1,8 @@
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import type { ChatAttachment, ModelSelection, ProviderInstanceId } from "@lmcstools/contracts";
-import { TextGenerationError } from "@lmcstools/contracts";
+import type { ChatAttachment, ModelSelection, ProviderInstanceId } from "@lmcstools/core";
+import { TextGenerationError } from "@lmcstools/core";
 
 import * as ProviderInstanceRegistry from "../provider/Services/ProviderInstanceRegistry.ts";
 import type { ProviderInstance } from "../provider/ProviderDriver.ts";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { voiceInputFreezesEditor } from "@lmcstools/client-runtime/voice-input";
+import { voiceInputFreezesEditor } from "@lmcstools/client/voice-input";
 
 import { resolveVoiceComposerPresentation } from "./voiceInputPresentation";
 

@@ -33,8 +33,8 @@ import {
   ProviderDriverKind,
   type ProviderInstanceConfigMap,
   ProviderInstanceId,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform, isHostWindows } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { HostProcessPlatform, isHostWindows } from "@lmcstools/core/hostProcess";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

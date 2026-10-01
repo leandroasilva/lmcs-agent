@@ -6,7 +6,7 @@ import {
   type OrchestrationCommand,
   type OrchestrationReadModel,
   type OrchestrationThread,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";

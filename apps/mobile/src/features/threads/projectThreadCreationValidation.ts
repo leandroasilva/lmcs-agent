@@ -1,4 +1,4 @@
-import { EnvironmentId, ProjectId } from "@lmcstools/contracts";
+import { EnvironmentId, ProjectId } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 
 export class ProjectThreadTaskRequiredError extends Schema.TaggedError<ProjectThreadTaskRequiredError>()(

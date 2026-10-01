@@ -1,12 +1,8 @@
 import { SourceFileSurface } from "../features/files/SourceFileSurface";
-import { filePreviewKind } from "@lmcstools/shared/filePreview";
-import type {
-  ComposerContextRecord,
-  ElementContextSource,
-  EnvironmentId,
-} from "@lmcstools/contracts";
-import { formatAttachmentSize } from "@lmcstools/client-runtime/state/attachments";
-import { videoMimeType } from "@lmcstools/shared/video";
+import { filePreviewKind } from "@lmcstools/core/filePreview";
+import type { ComposerContextRecord, ElementContextSource, EnvironmentId } from "@lmcstools/core";
+import { formatAttachmentSize } from "@lmcstools/client/state/attachments";
+import { videoMimeType } from "@lmcstools/core/video";
 import { useState } from "react";
 import {
   Alert,

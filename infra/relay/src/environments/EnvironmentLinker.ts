@@ -2,13 +2,13 @@ import {
   RelayEnvironmentLinkProofPayload,
   RelayEnvironmentLinkProofInvalidReason,
   type RelayEnvironmentLinkRequest,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import {
   decodeRelayJwt,
   normalizeRelayIssuer,
   RELAY_LINK_PROOF_TYP,
   verifyRelayJwt,
-} from "@lmcstools/shared/relayJwt";
+} from "@lmcstools/core/relayJwt";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";

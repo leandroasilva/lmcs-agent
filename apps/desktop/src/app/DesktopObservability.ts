@@ -1,14 +1,14 @@
-import { PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/contracts";
+import { PRIMARY_LOCAL_ENVIRONMENT_ID } from "@lmcstools/core";
 import {
   makeLocalFileTracer,
   makeTraceSink,
   otlpSerializationLayer,
-} from "@lmcstools/shared/observability";
-import * as OtelEnvironment from "@lmcstools/shared/otelEnvironment";
+} from "@lmcstools/core/observability";
+import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 import {
   parsePersistedServerObservabilitySettings,
   type PersistedServerObservabilitySettings,
-} from "@lmcstools/shared/serverSettings";
+} from "@lmcstools/core/serverSettings";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";

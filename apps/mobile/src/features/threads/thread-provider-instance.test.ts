@@ -1,11 +1,11 @@
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import {
   EnvironmentId,
   ProjectId,
   ProviderInstanceId,
   ThreadId,
   type ServerConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import {

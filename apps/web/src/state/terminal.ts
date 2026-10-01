@@ -1,4 +1,4 @@
-import { createTerminalEnvironmentAtoms } from "@lmcstools/client-runtime/state/terminal";
+import { createTerminalEnvironmentAtoms } from "@lmcstools/client/state/terminal";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

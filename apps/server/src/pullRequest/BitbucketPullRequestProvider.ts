@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@lmcstools/contracts";
+import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@lmcstools/core";
 
 import * as BitbucketPullRequestApi from "./BitbucketPullRequestApi.ts";
 import {

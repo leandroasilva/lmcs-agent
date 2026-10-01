@@ -1,11 +1,11 @@
-import { relayClerkTokenOptions } from "@lmcstools/shared/relayAuth";
-import { normalizeSecureRelayUrl } from "@lmcstools/shared/relayUrl";
+import { relayClerkTokenOptions } from "@lmcstools/core/relayAuth";
+import { normalizeSecureRelayUrl } from "@lmcstools/core/relayUrl";
 import * as Schema from "effect/Schema";
 
 export class CloudPublicConfigMissingError extends Schema.TaggedError<CloudPublicConfigMissingError>()(
   "CloudPublicConfigMissingError",
   {
-    key: Schema.Literal("T3CODE_CLERK_JWT_TEMPLATE"),
+    key: Schema.Literal("LMCS_CLERK_JWT_TEMPLATE"),
   },
 ) {
   override get message(): string {
@@ -44,7 +44,7 @@ export function resolveCloudPublicConfig(): CloudPublicConfig {
     ),
     clerkJwtTemplate: trimNonEmpty(import.meta.env.VITE_CLERK_JWT_TEMPLATE as string | undefined),
     relayUrl: normalizeSecureRelayUrl(
-      (import.meta.env.VITE_T3CODE_RELAY_URL as string | undefined) ?? "",
+      (import.meta.env.VITE_LMCS_RELAY_URL as string | undefined) ?? "",
     ),
     relayTracing: {
       tracesUrl: normalizeSecureUrl(
@@ -77,7 +77,7 @@ export function hasCloudPublicConfig(): boolean {
 export function resolveRelayClerkTokenOptions() {
   const { clerkJwtTemplate } = resolveCloudPublicConfig();
   if (!clerkJwtTemplate) {
-    throw new CloudPublicConfigMissingError({ key: "T3CODE_CLERK_JWT_TEMPLATE" });
+    throw new CloudPublicConfigMissingError({ key: "LMCS_CLERK_JWT_TEMPLATE" });
   }
   return relayClerkTokenOptions(clerkJwtTemplate);
 }

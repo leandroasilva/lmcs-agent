@@ -1,4 +1,4 @@
-import type { VcsRef } from "@lmcstools/contracts";
+import type { VcsRef } from "@lmcstools/core";
 
 export interface BaseRefChoice {
   readonly id: string;

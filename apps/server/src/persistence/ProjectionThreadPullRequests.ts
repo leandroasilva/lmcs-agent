@@ -1,4 +1,4 @@
-import { normalizeThreadPullRequestKey } from "@lmcstools/shared/threadPullRequests";
+import { normalizeThreadPullRequestKey } from "@lmcstools/core/threadPullRequests";
 import {
   IsoDateTime,
   PositiveInt,
@@ -8,7 +8,7 @@ import {
   ThreadPullRequestSnapshot,
   ThreadPullRequestStack,
   TrimmedNonEmptyString,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";

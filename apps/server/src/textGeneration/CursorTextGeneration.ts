@@ -5,11 +5,11 @@ import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
-import { type CursorSettings, type ModelSelection } from "@lmcstools/contracts";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/shared/git";
-import { extractJsonObject } from "@lmcstools/shared/schemaJson";
+import { type CursorSettings, type ModelSelection } from "@lmcstools/core";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
+import { extractJsonObject } from "@lmcstools/core/schemaJson";
 
-import { TextGenerationError } from "@lmcstools/contracts";
+import { TextGenerationError } from "@lmcstools/core";
 import * as TextGeneration from "./TextGeneration.ts";
 import {
   buildBranchNamePrompt,

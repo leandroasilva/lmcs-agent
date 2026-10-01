@@ -12,7 +12,7 @@ import {
   AuthSessionId,
   ClientSurface,
   ServerAuthSessionMethod,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   type AuthSessionRepositoryError,

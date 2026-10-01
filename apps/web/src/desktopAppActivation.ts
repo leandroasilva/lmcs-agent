@@ -7,7 +7,7 @@ import type {
   ProjectId,
   ScopedProjectRef,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 export interface DesktopAppActivationProject {
   readonly id: ProjectId;

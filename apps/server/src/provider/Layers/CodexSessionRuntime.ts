@@ -17,9 +17,9 @@ import {
   type ServerProviderModel,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
-import { normalizeModelSlug } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
+import { normalizeModelSlug } from "@lmcstools/core/model";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
@@ -32,10 +32,10 @@ import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import * as CodexClient from "effect-codex-app-server/client";
-import * as CodexErrors from "effect-codex-app-server/errors";
-import * as CodexRpc from "effect-codex-app-server/rpc";
-import * as EffectCodexSchema from "effect-codex-app-server/schema";
+import * as CodexClient from "@lmcstools/providers/codex/client";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
+import * as CodexRpc from "@lmcstools/providers/codex/rpc";
+import * as EffectCodexSchema from "@lmcstools/providers/codex/schema";
 
 import { buildCodexInitializeParams } from "./CodexProvider.ts";
 import { codexSessionAppServerArgs } from "./codexLaunchArgs.ts";

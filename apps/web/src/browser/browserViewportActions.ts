@@ -1,4 +1,4 @@
-import type { PreviewViewportSetting } from "@lmcstools/contracts";
+import type { PreviewViewportSetting } from "@lmcstools/core";
 
 type BrowserViewportHandler = (setting: PreviewViewportSetting) => Promise<void>;
 

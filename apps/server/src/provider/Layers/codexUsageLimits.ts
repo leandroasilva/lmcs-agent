@@ -11,10 +11,10 @@ import type {
   ServerProviderResetCredits,
   ServerProviderUsageLimits,
   ServerProviderUsageWindow,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
-import type * as CodexErrors from "effect-codex-app-server/errors";
+import type * as CodexErrors from "@lmcstools/providers/codex/errors";
 
 import { clampPercent, makeUsageLimits } from "../providerUsageLimits.ts";
 

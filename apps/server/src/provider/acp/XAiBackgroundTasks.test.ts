@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { TurnId } from "@lmcstools/contracts";
+import { TurnId } from "@lmcstools/core";
 
 import {
   buildGrokBackgroundTaskEvents,

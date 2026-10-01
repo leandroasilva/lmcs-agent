@@ -5,7 +5,7 @@ import {
   computeDpopAccessTokenHash,
   computeDpopJwkThumbprint,
   type DpopPublicJwk,
-} from "@lmcstools/shared/dpop";
+} from "@lmcstools/core/dpop";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

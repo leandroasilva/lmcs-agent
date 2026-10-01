@@ -14,8 +14,8 @@ import {
   type PullRequestSummary,
   type ServerSettings,
   type ServerSettingsPatch,
-} from "@lmcstools/contracts";
-import { applyServerSettingsPatch } from "@lmcstools/shared/serverSettings";
+} from "@lmcstools/core";
+import { applyServerSettingsPatch } from "@lmcstools/core/serverSettings";
 import { assert, describe, it } from "@effect/vitest";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";

@@ -16,8 +16,8 @@ import {
   type AgentSessionImportInput,
   type AgentSessionImportResult,
   type OrchestrationThread,
-} from "@lmcstools/contracts";
-import { normalizeProjectPathForComparison } from "@lmcstools/shared/path";
+} from "@lmcstools/core";
+import { normalizeProjectPathForComparison } from "@lmcstools/core/path";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

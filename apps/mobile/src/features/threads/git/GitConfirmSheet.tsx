@@ -1,5 +1,5 @@
-import { resolveDefaultBranchActionDialogCopy } from "@lmcstools/client-runtime/state/vcs";
-import { resolveAutoFeatureBranchName } from "@lmcstools/shared/git";
+import { resolveDefaultBranchActionDialogCopy } from "@lmcstools/client/state/vcs";
+import { resolveAutoFeatureBranchName } from "@lmcstools/core/git";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
 import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";

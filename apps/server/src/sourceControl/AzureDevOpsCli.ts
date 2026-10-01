@@ -9,7 +9,7 @@ import {
   TrimmedNonEmptyString,
   type SourceControlRepositoryVisibility,
   type VcsError,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import * as VcsProcess from "../vcs/VcsProcess.ts";
 import {

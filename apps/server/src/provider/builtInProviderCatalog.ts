@@ -1,4 +1,4 @@
-import type { ProviderDriverKind, ProviderInstanceId, ServerProvider } from "@lmcstools/contracts";
+import type { ProviderDriverKind, ProviderInstanceId, ServerProvider } from "@lmcstools/core";
 import type * as Stream from "effect/Stream";
 import type { ServerProviderShape } from "./Services/ServerProvider.ts";
 

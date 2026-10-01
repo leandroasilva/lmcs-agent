@@ -2,7 +2,7 @@ import {
   type AtomCommandResult,
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import { create } from "zustand";
 
 import { stackedThreadToast, toastManager } from "../components/ui/toast";

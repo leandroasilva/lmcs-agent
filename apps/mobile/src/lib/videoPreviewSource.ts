@@ -1,5 +1,5 @@
-import type { AssetResource, ChatFileAttachment, EnvironmentId } from "@lmcstools/contracts";
-import { videoMimeType } from "@lmcstools/shared/video";
+import type { AssetResource, ChatFileAttachment, EnvironmentId } from "@lmcstools/core";
+import { videoMimeType } from "@lmcstools/core/video";
 
 import type { DraftComposerFileAttachment } from "./composerImages";
 import type { MediaActionsSource } from "./mediaActions";

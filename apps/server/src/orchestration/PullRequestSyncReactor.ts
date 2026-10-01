@@ -1,4 +1,4 @@
-import { siblingPullRequestUrl } from "@lmcstools/shared/changeRequestUrl";
+import { siblingPullRequestUrl } from "@lmcstools/core/changeRequestUrl";
 import {
   CommandId,
   type OrchestrationThreadShell,
@@ -7,14 +7,14 @@ import {
   type ThreadPullRequestLink,
   type ThreadPullRequestSnapshot,
   type ThreadPullRequestStack,
-} from "@lmcstools/contracts";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
+} from "@lmcstools/core";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
 import {
   threadPullRequestKeyOf,
   normalizeThreadPullRequestKey,
   threadPullRequestKeysEqual,
   visibleThreadPullRequests,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";

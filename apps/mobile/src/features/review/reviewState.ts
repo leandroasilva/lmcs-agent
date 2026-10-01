@@ -1,6 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
 
-import type { EnvironmentId, ReviewDiffPreviewSource, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ReviewDiffPreviewSource, ThreadId } from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 
 import { scopedThreadKey } from "../../lib/scopedEntities";

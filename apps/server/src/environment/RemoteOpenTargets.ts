@@ -8,10 +8,10 @@
  * Targets are ordered most-reachable first (tailnet name works from anywhere
  * on the tailnet; `<hostname>.local` only on the same LAN).
  */
-import { type RemoteOpenTarget } from "@lmcstools/contracts";
-import { HostProcessHostname } from "@lmcstools/shared/hostProcess";
-import * as NetService from "@lmcstools/shared/Net";
-import { readTailscaleStatus } from "@lmcstools/tailscale";
+import { type RemoteOpenTarget } from "@lmcstools/core";
+import { HostProcessHostname } from "@lmcstools/core/hostProcess";
+import * as NetService from "@lmcstools/core/Net";
+import { readTailscaleStatus } from "@lmcstools/network/tailscale";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

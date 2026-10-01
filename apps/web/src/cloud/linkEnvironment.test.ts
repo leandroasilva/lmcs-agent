@@ -3,8 +3,8 @@ import {
   EnvironmentId,
   type RelayClientInstallProgressEvent,
   WS_METHODS,
-} from "@lmcstools/contracts";
-import { RelayWebClientId } from "@lmcstools/contracts/relay";
+} from "@lmcstools/core";
+import { RelayWebClientId } from "@lmcstools/core/relay";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -18,11 +18,11 @@ import {
   EnvironmentSupervisor,
   type PreparedConnection,
   PrimaryConnectionTarget,
-} from "@lmcstools/client-runtime/connection";
-import { type RpcSession } from "@lmcstools/client-runtime/rpc";
-import { EnvironmentRegistry } from "@lmcstools/client-runtime/connection";
-import { ManagedRelay } from "@lmcstools/client-runtime/relay";
-import { remoteHttpClientLayer } from "@lmcstools/client-runtime/rpc";
+} from "@lmcstools/client/connection";
+import { type RpcSession } from "@lmcstools/client/rpc";
+import { EnvironmentRegistry } from "@lmcstools/client/connection";
+import { ManagedRelay } from "@lmcstools/client/relay";
+import { remoteHttpClientLayer } from "@lmcstools/client/rpc";
 import { __resetDesktopPrimaryAuthForTests } from "../environments/primary/desktopAuth";
 
 import {
@@ -140,7 +140,7 @@ function bodyText(body: BodyInit | null | undefined): string {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubEnv("VITE_T3CODE_RELAY_URL", "https://relay.example.test");
+  vi.stubEnv("VITE_LMCS_RELAY_URL", "https://relay.example.test");
   relayClientInstallDialog.requestConfirmation.mockResolvedValue(true);
 });
 

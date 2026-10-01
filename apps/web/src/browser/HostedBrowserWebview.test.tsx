@@ -5,7 +5,7 @@ import {
   ThreadId,
   type ClientSettings,
   type DesktopPreviewBridge,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { act } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -24,7 +24,7 @@ vi.mock("~/localApi", () => ({
   ensureLocalApi: () => ({ persistence: mocks }),
 }));
 
-vi.mock("~/components/preview/previewBridge", () => ({
+vi.mock("~/components/features/preview/previewBridge", () => ({
   previewBridge: {
     createTab: mocks.createTab,
     closeTab: mocks.closeTab,
@@ -33,7 +33,7 @@ vi.mock("~/components/preview/previewBridge", () => ({
   },
 }));
 
-vi.mock("~/components/preview/usePreviewBridge", () => ({
+vi.mock("~/components/features/preview/usePreviewBridge", () => ({
   usePreviewBridge: () => undefined,
 }));
 

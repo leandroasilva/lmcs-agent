@@ -11,11 +11,11 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { createModelSelection } from "@lmcstools/shared/model";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { createModelSelection } from "@lmcstools/core/model";
 import { expect } from "vite-plus/test";
 
-import { CursorSettings, ProviderInstanceId } from "@lmcstools/contracts";
+import { CursorSettings, ProviderInstanceId } from "@lmcstools/core";
 
 import * as ServerConfig from "../config.ts";
 import * as TextGeneration from "./TextGeneration.ts";

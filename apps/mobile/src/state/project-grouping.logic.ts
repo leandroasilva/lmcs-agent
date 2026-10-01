@@ -1,5 +1,5 @@
-import type { ProjectGroupingSettings } from "@lmcstools/client-runtime/state/project-grouping";
-import type { SidebarProjectGroupingMode } from "@lmcstools/contracts";
+import type { ProjectGroupingSettings } from "@lmcstools/client/state/project-grouping";
+import type { SidebarProjectGroupingMode } from "@lmcstools/core";
 
 import type { Preferences } from "../persistence/mobile-preferences";
 

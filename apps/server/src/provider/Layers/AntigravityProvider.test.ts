@@ -5,7 +5,7 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   ProviderSetupError,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -14,8 +14,8 @@ import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
-import * as EffectAcpErrors from "effect-acp/errors";
-import type * as EffectAcpSchema from "effect-acp/schema";
+import * as EffectAcpErrors from "@lmcstools/providers/acp/errors";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
 
 import * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";

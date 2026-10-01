@@ -1,4 +1,4 @@
-import { DEFAULT_SERVER_SETTINGS, EnvironmentId, ProjectId } from "@lmcstools/contracts";
+import { DEFAULT_SERVER_SETTINGS, EnvironmentId, ProjectId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { planAutoSettleSettingsSync } from "./autoSettleSettingsSync";

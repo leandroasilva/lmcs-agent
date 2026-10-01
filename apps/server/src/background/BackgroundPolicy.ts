@@ -6,12 +6,12 @@ import {
   type ClientActivityReportInput,
   type HostPowerSnapshot,
   type RpcClientId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   getBackgroundActivityPresetSettings,
   resolveServerBackgroundActivitySettings,
   type ResolvedBackgroundActivitySettings,
-} from "@lmcstools/shared/backgroundActivitySettings";
+} from "@lmcstools/core/backgroundActivitySettings";
 import * as DateTime from "effect/DateTime";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";

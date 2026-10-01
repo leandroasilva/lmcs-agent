@@ -2,8 +2,8 @@
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { SpawnExecutableResolution } from "@lmcstools/shared/shell";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { SpawnExecutableResolution } from "@lmcstools/core/shell";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 

@@ -179,7 +179,10 @@ export const make = Effect.gen(function* () {
         Effect.catchTags({
           WorkspacePathOutsideRootError: () =>
             Effect.succeed(
-              Option.none<{ readonly absolutePath: string; readonly relativePath: string }>(),
+              Option.none<{
+                readonly absolutePath: string;
+                readonly relativePath: string;
+              }>(),
             ),
         }),
       );
@@ -228,7 +231,7 @@ export const make = Effect.gen(function* () {
       }
     }
 
-    // A t3.json iconPath takes precedence over the well-known locations.
+    // A lmcs.json iconPath takes precedence over the well-known locations.
     const projectFile = yield* projectFileLoader.load(projectCwd);
     if (Option.isSome(projectFile) && projectFile.value.iconPath !== undefined) {
       const existing = yield* findExistingFile(

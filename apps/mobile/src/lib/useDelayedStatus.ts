@@ -1,4 +1,4 @@
-import { createDelayedStatus, type ShownStatus } from "@lmcstools/client-runtime/delayed-status";
+import { createDelayedStatus, type ShownStatus } from "@lmcstools/client/delayed-status";
 import { useEffect, useState } from "react";
 
 /**

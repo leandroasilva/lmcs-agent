@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Platform, Pressable, RefreshControl, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { reportAtomCommandResult, settlePromise } from "@lmcstools/client-runtime/state/runtime";
+import { reportAtomCommandResult, settlePromise } from "@lmcstools/client/state/runtime";
 import { AndroidSheetHeader } from "../../components/AndroidScreenHeader";
 import { AppText as Text } from "../../components/AppText";
 import { useRemoteConnections } from "../../state/use-remote-environment-registry";

@@ -27,7 +27,7 @@ import {
   type AgentSessionProjectGit,
   type AgentSessionScanResult,
   type ProviderInstanceConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -43,9 +43,9 @@ import {
   normalizeGitRemoteUrl,
   parseGitHubRepositoryNameWithOwnerFromRemoteUrl,
   parseOriginUrlFromGitConfig,
-} from "@lmcstools/shared/git";
-import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { normalizeProjectPathForComparison } from "@lmcstools/shared/path";
+} from "@lmcstools/core/git";
+import { HostProcessEnvironment, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { normalizeProjectPathForComparison } from "@lmcstools/core/path";
 
 import * as ServerConfig from "../config.ts";
 import * as ProjectionSnapshotQuery from "../orchestration/Services/ProjectionSnapshotQuery.ts";

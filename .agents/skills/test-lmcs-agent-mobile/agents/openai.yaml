@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test LMCS Agent Mobile"
+  short_description: "Test iOS and Android in LMCS Agent's Device panel"
+  default_prompt: "Use $test-lmcs-agent-mobile to verify the affected native mobile flow through LMCS Agent's Device panel and AgentDevice."

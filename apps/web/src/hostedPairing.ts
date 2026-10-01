@@ -1,4 +1,4 @@
-import { DEFAULT_HOSTED_APP_URL } from "@lmcstools/shared/connectAuth";
+import { DEFAULT_HOSTED_APP_URL } from "@lmcstools/core/connectAuth";
 
 import { getPairingTokenFromUrl, setPairingTokenOnUrl } from "./pairingUrl";
 

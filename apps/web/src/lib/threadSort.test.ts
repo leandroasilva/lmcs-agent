@@ -5,7 +5,7 @@ import {
   ProjectId,
   ProviderInstanceId,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import type { Thread } from "../types";
 import { getLatestThreadForProject, sortThreads } from "./threadSort";
 

@@ -1,6 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, expect, it } from "@effect/vitest";
-import { HostProcessWorkingDirectory } from "@lmcstools/shared/hostProcess";
+import { HostProcessWorkingDirectory } from "@lmcstools/core/hostProcess";
 import * as Duration from "effect/Duration";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -14,11 +14,7 @@ import * as Schema from "effect/Schema";
 import { TestClock } from "effect/testing";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
-import {
-  VcsProcessExitError,
-  VcsProcessSpawnError,
-  VcsProcessTimeoutError,
-} from "@lmcstools/contracts";
+import { VcsProcessExitError, VcsProcessSpawnError, VcsProcessTimeoutError } from "@lmcstools/core";
 import * as ProcessRunner from "../processRunner.ts";
 import * as VcsProcess from "./VcsProcess.ts";
 

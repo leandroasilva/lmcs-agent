@@ -2,11 +2,11 @@ import type {
   RelayAgentActivityAggregateState,
   RelayDeliveryKind,
   RelayLiveActivityRegistrationRequest,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import {
   RelayAgentActivityAggregateState as RelayAgentActivityAggregateStateSchema,
   RelayDeliveryKind as RelayDeliveryKindSchema,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";

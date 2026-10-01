@@ -1,4 +1,4 @@
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { nativeHeaderScrollEdgeEffects } from "../../native/StackHeader";
 import { ScreenHeader } from "../../components/ScreenHeader";

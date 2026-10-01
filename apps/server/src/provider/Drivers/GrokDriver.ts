@@ -1,4 +1,4 @@
-import { GrokSettings, ProviderDriverKind } from "@lmcstools/contracts";
+import { GrokSettings, ProviderDriverKind } from "@lmcstools/core";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

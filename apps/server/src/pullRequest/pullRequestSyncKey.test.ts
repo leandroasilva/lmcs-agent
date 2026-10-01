@@ -1,4 +1,4 @@
-import { ProjectId } from "@lmcstools/contracts";
+import { ProjectId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { pullRequestSyncKey } from "./pullRequestSyncKey.ts";

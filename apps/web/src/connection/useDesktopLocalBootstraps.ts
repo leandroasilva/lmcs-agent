@@ -1,4 +1,4 @@
-import type { DesktopEnvironmentBootstrap } from "@lmcstools/contracts";
+import type { DesktopEnvironmentBootstrap } from "@lmcstools/core";
 import { useEffect, useState } from "react";
 
 import { readDesktopSecondaryBootstraps } from "./desktopLocal";

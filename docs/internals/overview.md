@@ -8,12 +8,12 @@ but its renderer follows the same boundary.
 ## Ownership boundaries
 
 Provider processes, terminals, Git, and project files belong to the server. Shared connection and
-domain state belongs in `packages/client-runtime`; clients supply platform services and UI.
+domain state belongs in `packages/client`; clients supply platform services and UI.
 Keeping that logic shared prevents reconnect and multi-environment behavior from diverging between
 web and mobile. See [connection runtime](./connection-runtime.md) and
 [remote environments](./remote.md).
 
-The [RPC contract](../../packages/contracts/src/rpc.ts) is the boundary between independently
+The [RPC contract](../../packages/core/src/contracts/rpc.ts) is the boundary between independently
 versioned clients and servers. Subscriptions send the state a client needs, so a client viewing one
 thread does not pay for every thread's history. Authentication of a socket does not authorize every
 method on it. See [environment auth](./environment-auth.md).
@@ -83,7 +83,7 @@ must reject that operation before changing the filesystem.
 
 ## Waiting for asynchronous work
 
-Tests use [drainable workers](../../packages/shared/src/DrainableWorker.ts) to wait until both the
+Tests use [drainable workers](../../packages/core/src/shared/DrainableWorker.ts) to wait until both the
 queue and its current item have finished. An empty queue alone does not prove the worker is idle.
 
 Runtime receipts mark specific test milestones. Their

@@ -1,4 +1,4 @@
-import type { SnapShotAccessibilityNode, SnapShotSource } from "@lmcstools/contracts";
+import type { SnapShotAccessibilityNode, SnapShotSource } from "@lmcstools/core";
 
 /** Keep image-relative accessibility coordinates aligned with a recompressed attachment. */
 export function resizeSnapShotSource(

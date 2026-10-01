@@ -1,4 +1,4 @@
-import { DesktopHostTelemetryMessage } from "@lmcstools/contracts";
+import { DesktopHostTelemetryMessage } from "@lmcstools/core";
 import { assert, describe, it } from "@effect/vitest";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";

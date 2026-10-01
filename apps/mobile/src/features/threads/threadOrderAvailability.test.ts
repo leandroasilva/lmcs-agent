@@ -2,8 +2,8 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   generateSpreadPinOrderKeys,
   pinOrderKeyBetween,
-} from "@lmcstools/client-runtime/state/thread-sort";
-import type { EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/thread-sort";
+import type { EnvironmentId } from "@lmcstools/core";
 
 import {
   computeThreadMoveAvailability,

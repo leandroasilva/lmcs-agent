@@ -8,9 +8,9 @@
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 
-import type { ThreadId } from "@lmcstools/contracts";
-import { RotatingFileSink } from "@lmcstools/shared/logging";
-import { errorTag } from "@lmcstools/shared/observability";
+import type { ThreadId } from "@lmcstools/core";
+import { RotatingFileSink } from "@lmcstools/core/logging";
+import { errorTag } from "@lmcstools/core/observability";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";

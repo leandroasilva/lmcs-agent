@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo } from "react";
 
-import { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
+import { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
 import {
   type GitActionRequestInput,
   type VcsActionOperation,
   type VcsRef,
-} from "@lmcstools/client-runtime/state/vcs";
-import type { GitRunStackedActionResult } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/vcs";
+import type { GitRunStackedActionResult } from "@lmcstools/core";
 import {
   dedupeRemoteBranchesWithLocalMatches,
   sanitizeFeatureBranchName,
-} from "@lmcstools/shared/git";
+} from "@lmcstools/core/git";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";
 

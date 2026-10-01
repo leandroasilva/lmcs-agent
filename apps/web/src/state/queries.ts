@@ -2,13 +2,13 @@ import { useAtomValue } from "@effect/atom-react";
 import {
   type CheckpointDiffTarget,
   type ComposerPathSearchTarget,
-} from "@lmcstools/client-runtime/state/threads";
+} from "@lmcstools/client/state/threads";
 import {
   createThreadSearchResultsAtomFamily,
   makeThreadSearchKey,
   type EnvironmentThreadSearchMatch,
-} from "@lmcstools/client-runtime/state/thread-search";
-import { type VcsRefTarget } from "@lmcstools/client-runtime/state/vcs";
+} from "@lmcstools/client/state/thread-search";
+import { type VcsRefTarget } from "@lmcstools/client/state/vcs";
 import type {
   EnvironmentId,
   OrchestrationThread,
@@ -16,7 +16,7 @@ import type {
   ProjectEntryKind,
   VcsListRefsResult,
   VcsRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";

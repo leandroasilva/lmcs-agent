@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { ProviderInstanceId } from "@lmcstools/contracts";
+import { ProviderInstanceId } from "@lmcstools/core";
 
 import { hasValidClaudeManifestAdapters } from "./ClaudeModelManifest.ts";
 import type { ModelManifestData } from "./ModelManifest.ts";

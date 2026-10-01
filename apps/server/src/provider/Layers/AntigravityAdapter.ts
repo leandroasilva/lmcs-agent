@@ -15,7 +15,7 @@ import {
   type RuntimeTaskStatus,
   type ThreadId,
   type TurnCompletedPayload,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -32,8 +32,8 @@ import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import * as SynchronizedRef from "effect/SynchronizedRef";
-import * as EffectAcpErrors from "effect-acp/errors";
-import type * as EffectAcpSchema from "effect-acp/schema";
+import * as EffectAcpErrors from "@lmcstools/providers/acp/errors";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
 
 import { ServerConfig } from "../../config.ts";
 import { buildRuntimeInstructions } from "../RuntimeInstructions.ts";

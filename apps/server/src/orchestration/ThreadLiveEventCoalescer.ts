@@ -2,7 +2,7 @@ import type {
   OrchestrationEvent,
   OrchestrationGetSnapshotError,
   OrchestrationThreadStreamItem,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

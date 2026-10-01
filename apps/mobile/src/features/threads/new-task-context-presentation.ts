@@ -1,4 +1,4 @@
-import { sanitizeNewRefName } from "@lmcstools/shared/git";
+import { sanitizeNewRefName } from "@lmcstools/core/git";
 
 type WorkspaceMode = "local" | "worktree";
 

@@ -8,7 +8,7 @@ import * as Schema from "effect/Schema";
 import {
   SourceControlProviderKind as SourceControlProviderKindSchema,
   type SourceControlProviderKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 const FALLBACK_COOLDOWN = Duration.seconds(30);
 const MAX_FALLBACK_COOLDOWN = Duration.minutes(15);

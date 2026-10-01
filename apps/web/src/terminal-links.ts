@@ -1,7 +1,4 @@
-import {
-  formatFilePathPosition,
-  splitFilePathPosition,
-} from "@lmcstools/client-runtime/markdown-links";
+import { formatFilePathPosition, splitFilePathPosition } from "@lmcstools/client/markdown-links";
 
 import { isMacPlatform } from "./lib/utils";
 

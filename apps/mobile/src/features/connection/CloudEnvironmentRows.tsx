@@ -4,13 +4,13 @@ import { SymbolView } from "../../components/AppSymbol";
 import {
   connectionStatusText,
   type EnvironmentConnectionPhase,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   type EnvironmentId,
   type EnvironmentMachineKind,
   type ExecutionEnvironmentDescriptor,
   resolveEnvironmentMachineKind,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import { useCallback, useState } from "react";
 import {

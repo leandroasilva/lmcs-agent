@@ -1,12 +1,12 @@
 // @effect-diagnostics nodeBuiltinImport:off - Effect has no incremental digest or free-space query.
 import * as EffectNodeStream from "@effect/platform-node/NodeStream";
-import { ProviderDriverKind, type ProviderInstallState } from "@lmcstools/contracts";
+import { ProviderDriverKind, type ProviderInstallState } from "@lmcstools/core";
 import {
   HostProcessArchitecture,
   HostProcessEnvironment,
   HostProcessPlatform,
-} from "@lmcstools/shared/hostProcess";
-import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@lmcstools/shared/nodeRuntime";
+} from "@lmcstools/core/hostProcess";
+import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@lmcstools/core/nodeRuntime";
 import * as Clock from "effect/Clock";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";

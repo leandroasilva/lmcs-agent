@@ -1,16 +1,13 @@
 import { useAtomValue } from "@effect/atom-react";
 
 import { appAtomRegistry } from "./atom-registry";
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import type {
   EnvironmentId,
   ScopedProjectRef,
   ScopedThreadRef,
   ServerConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { Atom } from "effect/unstable/reactivity";
 
 import { environmentProjects } from "./projects";

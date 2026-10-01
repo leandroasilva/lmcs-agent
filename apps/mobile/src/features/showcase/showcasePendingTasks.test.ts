@@ -1,5 +1,5 @@
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
-import { EnvironmentId, ProjectId, ProviderInstanceId } from "@lmcstools/contracts";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
+import { EnvironmentId, ProjectId, ProviderInstanceId } from "@lmcstools/core";
 import { assert, it } from "@effect/vitest";
 
 import {

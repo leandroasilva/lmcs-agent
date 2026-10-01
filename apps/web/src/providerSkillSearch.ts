@@ -1,14 +1,14 @@
-import type { ServerProviderSkill } from "@lmcstools/contracts";
+import type { ServerProviderSkill } from "@lmcstools/core";
 import {
   dedupeProviderSkillsByName,
   formatProviderSkillDisplayName,
   isProviderSkillUserInvocable,
-} from "@lmcstools/client-runtime/providerSkills";
+} from "@lmcstools/client/providerSkills";
 import {
   insertRankedSearchResult,
   normalizeSearchQuery,
   scoreQueryMatch,
-} from "@lmcstools/shared/searchRanking";
+} from "@lmcstools/core/searchRanking";
 
 export function scoreProviderSkill(skill: ServerProviderSkill, query: string): number | null {
   const normalizedName = skill.name.toLowerCase();

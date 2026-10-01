@@ -9,7 +9,7 @@ import {
   type OrchestrationEvent,
   type ProviderRuntimeEvent,
   type VcsStatusLocalResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -20,8 +20,8 @@ import * as Path from "effect/Path";
 import * as Option from "effect/Option";
 import type * as PlatformError from "effect/PlatformError";
 import * as Stream from "effect/Stream";
-import { makeDrainableWorker } from "@lmcstools/shared/DrainableWorker";
-import { isTemporaryWorktreeBranch } from "@lmcstools/shared/git";
+import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
+import { isTemporaryWorktreeBranch } from "@lmcstools/core/git";
 
 import { parseTurnDiffFilesFromNumstat } from "../../checkpointing/Diffs.ts";
 import {

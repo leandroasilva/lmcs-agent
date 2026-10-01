@@ -28,9 +28,9 @@ import * as Schema from "effect/Schema";
 import { Command, Flag } from "effect/unstable/cli";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { fromYaml } from "@lmcstools/shared/schemaYaml";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { fromYaml } from "@lmcstools/core/schemaYaml";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import rootPackageJson from "../package.json" with { type: "json" };
 import serverPackageJson from "../apps/server/package.json" with { type: "json" };
 
@@ -283,7 +283,7 @@ const stageWebClient = Effect.fn("stageWebClient")(function* (source: string, ta
 });
 
 const MacSigningConfig = Config.all({
-  identity: Config.String("T3CODE_CLI_MAC_SIGN_IDENTITY").pipe(Config.option),
+  identity: Config.String("LMCS_CLI_MAC_SIGN_IDENTITY").pipe(Config.option),
   appleApiKey: Config.String("APPLE_API_KEY").pipe(Config.option),
   appleApiKeyId: Config.String("APPLE_API_KEY_ID").pipe(Config.option),
   appleApiIssuer: Config.String("APPLE_API_ISSUER").pipe(Config.option),
@@ -331,7 +331,7 @@ const signMacArchiveContents = Effect.fn("signMacArchiveContents")(function* (in
     );
   }
   if (identity === "-") {
-    yield* Effect.log("[cli-archive] Signed ad hoc (no T3CODE_CLI_MAC_SIGN_IDENTITY).");
+    yield* Effect.log("[cli-archive] Signed ad hoc (no LMCS_CLI_MAC_SIGN_IDENTITY).");
     return;
   }
 

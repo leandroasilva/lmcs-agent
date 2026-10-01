@@ -111,14 +111,14 @@ function shellSingleQuote(value) {
 export function makeDevelopmentEnvironmentScript(environment) {
   const envEntries = [
     ["VITE_DEV_SERVER_URL", environment.VITE_DEV_SERVER_URL],
-    ["T3CODE_PORT", environment.T3CODE_PORT],
-    ["T3CODE_HOME", environment.T3CODE_HOME],
-    ["T3CODE_COMMIT_HASH", environment.T3CODE_COMMIT_HASH],
-    ["T3CODE_OTLP_TRACES_URL", environment.T3CODE_OTLP_TRACES_URL],
-    ["T3CODE_OTLP_EXPORT_INTERVAL_MS", environment.T3CODE_OTLP_EXPORT_INTERVAL_MS],
-    ["T3CODE_OTLP_HEADERS", environment.T3CODE_OTLP_HEADERS],
-    ["T3CODE_OTLP_PROTOCOL", environment.T3CODE_OTLP_PROTOCOL],
-    ["T3CODE_DESKTOP_APP_USER_MODEL_ID", APP_BUNDLE_ID],
+    ["LMCS_PORT", environment.LMCS_PORT],
+    ["LMCS_HOME", environment.LMCS_HOME],
+    ["LMCS_COMMIT_HASH", environment.LMCS_COMMIT_HASH],
+    ["LMCS_OTLP_TRACES_URL", environment.LMCS_OTLP_TRACES_URL],
+    ["LMCS_OTLP_EXPORT_INTERVAL_MS", environment.LMCS_OTLP_EXPORT_INTERVAL_MS],
+    ["LMCS_OTLP_HEADERS", environment.LMCS_OTLP_HEADERS],
+    ["LMCS_OTLP_PROTOCOL", environment.LMCS_OTLP_PROTOCOL],
+    ["LMCS_DESKTOP_APP_USER_MODEL_ID", APP_BUNDLE_ID],
   ].filter((entry) => typeof entry[1] === "string" && entry[1].trim().length > 0);
   return [
     ...envEntries.map(

@@ -1,5 +1,5 @@
-import { scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import type { DevicePlatform, ScopedThreadRef } from "@lmcstools/contracts";
+import { scopedThreadKey } from "@lmcstools/client/environment";
+import type { DevicePlatform, ScopedThreadRef } from "@lmcstools/core";
 import { create } from "zustand";
 
 export interface PreviewMiniPlayerPosition {

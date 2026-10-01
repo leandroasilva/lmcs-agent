@@ -18,7 +18,7 @@
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
 
-import type { UsageProviderKind } from "@lmcstools/contracts";
+import type { UsageProviderKind } from "@lmcstools/core";
 
 import {
   initialCodexScanState,

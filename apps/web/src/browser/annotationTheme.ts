@@ -1,4 +1,4 @@
-import type { DesktopPreviewAnnotationTheme } from "@lmcstools/contracts";
+import type { DesktopPreviewAnnotationTheme } from "@lmcstools/core";
 
 const readVariable = (styles: CSSStyleDeclaration, name: string, fallback: string): string =>
   styles.getPropertyValue(name).trim() || fallback;

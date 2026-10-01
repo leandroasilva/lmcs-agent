@@ -1,8 +1,8 @@
 import { ConnectionTraceId } from "./ConnectionTraceId";
 import { SymbolView } from "../../components/AppSymbol";
-import { connectionStatusText } from "@lmcstools/client-runtime/connection";
-import type { AtomCommandResult } from "@lmcstools/client-runtime/state/runtime";
-import { type EnvironmentId, resolveEnvironmentMachineKind } from "@lmcstools/contracts";
+import { connectionStatusText } from "@lmcstools/client/connection";
+import type { AtomCommandResult } from "@lmcstools/client/state/runtime";
+import { type EnvironmentId, resolveEnvironmentMachineKind } from "@lmcstools/core";
 import { useAtomValue } from "@effect/atom-react";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/unstable/reactivity";

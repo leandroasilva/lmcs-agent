@@ -1,10 +1,10 @@
-import { scopedThreadKey } from "@lmcstools/client-runtime/environment";
-import type { ScopedThreadRef } from "@lmcstools/contracts";
+import { scopedThreadKey } from "@lmcstools/client/environment";
+import type { ScopedThreadRef } from "@lmcstools/core";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
 
-import { normalizePreviewUrl } from "@lmcstools/shared/preview";
+import { normalizePreviewUrl } from "@lmcstools/core/preview";
 import { readPreparedConnection } from "~/state/session";
 
 import { isLocalLoopbackHost, normalizeHostname } from "./browser/browserTargetResolver";

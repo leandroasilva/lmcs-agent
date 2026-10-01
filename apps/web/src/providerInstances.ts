@@ -23,12 +23,12 @@ import {
   type ServerProviderModel,
   type ServerSettings,
   type ServerProviderState,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   normalizeProviderAccentColor,
   resolveProviderInstanceDisplayName,
   shouldShowInstanceBadge,
-} from "@lmcstools/client-runtime/state/provider-instance-display";
+} from "@lmcstools/client/state/provider-instance-display";
 
 export { normalizeProviderAccentColor, shouldShowInstanceBadge };
 

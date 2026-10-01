@@ -3,7 +3,7 @@ import {
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
-} from "@lmcstools/client-runtime/environment";
+} from "@lmcstools/client/environment";
 import * as Schema from "effect/Schema";
 import {
   defaultInstanceIdForDriver,
@@ -17,12 +17,12 @@ import {
   type ModelSelection,
   type PreviewAnnotationPayload,
   type ProviderOptionSelection,
-} from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
 import {
   collectAssistantCitations,
   serializeAssistantCitation,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 
 // The composer draft's `modelSelectionByProvider` and
 // `stickyModelSelectionByProvider` maps are keyed by `ProviderInstanceId`

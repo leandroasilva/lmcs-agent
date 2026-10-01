@@ -9,13 +9,13 @@ import {
   DesktopAppActivationResponse,
   type DesktopAppActivationPlatform,
   type DesktopAppActivationRequest,
-} from "@lmcstools/contracts";
-import { resolveDesktopAppControlAddress } from "@lmcstools/shared/desktopAppControl";
+} from "@lmcstools/core";
+import { resolveDesktopAppControlAddress } from "@lmcstools/core/desktopAppControl";
 import {
   HostProcessPlatform,
   HostProcessUserId,
   HostProcessWorkingDirectory,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
@@ -178,7 +178,7 @@ function sendDesktopAppActivationRequest(input: {
 }
 
 const appEnvironment = Config.all({
-  t3Home: Config.String("T3CODE_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
+  t3Home: Config.String("LMCS_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
   sshConnection: Config.String("SSH_CONNECTION").pipe(Config.option),
   sshTty: Config.String("SSH_TTY").pipe(Config.option),
 });

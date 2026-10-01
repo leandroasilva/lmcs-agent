@@ -1,5 +1,5 @@
-import type { ThreadId } from "@lmcstools/contracts";
-import { formatComposerContextReference } from "@lmcstools/shared/composerContextReferences";
+import type { ThreadId } from "@lmcstools/core";
+import { formatComposerContextReference } from "@lmcstools/core/composerContextReferences";
 import { toKindScopedComposerContextId } from "./composerContextReferences";
 
 export interface TerminalContextSelection {

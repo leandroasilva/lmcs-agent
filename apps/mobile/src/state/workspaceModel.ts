@@ -1,7 +1,7 @@
-import { type EnvironmentShellSummary } from "@lmcstools/client-runtime/state/shell";
-import { type NetworkStatus } from "@lmcstools/client-runtime/connection";
-import { type EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
-import type { EnvironmentId, ServerConfig } from "@lmcstools/contracts";
+import { type EnvironmentShellSummary } from "@lmcstools/client/state/shell";
+import { type NetworkStatus } from "@lmcstools/client/connection";
+import { type EnvironmentConnectionPhase } from "@lmcstools/client/connection";
+import type { EnvironmentId, ServerConfig } from "@lmcstools/core";
 
 import type { EnvironmentPresentation } from "./environments";
 

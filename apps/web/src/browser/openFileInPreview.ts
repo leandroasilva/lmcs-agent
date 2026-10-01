@@ -5,12 +5,9 @@ import type {
   PreviewOpenInput,
   PreviewSessionSnapshot,
   ScopedThreadRef,
-} from "@lmcstools/contracts";
-import { mediaFileReference } from "@lmcstools/client-runtime/media-reference";
-import {
-  type AtomCommandResult,
-  mapAtomCommandResult,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/core";
+import { mediaFileReference } from "@lmcstools/client/media-reference";
+import { type AtomCommandResult, mapAtomCommandResult } from "@lmcstools/client/state/runtime";
 import * as Cause from "effect/Cause";
 import * as Data from "effect/Data";
 import { AsyncResult } from "effect/unstable/reactivity";

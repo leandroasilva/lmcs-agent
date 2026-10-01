@@ -5,7 +5,7 @@ import {
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   type ProviderSendTurnInput,
   type RuntimeMode,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -14,8 +14,8 @@ import * as Path from "effect/Path";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as EffectAcpErrors from "effect-acp/errors";
-import type * as EffectAcpSchema from "effect-acp/schema";
+import * as EffectAcpErrors from "@lmcstools/providers/acp/errors";
+import type * as EffectAcpSchema from "@lmcstools/providers/acp/schema";
 
 import { resolveAttachmentPath } from "../../attachmentStore.ts";
 import {

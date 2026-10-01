@@ -1,9 +1,9 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off - Effect's symlink has no type argument, and Windows needs a junction to link without elevation.
 import * as NodeFSP from "node:fs/promises";
 
-import type { AntigravityAuthMethod, ProviderInstanceId } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@lmcstools/shared/nodeRuntime";
+import type { AntigravityAuthMethod, ProviderInstanceId } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { resolveNodeExecutable, nodeRuntimeUnavailableMessage } from "@lmcstools/core/nodeRuntime";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Encoding from "effect/Encoding";
@@ -14,7 +14,7 @@ import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as ChildProcess from "effect/unstable/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as AcpErrors from "effect-acp/errors";
+import * as AcpErrors from "@lmcstools/providers/acp/errors";
 
 import { collectUint8StreamText } from "../stream/collectUint8StreamText.ts";
 import type { AcpSpawnInput } from "./acp/AcpSessionRuntime.ts";

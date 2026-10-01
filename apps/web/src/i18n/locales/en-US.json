@@ -1,0 +1,3243 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "mixed": "Mixed",
+    "remove": "Remove",
+    "done": "Done",
+    "errorOccurred": "An error occurred.",
+    "tryAgain": "Try again.",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "continue": "Continue",
+    "saving": "Saving…",
+    "advanced": "Advanced",
+    "colorPicker": {
+      "instructions": "Use arrow keys to adjust the focused value. Hold Shift for larger steps. Use Home and End for the minimum and maximum. Press Tab to move between saturation and brightness.",
+      "planeAria": "{{label}} saturation and brightness",
+      "saturationAria": "{{label}} saturation",
+      "brightnessAria": "{{label}} brightness",
+      "saturation": "Saturation",
+      "brightness": "Brightness",
+      "axisPercent": "{{axis}} {{percent}}%"
+    },
+    "wizard": {
+      "setupProgress": "Setup progress",
+      "stepAria": "{{step}}, step {{number}}",
+      "stepSummaryAria": "{{step}}, step {{number}}, {{summary}}"
+    }
+  },
+  "palette": {
+    "overlay": {
+      "command": "Command palette",
+      "filePicker": "File picker"
+    },
+    "current": "Current",
+    "searchingThreadMessages": "Searching thread messages…",
+    "location": {
+      "local": "Local",
+      "localNamed": "{{label}} (Local)",
+      "remote": "Remote"
+    },
+    "environment": {
+      "thisDevice": "This device"
+    },
+    "footer": {
+      "navigate": "Navigate"
+    },
+    "group": {
+      "actions": "Actions",
+      "directories": "Directories",
+      "environments": "Environments",
+      "projects": "Projects",
+      "recentThreads": "Recent Threads",
+      "settings": "Settings",
+      "sources": "Sources",
+      "threads": "Threads"
+    },
+    "item": {
+      "untitledThread": "Untitled thread",
+      "linkedThread": "Linked thread",
+      "archivedThread": "Archived thread",
+      "currentThread": "Current thread"
+    },
+    "placeholder": {
+      "root": "Search commands, projects, and threads...",
+      "rootBrowse": "Enter project path (e.g. ~/projects/my-app)",
+      "submenu": "Search...",
+      "submenuBrowse": "Enter path (e.g. ~/projects/my-app)"
+    },
+    "action": {
+      "addProject": "Add project",
+      "changeAppearance": "Change appearance",
+      "changeTheme": "Change theme",
+      "copyPrLink": "Copy PR link",
+      "copyThreadId": "Copy thread ID",
+      "gitUrlDescription": "Clone from a remote URL",
+      "goToFile": "Go to file",
+      "linkPullRequest": "Link pull request to thread",
+      "localFolder": "Local folder",
+      "localFolderDescription": "Browse a folder on disk",
+      "newThreadInPrefix": "New thread in",
+      "newThreadInSubmenu": "New thread in...",
+      "openPullRequests": "Open pull requests",
+      "openSettings": "Open settings",
+      "openUsage": "Open usage",
+      "openWslFolder": "Open WSL folder",
+      "projectSettings": "Project settings",
+      "providerClone": "Clone {{provider}} {{hint}}",
+      "providerRepository": "{{provider}} repository",
+      "providerSetupHint": "Open Settings -> Source Control to configure this provider.",
+      "searchProjectContents": "Search project contents",
+      "setupRequired": "Setup Required",
+      "showLinkedPullRequests": "Show linked pull requests",
+      "toggleThemeEditor": "Toggle theme editor"
+    },
+    "theme": {
+      "forMode": "For {{mode}} mode"
+    },
+    "provider": {
+      "url": "Git URL",
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "forgejo": "Forgejo / Gitea",
+      "bitbucket": "Bitbucket",
+      "azure-devops": "Azure DevOps"
+    },
+    "clone": {
+      "urlInputPlaceholder": "Enter Git clone URL",
+      "providerInputPlaceholder": "Enter {{provider}} repository ({{hint}})",
+      "providerUnavailableHint": "Provider status unavailable. Open Settings -> Source Control and rescan.",
+      "providerNotAuthenticatedHint": "{{provider}} is not authenticated. Open Settings -> Source Control for setup guidance.",
+      "selectDestination": "Select where to clone",
+      "repositoryHeader": "Repository",
+      "openInFileManager": "Open in {{fileManager}}",
+      "emptyUrlHint": "Enter a Git clone URL and press Enter to continue.",
+      "emptyRepositoryHint": "Enter a repository path and press Enter to look it up.",
+      "emptyDestinationHint": "Choose a destination path and press Enter to clone.",
+      "emptyCreateFolderHint": "Press Enter to create this folder and add it as a project.",
+      "relativePathRequiresProject": "Relative paths require an active project."
+    },
+    "submit": {
+      "add": "Add",
+      "clone": "Clone",
+      "createAndAdd": "Create & Add",
+      "createAndClone": "Create & Clone",
+      "lookup": "Lookup",
+      "working": "Working",
+      "cloning": "Cloning",
+      "select": "Select"
+    },
+    "filePicker": {
+      "openFile": "Open file",
+      "searchPlaceholder": "Search files…",
+      "noProject": "Open a project to search its files.",
+      "searching": "Searching workspace files…",
+      "indexing": "Indexing workspace files…",
+      "noMatches": "No matching files.",
+      "noFiles": "No files found."
+    },
+    "contentSearch": {
+      "placeholder": "Search project contents…",
+      "aria": "Search file contents in {{project}}",
+      "searchIn": "Search in {{project}}",
+      "matchCase": "Match case",
+      "matchWholeWord": "Match whole word",
+      "useRegex": "Use regular expression",
+      "searching": "Searching…",
+      "invalidRegex": "Invalid regular expression",
+      "results": "{{results}} results in {{files}} files",
+      "noResults": "No results found.",
+      "typeToSearch": "Type to search across your project."
+    }
+  },
+  "sidebar": {
+    "action": {
+      "snooze": "Snooze thread",
+      "discardDraft": "Discard draft",
+      "dismissWoke": "Dismiss Woke notification",
+      "unpinThread": "Unpin thread",
+      "wakeThreadNow": "Wake thread now",
+      "unsettleThread": "Un-settle thread",
+      "settleThread": "Settle thread",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "settle": "Settle",
+      "unsettle": "Un-settle",
+      "wake": "Wake"
+    },
+    "status": {
+      "working": "Working",
+      "monitoring": "Monitoring",
+      "approval": "Approval",
+      "input": "Input",
+      "failed": "Failed",
+      "woke": "Woke"
+    },
+    "pill": {
+      "working": "Working",
+      "monitoring": "Monitoring",
+      "connecting": "Connecting",
+      "completed": "Completed",
+      "approval": "Pending Approval",
+      "input": "Awaiting Input",
+      "planReady": "Plan Ready"
+    },
+    "worktree": {
+      "withBranch": "Worktree: {{path}} ({{branch}})",
+      "plain": "Worktree: {{path}}"
+    },
+    "terminalProcessCount_one": "{{count}} terminal process running",
+    "terminalProcessCount_other": "{{count}} terminal processes running",
+    "terminalRunning": "Terminal process running",
+    "draft": {
+      "attachmentCount_one": "{{count}} attachment",
+      "attachmentCount_other": "{{count}} attachments"
+    },
+    "snoozePreset": {
+      "hour": "In 1 hour",
+      "three-hours": "In 3 hours",
+      "evening": "This evening",
+      "tomorrow": "Tomorrow",
+      "next-week": "Next week",
+      "custom": "Custom…"
+    },
+    "section": {
+      "pinned": "Pinned",
+      "active": "Active",
+      "snoozed": "Snoozed",
+      "snoozedCount_one": "Snoozed ({{count}})",
+      "snoozedCount_other": "Snoozed ({{count}})",
+      "settled": "Settled",
+      "settledCount_one": "Settled ({{count}})",
+      "settledCount_other": "Settled ({{count}})"
+    },
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more",
+    "empty": {
+      "noProjects": "No projects yet",
+      "addProject": "Add project",
+      "noThreads": "No threads yet",
+      "noThreadsInProject": "No threads in {{project}} yet"
+    },
+    "search": {
+      "noThreads": "No threads found"
+    },
+    "searchResults": "Thread search results",
+    "projectScope": {
+      "all": "All projects",
+      "filter": "Filter threads by project",
+      "filterNamed": "Filter threads by project: {{project}}",
+      "searchAria": "Search projects",
+      "searchPlaceholder": "Search projects...",
+      "noMatching": "No matching projects.",
+      "settingsFor": "Project settings for {{project}}"
+    },
+    "chrome": {
+      "goToThreads": "Go to threads",
+      "settings": "Settings",
+      "pullRequests": "Pull Requests",
+      "usage": "Usage"
+    },
+    "threadTitle": "Thread title",
+    "unsentDraft": "Unsent draft",
+    "pinned": "Pinned",
+    "branchMismatch": "You're currently checked out on another branch.",
+    "regeneratingTitle": "Regenerating title",
+    "bulk": {
+      "settle_one": "Settle ({{count}})",
+      "settle_other": "Settle ({{count}})",
+      "snooze_one": "Snooze ({{count}})",
+      "snooze_other": "Snooze ({{count}})",
+      "markUnread_one": "Mark unread ({{count}})",
+      "markUnread_other": "Mark unread ({{count}})",
+      "delete_one": "Delete ({{count}})",
+      "delete_other": "Delete ({{count}})",
+      "archive_one": "Archive ({{count}})",
+      "archive_other": "Archive ({{count}})",
+      "unpin_one": "Unpin ({{count}})",
+      "unpin_other": "Unpin ({{count}})",
+      "regenerating_one": "Regenerating… ({{count}})",
+      "regenerating_other": "Regenerating… ({{count}})",
+      "regenerateTitles_one": "Regenerate titles ({{count}})",
+      "regenerateTitles_other": "Regenerate titles ({{count}})"
+    },
+    "threadAction": {
+      "newThreadOnBranch": "New thread on {{branch}}",
+      "unpin": "Unpin thread",
+      "pin": "Pin thread",
+      "unsettle": "Un-settle thread",
+      "settle": "Settle thread",
+      "wake": "Wake thread",
+      "snooze": "Snooze",
+      "rename": "Rename thread",
+      "regenerating": "Regenerating…",
+      "regenerateTitle": "Regenerate title",
+      "markUnread": "Mark unread",
+      "showAllProjects": "Show all projects",
+      "filterBy": "Filter by {{project}}",
+      "autoSettle": "Auto-settle behavior",
+      "autoSettleEnabled": "Enabled",
+      "autoSettleDisabled": "Disabled",
+      "copy": "Copy",
+      "copyPath": "Path",
+      "copyBranch": "Branch",
+      "copyThreadId": "Thread ID",
+      "projectSettings": "Project settings",
+      "archive": "Archive thread",
+      "delete": "Delete"
+    },
+    "confirm": {
+      "deleteBulk_one": "Delete {{count}} thread?",
+      "deleteBulk_other": "Delete {{count}} threads?",
+      "deleteBulkDescription": "This permanently clears conversation history for these threads.",
+      "archive": "Archive thread \"{{title}}\"?",
+      "delete": "Delete thread \"{{title}}\"?",
+      "deleteDescription": "This permanently clears conversation history for this thread."
+    }
+  },
+  "chat": {
+    "actions": {
+      "submitting": "Submitting...",
+      "submit": "Submit",
+      "next": "Next",
+      "nextQuestion": "Next question",
+      "submitAnswers": "Submit answers",
+      "submitAnswer": "Submit answer",
+      "stopGeneration": "Stop generation",
+      "previousQuestion": "Previous question",
+      "previous": "Previous",
+      "sending": "Sending...",
+      "refine": "Refine",
+      "implement": "Implement",
+      "implementationActions": "Implementation actions",
+      "implementInNewThread": "Implement in a new thread",
+      "environmentDisconnected": "Environment disconnected",
+      "connecting": "Connecting",
+      "preparingWorktree": "Preparing worktree",
+      "sendingShort": "Sending",
+      "queueMessage": "Queue message",
+      "sendMessage": "Send message"
+    },
+    "runtimeMode": {
+      "supervised": "Supervised",
+      "supervisedDescription": "Ask before commands and file changes.",
+      "autoAcceptEdits": "Auto-accept edits",
+      "autoAcceptEditsDescription": "Auto-approve edits, ask before other actions.",
+      "auto": "Auto",
+      "autoDescription": "Supported providers approve routine actions; others still ask.",
+      "fullAccess": "Full access",
+      "fullAccessDescription": "Allow commands and edits without prompts."
+    },
+    "controls": {
+      "moreAria": "More composer controls",
+      "mode": "Mode",
+      "modeChat": "Chat",
+      "modePlan": "Plan",
+      "access": "Access",
+      "build": "Build",
+      "runtimeMode": "Runtime mode",
+      "planModeTooltip": "Plan mode — click to return to normal build mode",
+      "defaultModeTooltip": "Default mode — click to enter plan mode"
+    },
+    "timeline": {
+      "loadingMessages": "Loading messages...",
+      "syncingMessages": "Syncing messages...",
+      "empty": "Send a message to start the conversation."
+    },
+    "composer": {
+      "placeholderDisconnected": "Ask for changes, send follow-ups, or attach images",
+      "attachmentUnsupported": "Update this server to send files with question answers",
+      "reattachOne": "Attach the interrupted file again or remove it",
+      "reattachOther": "Attach the interrupted files again or remove them",
+      "compactUnavailable": "Compacting is unavailable right now",
+      "selectModelRequired": "Select at least one model.",
+      "openProviderSettings": "Open provider settings",
+      "noProvider": "No provider available",
+      "writeCustomAnswer": "Write custom answer",
+      "expandAria": "Expand composer",
+      "chooseOption": "Choose an option above",
+      "typeOwnAnswer": "Type your own answer, or leave this blank to use the selected option",
+      "enableProvider": "Enable a provider in Settings",
+      "askAnythingShort": "Ask anything...",
+      "resolveApproval": "Resolve this approval request to continue",
+      "planFeedback": "Add feedback to refine the plan, or leave this blank to implement it",
+      "chooseProject": "Choose a project above to start a thread",
+      "enableProviderSend": "Enable a provider in Settings to send a message",
+      "askAnythingFull": "Ask anything, @tag files/folders, $use skills, or / for commands",
+      "draftAttachmentAria": "Draft attachment may not persist",
+      "draftAttachmentTooltip": "Draft attachment could not be saved locally and may be lost on navigation.",
+      "attachAgain": "Attach again",
+      "removeToSend": "Remove to send",
+      "attachFiles": "Attach files"
+    },
+    "empty": {
+      "noActiveThread": "No active thread",
+      "pickThreadTitle": "Pick a thread to continue",
+      "pickThreadDescription": "Select an existing thread or create a new one to get started."
+    },
+    "error": {
+      "dismiss": "Dismiss error"
+    },
+    "feedback": {
+      "copyId": "Copy ID",
+      "dismissLabel": "Dismiss feedback notice"
+    },
+    "header": {
+      "breadcrumbAria": "Thread breadcrumb",
+      "newThreadIn": "New thread in {{project}}",
+      "threadTitle": "Thread title",
+      "threadActions": "Thread actions for {{title}}",
+      "moreActions": "More header actions",
+      "actionsMenu": "Header actions"
+    },
+    "menu": {
+      "switchModel": "Switch response model for this thread",
+      "switchToPlan": "Switch this thread into plan mode",
+      "switchToBuild": "Switch this thread back to normal build mode",
+      "runProviderCommand": "Run provider command",
+      "runProviderSkill": "Run provider skill",
+      "scopeSkill": "{{scope}} skill",
+      "noSkills": "No skills found. Try / to browse provider commands.",
+      "noPrUnavailable": "Pull requests are not available for this project.",
+      "noPrUnreadable": "Pull requests could not be read for this project.",
+      "noPrMatches": "No pull request matches {{query}}.",
+      "noPrFound": "No pull requests found in this repository.",
+      "noPaths": "No matching files or folders.",
+      "noCommands": "No matching command."
+    },
+    "modelPicker": {
+      "searchPlaceholder": "Search models...",
+      "noModels": "No models found",
+      "setUpProvider": "Set up {{displayName}}",
+      "openProviderSetup": "Open provider setup",
+      "chooseModel": "Choose model",
+      "chooseModels": "Choose models",
+      "newModelAria": "New model",
+      "badgeNew": "New",
+      "badgeUnavailable": "Unavailable",
+      "addFavorite": "Add to favorites",
+      "removeFavorite": "Remove from favorites",
+      "statusUnavailable": "Unavailable",
+      "statusLimited": "Limited",
+      "statusNotReady": "Not ready",
+      "disabledInSettings": "Disabled in settings.",
+      "newBadge": "New",
+      "newAria": "new",
+      "providers": "Providers",
+      "favorites": "Favorites"
+    },
+    "usage": {
+      "toggleAccountAria": "Toggle account label visibility",
+      "revealAccount": "Click to reveal account",
+      "hideAccount": "Click to hide account",
+      "accounts_one": "{{count}} account",
+      "accounts_other": "{{count}} accounts",
+      "title": "Usage limits",
+      "dismiss": "Dismiss usage limits"
+    },
+    "stash": {
+      "openAria": "Stashed prompts: {{total}}. Open stash.",
+      "label": "Stash",
+      "emptyCountLabel": "(empty)",
+      "attachmentCount_one": "({{count}} attachment)",
+      "attachmentCount_other": "({{count}} attachments)",
+      "fileCount_one": "({{count}} file)",
+      "fileCount_other": "({{count}} files)",
+      "imageCount_one": "({{count}} image)",
+      "imageCount_other": "({{count}} images)",
+      "close": "Close stash",
+      "listAria": "Stashed prompts",
+      "empty": "Nothing stashed yet.",
+      "emptyWithShortcut": "Nothing stashed yet. Press {{shortcut}} with a prompt in the composer to stash it.",
+      "restoreAria": "Restore stashed prompt: {{prompt}}",
+      "savingImages_one": "saving {{count}} image…",
+      "savingImages_other": "saving {{count}} images…",
+      "imagesDropped_one": "{{count}} image dropped",
+      "imagesDropped_other": "{{count}} images dropped",
+      "delete": "Delete stashed prompt"
+    },
+    "tasks": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Completed",
+      "label": "Tasks",
+      "expandAria": "Tasks: {{completed}} of {{total}} complete. Current task: {{step}}",
+      "collapseAria": "Collapse tasks: {{completed}} of {{total}} complete. Current task: {{step}}",
+      "listAria": "Task list. {{completed}} of {{total}} complete.",
+      "now": "now"
+    }
+  },
+  "settings": {
+    "rootTitle": "Settings",
+    "breadcrumbAria": "Settings breadcrumb",
+    "paletteResultDescription": "Settings · {{section}}",
+    "restoreDeviceDefaults": "Restore device defaults",
+    "scopeNotice": {
+      "requiresEnvironmentChoose": "{{title}} requires a supporting environment. Choose one to continue.",
+      "requiresEnvironmentConnect": "{{title}} requires a supporting environment. Connect or update an environment to continue.",
+      "notAvailableForTarget": "{{title}} is not available for the selected target. Choose its owning scope to continue.",
+      "reconnectToChange": "Reconnect {{label}} to change its settings."
+    },
+    "search": {
+      "placeholder": "Search",
+      "aria": "Search settings",
+      "clearAria": "Clear settings search",
+      "empty": "No settings found"
+    },
+    "scope": {
+      "applyingFor": "Applying settings for",
+      "on": "on",
+      "across": "across",
+      "environmentScopeAria": "Environment scope",
+      "projectScopeAria": "Project scope",
+      "unavailableEnvironment": "Unavailable environment",
+      "allEnvironments": "All environments",
+      "offline": "Offline",
+      "unavailableProject": "Unavailable project",
+      "allProjects": "All projects",
+      "environmentFallback": "Environment",
+      "openAllEnvironments": "Open all environments",
+      "unavailableSelection": "Unavailable selection",
+      "allCheckouts": "All checkouts",
+      "reasons": {
+        "projectRequired": "Select a project to choose one of its checkouts.",
+        "environmentMissing": "This environment is no longer available.",
+        "projectMissing": "This project is no longer available.",
+        "checkoutMissing": "This checkout is no longer available in the selected project and environment.",
+        "noCheckoutOnEnvironment": "This project has no checkout on this environment.",
+        "checkoutEnvironmentMissing": "This checkout's environment is no longer available."
+      }
+    },
+    "scoped": {
+      "reasons": {
+        "environmentWide": "This setting is environment-wide and cannot be overridden by a project.",
+        "connectToSaveProjectOverride": "Connect the selected checkouts, or update their environments, to save a project override.",
+        "connectToSave": "Connect {{target}} to save this setting.",
+        "anEnvironment": "an environment",
+        "connectToResetOverride": "Connect the selected checkouts, or update their environments, to reset this override.",
+        "connectToResetOverrides": "Connect the environments to reset these overrides."
+      }
+    },
+    "scopedModel": {
+      "unavailable": "This model is unavailable on {{label}}. Select that environment to choose its model separately.",
+      "selectedEnvironmentFallback": "a selected environment"
+    },
+    "inheritance": {
+      "writingStyle": {
+        "repoConventions": "Repository conventions",
+        "conventionalCommits": "Conventional Commits",
+        "custom": "Custom instructions"
+      },
+      "value": {
+        "lastSelected": "Last selected",
+        "never": "Never",
+        "automatic": "Automatic",
+        "textGenerationModel": "Text generation model",
+        "inherit": "Inherit",
+        "notSet": "Not set",
+        "on": "On",
+        "off": "Off",
+        "empty": "Empty",
+        "custom": "Custom",
+        "dayCount_one": "{{count}} day",
+        "dayCount_other": "{{count}} days",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items"
+      },
+      "layer": {
+        "project": "Project",
+        "environment": "Environment",
+        "default": "Default"
+      },
+      "inherits": "Inherits",
+      "overrideCount_one": "{{count}} project override",
+      "overrideCount_other": "{{count}} project overrides",
+      "showSourceAria": "{{summary}}. Show where this value comes from",
+      "overriddenBy": "Overridden by",
+      "resetIt": "Reset it",
+      "resetAll": "Reset all"
+    },
+    "loadBalancing": {
+      "off": "Off",
+      "enableAria": "Automatically balance load",
+      "description": "New threads in shared projects start on the machine with the most free CPU and memory, weighted by each machine's preference.",
+      "preferenceAria": "{{label}} load preference",
+      "preference": {
+        "prefer": "Prefer",
+        "normal": "Normal",
+        "lessOften": "Less often",
+        "manualOnly": "Manual only"
+      }
+    },
+    "githubRouting": {
+      "off": "Off",
+      "description": "Machines you trust here can read PR data through each other's GitHub access. Enable both machines. Read and act may use broader permissions than the machine that owns them. This applies only to this device.",
+      "routingAria": "{{label}} GitHub routing",
+      "option": {
+        "off": "Off",
+        "read": "Read PRs",
+        "readWrite": "Read and act"
+      },
+      "summary": {
+        "read": "read PRs",
+        "readWrite": "read and act"
+      }
+    },
+    "localEnvironment": {
+      "errorFallback": "Couldn't change this setting.",
+      "descriptionOn": "Run agents on this computer. Turn off to use LMCS Code only with remote environments.",
+      "descriptionOff": "Turned off. Agents only run in remote environments.",
+      "aria": "Local environment",
+      "confirmOffTitle": "Turn off local environment?",
+      "confirmOnTitle": "Turn on local environment?",
+      "confirmOffDescription": "LMCS Code will restart without running a server on this computer. Any agents and terminals running here will stop, and other devices will no longer be able to connect to this computer. Your projects, history, and remote environments are unaffected.",
+      "confirmOnDescription": "LMCS Code will restart and start running a server on this computer again.",
+      "restarting": "Restarting…",
+      "restartAndTurnOff": "Restart and turn off",
+      "restartAndTurnOn": "Restart and turn on"
+    },
+    "fontPicker": {
+      "default": "default",
+      "searchPlaceholder": "Search fonts…",
+      "empty": "No fonts found."
+    },
+    "environmentIcon": {
+      "submenu": "Icon",
+      "detected": "detected",
+      "default": "default",
+      "lock": {
+        "connect": "Connect to this environment to change its icon.",
+        "tooOld": "This environment's server is too old to keep an icon. Update it to choose one.",
+        "accessDenied": "Your session on this environment cannot change its settings."
+      },
+      "kind": {
+        "server": "Server",
+        "cloud": "Cloud VM",
+        "linux": "Linux/WSL",
+        "desktop": "Desktop",
+        "laptop": "Laptop",
+        "macMini": "Mini PC",
+        "macStudio": "Workstation"
+      }
+    },
+    "serverUpdate": {
+      "update": "Update",
+      "updateAll": "Update all",
+      "copyCommand": "Copy update command",
+      "actionForAria": "{{action}} for {{label}}",
+      "desktopRequired": "Update the desktop app on that machine to update this server.",
+      "confirmDesktopSingle": "Update the LMCS Code desktop app that runs the {{label}}? It will close and relaunch on that machine.",
+      "confirmDesktopBatch": "Update the LMCS Code desktop apps on {{labels}}? They will close and relaunch on those machines.",
+      "stage": {
+        "downloading": "Downloading…",
+        "restarting": "Restarting…"
+      }
+    },
+    "sections": {
+      "projects": "Project",
+      "general": "General",
+      "appearance": "Appearance",
+      "keybindings": "Keybindings",
+      "snap-shot": "SnapShots",
+      "providers": "Providers",
+      "integrations": "Integrations",
+      "source-control": "Source Control",
+      "storage": "Storage",
+      "connections": "Connections",
+      "archived": "Archive",
+      "diagnostics": "Diagnostics",
+      "open-source-licenses": "Open source licenses"
+    },
+    "general": {
+      "language": {
+        "sectionTitle": "Language",
+        "title": "Interface language",
+        "description": "Choose the language used across the interface. Saved on this device."
+      },
+      "autoSettleDaysAria": "Days of inactivity before auto-settle",
+      "legacyFeatures": {
+        "title": "Legacy features",
+        "planModeDescription": "Restore Build/Plan, /plan, /default, and Shift+Tab. Off uses build mode.",
+        "planModeAria": "Plan mode (legacy)",
+        "contextWindowDescription": "Shows context window usage as a circular indicator in the composer.",
+        "contextWindowAria": "Context window indicator (legacy)",
+        "sidebarDescription": "Restore per-project thread trees instead of the default flat sidebar.",
+        "sidebarAria": "Sidebar (legacy)"
+      },
+      "sections": {
+        "organization": "Organization",
+        "behavior": "Behavior",
+        "projectsAndThreads": "Projects & threads",
+        "confirmations": "Confirmations",
+        "textGeneration": "Text generation",
+        "about": "About"
+      },
+      "projectGrouping": {
+        "description": "Combine matching repositories across environments.",
+        "resetLabel": "project grouping",
+        "aria": "Project grouping"
+      },
+      "autoSettleMerged": {
+        "description": "Settle a thread when its pull request merges. Closed pull requests still settle automatically.",
+        "resetLabel": "auto-settle on merge",
+        "aria": "Auto-settle merged threads"
+      },
+      "autoSettleInactive": {
+        "description": "Sidebar threads with no activity for this long settle automatically.",
+        "resetLabel": "auto-settle",
+        "aria": "Auto-settle inactive threads"
+      },
+      "daysBeforeAutoSettle": {
+        "description": "Any new activity un-settles a thread automatically."
+      },
+      "inAppNotifications": {
+        "description": "Show a toast when another thread finishes, fails, or needs input or approval while this app has focus.",
+        "aria": "In-app notifications"
+      },
+      "diffWhitespace": {
+        "description": "Set whether the diff panel ignores whitespace-only edits by default.",
+        "resetLabel": "diff whitespace changes",
+        "aria": "Hide whitespace changes by default"
+      },
+      "diffFileState": {
+        "description": "Start with files expanded or collapsed when opening diffs or a pull request's Code tab.",
+        "resetLabel": "default diff file state",
+        "aria": "Default diff file state",
+        "expanded": "Expanded",
+        "collapsed": "Collapsed"
+      },
+      "proactivePanels": {
+        "description": "Open linked pull requests first. Otherwise, open the working tree diff for changes to at least 3 files or 50 lines.",
+        "resetLabel": "proactive panels",
+        "aria": "Proactive panels"
+      },
+      "skillsSlashMenu": {
+        "description": "Also include skills in the / command menu. Skills always appear when you type $.",
+        "resetLabel": "skills in slash menu",
+        "aria": "Show skills in slash menu"
+      },
+      "composerRichText": {
+        "description": "Show formatted Markdown as you type.",
+        "resetLabel": "rich text composer",
+        "aria": "Rich text composer"
+      },
+      "composerCollapse": {
+        "description": "Rest the composer of an existing thread into a single line when you scroll the conversation. Focus the composer or start typing to expand it again.",
+        "resetLabel": "collapse composer on scroll",
+        "aria": "Collapse composer on scroll"
+      },
+      "sendShortcut": {
+        "description": "Choose when Enter sends a prompt or inserts a new line",
+        "resetLabel": "send shortcut",
+        "aria": "Send shortcut",
+        "options": {
+          "modEnterMultiline": "{{modifier}} + Enter for multiline prompts",
+          "modEnter": "{{modifier}} + Enter always"
+        }
+      },
+      "followUp": {
+        "descriptionBase": "Queue follow-ups while the agent runs or steer the current run.",
+        "descriptionMultiline": "{{base}} Press {{modifier}} + Enter for single-line prompts or {{modifier}} + Shift + Enter for multiline prompts to do the opposite for one message.",
+        "descriptionModEnter": "{{base}} Press {{modifier}} + Shift + Enter to do the opposite for one message.",
+        "descriptionEnter": "{{base}} Press {{modifier}} + Enter to do the opposite for one message.",
+        "resetLabel": "follow-up behavior",
+        "aria": "Follow-up behavior",
+        "options": {
+          "queue": "Queue",
+          "steer": "Steer"
+        }
+      },
+      "providerUpdateChecks": {
+        "description": "Check installed provider CLIs for newer available versions.",
+        "resetLabel": "provider update checks",
+        "aria": "Check provider versions"
+      },
+      "continueThreads": {
+        "description": "Automatically resume interrupted threads after an update, crash, or machine restart on the selected environments. Update older servers first.",
+        "unsupported": "All selected connected environments must support restart continuation.",
+        "resetLabel": "continue threads after restarts",
+        "aria": "Continue threads after restarts"
+      },
+      "worktreesOrigin": {
+        "description": "Creates the worktree from the latest matching branch on origin instead of your local branch.",
+        "resetLabel": "new worktrees start from origin",
+        "aria": "Start new worktrees from origin by default"
+      },
+      "projectBaseDir": {
+        "description": "Leave empty to use \"~/\" when the Add Project browser opens.",
+        "resetLabel": "add project base directory",
+        "aria": "Add project base directory"
+      },
+      "unpinConfirmation": {
+        "description": "Ask before unpinning a thread from the pinned section.",
+        "resetLabel": "unpin confirmation",
+        "aria": "Confirm thread unpinning"
+      },
+      "archiveConfirmation": {
+        "description": "Require a second click on the inline archive action before a thread is archived.",
+        "resetLabel": "archive confirmation",
+        "aria": "Confirm thread archiving"
+      },
+      "deleteConfirmation": {
+        "description": "Ask before deleting a thread and its chat history.",
+        "resetLabel": "delete confirmation",
+        "aria": "Confirm thread deletion"
+      },
+      "textGeneration": {
+        "description": "Used for thread titles and other generated text on connected devices with this provider. Source control can override it.",
+        "resetLabel": "text generation model",
+        "connectPrompt": "Connect an environment to choose its text generation model.",
+        "noProviders": "No text generation providers available.",
+        "notSavedTitle": "Text generation model not saved"
+      },
+      "diagnosticsRow": {
+        "descriptionSingle": "Inspect processes, resource use, and logs on this environment.",
+        "descriptionMulti": "Inspect processes, resource use, and logs on one environment at a time.",
+        "button": "View diagnostics"
+      },
+      "licensesRow": {
+        "description": "Notices for dependencies, assets, and optional tools used by LMCS Code.",
+        "button": "View licenses"
+      },
+      "about": {
+        "version": "Version",
+        "updateAvailable": "Update available.",
+        "currentVersion": "Current version of the application.",
+        "download": "Download",
+        "install": "Install",
+        "checking": "Checking…",
+        "downloading": "Downloading…",
+        "upToDate": "Up to Date",
+        "checkForUpdates": "Check for Updates",
+        "updateTrack": "Update track",
+        "updateTrackDescription": "Use stable releases or nightly builds. Switch back anytime.",
+        "updateTrackHostedDescription": "Switches the hosted app release channel.",
+        "channelStable": "Stable",
+        "channelNightly": "Nightly",
+        "channelLatest": "Latest",
+        "couldNotChangeTrack": "Could not change update track",
+        "trackChangeFailed": "Update track change failed.",
+        "couldNotDownload": "Could not download update",
+        "downloadFailed": "Download failed.",
+        "couldNotConfirm": "Could not confirm update",
+        "confirmFailed": "Update confirmation failed.",
+        "couldNotInstall": "Could not install update",
+        "installFailed": "Install failed.",
+        "couldNotCheck": "Could not check for updates",
+        "checkFailed": "Update check failed.",
+        "autoUpdatesUnavailable": "Automatic updates are not available in this build."
+      },
+      "tokenStreamingDialog": {
+        "title": "Token by token is a worse experience",
+        "description": "Token streaming repaints the message on every delta. It is slower, harder to read, and costs more CPU on every connected device. This mode stays only for backwards compatibility. Use paragraph streaming instead.",
+        "useToken": "Use token by token",
+        "useParagraphs": "Use paragraphs"
+      },
+      "responseStreaming": {
+        "options": {
+          "turn": "Wait for the full response",
+          "paragraph": "Show finished paragraphs",
+          "token": "Token by token (legacy)"
+        },
+        "descriptions": {
+          "turn": "Text appears once the agent finishes its turn.",
+          "paragraph": "Each paragraph or code block appears as soon as it is complete.",
+          "token": "Every token repaints the answer as it arrives. Slower and harder to read. Thinking traces still arrive a paragraph at a time."
+        },
+        "mixed": "The selected targets use different streaming modes.",
+        "resetLabel": "response streaming",
+        "aria": "Response streaming"
+      },
+      "timeFormat": {
+        "options": {
+          "locale": "System default",
+          "12-hour": "12-hour",
+          "24-hour": "24-hour"
+        },
+        "description": "System default follows your browser or OS clock preference.",
+        "resetLabel": "time format",
+        "aria": "Timestamp format"
+      },
+      "diffLayout": {
+        "options": {
+          "stacked": "Stacked",
+          "split": "Split"
+        },
+        "description": "Show diffs stacked or side by side. The toggle in the diff toolbar changes this too.",
+        "resetLabel": "diff layout",
+        "aria": "Diff layout"
+      },
+      "quitShortcut": {
+        "options": {
+          "direct": "Direct",
+          "hold": "Hold",
+          "double-click": "Double press"
+        },
+        "description": "Hold mode also quits on two quick presses.",
+        "resetLabel": "quit shortcut behavior",
+        "aria": "Quit shortcut behavior"
+      },
+      "backgroundActivity": {
+        "profiles": {
+          "balanced": "Balanced",
+          "performance": "Performance",
+          "battery-saver": "Battery saver",
+          "advanced": "Advanced"
+        },
+        "profileDescriptions": {
+          "balanced": "Pauses probes for idle clients, locked hosts, or low power mode.",
+          "performance": "Allows scoped background probes while any subscribed client remains connected.",
+          "battery-saver": "Also pauses background probes when the host or client is on battery."
+        },
+        "overrides": {
+          "pauseWhenHostLocked": "Pause when host is locked",
+          "pauseWhenHostLowPower": "Pause on host low power",
+          "pauseWhenClientLowPower": "Pause on client low power",
+          "pauseWhenOnBattery": "Pause on battery"
+        },
+        "advancedDescription": "Uses custom intervals.",
+        "policyTooltip": "This shared policy gates background work such as Git refreshes and provider health probes after their individual intervals elapse.",
+        "resetLabel": "background activity",
+        "profileAria": "Background activity profile",
+        "advancedOneEnvironment": "{{label}} (one environment)",
+        "configureAria": "Configure advanced background activity",
+        "configureTooltip": "Configure background activity",
+        "advancedSharedPolicyDescription": "Uses custom intervals. Shared policy: {{policy}}.",
+        "dialog": {
+          "title": "Background Activity",
+          "description": "Tune the shared power policy and the background intervals that feed it.",
+          "sharedPolicy": "Shared policy",
+          "sharedPolicyDescription": "Controls whether background work may run after a subscribed interval fires.",
+          "sharedPolicyAria": "Shared background policy",
+          "gitFetchDescription": "Refresh remote branch status in the background.",
+          "decreaseGitFetch": "Decrease Git fetch interval",
+          "gitFetchInput": "Git fetch interval in seconds",
+          "increaseGitFetch": "Increase Git fetch interval",
+          "seconds": "seconds",
+          "providerHealth": "Provider health interval",
+          "providerHealthDescription": "Refresh provider availability, versions, auth state, and model metadata.",
+          "decreaseProviderHealth": "Decrease provider health interval",
+          "providerHealthInput": "Provider health interval in seconds",
+          "increaseProviderHealth": "Increase provider health interval",
+          "hostPowerMonitor": "Host power monitor",
+          "hostPowerMonitorDescription": "Poll host power state while clients are active.",
+          "decreaseActiveHostPower": "Decrease active host power interval",
+          "activeHostPowerInput": "Active host power interval in seconds",
+          "increaseActiveHostPower": "Increase active host power interval",
+          "idleHostMonitor": "Idle host monitor",
+          "idleHostMonitorDescription": "Poll host power state when no foreground client is active.",
+          "decreaseIdleHostPower": "Decrease idle host power interval",
+          "idleHostPowerInput": "Idle host power interval in seconds",
+          "increaseIdleHostPower": "Increase idle host power interval",
+          "resetAll": "Reset all",
+          "done": "Done"
+        }
+      }
+    },
+    "archived": {
+      "menuUnarchive": "Unarchive",
+      "menuDelete": "Delete",
+      "unarchiveFailed": "Failed to unarchive thread",
+      "deleteFailed": "Failed to delete thread",
+      "actionFailed": "Archived thread action failed",
+      "loading": "Loading archived threads",
+      "loadError": "Could not load archived threads",
+      "empty": "No archived threads",
+      "loadingDescription": "Checking connected environments.",
+      "emptyDescription": "Archived threads will appear here.",
+      "rowDescription": "Archived {{archived}} · Created {{created}}"
+    },
+    "shared": {
+      "backgroundPolicyDetails": "Background policy details",
+      "reconnectToChange": "Reconnect the selected environment to change this setting.",
+      "environmentWideSetting": "Environment-wide setting. Select an environment to change it.",
+      "primaryUnavailable": "This setting is saved on a server, and the hosted app is not anchored to one. Change it from the desktop app or from the server's own address.",
+      "notSavedTitle": "Setting not saved",
+      "resetToDefault": "Reset to default",
+      "resetToInherited": "Reset to inherited value",
+      "resetAria": "Reset {{label}} to default",
+      "overrideFallback": "override",
+      "inheritance": {
+        "mixed": "Mixed across selected environments",
+        "overridden": "Overridden for this project",
+        "t3json": "Inherited from the repository's lmcs.json",
+        "inheritedFrom": "Inherited from {{source}}",
+        "environmentFallback": "environment",
+        "setOnEnvironment": "Set on the environment",
+        "builtInDefault": "Built-in default"
+      }
+    },
+    "appearance": {
+      "sections": {
+        "colorsAndThemes": "Colors & themes",
+        "interface": "Interface",
+        "motion": "Motion",
+        "typography": "Typography"
+      },
+      "contrast": {
+        "description": "Adjust the contrast of colors and borders across the interface.",
+        "ariaLabel": "Contrast",
+        "resetLabel": "contrast"
+      },
+      "glassOpacity": {
+        "description": "Higher values make menus, dialogs, and the composer more solid.",
+        "ariaLabel": "Glass opacity",
+        "resetLabel": "glass opacity"
+      },
+      "environmentIdentification": {
+        "options": {
+          "artwork": "Artwork",
+          "pill": "Version pill",
+          "none": "None"
+        },
+        "description": "Choose how Dev and Nightly environments are identified.",
+        "ariaLabel": "Environment identification",
+        "resetLabel": "environment identification"
+      },
+      "diffColors": {
+        "description": "Choose colors for additions and deletions, including change counts.",
+        "ariaLabel": "Diff colors",
+        "resetLabel": "diff colors",
+        "blueOrange": "Blue & orange",
+        "redGreen": "Red & green",
+        "redGreenDefault": "Red & green (default)"
+      },
+      "panelAnimations": {
+        "description": "Set how fast panels open and close.",
+        "ariaLabel": "Panel animation duration",
+        "resetLabel": "panel animations",
+        "previewAria": "Replay panel animation preview"
+      },
+      "typography": {
+        "advanced": "Advanced",
+        "advancedAria": "Show advanced typography settings",
+        "systemDefault": "System default",
+        "systemMonospace": "System monospace",
+        "interfaceDescription": "Everything outside code blocks and the terminal.",
+        "interfaceSizeLabel": "Interface font size",
+        "promptDescription": "Only the box you write prompts in. Mono works well here.",
+        "promptSizeLabel": "Prompt font size",
+        "codeDescription": "Code blocks, diffs, and file previews.",
+        "codeSizeLabel": "Code font size",
+        "terminalDescription": "Terminal output, independent from code blocks and diffs.",
+        "terminalSizeLabel": "Terminal font size",
+        "monospaceTitle": "Monospace font",
+        "monospaceDescription": "Code blocks, diffs, file previews, and the terminal.",
+        "fontSmoothingDescription": "Use thinner grayscale text smoothing instead of the macOS default.",
+        "fontSmoothingAria": "Font smoothing",
+        "fontSmoothingResetLabel": "font smoothing",
+        "wordWrapDescription": "Wrap long lines in code blocks, tables, diffs, and file previews by default.",
+        "wordWrapAria": "Wrap code, tables, diffs, and file previews by default",
+        "wordWrapResetLabel": "word wrapping",
+        "familyAria": "{{title}} family",
+        "terminalPreviewAria": "Terminal font preview"
+      }
+    },
+    "notifications": {
+      "description": "System alerts when a thread finishes, fails, or needs input or approval. Applies to this device while LMCS Code is open.",
+      "aria": "Thread notifications",
+      "permissionUnsupported": "Notifications need a supported browser over HTTPS, or the desktop app. Sound only is still available.",
+      "permissionDenied": "Allow notifications in your browser or system settings, then choose this option again. Sound only is still available.",
+      "permissionUnavailable": "Notifications are unavailable in this browser. Sound only is still available.",
+      "modes": {
+        "off": "Off",
+        "notifications": "Notifications only",
+        "sound": "Sound only",
+        "notifications-and-sound": "Notifications with sound"
+      }
+    },
+    "projects": {
+      "chooseProject": "Choose a project to manage its name, icon, checkouts and actions.",
+      "actions": {
+        "sectionTitle": "Actions",
+        "rowTitle": "Actions",
+        "rowDescription": "Commands that run in this project's checkout or its worktree, with optional shortcuts.",
+        "importScripts": "Import scripts",
+        "importGroupLabel": "Import from lmcs.json",
+        "importHint": "Add actions declared by this checkout without editing them first.",
+        "importFailed": "Failed to import action.",
+        "addAction": "Add action",
+        "mixedTitle": "Different actions across environments",
+        "mixedDescription": "Choose one environment to edit its list. Adding an action here adds it on every selected environment.",
+        "invalidFileTitle": "lmcs.json is invalid",
+        "invalidFileDescription": "A lmcs.json exists in this checkout but fails to parse, so every action and icon it declares is ignored. Check the JSON syntax and icon values.",
+        "empty": "No actions configured.",
+        "setupBadge": "setup",
+        "previewBadge": "preview · desktop only",
+        "editAria": "Edit {{name}}"
+      },
+      "faviconPicker": {
+        "aria": "Choose project icon",
+        "selectIcon": "Select icon",
+        "openInManager": "Open in {{manager}}",
+        "searchPlaceholder": "Search image files…",
+        "searchingFiles": "Searching project files…",
+        "indexingFiles": "Indexing project files…",
+        "noMatchingImages": "No matching image files.",
+        "noImages": "No image files found."
+      },
+      "iconPicker": {
+        "title": "Choose project icon",
+        "description": "Choose an icon, emoji, or monogram.",
+        "typeAria": "Icon type",
+        "icons": "Icons",
+        "emoji": "Emoji",
+        "monogram": "Monogram",
+        "colorLabel": "Color",
+        "colorAria": "Icon color",
+        "searchAria": "Search Lucide icons",
+        "searchPlaceholder": "Search all Lucide icons",
+        "empty": "No icons found.",
+        "lettersLabel": "Letters",
+        "monogramHint": "One or two letters or numbers.",
+        "pasteEmojiLabel": "Or paste any emoji",
+        "customEmojiAria": "Custom emoji",
+        "pasteEmojiPlaceholder": "Paste an emoji",
+        "save": "Save icon"
+      },
+      "defaults": {
+        "sectionNewThreads": "New threads",
+        "sectionBrowser": "Browser",
+        "sectionRepositories": "Repositories",
+        "unavailable": "Unavailable",
+        "model": {
+          "title": "Model",
+          "descriptionProject": "Model for new threads in this project.",
+          "descriptionEnvironment": "Default model for new threads. Projects can override it.",
+          "statusAutomatic": "Automatic",
+          "noProviders": "No providers available",
+          "resetLabel": "default model"
+        },
+        "workspace": {
+          "title": "Workspace",
+          "descriptionProject": "Where new threads in this project start.",
+          "descriptionEnvironment": "Where new threads start. Projects and their lmcs.json can override it.",
+          "aria": "Default workspace",
+          "resetLabel": "default workspace"
+        },
+        "permissions": {
+          "descriptionProject": "Permissions for new threads in this project.",
+          "descriptionEnvironment": "Default permissions for new threads. Projects can override them.",
+          "aria": "Default permissions",
+          "resetLabel": "default permissions"
+        },
+        "submodules": {
+          "descriptionProject": "How new worktrees in this project populate git submodules.",
+          "descriptionEnvironment": "How new worktrees populate git submodules. Projects and their lmcs.json can override it.",
+          "aria": "Worktree submodules",
+          "resetLabel": "worktree submodules"
+        },
+        "autoPull": {
+          "title": "Automatically pull",
+          "descriptionProject": "Keeps this project's default branch current when the checkout has no local changes or commits.",
+          "descriptionEnvironment": "Keeps the default branch current when the checkout has no local changes or commits. Projects can override it.",
+          "aria": "Default automatic pull",
+          "resetLabel": "default automatic pull",
+          "resetTooltip": "Reset automatic pull to off"
+        },
+        "mergeMethod": {
+          "descriptionProject": "Pull requests in this project start with this method.",
+          "descriptionEnvironment": "Pull requests start with this method. Last selected reuses whatever you chose most recently on this device.",
+          "aria": "Default pull request merge method",
+          "resetLabel": "default merge method",
+          "resetTooltip": "Reset to last selected"
+        },
+        "browserAccess": {
+          "title": "Agent browser access",
+          "descriptionProject": "Allow agents in this project to use the shared browser. Applies when the agent session next starts.",
+          "descriptionEnvironment": "Allow agents to use the shared browser. Projects can override it.",
+          "aria": "Agent browser access",
+          "resetLabel": "default browser access"
+        }
+      },
+      "scriptEditor": {
+        "titleEdit": "Edit Action",
+        "titleAdd": "Add Action",
+        "description": "Actions are project-scoped commands you can run from the top bar or keybindings.",
+        "nameLabel": "Name",
+        "chooseIconAria": "Choose icon",
+        "icons": {
+          "play": "Play",
+          "test": "Test",
+          "lint": "Lint",
+          "configure": "Configure",
+          "build": "Build",
+          "debug": "Debug"
+        },
+        "keybindingLabel": "Keybinding",
+        "keybindingPlaceholder": "Press shortcut",
+        "keybindingHelp": "Press a shortcut. Use <code>Backspace</code> to clear. Shortcuts are environment-wide. Projects using the same action share its shortcut.",
+        "commandLabel": "Command",
+        "previewUrlLabel": "Preview URL (optional)",
+        "previewUrlHelp": "Open this URL in the in-app preview when this action runs.",
+        "runOnWorktreeCreate": "Run automatically on worktree creation",
+        "waitForSetup": "Wait for it to finish before the agent starts",
+        "autoOpenPreview": "Open preview automatically when this action runs",
+        "delete": "Delete",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "saveAction": "Save action",
+        "deleteConfirmTitle": "Delete action \"{{name}}\"?",
+        "deleteConfirmDescription": "This action cannot be undone.",
+        "deleteConfirmAction": "Delete action",
+        "errorNameRequired": "Name is required.",
+        "errorCommandRequired": "Command is required.",
+        "errorSaveFailed": "Failed to save action."
+      },
+      "scriptsControl": {
+        "importFailed": "Failed to import action.",
+        "fromT3Json": "From lmcs.json",
+        "importAria": "Import",
+        "setupName": "{{name}} (setup)",
+        "editAria": "Edit {{name}}",
+        "addAction": "Add action",
+        "runName": "Run {{name}}",
+        "projectActions": "Project actions",
+        "addProjectAction": "Add project action…",
+        "groupAria": "Project scripts",
+        "scriptActionsAria": "Script actions"
+      },
+      "panel": {
+        "emptyAddProject": "Add a project from the sidebar to configure it here.",
+        "kind": {
+          "checkout": "checkout",
+          "project": "project"
+        },
+        "removeConfirmTitle": "Remove {{kind}} \"{{label}}\"?",
+        "removeConfirmTitleWithThreads_one": "Remove {{kind}} \"{{label}}\" and delete its {{count}} thread?",
+        "removeConfirmTitleWithThreads_other": "Remove {{kind}} \"{{label}}\" and delete its {{count}} threads?",
+        "removeConfirmPath": "Path: {{path}}",
+        "removeConfirmEnvironment": "Environment: {{label}}",
+        "removeConfirmGrouped_one": "This removes {{count}} grouped project entry.",
+        "removeConfirmGrouped_other": "This removes {{count}} grouped project entries.",
+        "removeConfirmClearsThreads": "This permanently clears conversation history for those threads and any archived threads.",
+        "removeConfirmClearsArchived": "This permanently clears any archived conversation history.",
+        "removeConfirmEntriesOnly": "This removes only the project entries, not the files on disk.",
+        "removeConfirmOtherUnaffected": "Other entries in this grouped project are unaffected.",
+        "removeConfirmCannotBeUndone": "This action cannot be undone.",
+        "sectionCheckouts": "Checkouts",
+        "removeCheckoutAria": "Remove checkout {{path}}",
+        "alertFindSetting": "Can't find a setting? Keep this project picked above and hop to any other settings page.",
+        "sectionProject": "Project",
+        "nameLabel": "Name",
+        "nameDescription": "The shared name for this project group in the sidebar and thread lists.",
+        "nameAria": "Project name",
+        "iconLabel": "Project icon",
+        "iconResetLabel": "project icon",
+        "chooseIconAria": "Choose a project icon",
+        "chooseIcon": "Choose icon",
+        "chooseFileAria": "Choose a project icon file",
+        "chooseFile": "Choose file",
+        "sectionDanger": "Danger",
+        "dangerTitleCheckout": "Remove checkout",
+        "dangerTitleEverywhere": "Remove this project everywhere",
+        "dangerTitleProject": "Remove project",
+        "dangerDescriptionCheckout": "Deletes the selected machine's checkout entries and their threads. Other machines and files on disk are not touched.",
+        "dangerDescriptionEverywhere_one": "Deletes all {{count}} checkout entry and its threads on every machine. Files on disk are not touched.",
+        "dangerDescriptionEverywhere_other": "Deletes all {{count}} checkout entries and their threads on every machine. Files on disk are not touched.",
+        "dangerDescriptionProject": "Deletes the project entry and its threads. Files on disk are not touched.",
+        "dangerActionAll": "Remove all entries"
+      }
+    },
+    "licenses": {
+      "sectionTitle": "Third-party notices",
+      "loading": "Loading open-source notices…",
+      "empty": "No licenses match that search.",
+      "unavailableTitle": "Open-source notices are unavailable",
+      "tryAgain": "Try again",
+      "loadFailed": "The license manifest could not load.",
+      "requestFailed": "The license manifest request failed with status {{status}}.",
+      "searchAria": "Search open-source licenses",
+      "searchTooltip": "Search licenses",
+      "searchPlaceholder": "Search licenses",
+      "projectSource": "Project source",
+      "viewSourceAria": "View project source for {{name}}",
+      "count_one": "{{count}} notice",
+      "count_other": "{{count}} notices",
+      "countFiltered": "{{filtered}} of {{total}}"
+    },
+    "storage": {
+      "sections": {
+        "worktrees": "Worktrees",
+        "artifacts": "Artifacts and logs"
+      },
+      "mixedAcross": "Mixed across selected machines",
+      "updateMachinesNotice": "Update the selected machines to configure project worktree cleanup.",
+      "updateEnvironmentsNotice": "Update the selected environments to use storage cleanup, or choose a machine that supports it.",
+      "worktreeCleanup": {
+        "title": "Automatic worktree cleanup",
+        "descriptionOff": "Keep this project's worktrees until you delete them manually.",
+        "descriptionCustom": "Use these rules for this project.",
+        "descriptionInherit": "Use each machine's worktree cleanup settings.",
+        "aria": "Automatic worktree cleanup",
+        "modes": {
+          "inherit": "Inherit",
+          "off": "Off",
+          "custom": "Custom"
+        }
+      },
+      "worktreeOnDelete": {
+        "title": "Delete worktrees with deleted threads",
+        "description": "Remove unused worktrees when active or archived threads are deleted. Worktrees with local changes are kept.",
+        "aria": "Delete worktrees with deleted threads"
+      },
+      "worktreeAfterDays": {
+        "title": "Delete inactive worktrees",
+        "description": "Remove worktrees after their threads have been inactive for this many days. Branches and thread history are kept.",
+        "label": "Delete inactive worktrees"
+      },
+      "worktreeOnMerge": {
+        "title": "Delete merged worktrees",
+        "description": "Remove worktrees whose pull request is merged and whose commits are included in the default branch.",
+        "aria": "Delete merged worktrees"
+      },
+      "worktreeUnchanged": {
+        "title": "Delete unchanged worktrees",
+        "description": "Remove worktrees with no commits beyond the default branch.",
+        "aria": "Delete unchanged worktrees"
+      },
+      "browserArtifacts": {
+        "title": "Delete old browser artifacts",
+        "description": "Delete saved browser captures after this many days. Older capture links will no longer open.",
+        "label": "Delete old browser artifacts"
+      },
+      "rotatedLogs": {
+        "title": "Delete old rotated logs",
+        "description": "Delete inactive rotated log files after this many days. Current logs are kept.",
+        "label": "Delete old rotated logs"
+      },
+      "retention": {
+        "decreaseAria": "Decrease {{label}}",
+        "inputAria": "{{label}} in days",
+        "increaseAria": "Increase {{label}}",
+        "days": "days",
+        "off": "Off"
+      }
+    },
+    "sourceControl": {
+      "sections": {
+        "serverEnvironment": "Server environment",
+        "versionControl": "Version Control",
+        "providers": "Source Control Providers"
+      },
+      "auth": {
+        "authenticated": "Authenticated",
+        "unauthenticated": "Not authenticated",
+        "unknown": "Status unknown"
+      },
+      "account": {
+        "toggleAria": "Toggle source control account visibility",
+        "revealTooltip": "Click to reveal account",
+        "hideTooltip": "Click to hide account"
+      },
+      "comingSoon": "Support for {{label}} is coming soon.",
+      "comingSoonBadge": "Coming Soon",
+      "notAvailable": "Not available on this server: {{hint}}",
+      "authenticatedAs": "as",
+      "availableWithHint": "Available. {{hint}}",
+      "notAuthenticated": "{{label}} is not authenticated on this server. Sign in or configure credentials using the <code>{{executable}}</code> tool on the server host to enable change request features.",
+      "couldNotVerify": "Could not verify {{label}}. {{detail}}",
+      "available": "Available",
+      "toggleDetails": "Toggle {{label}} details",
+      "availabilityAria": "{{label}} availability",
+      "gitFetch": {
+        "policyTooltip": "This interval is configured for Git only. The shared Background activity policy still decides whether Git refreshes may run when the timer fires. Custom intervals appear as Advanced in General settings.",
+        "resetLabel": "fetch interval",
+        "description": "Refresh remote branches in the background. Set to 0 to avoid automatic Git prompts.",
+        "decreaseAria": "Decrease fetch interval",
+        "inputAria": "Automatic Git fetch interval in seconds",
+        "increaseAria": "Increase fetch interval",
+        "seconds": "seconds"
+      },
+      "scanError": "Could not scan the server environment",
+      "scanEmpty": "Nothing detected yet",
+      "scanEmptyDescription": "Install Git on the server, add optional hosting integrations or credentials your workspace needs, then rescan.",
+      "scan": "Scan",
+      "rescanAria": "Rescan server environment",
+      "rescanTooltip": "Rescan Git and hosting integrations",
+      "connectPrompt": "Connect an environment to inspect its version control tools and hosting integrations.",
+      "writing": {
+        "sectionTitle": "Text generation",
+        "modes": {
+          "repo_conventions": {
+            "label": "Repository conventions",
+            "description": "In each project, matches recent change descriptions and change request titles."
+          },
+          "conventional_commits": {
+            "label": "Conventional Commits",
+            "description": "Use Conventional Commit prefixes and keep change request text concise."
+          },
+          "custom": {
+            "label": "Custom instructions",
+            "description": "Use your instructions for change descriptions and change requests in every project."
+          }
+        },
+        "resetStyleLabel": "source control writing style",
+        "styleAria": "Source control writing style",
+        "allInstructionsAria": "Custom source control instructions for all selected environments",
+        "allInstructionsPlaceholder": "Write the instructions each selected environment should use.",
+        "applyToAll": "Apply instructions to all",
+        "writeForAll": "Write custom instructions for all",
+        "customPlaceholder": "Keep titles concise. Use short bullet points in descriptions.",
+        "customAria": "Custom source control writing instructions",
+        "templatesDescription": "Use the repository's template for change request descriptions when available.",
+        "resetTemplatesLabel": "change request templates",
+        "templatesAria": "Follow change request templates",
+        "writerModelDescription": "Model for source control text and branch or bookmark names. Off uses the environment's text generation model.",
+        "connectPrompt": "Connect an environment to choose its source control writer model.",
+        "noProviders": "No text generation providers available.",
+        "writerModelAria": "Source control writer model",
+        "dedicatedModelAria": "Use a separate source control writer model"
+      }
+    },
+    "snapshot": {
+      "updating": "Updating capture settings…",
+      "enableAria": "Enable snapshots",
+      "saving": "Saving…",
+      "save": "Save",
+      "status": {
+        "checking": "Checking snapshots…",
+        "unsupported": "Not supported on this platform.",
+        "turnOn": "Turn this on to set up snapshots."
+      },
+      "summary": {
+        "needsAttention": "Capture needs attention",
+        "checkAccess": "Check capture access in setup",
+        "installHelper": "Install the capture helper to continue",
+        "setupActiveWindow": "Set up active-window snapshots",
+        "manualOnly": "Manual capture only — you'll choose a window each time",
+        "enableCapture": "Enable capture to continue",
+        "connectingShortcut": "Connecting your shortcut…",
+        "waitingPermission": "Waiting for shortcut permission",
+        "ready": "Ready to capture",
+        "useFromOtherApp": "Use your shortcut from another app",
+        "shortcutSaved": "Shortcut saved",
+        "finishSetup": "Finish shortcut setup"
+      },
+      "shortcutStatus": {
+        "approvePrompt": "Approve the shortcut permission prompt to continue.",
+        "saved": "Shortcut saved."
+      },
+      "setupButton": {
+        "continue": "Continue setup",
+        "manage": "Manage capture",
+        "setupDesktop": "Set up {{desktop}} capture"
+      },
+      "feedback": {
+        "unavailableDesktop": "Capture effects aren't available on this desktop.",
+        "installHelper": "Install or update the capture helper to enable effects.",
+        "unavailableNiri": "Capture effects aren't available on Niri.",
+        "updateGnome": "Update the GNOME extension, then sign out and back in to enable effects.",
+        "finishExtension": "Finish extension setup to enable effects."
+      },
+      "description": {
+        "picker": "Automatic capture isn't available here. Choose a window instead.",
+        "default": "Capture a window and attach it to your current draft."
+      },
+      "accessibility": {
+        "screenshotOnly": "This desktop only provides a screenshot.",
+        "description": "Include text and controls when the app makes them available.",
+        "aria": "Include app text in snapshots"
+      },
+      "unavailable": {
+        "updateDesktop": "Update the desktop app to use snapshots.",
+        "desktopOnly": "Only available in the desktop app."
+      },
+      "shortcut": {
+        "press": "Press your shortcut. Esc cancels.",
+        "conflict": "LMCS Code already uses this for \"{{command}}\".",
+        "checking": "Checking shortcut…",
+        "readyToSave": "Ready to save.",
+        "tryModifier": "Try a shortcut such as Ctrl+Shift+2.",
+        "descriptionPicker": "Choose a window to capture from any app.",
+        "descriptionDefault": "Capture the window you're using without switching apps.",
+        "change": "Change shortcut",
+        "permissions": "Shortcut permissions"
+      },
+      "sound": {
+        "description": "Choose the sound played when capture starts.",
+        "aria": "Snapshot sound: {{label}}",
+        "off": "Off",
+        "whoosh": "Whoosh",
+        "whooshDefault": "Whoosh (Default)",
+        "defaultSuffix": "(Default)",
+        "click": "Click",
+        "playWhoosh": "Play Whoosh",
+        "playClick": "Play Click"
+      },
+      "flash": {
+        "description": "Show a gentle cue on the captured window.",
+        "aria": "Flash captured window"
+      },
+      "animations": {
+        "description": "Animate captured windows into your draft.",
+        "aria": "Animate snapshots"
+      },
+      "errors": {
+        "checkSetup": "Couldn't check capture setup",
+        "openShortcutPermissions": "Couldn't open shortcut permissions",
+        "completeSetup": "Couldn't complete capture setup",
+        "saveSettings": "Couldn't save capture settings",
+        "allowTextCapture": "Couldn't allow app text capture",
+        "checkShortcut": "Could not check this shortcut.",
+        "restartToFinish": "Restart LMCS Code to finish capture setup.",
+        "verifyAccess": "Couldn't verify capture access",
+        "closeSetup": "Couldn't close capture setup"
+      },
+      "recorder": {
+        "errorStart": "Could not start shortcut recording.",
+        "errorModifierOnly": "Add a letter, number, or function key to your shortcut.",
+        "recordAria": "Record snapshot shortcut, currently {{shortcut}}",
+        "changeAria": "Change snapshot shortcut",
+        "press": "Press shortcut…",
+        "change": "Change shortcut",
+        "choose": "Choose shortcut"
+      },
+      "config": {
+        "errorPrepare": "Couldn't prepare the changes. Check Advanced for help.",
+        "errorSave": "Couldn't save your shortcut. Review the changes and try again.",
+        "shortcutLabel": "Shortcut",
+        "pressHint": "Press your shortcut. Esc cancels.",
+        "savedWithWarning": "Saved, but the shortcut needs attention. Check Advanced for help.",
+        "removed": "Shortcut removed.",
+        "savedUse": "Use {{shortcut}} from another app to capture a window.",
+        "reviewRemove": "Review the change below to remove your shortcut.",
+        "reviewSave": "Review the change below, then save your shortcut.",
+        "nothingToRemove": "There's no capture shortcut to remove.",
+        "alreadySetUp": "This shortcut is already set up.",
+        "changesAria": "Shortcut changes",
+        "onlyChanges": "Only these changes will be saved. We'll keep a backup.",
+        "saveShortcut": "Save shortcut",
+        "removeShortcut": "Remove shortcut",
+        "intro": "Allow LMCS Code to read your desktop settings. You'll review any changes here before saving.",
+        "preparing": "Preparing changes…",
+        "reviewChanges": "Review changes",
+        "updateRequired": "Update LMCS Code to finish setting up your shortcut.",
+        "connecting": "Connecting to your desktop…",
+        "restartRequired": "Restart LMCS Code to finish connecting your shortcut.",
+        "troubleshooting": "Troubleshooting",
+        "settingsFile": "Settings file",
+        "includedFilesNote": "LMCS Code also reads any files included by this file.",
+        "linkedTo": "Linked to {{path}}. The link will be kept.",
+        "chooseDifferentFile": "Choose a different file…",
+        "removeShortcutEllipsis": "Remove shortcut…",
+        "useDesktopFile": "Use your desktop's shortcut settings file.",
+        "customConfigNote": "A custom --config or NIRI_CONFIG can change its location.",
+        "omarchyNote": "On Omarchy, use your own bindings file, not its defaults.",
+        "backupLine": "Backup: {{path}}",
+        "manualSetup": "Manual setup",
+        "manualNiri": "Paste this inside binds { … } in your Niri config, then save.",
+        "manualHyprland": "Add this binding to your Hyprland config, then save.",
+        "manualChangeKeys": "Change the keys if needed.",
+        "copied": "Copied",
+        "copyShortcut": "Copy shortcut",
+        "turnOffNote": "Turn capture off in LMCS Code to stop it. Remove the shortcut from {{desktop}} to free up the keys.",
+        "addedShortcut": "I've added the shortcut"
+      },
+      "setup": {
+        "check": {
+          "unable": "Still unable to check access. See Advanced for help.",
+          "readyPicker": "Ready. You'll choose a window each time.",
+          "waitingSignOut": "Still waiting for you to sign out and back in.",
+          "readyContinue": "Ready. Continue to choose your shortcut.",
+          "notReady": "Not ready yet. Finish the step above."
+        },
+        "steps": {
+          "access": "Access",
+          "shortcut": "Shortcut"
+        },
+        "header": "Set up snapshots",
+        "headerForDesktop": "Set up snapshots for {{desktop}}",
+        "gnome": {
+          "not-installed": {
+            "title": "Install the extension",
+            "description": "The LMCS Code GNOME extension lets you capture other windows and bring them into your draft. Sign out once after installing."
+          },
+          "restart-required": {
+            "title": "Extension installed",
+            "description": "Save your work, then sign out and back in. Your setup will be waiting here."
+          },
+          "update-required": {
+            "title": "Update the extension",
+            "description": "Install the update, then sign out and back in."
+          },
+          "extensions-disabled": {
+            "title": "Allow GNOME extensions",
+            "description": "Open GNOME Extensions and turn on extensions, then check again."
+          },
+          "disabled": {
+            "title": "Enable the extension",
+            "description": "Enable LMCS Code SnapShots to start capturing windows."
+          },
+          "enabled": {
+            "title": "Capture is ready",
+            "description": "Next, choose your shortcut."
+          },
+          "unsupported": {
+            "title": "Automatic capture isn't available",
+            "description": "Use Take snapshot from the command palette to choose a window."
+          },
+          "error": {
+            "title": "Couldn't set up the extension",
+            "description": "Check LMCS Code SnapShots in GNOME Extensions, then try again."
+          }
+        },
+        "access": {
+          "retry": {
+            "title": "Let's try that again",
+            "description": "Couldn't check snapshots. Try again to continue."
+          },
+          "extensionNotReady": {
+            "title": "Check capture access",
+            "description": "The extension isn't ready yet. Try again in a moment."
+          },
+          "helperError": {
+            "title": "Let's fix capture access",
+            "description": "Try reinstalling the capture helper, then check again."
+          },
+          "helperUpdate": {
+            "title": "Update the capture helper"
+          },
+          "allowHelper": {
+            "title": "Allow snapshots",
+            "description": "LMCS Code's capture helper lets you capture other apps and return to your draft. It's included with LMCS Code."
+          },
+          "ready": {
+            "title": "Capture is ready",
+            "description": "Next, choose your shortcut."
+          },
+          "picker": {
+            "title": "Choose a window each time",
+            "description": "Your desktop doesn't support automatic capture. You'll choose the window to capture instead."
+          },
+          "allow": {
+            "title": "Allow snapshots",
+            "description": "Allow access when prompted to start capturing windows.",
+            "descriptionPortal": "Your desktop may ask for permission when you first capture.",
+            "descriptionMacReady": "Test a snapshot of the current window. If macOS asks to bypass its window picker, choose Allow. The test image is discarded.",
+            "descriptionMacPending": "Allow each permission, then continue."
+          }
+        },
+        "shortcut": {
+          "title": "Choose your shortcut",
+          "descriptionConfig": "Click the shortcut, then press the keys you want.",
+          "descriptionPortal": "Choose your keys, then approve the permission prompt if asked.",
+          "descriptionDirect": "Use both Shift keys, or record a different shortcut."
+        },
+        "permissions": {
+          "screenRecording": {
+            "title": "Screen Recording",
+            "description": "Capture the window you're using."
+          },
+          "accessibility": {
+            "title": "Accessibility",
+            "description": "Include text and controls from the captured app.",
+            "descriptionOptional": "Optional. Include text and controls from the captured app."
+          }
+        },
+        "helperReinstall": "Reinstall helper",
+        "tryAgain": "Try again",
+        "needsAttention": "Capture needs attention. Go back to check access.",
+        "stepFailed": "Couldn't finish this step. Try again or check Advanced for help.",
+        "includedNote": "Included with LMCS Code. No download needed.",
+        "disableExtension": "Disable extension",
+        "removeHelper": "Remove capture helper",
+        "finishLater": "Finish later",
+        "checking": "Checking…",
+        "installing": "Installing…",
+        "enabling": "Enabling…",
+        "working": "Working…",
+        "checkAgain": "Check again",
+        "updateHelper": "Update helper",
+        "installHelper": "Install helper",
+        "updateExtension": "Update extension",
+        "installExtension": "Install extension",
+        "enableExtension": "Enable extension",
+        "testCaptureContinue": "Test capture and continue",
+        "allowCapture": "Allow capture",
+        "saveAndFinish": "Save and finish"
+      }
+    },
+    "theme": {
+      "colorRoles": {
+        "canvas": "Background",
+        "toolbar": "Toolbar background",
+        "toolbarForeground": "Toolbar text",
+        "toolbarBorder": "Toolbar border",
+        "toolbarControl": "Toolbar control",
+        "toolbarControlForeground": "Toolbar control text",
+        "toolbarControlHover": "Toolbar control hover",
+        "accent": "Accent color",
+        "errorForeground": "Error text",
+        "errorSurface": "Error background",
+        "warningForeground": "Warning text",
+        "warningSurface": "Warning background",
+        "updateForeground": "Update text",
+        "updateSurface": "Update background"
+      },
+      "colorPicker": {
+        "chooseColor": "Choose a color",
+        "chooseFor": "Choose {{label}} color",
+        "hue": "{{label}} hue",
+        "hexAria": "{{label}} picker hex value",
+        "rgbAria": "{{label}} picker RGB value",
+        "hexValueAria": "{{label}} hex value",
+        "showUsageAria": "Show {{label}} usage",
+        "hideUsageAria": "Hide {{label}} usage",
+        "showUsageTooltip": "Show where {{label}} is used",
+        "hideUsageTooltip": "Hide where {{label}} is used"
+      },
+      "previewCircles": {
+        "useLightAria": "Use {{label}} light mode",
+        "useDarkAria": "Use {{label}} dark mode",
+        "lightOnly": "Use for light mode only",
+        "darkOnly": "Use for dark mode only"
+      },
+      "search": {
+        "heading": "Search community themes",
+        "subheading": "Find open-source themes from Open VSX.",
+        "inputAria": "Search Open VSX themes",
+        "placeholder": "Search themes...",
+        "popular": "Popular",
+        "sortLabel": "Sort",
+        "sortAria": "Sort themes",
+        "sort": {
+          "downloadCount": "Most downloaded",
+          "rating": "Best rated",
+          "timestamp": "Newest",
+          "relevance": "Most relevant"
+        },
+        "searching": "Searching themes...",
+        "resultsCount_one": "{{count}} supported theme found.",
+        "resultsCount_other": "{{count}} supported themes found.",
+        "emptyTitle": "No supported open-source themes found",
+        "emptyHint": "Try a broader search.",
+        "defaultDescription": "A community color theme for your editor.",
+        "downloads": "downloads",
+        "install": "Install",
+        "update": "Update",
+        "installing": "Installing",
+        "updating": "Updating",
+        "installAria": "Install {{name}}",
+        "updateAria": "Update {{name}}",
+        "installingAria": "Installing {{name}}",
+        "updatingAria": "Updating {{name}}",
+        "viewSourceAria": "View source for {{name}}",
+        "errorSearch": "Open VSX search failed.",
+        "errorReadInstalled": "Installed themes could not be read.",
+        "errorAdd": "That theme could not be added.",
+        "updateTitle": "Update “{{name}}”?",
+        "updateDescription": "This replaces its installed variants, including any local edits. Variants no longer in the extension will be removed.",
+        "updateConfirm": "Update theme"
+      },
+      "import": {
+        "oversized": "That file is {{size}}. Theme files are only a few KB, so this one was not read (limit {{limit}}).",
+        "errorRead": "Could not read that file. Paste the JSON below instead.",
+        "errorTooLarge": "{{name}}: too large",
+        "errorNotTheme": "not a theme file",
+        "errorInstall": "could not install",
+        "errorFailed": "failed",
+        "errorTooManyCopies": "Too many copies of \"{{label}}\".",
+        "errorSelect": "Theme added, but it could not be selected. Try again.",
+        "errorInvalid": "That theme file is invalid.",
+        "title": "Add a theme",
+        "importDivider": "or import a file",
+        "chooseFiles": "Choose files",
+        "reading": "Reading…",
+        "jsonLabel": "Theme JSON",
+        "conflictTitle": "Already installed",
+        "updateExisting": "Update existing",
+        "keepBoth": "Keep both",
+        "fileLabel": "Theme file",
+        "dropHint": "Drop LMCS Code or VS Code .json files",
+        "addTheme": "Add theme"
+      },
+      "library": {
+        "variantGroup": "Light and dark theme variants",
+        "mode": {
+          "system": "System",
+          "light": "Light",
+          "dark": "Dark"
+        },
+        "modeInline": {
+          "light": "light",
+          "dark": "dark"
+        },
+        "variantTooltip": "{{mode}}: {{label}}",
+        "chooseVariant": "Choose {{mode}} variant, {{count}} options, currently {{label}}",
+        "useVariant": "Use {{mode}} variant, currently {{label}}",
+        "useOptionForMode": "Use {{label}} for {{mode}} mode",
+        "useOptionForModeActive": "Use {{label}} for {{mode}} mode, currently active",
+        "useCollectionVariant": "Use {{collection}}, {{label}} variant",
+        "useCollectionVariantActive": "Use {{collection}}, {{label}} variant, currently active",
+        "useTheme": "Use {{label}} theme",
+        "useThemeActive": "Use {{label}} theme, currently active",
+        "duplicateTheme": "Duplicate {{label}}",
+        "duplicateTooltip": "Duplicate theme",
+        "editTheme": "Edit {{label}}",
+        "editTooltip": "Edit theme",
+        "exportTheme": "Export {{label}}",
+        "exportTooltip": "Export theme file",
+        "removeFromCollection": "Remove themes from {{collection}}",
+        "removeTheme": "Remove {{label}}",
+        "removeTooltip": "Remove theme",
+        "removeTooltipPlural": "Remove themes",
+        "cardUseFirstVariants": "Use the first variants for light and dark",
+        "cardUseBoth": "Use for both light and dark",
+        "cardUseOneMode": "Use for {{mode}} mode only",
+        "appearanceModeGroup": "Appearance mode",
+        "followSystem": "Follow the system appearance",
+        "useMode": "Use {{mode}} mode",
+        "createTheme": "Create theme",
+        "addTheme": "Add theme",
+        "copyName": "{{label}} copy",
+        "removeDialogTitleCollection": "Remove themes from “{{collection}}”?",
+        "removeDialogTitle": "Remove “{{label}}”?",
+        "removeDialogDescriptionCollection": "Select the variants you want to remove. You can restore them by importing the extension again.",
+        "removeDialogDescription": "You can bring it back anytime by importing its JSON file.",
+        "removeSelected": "Remove selected",
+        "removeDialogConfirm": "Remove theme"
+      },
+      "editor": {
+        "groups": {
+          "foundation": "Foundation",
+          "brand-content": "Brand & content",
+          "context": "Context",
+          "status": "Status"
+        },
+        "families": {
+          "background": "Background",
+          "surface": "Surface",
+          "raised-surface": "Raised surface",
+          "overlay": "Overlay",
+          "text": "Text",
+          "muted-text": "Muted text",
+          "border": "Border",
+          "input": "Input",
+          "subtle-surface": "Subtle surface",
+          "highlight-surface": "Highlight surface",
+          "accent": "Accent",
+          "action": "Action",
+          "message-surface": "Message surface",
+          "code-surface": "Code surface",
+          "sidebar-background": "Sidebar background",
+          "sidebar-controls": "Sidebar controls",
+          "sidebar-selection": "Sidebar selection",
+          "terminal-background": "Terminal background",
+          "error": "Error",
+          "warning": "Warning"
+        },
+        "lockNoPalette": "“{{label}}” has no {{appearance}} palette. Create a theme with the same name to add one.",
+        "lockTakenPalette": "“{{label}}” already has a {{appearance}} palette.",
+        "errorNameFirst": "Name your theme first.",
+        "errorCollision": "“{{label}}” already has a {{appearance}} palette. Pick another name.",
+        "errorBothTaken": "“{{label}}” already has light and dark palettes. Pick another name.",
+        "errorActivate": "Theme saved, but it could not be made active. Try again.",
+        "errorSave": "Could not save the theme.",
+        "errorCreate": "Could not create the theme.",
+        "nameLabel": "Theme name",
+        "namePlaceholder": "e.g. Aurora",
+        "namePlaceholderEdit": "Theme name",
+        "appearanceLabel": "Appearance",
+        "appearanceGroup": "Theme appearance",
+        "colorsTitle": "Colors",
+        "colorsGuidedHint": "Two colors, rest derived",
+        "filterColors": "Filter colors",
+        "advancedAria": "Use advanced theme colors",
+        "noMatches": "No matches.",
+        "inspectingHint": "Select an element · Esc to cancel",
+        "selectColorHint": "Select a color below",
+        "usageStatus": "{{label}} · {{count}} {{unit}}",
+        "usageSingular": "use",
+        "usagePlural": "uses",
+        "inspectAria": "Inspect app colors",
+        "inspectCancelAria": "Cancel inspecting app colors",
+        "inspect": "Inspect",
+        "inspectTooltip": "Pick a color from the app",
+        "inspectCancelTooltip": "Cancel and clear the selection",
+        "expandAria": "Expand the theme editor",
+        "minimizeAria": "Minimize the theme editor",
+        "closeAria": "Close the theme editor",
+        "mergeInto": "Merge into “{{label}}”",
+        "saveChanges": "Save changes",
+        "addPalette": "Add {{appearance}} palette"
+      }
+    },
+    "providers": {
+      "checked": "Checked",
+      "checkedUnavailable": "Checked unavailable",
+      "deviceDetail": {
+        "primary": "Primary device",
+        "lmcsConnect": "LMCS Connect",
+        "ssh": "SSH",
+        "local": "Local device",
+        "remote": "Remote device"
+      },
+      "devicesAria": "Devices",
+      "placeholder": {
+        "loadingTitle": "Loading provider settings",
+        "connectErrorTitle": "Could not connect to this device",
+        "unavailableTitle": "Provider settings are unavailable",
+        "checkingPermissions": "Checking what this session is allowed to change.",
+        "waitingConfiguration": "Waiting for {{label}}'s configuration.",
+        "deviceUnavailableTitle": "Device unavailable",
+        "deviceUnavailableDescription": "Reconnect this device to set up its provider, or select another device.",
+        "noDevicesTitle": "No connected devices",
+        "loadingDevicesTitle": "Loading devices",
+        "noDevicesDescription": "Connect an execution environment before configuring providers.",
+        "loadingDevicesDescription": "Reading connected execution environments."
+      },
+      "refreshStatus": "Refresh provider status",
+      "refreshing": "Refreshing providers",
+      "addProvider": "Add provider",
+      "readOnly": {
+        "title": "Limited permissions",
+        "description": "This session can view {{label}}'s providers but can't change their settings."
+      },
+      "instanceMissing": "This provider instance is no longer available on this device.",
+      "noneConfigured": "No providers configured.",
+      "advancedTitle": "Advanced",
+      "healthInterval": {
+        "policyTooltip": "This interval is configured here, then the shared Background activity policy decides whether provider probes may run when the timer fires. Custom intervals appear as Advanced in General settings.",
+        "description": "Refresh provider status, versions, and models in the background. Set to 0 to disable.",
+        "resetLabel": "provider health check interval",
+        "decreaseAria": "Decrease provider health check interval",
+        "inputAria": "Provider health check interval in seconds",
+        "increaseAria": "Increase provider health check interval",
+        "seconds": "seconds"
+      },
+      "resetProviderSettings": "{{provider}} provider settings",
+      "updateFailed": "Could not update {{provider}}",
+      "updateStartFailed": "The provider update command could not be started.",
+      "status": {
+        "checking": "Checking provider status",
+        "checkingDetail": "Waiting for the server to report installation and authentication details.",
+        "disabled": "Disabled",
+        "disabledDetail": "This provider is installed but disabled for new sessions in LMCS Code.",
+        "notFound": "Not found",
+        "notFoundDetail": "CLI not detected on PATH.",
+        "notAuthenticated": "Not authenticated",
+        "needsAttention": "Needs attention",
+        "needsAttentionDetail": "The provider is installed, but the server could not fully verify it.",
+        "unavailable": "Unavailable",
+        "unavailableDetail": "The provider failed its startup checks.",
+        "authenticated": "Authenticated",
+        "authenticatedWithLabel": "Authenticated · {{label}}",
+        "available": "Available",
+        "compat": {
+          "graceful": "Limited support",
+          "unsupported": "Unsupported version",
+          "broken": "Known broken version"
+        },
+        "inlineBroken": "Incompatible",
+        "inlineUnsupported": "Unsupported",
+        "useForFullSupport": "Use {{recommendation}} for full support.",
+        "updateForFullSupport": "Update for full support.",
+        "updateAvailable": "Update available",
+        "updateAvailableInstallVersion": "Update available: install {{version}}.",
+        "updateAvailableInstallLatest": "Update available: install the latest provider version."
+      },
+      "drivers": {
+        "cursor": {
+          "badge": "Early Access"
+        },
+        "grok": {
+          "badge": "Early Access"
+        }
+      },
+      "instance": {
+        "email": {
+          "toggleAria": "Toggle account email visibility",
+          "revealTooltip": "Click to reveal email",
+          "hideTooltip": "Click to hide email"
+        },
+        "variables": {
+          "title": "Variables",
+          "description": "API keys, base URLs, and other per-instance CLI settings.",
+          "add": "Add variable",
+          "nameAria": "Environment variable name {{index}}",
+          "valueAria": "Environment variable value {{index}}",
+          "valuePlaceholder": "value",
+          "redactedPlaceholder": "Stored secret, enter a new value to replace",
+          "markSensitiveAria": "Mark environment variable {{name}} as sensitive",
+          "sensitiveTooltip": "Sensitive, stored separately",
+          "plainTextTooltip": "Plain text",
+          "removeAria": "Remove environment variable {{name}}",
+          "footnote": "Sensitive values are stored separately and never returned to the app."
+        },
+        "authenticatedAs": "Authenticated as",
+        "selectAria": "Select {{name}}",
+        "enableAria": "Enable {{name}}",
+        "copyUpdateCommandAria": "Copy {{name}} update command",
+        "copyUpdateCommandTooltip": "Copy update command",
+        "copyCommandTooltip": "Copy command",
+        "viewDetailsAria": "{{title}} — view details",
+        "updating": "Updating",
+        "installVersion": "Install {{version}}",
+        "updateNow": "Update now",
+        "manualUpdateDivider": "or, update manually using",
+        "deleteInstanceAria": "Delete instance {{id}}",
+        "displayNameTitle": "Display name",
+        "labelPlaceholder": "Instance label",
+        "setupTitle": "Setup",
+        "runtimeTitle": "Runtime",
+        "driverTitle": "Driver",
+        "driverUnavailable": "This instance uses <code>{{driver}}</code>, which is not available in this build. Its configuration is preserved.",
+        "environmentTitle": "Environment",
+        "modelsTitle": "Models",
+        "modelsDescription": "Favorites, visibility, and ordering are saved on this device. Custom models are saved on the selected environment.",
+        "copyToastTitle": "{{provider}} update command copied",
+        "copyToastDescription": "Run it in a terminal when you are ready to update.",
+        "copyToastError": "Could not copy {{provider}} update command"
+      },
+      "setup": {
+        "aria": "Antigravity setup",
+        "environmentDescription": "Device that runs this provider.",
+        "enable": "Enable Antigravity",
+        "unavailableTitle": "Setup unavailable",
+        "unavailableDescription": "Provider setup is read-only.",
+        "updateRequiredTitle": "Update required",
+        "updateRequiredDescription": "Update this environment to manage Antigravity.",
+        "phases": {
+          "browser": {
+            "idle": "Sign in with your Google account.",
+            "starting": "Starting Google sign-in.",
+            "waiting": "Waiting for Google sign-in.",
+            "verifying": "Checking Google sign-in and available models.",
+            "succeeded": "Google sign-in complete.",
+            "failed": "Google sign-in failed.",
+            "cancelled": "Google sign-in cancelled."
+          },
+          "credential": {
+            "idle": "Connect with the credentials in the provider settings.",
+            "starting": "Checking credentials.",
+            "waiting": "Checking credentials.",
+            "verifying": "Checking credentials and available models.",
+            "succeeded": "Connected.",
+            "failed": "Could not connect with the configured credentials.",
+            "cancelled": "Connection cancelled."
+          }
+        },
+        "readingStatus": "Reading sign-in status.",
+        "signedInGoogle": "Signed in with Google.",
+        "connected": "Connected.",
+        "runtimeDescription": "Install and manage Antigravity.",
+        "customBinaryNote": "Uses the custom binary path below. Installation keeps that path.",
+        "autoInstallUnavailable": "Automatic installation unavailable. Set a binary path or use another environment.",
+        "downloading": "Downloading {{downloaded}} MB.",
+        "downloadingWithTotal": "Downloading {{downloaded}} MB of {{total}} MB.",
+        "extracting": "Extracting Antigravity.",
+        "verifyingDownload": "Checking the downloaded runtime.",
+        "installed": "Installed.",
+        "customRuntimeUnavailable": "The configured Antigravity runtime is unavailable.",
+        "customRuntimeUnchecked": "The configured Antigravity runtime has not been checked.",
+        "downloadSize": "{{size}} MB download.",
+        "notInstalled": "Not installed.",
+        "failed": "Provider setup failed.",
+        "failedTryAgain": "Provider setup failed. Try again.",
+        "openSignInFailed": "Could not open the sign-in page. Copy the link and open it in your browser.",
+        "copyLinkFailed": "Could not copy the sign-in link. Use Open sign-in page.",
+        "pending": {
+          "checkingRedirect": "Checking redirect",
+          "signingOut": "Signing out",
+          "removingRuntime": "Removing runtime",
+          "cancellingInstallation": "Cancelling installation",
+          "startingInstallation": "Starting installation",
+          "cancellingSignIn": "Cancelling sign-in",
+          "startingSignIn": "Starting sign-in"
+        },
+        "signOutConfirmGoogle": "Sign out of Google for {{provider}} on {{environment}}? This stops its running threads. Thread history is kept.",
+        "signOutConfirmDisconnect": "Disconnect for {{provider}} on {{environment}}? This stops its running threads. Thread history is kept.",
+        "removeRuntimeConfirm": "Remove the downloaded Antigravity runtime from {{environment}}? Google sign-in and thread history are kept.",
+        "downloadProgressAria": "Antigravity download",
+        "cancelInstallation": "Cancel installation",
+        "update": "Update Antigravity",
+        "reinstall": "Reinstall Antigravity",
+        "retryInstallation": "Retry installation",
+        "installManagedRuntime": "Install managed runtime",
+        "install": "Install Antigravity",
+        "removeRuntime": "Remove downloaded runtime",
+        "connectGoogle": "Connect your Google account.",
+        "connectCredentials": "Connect with the credentials below.",
+        "openSignInPage": "Open sign-in page",
+        "linkCopied": "Link copied",
+        "copySignInLink": "Copy sign-in link",
+        "cancelSignIn": "Cancel sign-in",
+        "retryGoogleSignIn": "Retry Google sign-in",
+        "signInWithGoogle": "Sign in with Google",
+        "retryConnection": "Retry connection",
+        "connect": "Connect",
+        "signOutGoogle": "Sign out of Google",
+        "disconnect": "Disconnect",
+        "linkExpiresAt": "Link expires at <time>{{time}}</time>",
+        "callbackLabel": "If the final localhost page does not load, paste its full URL here.",
+        "continue": "Continue",
+        "waitingOtherClient": "Sign-in is open in another client. Complete or cancel it there.",
+        "retrySetupStatus": "Retry setup status"
+      },
+      "models": {
+        "capabilities": {
+          "fastMode": "Fast mode",
+          "thinking": "Thinking",
+          "reasoning": "Reasoning"
+        },
+        "errors": {
+          "empty": "Enter a model slug.",
+          "builtIn": "That model is already built in.",
+          "tooLong": "Model slugs must be {{max}} characters or less.",
+          "duplicate": "That custom model is already saved."
+        },
+        "addFavoriteAria": "Add {{name}} to favorites",
+        "removeFavoriteAria": "Remove {{name}} from favorites",
+        "addFavoriteTooltip": "Add to favorites",
+        "removeFavoriteTooltip": "Remove from favorites",
+        "moveUpAria": "Move {{name}} up",
+        "moveUpTooltip": "Move up",
+        "moveDownAria": "Move {{name}} down",
+        "moveDownTooltip": "Move down",
+        "editAria": "Edit {{slug}}",
+        "editTooltip": "Edit name and options",
+        "removeAria": "Remove {{slug}}",
+        "removeTooltip": "Remove custom model",
+        "customBadge": "custom",
+        "pickerCustomTooltip": "Custom models are always shown in the picker",
+        "pickerHiddenTooltip": "Hidden from picker",
+        "pickerShownTooltip": "Shown in picker",
+        "pickerSwitchAria": "Show {{name}} in the model picker",
+        "filterPlaceholder": "Filter models",
+        "filterAria": "Filter models",
+        "enableAll": "Enable all",
+        "disableAll": "Disable all",
+        "count_one": "{{count}} model",
+        "count_other": "{{count}} models",
+        "favoritesCount_one": "{{count}} favorite",
+        "favoritesCount_other": "{{count}} favorites",
+        "hiddenCount_one": "{{count}} hidden",
+        "hiddenCount_other": "{{count}} hidden",
+        "addCustom": "Add custom model",
+        "emptyFilter": "No models match.",
+        "empty": "No models reported for this provider yet.",
+        "groups": {
+          "favorites": "Favorites",
+          "all": "All",
+          "hidden": "Hidden from picker"
+        },
+        "add": "Add"
+      },
+      "addInstance": {
+        "errors": {
+          "required": "Instance ID is required.",
+          "tooLong": "Instance ID must be 64 characters or fewer.",
+          "invalidChars": "Instance ID must start with a letter and use only letters, digits, '-', or '_'.",
+          "duplicate": "An instance named '{{id}}' already exists."
+        },
+        "steps": {
+          "driver": "Driver",
+          "identity": "Identity",
+          "config": "Config"
+        },
+        "previewLabel": "{{driver}} Workspace",
+        "toastAddedTitle": "Provider instance added",
+        "toastAddedDescription": "{{driver}} instance '{{id}}' was added.",
+        "toastErrorTitle": "Could not add provider instance",
+        "toastErrorFallback": "Update failed.",
+        "title": "Add provider instance",
+        "description": "Configure an additional provider instance on {{environment}} — for example, a second Codex install pointed at a different workspace.",
+        "driverLabel": "Driver",
+        "labelLabel": "Label",
+        "labelPlaceholder": "e.g. Work",
+        "labelHint": "Shown in the provider list. Optional.",
+        "idLabel": "Instance ID",
+        "idHint": "Routing key used by threads and sessions. Letters, digits, '-', or '_'.",
+        "accentLabel": "Accent color",
+        "swatchAria": "Use {{swatch}} accent",
+        "clear": "Clear",
+        "accentHint": "Optional marker shown in the picker.",
+        "noConfigRequired": "This driver has no required configuration. You can add the instance now.",
+        "back": "Back",
+        "next": "Next",
+        "submit": "Add instance"
+      },
+      "usage": {
+        "addHub": "Add hub",
+        "cursorTitle": "Cursor account usage",
+        "cursorDescription": "Read your existing Cursor CLI login from macOS Keychain to show account history and monthly limits. macOS may ask you to allow access.",
+        "empty": "No hubs configured.",
+        "remove": "Remove",
+        "removeConfirmTitle": "Remove {{label}}?",
+        "removeConfirmDescription": "The hub's management key is deleted from this server. Its accounts leave the Limits view; the hub itself is untouched. Add it again with the URL and key to bring them back.",
+        "removeHub": "Remove hub",
+        "addDialog": {
+          "title": "Add a CLIProxyAPI hub",
+          "description": "Show the quota of every account the hub pools, next to the providers on {{environment}}. The key stays on that server.",
+          "urlLabel": "Hub URL",
+          "keyLabel": "Management key",
+          "labelLabel": "Label (optional)",
+          "labelPlaceholder": "Defaults to the hub's host name"
+        }
+      },
+      "customModel": {
+        "optionPosition": "Option {{number}}",
+        "displayNameLabel": "Display name",
+        "optionsTitle": "Options shown in the composer",
+        "empty": "No custom options. The composer uses the provider's default options.",
+        "copyFrom": "Copy from…",
+        "copyFromAria": "Copy options from a built-in model",
+        "customOption": "Custom…",
+        "addCustomOption": "Custom option",
+        "addChoice": "Add choice",
+        "labelPlaceholder": "Label",
+        "choiceValueAria": "Choice value",
+        "choiceLabelAria": "Choice label",
+        "defaultChoice": "Default",
+        "defaultChoiceAria": "Default choice",
+        "removeChoiceAria": "Remove choice",
+        "optionIdAria": "Option id",
+        "optionLabelAria": "Option label",
+        "optionTypeAria": "Option type",
+        "typeToggle": "Toggle",
+        "typeChoices": "Choices",
+        "removeOptionAria": "Remove option {{number}}",
+        "presets": {
+          "reasoningEffort": "Reasoning",
+          "serviceTier": "Speed",
+          "effort": "Reasoning",
+          "fastMode": "Fast Mode",
+          "thinking": "Thinking",
+          "reasoning": "Reasoning",
+          "variant": "Reasoning",
+          "agent": "Agent"
+        },
+        "errors": {
+          "needsId": "{{position}} needs an id.",
+          "duplicateId": "{{position}}: id \"{{id}}\" is used twice.",
+          "needsLabel": "{{position}} needs a label.",
+          "needsChoice": "{{position}} needs at least one choice.",
+          "choiceNoValue": "{{position}} has a choice without a value.",
+          "duplicateChoice": "{{position}}: choice \"{{choiceId}}\" is used twice."
+        }
+      },
+      "accent": {
+        "title": "Accent color",
+        "planeLabel": "Accent color",
+        "hueAria": "Accent color hue",
+        "hexAria": "Custom hex accent color",
+        "chooseAria": "Choose accent color for {{name}}",
+        "clear": "Clear color"
+      }
+    },
+    "integrations": {
+      "browserTitle": "Browser",
+      "unavailableMessage": "Only available in the desktop app.",
+      "devicesTitle": "Devices",
+      "viewport": {
+        "description": "Tab size for you and agents. Fill fits the panel; other sizes show the device toolbar.",
+        "resetLabel": "default browser viewport",
+        "aria": "Default browser viewport",
+        "fillPanel": "Fill panel",
+        "responsive": "Responsive",
+        "standardGroup": "Standard",
+        "widthAria": "Default viewport width",
+        "heightAria": "Default viewport height",
+        "rotateAriaLandscape": "Rotate to landscape",
+        "rotateAriaPortrait": "Rotate to portrait",
+        "rotateTooltip": "Rotate"
+      },
+      "zoom": {
+        "description": "Page zoom applied to new browser tabs.",
+        "resetLabel": "default browser zoom",
+        "aria": "Default browser zoom"
+      },
+      "appearance": {
+        "description": "The color scheme pages are told to prefer. System follows your OS setting.",
+        "resetLabel": "default browser appearance",
+        "aria": "Default browser appearance",
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "recording": {
+        "keysDescription": "Show pressed keys and shortcuts in new recordings. Password fields are excluded.",
+        "keysAria": "Show key presses in recordings",
+        "mouseDescription": "Highlight mouse presses and held buttons in new recordings.",
+        "mouseAria": "Show mouse presses in recordings",
+        "frameRateDescription": "Maximum recording rate. 30 fps saves CPU and storage; 60 fps is smoother.",
+        "frameRateResetLabel": "browser recording frame rate",
+        "frameRateAria": "Browser recording frame rate"
+      },
+      "linkTarget": {
+        "description": "Where links in the chat and terminal open. Hold ⌘ or Ctrl while clicking a link to open it in your default browser either way.",
+        "resetLabel": "link target",
+        "aria": "Open links in",
+        "system": "Your default browser",
+        "app": "LMCS Code"
+      },
+      "autoShowPreview": {
+        "description": "Show the floating preview when an agent opens a browser or device unless the agent says otherwise.",
+        "resetLabel": "auto-show floating preview",
+        "aria": "Auto-show floating preview"
+      },
+      "profiles": {
+        "description": "Profiles separate cookies and logins. Incognito data is cleared when the app closes.",
+        "addProfile": "Add profile",
+        "blankProfile": "Blank profile",
+        "limitReached": "You've reached the profile limit",
+        "importFrom": "Import from",
+        "lookingForBrowsers": "Looking for browsers…",
+        "noBrowsers": "No supported browsers found",
+        "connectToImport": "Connect to an environment to import cookies",
+        "newProfileName": "New profile",
+        "renameAria": "Rename {{name}}",
+        "defaultBadge": "Default",
+        "optionsAria": "{{name}} options",
+        "setAsDefault": "Set as default",
+        "clearData": "Clear cookies and cache",
+        "removeProfileAndData": "Remove profile and data",
+        "connectToClear": "Connect to an environment to clear profile data",
+        "checkingEnvironments": "Checking environments…",
+        "removeConfirmTitle": "Remove “{{name}}”?",
+        "removeConfirmDescription": "Its cookies and logins are deleted. Tabs already open in this profile stay open until you close them.",
+        "removeConnectHint": "Connect to an environment to remove this profile and its data.",
+        "removeErrorConnect": "Connect to an environment before removing this profile.",
+        "removeErrorData": "Profile data could not be deleted. Try again.",
+        "removing": "Removing…",
+        "removeProfile": "Remove profile"
+      },
+      "devices": {
+        "hubAria": "Device hub",
+        "agentAria": "Agent device access",
+        "platformStatusDescription": "Status for {{label}}. Select an environment to inspect its simulator support.",
+        "checking": "Checking…",
+        "refresh": "Refresh",
+        "checkVersions": "Check versions",
+        "updating": "Updating…",
+        "updateToVersion": "Update to v{{version}}",
+        "updateFailed": "Update failed. Check this host's network connection and try again."
+      },
+      "importWizard": {
+        "quitTitle": "Quit {{name}} to import",
+        "quitDescription": "{{name}} is open, so its cookies can’t be read yet. Quit it, then continue.",
+        "quitConfirm": "I’ve quit it",
+        "noCookies": "no cookies",
+        "cookiesCount_one": "{{formatted}} cookie",
+        "cookiesCount_other": "{{formatted}} cookies",
+        "diskTitle": "Let LMCS Code read {{name}}’s cookies",
+        "diskDescription": "To import cookies from {{name}}, LMCS Code needs Full Disk Access. Turn it on in System Settings, then come back to finish the import — you can revoke it again once the import is done.",
+        "diskItemTitle": "Full Disk Access",
+        "diskItemDescription": "Read {{name}}’s cookies for this import.",
+        "diskOpenError": "Could not open System Settings. Try Allow again.",
+        "diskStillRequired": "Access is still required. Quit and reopen LMCS Code if you just allowed it, then retry the import.",
+        "diskUpdateHint": "If access doesn’t update after you allow it, quit and reopen LMCS Code, then retry the import.",
+        "continue": "Continue",
+        "configureTitle": "Import from {{name}}",
+        "configureDescription": "Choose which cookies to import for {{environment}}.",
+        "fromLabel": "From",
+        "intoLabel": "Into",
+        "newProfileTitle": "New profile",
+        "newProfileSubtitle": "Created for these cookies",
+        "existingProfileSubtitle": "Existing profile",
+        "targetMissing": "That profile is no longer available. Choose where to import these cookies.",
+        "targetUncreatable": "You’ve reached the profile limit. Choose an existing profile to import into.",
+        "import": "Import",
+        "importingTitle": "Importing cookies",
+        "importingDescription": "This may take a moment.",
+        "importing": "Importing…",
+        "checkingTitle": "Checking {{name}}",
+        "checkingDiskDescription": "Checking Full Disk Access.",
+        "checkingBrowserDescription": "Checking whether the browser has closed.",
+        "checkingAccess": "Checking access…",
+        "checking": "Checking…",
+        "importedTitle_one": "Imported {{formatted}} cookie",
+        "importedTitle_other": "Imported {{formatted}} cookies",
+        "skippedTitle_one": "Skipped {{formatted}} cookie",
+        "skippedTitle_other": "Skipped {{formatted}} cookies",
+        "noneFoundTitle": "No cookies found",
+        "addedDescription": "Added to {{target}} for {{environment}}.",
+        "skippedSuffix_one": "{{formatted}} skipped.",
+        "skippedSuffix_other": "{{formatted}} skipped.",
+        "noneImportedDescription": "No cookies were imported for {{environment}}.",
+        "nothingToImportDescription": "There were no cookies to import for {{environment}}.",
+        "skippedLabel": "Skipped",
+        "done": "Done",
+        "blockedTitle": "Couldn’t import from {{name}}",
+        "close": "Close",
+        "tryAgain": "Try again"
+      },
+      "deviceHosts": {
+        "title": "Device hosts",
+        "description": "Add remote machines with simulator or emulator runtimes installed, and the selected environments will connect over SSH and set up device tools automatically.",
+        "addHost": "Add host",
+        "connectHint": "Connect a selected environment to manage device hosts.",
+        "empty": "No device hosts.",
+        "checkingConnection": "Checking connection…",
+        "installingSupport": "Installing device support…",
+        "ambiguousDestination": "Multiple hosts match this SSH destination. Select the environment to edit its hosts.",
+        "environmentDisconnected": "Environment disconnected",
+        "connecting": "Connecting…",
+        "iosAvailable": "iOS available",
+        "androidAvailable": "Android available",
+        "localAvailable": "Already available locally",
+        "connectionFailed": "Connection failed",
+        "optionsAria": "{{label}} options",
+        "edit": "Edit",
+        "remove": "Remove",
+        "retrying": "Retrying…",
+        "retry": "Retry",
+        "testConnection": "Test connection",
+        "editor": {
+          "addTitle": "Add device host",
+          "editTitle": "Edit device host",
+          "connectFromOne": "Connect from {{label}}.",
+          "connectFromMany": "Connect from {{count}} selected environments.",
+          "hostsSkipped": "Hosts on the same machine are skipped.",
+          "nameLabel": "Name",
+          "targetLabel": "SSH target",
+          "targetPlaceholder": "user@host or SSH alias",
+          "optionsLabel": "SSH options",
+          "identityLabel": "Identity file",
+          "identityPlaceholder": "SSH config default",
+          "portLabel": "Port",
+          "portPlaceholder": "Default",
+          "optionsHint": "Optional. Resolved separately on each environment.",
+          "checkingEnvironments": "Checking environments…",
+          "failedCount": "{{count}} of {{total}} failed",
+          "checksPassed": "Connection checks passed",
+          "checkBeforeSaving": "Check access before saving",
+          "checking": "Checking…",
+          "failed": "Failed",
+          "connected": "Connected",
+          "showError": "Show error",
+          "saveHost": "Save host"
+        }
+      }
+    },
+    "restore": {
+      "confirmTitle": "Restore default settings?",
+      "confirmResetList": "This will reset: {{labels}}.",
+      "themeRestoreError": "Couldn’t restore theme settings",
+      "tryAgain": "Try again.",
+      "labels": {
+        "theme": "Theme",
+        "followSystem": "Follow system",
+        "themeMix": "Theme mix",
+        "contrast": "Contrast",
+        "glassOpacity": "Glass opacity",
+        "diffColors": "Diff colors",
+        "panelAnimations": "Panel animations",
+        "environmentIdentification": "Environment identification",
+        "timeFormat": "Time format",
+        "threadNotifications": "Thread notifications",
+        "inAppNotifications": "In-app notifications",
+        "visibleThreads": "Visible threads",
+        "projectGrouping": "Project Grouping",
+        "autoSettleInactive": "Auto-settle inactive threads",
+        "autoSettleMerged": "Auto-settle merged threads",
+        "wordWrap": "Word wrap",
+        "defaultDiffFileState": "Default diff file state",
+        "diffWhitespace": "Diff whitespace changes",
+        "diffLayout": "Diff layout",
+        "proactivePanels": "Proactive panels",
+        "skillsInSlashMenu": "Show skills in slash menu",
+        "composerCollapse": "Collapse composer on scroll",
+        "richTextComposer": "Rich text composer",
+        "sendShortcut": "Send shortcut",
+        "followUpBehavior": "Follow-up behavior",
+        "contextWindowIndicator": "Context window indicator",
+        "responseStreaming": "Response streaming",
+        "providerUpdateChecks": "Provider update checks",
+        "continueAfterRestarts": "Continue threads after restarts",
+        "backgroundActivity": "Background activity",
+        "newThreadMode": "New thread mode",
+        "worktreesFromOrigin": "New worktrees start from origin",
+        "addProjectBaseDir": "Add project base directory",
+        "unpinConfirmation": "Unpin confirmation",
+        "archiveConfirmation": "Archive confirmation",
+        "deleteConfirmation": "Delete confirmation",
+        "quitShortcut": "Quit shortcut",
+        "textGenerationModel": "Text generation model",
+        "agentBrowserAccess": "Agent browser access",
+        "interfaceFont": "Interface font",
+        "promptFont": "Prompt font",
+        "codeFont": "Code font",
+        "terminalFont": "Terminal font",
+        "browserViewport": "Browser viewport",
+        "browserZoom": "Browser zoom",
+        "browserAppearance": "Browser appearance",
+        "recordingFrameRate": "Recording frame rate",
+        "recordingKeyPresses": "Recording key presses",
+        "recordingMousePresses": "Recording mouse presses",
+        "openLinksIn": "Open links in",
+        "floatingPreview": "Floating preview"
+      }
+    },
+    "diagnostics": {
+      "description": {
+        "modeLocal": "Local trace file",
+        "modeTerminal": "Terminal logs only",
+        "exportBothCollapsed": "{{mode}}. Exporting OTEL to {{url}}.",
+        "exportBoth": "{{mode}}. Exporting OTEL traces to {{tracesUrl}} and metrics to {{metricsUrl}}.",
+        "exportTraces": "{{mode}}. Exporting OTEL traces to {{tracesUrl}}.",
+        "exportMetrics": "{{mode}}. Exporting OTEL metrics to {{metricsUrl}}."
+      },
+      "signal": {
+        "sendSigint": "Send SIGINT",
+        "sendSigkill": "Send SIGKILL"
+      },
+      "expandable": {
+        "showFullError": "Show full error",
+        "showLess": "Show less"
+      },
+      "panel": {
+        "noTraceRecords": "No trace records",
+        "statDetailsAria": "{{label}} details",
+        "copiedTraceIdAria": "Copied trace ID",
+        "copyTraceIdAria": "Copy trace ID",
+        "copiedTooltip": "Copied",
+        "copyTraceIdTooltip": "Copy full trace ID",
+        "processType": {
+          "subprocess": "Subprocess",
+          "agent": "Agent",
+          "process": "Process"
+        },
+        "collapseAria": "Collapse {{name}}",
+        "expandAria": "Expand {{name}}",
+        "headers": {
+          "name": "Name",
+          "cpu": "CPU",
+          "memory": "Memory",
+          "command": "Command",
+          "pid": "PID",
+          "type": "Type",
+          "kill": "Kill",
+          "process": "Process",
+          "cpuTime": "CPU Time",
+          "current": "Current",
+          "average": "Average",
+          "peak": "Peak",
+          "maxMem": "Max Mem",
+          "span": "Span",
+          "cause": "Cause",
+          "duration": "Duration",
+          "ended": "Ended",
+          "count": "Count",
+          "lastSeen": "Last Seen",
+          "trace": "Trace",
+          "time": "Time",
+          "level": "Level",
+          "message": "Message",
+          "failures": "Failures",
+          "max": "Max"
+        },
+        "noLiveProcesses": "No live descendant processes found.",
+        "processRowAria": "{{kind}} process {{name}}",
+        "processKind": {
+          "root": "Root",
+          "child": "Child"
+        },
+        "chartAria": "Average CPU {{avg}}%, peak CPU {{peak}}%",
+        "chartTooltip": "Avg {{avg}}%, peak {{peak}}%",
+        "historyPeriodAria": "Process history period",
+        "checking": "Checking",
+        "checkedUnavailable": "Checked unavailable",
+        "checked": "Checked",
+        "noEditors": "No available editors found.",
+        "noEnvironment": "No environment is selected.",
+        "openLogsFailed": "Unable to open logs folder.",
+        "sigkillConfirm": "Send SIGKILL to process {{pid}}? This cannot be handled by the process.",
+        "confirmSignalFailed": "Could not confirm signal",
+        "sendSignalFailed": "Could not send {{signal}}",
+        "sendSignalFailedDescription": "Failed to send {{signal}}.",
+        "processExited": "Process already exited",
+        "processExitedDescription": "The process is not a child of the LMCS Server. It might already have exited.",
+        "sections": {
+          "liveProcesses": "Live Processes",
+          "resourceHistory": "Resource History",
+          "traceDiagnostics": "Trace Diagnostics",
+          "latestFailures": "Latest Failures",
+          "commonFailures": "Most Common Failures",
+          "slowestSpans": "Slowest Spans",
+          "spanLogs": "Span Logs",
+          "topSpanNames": "Top Span Names"
+        },
+        "refreshProcesses": "Refresh process diagnostics",
+        "refreshResources": "Refresh resource history",
+        "refreshTrace": "Refresh trace diagnostics",
+        "stats": {
+          "childProcesses": "Child Processes",
+          "cpu": "CPU",
+          "memory": "Memory",
+          "serverPid": "Server PID",
+          "cpuTime": "CPU Time",
+          "samples": "Samples",
+          "interval": "Interval",
+          "processes": "Processes",
+          "spans": "Spans",
+          "failures": "Failures",
+          "slowSpans": "Slow Spans",
+          "parseErrors": "Parse Errors"
+        },
+        "tooltips": {
+          "totalCpu": "Total CPU across live child processes of the current server process. The desktop shell and other parent processes are not included.",
+          "totalMemory": "Total resident memory across live child processes of the current server process. The desktop shell and other parent processes are not included.",
+          "cpuTimeApprox": "Approximate active CPU time for the LMCS server root process and its descendants during the selected window. It grows only while sampled processes use CPU and older samples leave as the window moves.",
+          "samplesRetained": "In-memory process samples retained by the server. This resets when the server restarts.",
+          "slowSpansThreshold": "Spans with a duration of {{threshold}} or longer.",
+          "slowSpansFallback": "Spans at or above the configured slow-span threshold."
+        },
+        "empty": {
+          "loadingProcesses": "Loading live processes...",
+          "noProcesses": "No live descendant processes found.",
+          "collectingSamples": "Collecting process resource samples...",
+          "noSamples": "No process resource samples found for this window.",
+          "loadingFailures": "Loading failures...",
+          "noFailures": "No failed spans found.",
+          "loadingFailureGroups": "Loading failure groups...",
+          "noFailureGroups": "No repeated failures found.",
+          "loadingSlowSpans": "Loading slow spans...",
+          "noSpans": "No spans found.",
+          "loadingLogs": "Loading recent logs...",
+          "noLogs": "No warnings or errors found.",
+          "loadingSpanNames": "Loading span names..."
+        },
+        "openLogsFolder": "Open logs folder",
+        "partialFailure": "Some trace files could not be read, so diagnostics may be incomplete. {{message}}",
+        "showFullMessage": "Show full message"
+      },
+      "resources": {
+        "sectionMonitor": "Resource monitor",
+        "sectionHost": "Host & collection",
+        "sectionTimeline": "Resource timeline",
+        "sectionTree": "Live process tree",
+        "sectionIo": "Instrumented application I/O",
+        "nativeBadge": "Native",
+        "waitingForSample": "Waiting for sample",
+        "refreshTelemetryAria": "Refresh resource telemetry",
+        "refreshTelemetryTooltip": "Refresh telemetry snapshot",
+        "footprintTitle": "LMCS system footprint",
+        "footprintDescription": "Live native counters for the server, providers, terminals, desktop processes, and the monitor itself.",
+        "samplingEvery": "Sampling every {{interval}}",
+        "statCurrentCpu": "Current CPU",
+        "statCurrentCpuDetail": "{{value}} observed CPU time",
+        "statResidentMemory": "Resident memory",
+        "statResidentMemoryDetail": "{{value}} combined process peaks",
+        "statProcessCount": "Process count",
+        "statProcessCountDetail": "{{starts}} starts · {{exits}} exits",
+        "statReadThroughput": "Read throughput",
+        "statWriteThroughput": "Write throughput",
+        "statThroughputDetail": "{{value}} observed",
+        "statSpeedLimit": "CPU speed limit",
+        "unknown": "Unknown",
+        "thermalStateDetail": "{{state}} thermal state",
+        "aggregateBackend": "Backend + agents",
+        "aggregateDesktop": "Desktop",
+        "aggregateMonitor": "Monitor overhead",
+        "processSingular": "process",
+        "processPlural": "processes",
+        "metricMemory": "Memory",
+        "metricRead": "Read",
+        "metricWrite": "Write",
+        "retryMonitor": "Retry monitor",
+        "hostState": "Host state",
+        "powerSource": "Power source",
+        "powerBattery": "Battery",
+        "powerExternal": "External power",
+        "lowPowerMode": "Low power mode",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "idleLabel": "Idle",
+        "idleIdle": "Idle",
+        "idleActive": "Active",
+        "sessionLabel": "Session",
+        "sessionSuspended": "Suspended",
+        "sessionLocked": "Locked",
+        "sessionUnlocked": "Unlocked",
+        "thermalLabel": "Thermal",
+        "hostSignalsTitle": "Desktop host signals not connected",
+        "hostSignalsDescription": "Power, idle, lock, and thermal state are supplied by the desktop host. Process telemetry remains fully active in this browser session.",
+        "collectionHealth": "Collection health",
+        "healthNative": "Native process monitor",
+        "healthDesktop": "Electron main process",
+        "healthBrowserOnly": "Available when this page runs inside the desktop app.",
+        "healthNoErrors": "No reported errors",
+        "healthDesktopOnly": "Desktop only",
+        "collectionTime": "Collection time",
+        "processScan": "Process scan",
+        "processScanValue": "{{retained}}/{{scanned}} retained",
+        "inaccessible": "Inaccessible",
+        "sidecar": "Sidecar",
+        "sidecarUnavailable": "Unavailable",
+        "restarts": "Restarts",
+        "waitingForHealth": "Waiting for collector health.",
+        "historyPeriodAria": "Resource history period",
+        "refreshHistoryAria": "Refresh resource history",
+        "chartCpuAverage": "CPU average",
+        "chartIoReads": "I/O reads",
+        "chartIoWrites": "I/O writes",
+        "chartCpuAvg": "CPU avg {{value}}%",
+        "chartCpuPeak": "CPU peak {{value}}%",
+        "chartRead": "Read {{value}}",
+        "chartWrite": "Write {{value}}",
+        "treeWaiting": "Waiting for the native process monitor.",
+        "historyEmpty": "No retained process samples in this window.",
+        "attributionEmpty": "No instrumented application I/O has been recorded yet.",
+        "identityNote": "Identity:",
+        "identityValue": "PID + start time",
+        "ioNote": "Logical bytes by operation",
+        "ioDescription": "Native counters identify which process is reading or writing. These application-level counters identify known LMCS operations so process spikes can be correlated with specific persistence and logging paths.",
+        "expandAria": "Expand {{name}}",
+        "collapseAria": "Collapse {{name}}",
+        "intervalSecond": "{{value}} second",
+        "intervalSeconds": "{{value}} seconds",
+        "category": {
+          "server": "Server",
+          "server-child": "Backend child",
+          "provider-root": "Provider",
+          "terminal-root": "Terminal",
+          "electron-main": "Electron main",
+          "electron-renderer": "Renderer",
+          "electron-gpu": "GPU",
+          "electron-utility": "Electron utility",
+          "resource-monitor": "Monitor",
+          "unknown-t3": "LMCS process"
+        },
+        "ioSemantics": {
+          "storage": "Storage bytes",
+          "logical": "Logical bytes",
+          "all-io": "All I/O bytes",
+          "unavailable": "Unavailable"
+        },
+        "status": {
+          "starting": "starting",
+          "healthy": "healthy",
+          "degraded": "degraded",
+          "unavailable": "unavailable",
+          "stopped": "stopped"
+        },
+        "thermal": {
+          "unknown": "unknown",
+          "nominal": "nominal",
+          "fair": "fair",
+          "serious": "serious",
+          "critical": "critical"
+        },
+        "table": {
+          "process": "Process",
+          "category": "Category",
+          "cpu": "CPU",
+          "cpuTime": "CPU Time",
+          "memory": "Memory",
+          "readRate": "Read/s",
+          "writeRate": "Write/s",
+          "readTotal": "Read Total",
+          "writeTotal": "Write Total",
+          "pid": "PID",
+          "kill": "Kill",
+          "peakCpu": "Peak CPU",
+          "peakMem": "Peak Mem",
+          "read": "Read",
+          "write": "Write",
+          "samples": "Samples",
+          "component": "Component",
+          "operation": "Operation",
+          "logicalRead": "Logical Read",
+          "logicalWrite": "Logical Write",
+          "count": "Count",
+          "time": "Time"
+        }
+      }
+    },
+    "searchItems": {
+      "storage-worktrees": "Worktree cleanup",
+      "storage-artifacts": "Artifacts and logs",
+      "project-defaults": "Project defaults and overrides",
+      "interface-language": "Interface language",
+      "project-overview": "Project overview",
+      "default-model": "Default model",
+      "default-permissions": "Permissions",
+      "color-scheme": "Color scheme",
+      "theme": "Themes",
+      "setting-appearance-contrast": "Contrast",
+      "setting-glass-opacity": "Glass opacity",
+      "diff-color-scheme": "Diff colors",
+      "panel-animations": "Panel animations",
+      "environment-identification": "Environment identification",
+      "interface-font": "Interface font",
+      "prompt-font": "Prompt font",
+      "code-font": "Code font",
+      "terminal-font": "Terminal font",
+      "font-smoothing": "Font smoothing",
+      "word-wrap": "Word wrap",
+      "project-grouping": "Project grouping",
+      "auto-settle-inactive-threads": "Auto-settle inactive threads",
+      "auto-settle-merged-threads": "Auto-settle merged threads",
+      "days-before-auto-settle": "Days of inactivity before auto-settle",
+      "thread-notifications": "Thread notifications",
+      "in-app-notifications": "In-app notifications",
+      "time-format": "Time format",
+      "response-streaming": "Response streaming",
+      "hide-whitespace-changes": "Hide whitespace changes",
+      "default-diff-file-state": "Default diff file state",
+      "diff-layout": "Diff layout",
+      "proactive-panels": "Proactive panels",
+      "skills-in-slash-menu": "Show skills in slash menu",
+      "composer-rich-text": "Rich text composer",
+      "composer-collapse": "Collapse composer on scroll",
+      "send-shortcut": "Send shortcut",
+      "follow-up-behavior": "Follow-up behavior",
+      "provider-update-checks": "Provider update checks",
+      "continue-threads-after-server-update": "Continue threads after restarts",
+      "background-activity": "Background activity",
+      "new-threads": "New threads",
+      "worktree-submodules": "Submodules",
+      "start-from-origin": "Start from origin",
+      "add-project-starts-in": "Add project starts in",
+      "unpin-confirmation": "Unpin confirmation",
+      "archive-confirmation": "Archive confirmation",
+      "delete-confirmation": "Delete confirmation",
+      "quit-confirmation": "Quit shortcut",
+      "text-generation-model": "Text generation model",
+      "diagnostics": "Diagnostics",
+      "open-source-licenses": "Open source licenses",
+      "legacy-plan-mode": "Plan mode (legacy)",
+      "legacy-context-window-indicator": "Context window indicator (legacy)",
+      "legacy-sidebar": "Sidebar (legacy)",
+      "keybindings": "Keybindings",
+      "snap-shot-enabled": "SnapShots",
+      "snap-shot-accessibility": "Include app text",
+      "snap-shot-shortcut": "Capture shortcut",
+      "snap-shot-sound": "Capture sound",
+      "snap-shot-flash": "Capture flash",
+      "snap-shot-animations": "Capture animations",
+      "providers": "Providers",
+      "usage-providers": "Usage providers",
+      "cursor-keychain-usage": "Cursor account usage",
+      "provider-health-check-interval": "Health check interval",
+      "agent-browser-access": "Agent browser access",
+      "device-hosts": "Device hosts",
+      "agent-device-access": "Agent device access",
+      "device-hub": "Device hub",
+      "device-platform-support": "Simulator support",
+      "browser-profiles": "Browser profiles",
+      "browser-default-profile": "Default browser profile",
+      "browser-default-viewport": "Default browser viewport",
+      "browser-default-zoom": "Default browser zoom",
+      "browser-default-appearance": "Default browser appearance",
+      "browser-recording-frame-rate": "Browser recording frame rate",
+      "browser-recording-key-presses": "Show key presses in recordings",
+      "browser-recording-mouse-presses": "Show mouse presses in recordings",
+      "browser-link-target": "Open links in",
+      "browser-auto-show-floating-preview": "Auto-show floating preview",
+      "automatic-pull": "Automatically pull",
+      "pull-request-merge-method": "Default merge method",
+      "source-control": "Source control",
+      "git-fetch-interval": "Git fetch interval",
+      "source-control-writing-style": "Source control writing style",
+      "follow-change-request-templates": "Follow change request templates",
+      "source-control-writer-model": "Source control writer model",
+      "project-actions": "Actions",
+      "environment-icon": "Environment icon",
+      "local-environment": "Local environment",
+      "network-access": "Network access",
+      "tailscale-https": "Tailscale HTTPS",
+      "wsl-backend": "WSL backend",
+      "t3-connect": "LMCS Connect",
+      "publish-agent-activity": "Publish agent activity",
+      "connections-environment": "This machine",
+      "remote-environments": "Environments",
+      "load-balancing": "Load balancing",
+      "github-routing": "GitHub sharing",
+      "archive": "Archived threads"
+    },
+    "keybindings": {
+      "commands": {
+        "sidebar": {
+          "toggle": "Sidebar: Toggle"
+        },
+        "navigation": {
+          "back": "Navigation: Back",
+          "forward": "Navigation: Forward"
+        },
+        "terminal": {
+          "toggle": "Terminal: Toggle",
+          "split": "Terminal: Split",
+          "splitVertical": "Terminal: Split Vertical",
+          "new": "Terminal: New",
+          "close": "Terminal: Close"
+        },
+        "rightPanel": {
+          "toggle": "Right Panel: Toggle",
+          "toggleMaximized": "Right Panel: Toggle Maximized",
+          "close": "Right Panel: Close"
+        },
+        "pullRequest": {
+          "copyNumber": "Pull Request: Copy Number"
+        },
+        "diff": {
+          "toggle": "Diff: Toggle"
+        },
+        "preview": {
+          "toggle": "Preview: Toggle",
+          "refresh": "Preview: Refresh",
+          "focusUrl": "Preview: Focus Url",
+          "zoomIn": "Preview: Zoom In",
+          "zoomOut": "Preview: Zoom Out",
+          "resetZoom": "Preview: Reset Zoom"
+        },
+        "commandPalette": {
+          "toggle": "Command Palette: Toggle"
+        },
+        "filePicker": {
+          "toggle": "File Picker: Toggle"
+        },
+        "projectSearch": {
+          "toggle": "Project Search: Toggle"
+        },
+        "usage": {
+          "open": "Usage: Open"
+        },
+        "theme": {
+          "select": "Theme: Select"
+        },
+        "appearance": {
+          "cycle": "Appearance: Cycle"
+        },
+        "themeEditor": {
+          "toggle": "Theme Editor: Toggle"
+        },
+        "composer": {
+          "stash": "Composer: Stash",
+          "host": "Composer: Host",
+          "effort": "Composer: Effort",
+          "mode": "Composer: Mode",
+          "workspace": "Composer: Workspace",
+          "previousWorktree": "Composer: Previous Worktree",
+          "branch": "Composer: Branch"
+        },
+        "chat": {
+          "new": "Chat: New",
+          "newLocal": "Chat: New Local"
+        },
+        "editor": {
+          "openFavorite": "Editor: Open Favorite"
+        },
+        "modelPicker": {
+          "toggle": "Model Picker: Toggle",
+          "previousProvider": "Model Picker: Previous Provider",
+          "nextProvider": "Model Picker: Next Provider",
+          "jump": {
+            "1": "Model Picker: Jump: 1",
+            "2": "Model Picker: Jump: 2",
+            "3": "Model Picker: Jump: 3",
+            "4": "Model Picker: Jump: 4",
+            "5": "Model Picker: Jump: 5",
+            "6": "Model Picker: Jump: 6",
+            "7": "Model Picker: Jump: 7",
+            "8": "Model Picker: Jump: 8",
+            "9": "Model Picker: Jump: 9"
+          }
+        },
+        "thread": {
+          "stop": "Thread: Stop",
+          "steerQueuedMessage": "Thread: Steer Queued Message",
+          "previous": "Thread: Previous",
+          "next": "Thread: Next",
+          "copyReference": "Pull Request: Copy Link or Thread ID",
+          "settle": "Thread: Settle",
+          "pin": "Thread: Pin",
+          "undo": "Thread: Undo",
+          "jump": {
+            "1": "Thread: Jump: 1",
+            "2": "Thread: Jump: 2",
+            "3": "Thread: Jump: 3",
+            "4": "Thread: Jump: 4",
+            "5": "Thread: Jump: 5",
+            "6": "Thread: Jump: 6",
+            "7": "Thread: Jump: 7",
+            "8": "Thread: Jump: 8",
+            "9": "Thread: Jump: 9"
+          }
+        }
+      },
+      "search": "Search keybindings",
+      "addKeybinding": "Add keybinding",
+      "openFile": "Open keybindings.json",
+      "newKeybinding": "New keybinding",
+      "newKeybindingFallback": "new keybinding",
+      "cancelNew": "Cancel new keybinding",
+      "command": "Command",
+      "when": "When",
+      "whenExpressionAria": "When expression",
+      "always": "Always",
+      "condition": "Condition",
+      "group": "Group",
+      "not": "Not",
+      "negateCondition": "Negate {{identifier}}",
+      "negateGroup": "Negate group",
+      "removeAll": "Clear all conditions",
+      "removeCondition": "Remove condition",
+      "removeGroup": "Remove group and its conditions",
+      "expressionSyntaxHint": "Use variables with !, &&, ||, and parentheses.",
+      "fixExpression": "Fix the expression above to continue editing visually.",
+      "unknownCondition_one": "Unknown condition: {{identifiers}}",
+      "unknownCondition_other": "Unknown conditions: {{identifiers}}",
+      "unknownConditionBody": "LMCS Code does not recognize this condition yet. It can still be saved, but it may not match unless the runtime provides it.",
+      "conflict": "Conflicts with {{labels}}.",
+      "conflictMoreSuffix": ", and more",
+      "conflictBody": "The most recent matching binding wins when both conditions can apply.",
+      "saving": "Saving",
+      "pressShortcut": "Press shortcut",
+      "unassigned": "Unassigned",
+      "editShortcutAria": "Edit shortcut for {{label}}: {{shortcut}}",
+      "keybindingForAria": "Keybinding for {{label}}",
+      "editWhenAria": "Edit when clause for {{label}}",
+      "actionsAria": "Actions for {{label}}",
+      "resetToDefault": "Reset to default",
+      "sourceCustom": "Custom",
+      "sourceProject": "Project",
+      "emptySearch": "No keybindings match your search.",
+      "browserNotice": "Some shortcuts may be claimed by the browser before LMCS Code sees them. Use the desktop app for better keybinding support.",
+      "bindingCount_one": "{{count}} binding",
+      "bindingCount_other": "{{count}} bindings"
+    },
+    "connections": {
+      "serverLabel": "{{label}} server",
+      "serverFallback": "server",
+      "thisMachine": "This machine",
+      "primaryEnvironment": "Primary environment",
+      "version": "Version",
+      "loading": "Loading…",
+      "upToDate": "Up to date",
+      "update": "Update",
+      "retryUpdate": "Retry update",
+      "updateToVersion": "Update to {{version}}",
+      "moreActionsMachineAria": "More actions for this machine",
+      "adminAccessTitle": "Administrative access",
+      "adminAccessDescription": "Pairing links and client-session management require the access:write scope for this backend.",
+      "environmentsTitle": "Environments",
+      "restarting": "Restarting…",
+      "restartAndEnable": "Restart and enable",
+      "restartAndDisable": "Restart and disable",
+      "scopeCount_one": "{{count}} scope",
+      "scopeCount_other": "{{count}} scopes",
+      "scopesShowAria": "{{label}}: show {{count}}",
+      "grantedScopes": "Granted scopes",
+      "pairingLinkScopesLabel": "Pairing link scopes",
+      "clientScopesLabel": "Client scopes",
+      "scopes": {
+        "orchestrationRead": {
+          "title": "View environment",
+          "description": "Read threads, status, diffs, and configuration."
+        },
+        "orchestrationOperate": {
+          "title": "Operate tasks",
+          "description": "Start tasks and perform changes in the environment."
+        },
+        "terminalOperate": {
+          "title": "Use terminals",
+          "description": "Create terminals and send input to running shells."
+        },
+        "reviewWrite": {
+          "title": "Write reviews",
+          "description": "Create comments while reviewing changes."
+        },
+        "accessRead": {
+          "title": "View access",
+          "description": "Inspect pairing links and authorized clients."
+        },
+        "accessWrite": {
+          "title": "Manage access",
+          "description": "Issue and revoke credentials for other clients."
+        },
+        "relayRead": {
+          "title": "View relay",
+          "description": "Inspect managed relay connectivity."
+        },
+        "relayWrite": {
+          "title": "Manage relay",
+          "description": "Change managed tunnel connectivity."
+        }
+      },
+      "pairing": {
+        "authorizedClients": "Authorized clients",
+        "defaultLinkLabel": "Pairing link",
+        "linkCreatedAt": "Link created at {{date}}",
+        "createToShare": "Create a new link to share from this client.",
+        "copyTokenHint": "Copy the token and pair from another client using this backend's reachable host.",
+        "share": "Share",
+        "copyCode": "Copy code",
+        "showLink": "Show link",
+        "showCode": "Show code",
+        "hostedLinkTitle": "Hosted app pairing link",
+        "linkTitle": "Pairing link",
+        "codeTitle": "Pairing code",
+        "hostedLinkDescription": "Clipboard copy is unavailable here. Open or manually copy this hosted app link on the device you want to connect.",
+        "linkDescription": "Clipboard copy is unavailable here. Open or manually copy this full pairing URL on the device you want to connect.",
+        "codeDescription": "Clipboard copy is unavailable here. Manually copy this code into another client.",
+        "qrTitle": "Pairing link — scan to open on another device",
+        "revoking": "Revoking…",
+        "revoke": "Revoke",
+        "qrEndpointAria": "Endpoint the pairing QR code and URL use",
+        "reachVia": "Reach this machine via",
+        "copyLink": "Copy link",
+        "copyCodeOnly": "Copy code only",
+        "noQrLoopback": "No QR for this endpoint. Another device scanning a loopback link would dial itself; copy the URL for use on this machine instead.",
+        "connectedFor": "Connected for {{duration}}",
+        "connected": "Connected",
+        "lastConnectedAt": "Last connected at {{date}}",
+        "notConnectedYet": "Not connected yet.",
+        "thisDevice": "This device",
+        "revokeOthers": "Revoke others",
+        "createLink": "Create link",
+        "createTitle": "Create pairing link",
+        "createDescription": "Generate a one-time link that another device can use to pair with this backend as an authorized client.",
+        "clientLabelOptional": "Client label (optional)",
+        "clientLabelPlaceholder": "e.g. Living room iPad",
+        "permissions": "Permissions",
+        "permissionsHint": "Limit what the paired client can do.",
+        "readOnly": "Read only",
+        "standard": "Standard",
+        "selectOnePermission": "Select at least one permission.",
+        "adminScopeWarning": "This client can create or revoke access for other devices.",
+        "creating": "Creating…",
+        "noClients": "No pairing links or client sessions.",
+        "clientCount_one": "{{count}} client",
+        "clientCount_other": "{{count}} clients",
+        "linkCount_one": "{{count}} pairing link",
+        "linkCount_other": "{{count}} pairing links"
+      },
+      "endpoints": {
+        "setupRequired": "Setup required",
+        "defaultBadge": "Default",
+        "restarting": "Restarting…",
+        "setup": "Setup",
+        "disable": "Disable",
+        "setAsDefault": "Set as default",
+        "hide": "Hide",
+        "reachableAt": "Reachable at",
+        "shareHintHosted": "Opens the hosted app, no install needed",
+        "shareHintLan": "Devices on the same network",
+        "shareHintPrivateNetwork": "Devices on your private network",
+        "shareHintPublic": "Reachable from anywhere",
+        "shareHintLoopback": "Clients on this machine"
+      },
+      "environments": {
+        "statusOff": "Off",
+        "statusConnected": "Connected",
+        "statusConnecting": "Connecting",
+        "statusReconnecting": "Reconnecting",
+        "statusReconnectingError": "Reconnecting: {{error}}",
+        "statusUnsupported": "Client not supported",
+        "statusError": "Connection failed",
+        "statusErrorDetail": "Connection failed: {{error}}",
+        "statusOffline": "Offline",
+        "statusAvailable": "Not connected",
+        "statusRestarting": "Restarting",
+        "switchedOff": "Switched off",
+        "updateAvailable": "Update available: {{serverVersion}} → {{clientVersion}}",
+        "switchOn": "Switch on",
+        "switchOff": "Switch off",
+        "switchOnAria": "Switch on {{label}}",
+        "switchOffAria": "Switch off {{label}}",
+        "moreActionsAria": "More actions for {{label}}",
+        "copyTraceId": "Copy trace ID",
+        "removing": "Removing…",
+        "removeFromDevice": "Remove from this device…",
+        "noRemoteTitle": "No saved remote environments",
+        "noRemoteDescriptionCloud": "Click “Add environment” to pair another environment, or connect one from LMCS Connect.",
+        "noRemoteDescription": "Click “Add environment” to pair another environment.",
+        "addEnvironment": "Add environment",
+        "adding": "Adding…",
+        "addDialogTitle": "Add Environment",
+        "addDialogDescription": "Pair another environment to this client.",
+        "modeRemoteTitle": "Remote link",
+        "modeRemoteDescription": "Enter a backend host and pairing code.",
+        "modeSshDescription": "Use local SSH config, agent, and tunnels for the backend.",
+        "host": "Host",
+        "pairingCode": "Pairing code",
+        "pastePairingUrlHint": "Paste a full pairing URL here to fill both fields automatically.",
+        "sshHostLabel": "SSH host or alias",
+        "sshHostPlaceholder": "Search hosts or type devbox",
+        "loadingHosts": "Loading hosts…",
+        "noHostsMatch": "No hosts match \"{{query}}\".",
+        "username": "Username",
+        "port": "Port",
+        "sshHostRequired": "SSH host or alias is required.",
+        "sshPortRange": "SSH port must be between 1 and 65535.",
+        "sshConnectFailed": "Failed to connect SSH host.",
+        "enterHost": "Enter a backend host.",
+        "enterPairingCode": "Enter a pairing code."
+      },
+      "network": {
+        "enableAria": "Enable network access",
+        "limitedToMachine": "Limited to this machine.",
+        "reachableAtUrl": "Reachable at {{url}}",
+        "exposedWithHost": "Exposed on all interfaces. Pairing links use {{host}}.",
+        "exposedAll": "Exposed on all interfaces.",
+        "managedDescription": "Remote access is already configured. Change network exposure where the server starts.",
+        "localDescription": "Only this machine can connect. Restart with a non-loopback host for remote pairing.",
+        "managedTooltip": "Network exposure changes restart the backend and must be controlled where the server process is launched.",
+        "enableTitle": "Enable network access?",
+        "disableTitle": "Disable network access?",
+        "enableDescription": "Let your other devices connect to LMCS Code over the network. Pair devices to give them access. LMCS Code will restart.",
+        "disableDescription": "Devices connected over your local network will disconnect. Existing tunnels, such as LMCS Connect or Tailscale HTTPS, keep working. LMCS Code will restart."
+      },
+      "wsl": {
+        "loadFailed": "Couldn't load the WSL backend state.",
+        "retrying": "Retrying…",
+        "retry": "Retry",
+        "unavailableDescription": "WSL is unavailable, so Windows is running instead. Turn WSL off to clear this preference.",
+        "switchToWindows": "Switch to Windows",
+        "off": "Off",
+        "defaultDistro": "Default distro",
+        "defaultSuffix": " (default)",
+        "description": "Run the selected WSL distro alongside Windows. Projects remain on their current filesystem.",
+        "preflightError": "WSL backend couldn't start: {{error}}",
+        "selectAria": "WSL backend",
+        "onlyTitle": "WSL only",
+        "onlyDescription": "Run only the WSL backend. LMCS Code restarts when this changes.",
+        "onlyAria": "Run WSL only",
+        "disableWindowsTitle": "Turn off WSL and switch back to Windows?",
+        "disableTitle": "Disable WSL backend?",
+        "distroTitle": "Switch WSL distro?",
+        "enableTitle": "Start the WSL backend",
+        "onlyEnableTitle": "Run only the WSL backend?",
+        "onlyDisableTitle": "Re-enable the Windows backend?",
+        "disableWindowsDescription": "LMCS Code will restart on the Windows backend. Threads and projects opened against WSL stay safe inside the distro and become available again when you re-enable WSL.",
+        "disableDescription": "The WSL backend will stop. Threads and projects opened against WSL stay safe inside the distro, but they'll be unavailable in LMCS Code until you re-enable WSL.",
+        "distroDescription": "LMCS Code will restart the WSL backend on the new distro. Sessions still running on the current distro will be interrupted.",
+        "enableDescription": "Run the WSL backend alongside the Windows one, or stop the Windows backend and use only WSL? You can change this later from Settings.",
+        "onlyEnableDescription": "LMCS Code will restart and start only the WSL backend. Your Windows-side projects won't be accessible until you turn this off again.",
+        "onlyDisableDescription": "LMCS Code will restart and bring the Windows backend back up alongside WSL.",
+        "applying": "Applying…",
+        "useOnlyWsl": "Use only WSL",
+        "runBoth": "Run both backends",
+        "disableAction": "Disable WSL",
+        "switchDistro": "Switch distro"
+      },
+      "tailscale": {
+        "enableAria": "Enable Tailscale HTTPS",
+        "setupDescription": "Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL.",
+        "startDescription": "Start Tailscale to set up HTTPS access through MagicDNS.",
+        "disableTitle": "Disable Tailscale HTTPS?",
+        "disableDescription": "LMCS Code will restart the local backend without Tailscale Serve.",
+        "setupTitle": "Set up Tailscale HTTPS?",
+        "setupDialogDescription": "LMCS Code will restart the local backend with Tailscale Serve enabled and ask Tailscale to proxy HTTPS traffic to this backend.",
+        "httpsPort": "HTTPS port",
+        "portInvalid": "Enter a port from 1 to 65535.",
+        "httpsEndpoint": "HTTPS endpoint",
+        "pendingEndpoint": "Pending MagicDNS endpoint",
+        "enable": "Enable"
+      },
+      "cloud": {
+        "enableAria": "Enable LMCS Connect",
+        "signInToManage": "Sign in to LMCS Connect to manage this environment.",
+        "noRelayPermission": "Your session does not have permission to manage LMCS Connect access.",
+        "descriptionActive": "This environment is available to your other devices through LMCS Connect.",
+        "description": "Make this environment available to your other devices through LMCS Connect.",
+        "publishDescription": "Send activity to mobile notifications and Live Activities without LMCS Connect.",
+        "publishAria": "Publish agent activity to mobile clients"
+      }
+    }
+  }
+}

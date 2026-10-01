@@ -1,10 +1,5 @@
-import { scopeProjectRef } from "@lmcstools/client-runtime/environment";
-import {
-  EnvironmentId,
-  ProjectId,
-  ProviderInstanceId,
-  type ModelSelection,
-} from "@lmcstools/contracts";
+import { scopeProjectRef } from "@lmcstools/client/environment";
+import { EnvironmentId, ProjectId, ProviderInstanceId, type ModelSelection } from "@lmcstools/core";
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
   resolveThreadActionProjectRef,

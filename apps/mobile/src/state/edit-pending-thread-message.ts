@@ -1,4 +1,4 @@
-import { PROVIDER_SEND_TURN_MAX_ATTACHMENTS } from "@lmcstools/contracts";
+import { PROVIDER_SEND_TURN_MAX_ATTACHMENTS } from "@lmcstools/core";
 import { scopedThreadKey } from "../lib/scopedEntities";
 import { appAtomRegistry } from "./atom-registry";
 import {

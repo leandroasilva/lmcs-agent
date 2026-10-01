@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { WS_METHODS } from "@lmcstools/contracts";
+import { WS_METHODS } from "@lmcstools/core";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";

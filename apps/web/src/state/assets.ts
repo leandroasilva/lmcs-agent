@@ -1,7 +1,7 @@
 import {
   createAssetEnvironmentAtoms,
   createProjectFaviconUrlAtomFamily,
-} from "@lmcstools/client-runtime/state/assets";
+} from "@lmcstools/client/state/assets";
 import { Atom } from "effect/unstable/reactivity";
 
 import { connectionAtomRuntime } from "../connection/runtime";

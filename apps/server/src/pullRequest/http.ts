@@ -1,4 +1,4 @@
-import { AuthOrchestrationReadScope, EnvironmentHttpApi } from "@lmcstools/contracts";
+import { AuthOrchestrationReadScope, EnvironmentHttpApi } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as HttpApiBuilder from "effect/unstable/httpapi/HttpApiBuilder";
 

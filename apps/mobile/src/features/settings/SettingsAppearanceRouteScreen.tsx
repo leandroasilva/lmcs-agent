@@ -1,5 +1,6 @@
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { SettingsScreen } from "./components/SettingsScreen";
 import { CodeAppearanceSection } from "./appearance/sections/CodeAppearanceSection";
@@ -8,10 +9,11 @@ import { TextAppearanceSection } from "./appearance/sections/TextAppearanceSecti
 import { ThemeAppearanceSection } from "./appearance/sections/ThemeAppearanceSection";
 
 export function SettingsAppearanceRouteScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
-    <SettingsScreen title="Appearance">
+    <SettingsScreen title={t("nav.appearance")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}

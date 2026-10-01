@@ -1,4 +1,4 @@
-import { createSourceControlEnvironmentAtoms } from "@lmcstools/client-runtime/state/source-control";
+import { createSourceControlEnvironmentAtoms } from "@lmcstools/client/state/source-control";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

@@ -14,11 +14,11 @@ import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { type ClaudeSettings, type ModelSelection } from "@lmcstools/contracts";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/shared/git";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { type ClaudeSettings, type ModelSelection } from "@lmcstools/core";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
-import { TextGenerationError } from "@lmcstools/contracts";
+import { TextGenerationError } from "@lmcstools/core";
 import * as TextGeneration from "./TextGeneration.ts";
 import {
   buildBranchNamePrompt,
@@ -36,7 +36,7 @@ import {
 import {
   getModelSelectionStringOptionValue,
   getProviderOptionDescriptors,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import {
   BUNDLED_CLAUDE_MODEL_CATALOG,
   type ClaudeModelCatalog,

@@ -4,7 +4,7 @@ import {
   HostProcessEnvironment,
   HostProcessExecutablePath,
   HostProcessPlatform,
-} from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/hostProcess";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Fiber from "effect/Fiber";
@@ -14,7 +14,7 @@ import * as Ref from "effect/Ref";
 import * as BrowserSession from "../BrowserSession.ts";
 import * as BrowserImport from "./BrowserImport.ts";
 import { BROWSER_IMPORT_SOURCES, sourcePathContext } from "./Sources.ts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 const helium = BROWSER_IMPORT_SOURCES.find((source) => source.id === "helium")!;
 

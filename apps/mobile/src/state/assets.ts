@@ -2,14 +2,14 @@ import { useAtomValue } from "@effect/atom-react";
 import {
   type EnvironmentConnectionPhase,
   presentConnectionState,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import {
   assetUrlStateFromResult,
   createAssetEnvironmentAtoms,
   createProjectFaviconUrlAtomFamily,
   EMPTY_ASSET_URL_ATOM,
-} from "@lmcstools/client-runtime/state/assets";
-import type { AssetResource, EnvironmentId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/assets";
+import type { AssetResource, EnvironmentId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useCallback } from "react";

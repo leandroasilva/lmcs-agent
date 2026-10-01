@@ -1,8 +1,8 @@
-import type { RepositoryIdentity, SourceControlProviderError } from "@lmcstools/contracts";
+import type { RepositoryIdentity, SourceControlProviderError } from "@lmcstools/core";
 import {
   detectSourceControlProviderFromGitRemoteUrl,
   normalizeGitRemoteUrl,
-} from "@lmcstools/shared/git";
+} from "@lmcstools/core/git";
 import * as Cache from "effect/Cache";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";

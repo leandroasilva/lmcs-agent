@@ -3,7 +3,7 @@ import {
   type ModelCapabilities,
   type ServerProviderSlashCommand,
   type ServerProviderResetCredits,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -12,8 +12,8 @@ import * as Path from "effect/Path";
 import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { createModelCapabilities } from "@lmcstools/shared/model";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+import { createModelCapabilities } from "@lmcstools/core/model";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import {
   query as claudeQuery,
   type Options as ClaudeQueryOptions,

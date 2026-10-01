@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { QrCode } from "@lmcstools/shared/qrCode";
+import { QrCode } from "@lmcstools/core/qrCode";
 
 type QRCodeSvgProps = {
   value: string;

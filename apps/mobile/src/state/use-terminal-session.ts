@@ -5,8 +5,8 @@ import {
   terminalOutputText,
   type KnownTerminalSession,
   type TerminalSessionState,
-} from "@lmcstools/client-runtime/state/terminal";
-import { ThreadId, type EnvironmentId, type TerminalAttachInput } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/terminal";
+import { ThreadId, type EnvironmentId, type TerminalAttachInput } from "@lmcstools/core";
 import { useMemo } from "react";
 
 import { useEnvironmentQuery } from "./query";

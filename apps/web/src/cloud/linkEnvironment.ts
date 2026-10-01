@@ -14,15 +14,15 @@ import {
   EnvironmentHttpUnauthorizedError,
   EnvironmentId,
   WS_METHODS,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   type RelayEnvironmentLinkResponse,
   type RelayManagedEndpointProviderKind,
-} from "@lmcstools/contracts/relay";
-import { EnvironmentRegistry } from "@lmcstools/client-runtime/connection";
-import { request, runStream } from "@lmcstools/client-runtime/rpc";
-import { makeEnvironmentHttpApiClient } from "@lmcstools/client-runtime/rpc";
-import { ManagedRelay, relayProtectedErrorMessage } from "@lmcstools/client-runtime/relay";
+} from "@lmcstools/core/relay";
+import { EnvironmentRegistry } from "@lmcstools/client/connection";
+import { request, runStream } from "@lmcstools/client/rpc";
+import { makeEnvironmentHttpApiClient } from "@lmcstools/client/rpc";
+import { ManagedRelay, relayProtectedErrorMessage } from "@lmcstools/client/relay";
 
 import { primaryEnvironmentHttpLayer } from "../environments/primary/httpLayer";
 import { resolveCloudPublicConfig } from "./publicConfig";
@@ -266,7 +266,7 @@ export function linkPrimaryEnvironmentToCloud(input: {
     const configuredRelayUrl = relayUrl();
     if (!configuredRelayUrl) {
       return yield* new CloudEnvironmentLinkError({
-        message: "T3CODE_RELAY_URL is not configured.",
+        message: "LMCS_RELAY_URL is not configured.",
       });
     }
     const managedTunnelsEnabled = (input.mode ?? "managed") === "managed";

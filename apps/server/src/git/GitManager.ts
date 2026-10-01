@@ -35,11 +35,11 @@ import {
   type SourceControlProviderKind,
   type SourceControlWritingStyleSettings,
   type ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   hasProjectSettingsOverrides,
   resolveProjectSettings,
-} from "@lmcstools/shared/projectSettings";
+} from "@lmcstools/core/projectSettings";
 import * as ProjectionSnapshotQuery from "../orchestration/Services/ProjectionSnapshotQuery.ts";
 import {
   detectSourceControlProviderFromGitRemoteUrl,
@@ -48,14 +48,14 @@ import {
   resolveAutoFeatureBranchName,
   sanitizeBranchFragment,
   sanitizeFeatureBranchName,
-} from "@lmcstools/shared/git";
+} from "@lmcstools/core/git";
 import {
   getChangeRequestTerminologyForKind,
   isSshRemoteUrl,
   type ChangeRequestTerminology,
-} from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core/sourceControl";
 
-import { GitManagerError, GitPullRequestMaterializationError } from "@lmcstools/contracts";
+import { GitManagerError, GitPullRequestMaterializationError } from "@lmcstools/core";
 import * as TextGeneration from "../textGeneration/TextGeneration.ts";
 import {
   conventionalCommitsTextGenerationPolicy,
@@ -66,11 +66,11 @@ import * as ProjectSetupScriptRunner from "../project/ProjectSetupScriptRunner.t
 import * as ProviderRegistry from "../provider/Services/ProviderRegistry.ts";
 import { extractBranchNameFromRemoteRef } from "./remoteRefs.ts";
 import * as ServerSettings from "../serverSettings.ts";
-import type { GitManagerServiceError } from "@lmcstools/contracts";
+import type { GitManagerServiceError } from "@lmcstools/core";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
 import { detectPrTemplate } from "../sourceControl/PrTemplateDetection.ts";
-import type { ChangeRequest } from "@lmcstools/contracts";
+import type { ChangeRequest } from "@lmcstools/core";
 
 export interface GitActionProgressReporter {
   readonly publish: (event: GitActionProgressEvent) => Effect.Effect<void, never>;
@@ -1399,7 +1399,11 @@ export const make = Effect.gen(function* () {
 
   const resolveBranchHeadContext = Effect.fn("resolveBranchHeadContext")(function* (
     cwd: string,
-    details: { branch: string; upstreamRef: string | null; remoteName?: string },
+    details: {
+      branch: string;
+      upstreamRef: string | null;
+      remoteName?: string;
+    },
   ) {
     const remoteName =
       details.remoteName ??
@@ -2006,6 +2010,7 @@ export const make = Effect.gen(function* () {
     cwd: string,
     fallbackBranch: string | null,
     emit: GitActionProgressEmitter,
+    userBaseBranch: string | undefined,
   ) {
     const provider = yield* sourceControlProvider(cwd);
     const terms = getChangeRequestTerminologyForKind(provider.kind);
@@ -2043,7 +2048,9 @@ export const make = Effect.gen(function* () {
       };
     }
 
-    const baseBranch = yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext);
+    const baseBranch = userBaseBranch
+      ? yield* Effect.succeed(userBaseBranch)
+      : yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext);
     yield* emit({
       kind: "phase_started",
       phase: "pr",
@@ -2442,7 +2449,10 @@ export const make = Effect.gen(function* () {
           // head. The branch's upstream does not: configuring it is best-effort, so a branch cut
           // from `origin/main` whose head branch has since been deleted still resolves — and
           // following it would move the checkout onto main and call that the pull request.
-          .fetchPullRequestHeadCommit({ cwd: worktreePath, prNumber: pullRequest.number })
+          .fetchPullRequestHeadCommit({
+            cwd: worktreePath,
+            prNumber: pullRequest.number,
+          })
           .pipe(
             // A host that publishes no `refs/pull/<n>/head` leaves the remote-tracking branch,
             // taken only where it is the head branch's own rather than whatever the checkout
@@ -2582,7 +2592,7 @@ export const make = Effect.gen(function* () {
           path: null,
         },
         {
-          // Best effort: a settings read failure falls back to the checkout's t3.json.
+          // Best effort: a settings read failure falls back to the checkout's lmcs.json.
           submodules: yield* projectSettingsFor(input).pipe(
             Effect.map((settings) => settings.worktreeSubmodules),
             Effect.orElseSucceed(() => null),
@@ -2699,7 +2709,10 @@ export const make = Effect.gen(function* () {
           });
         }
 
-        let branchStep: { status: "created" | "skipped_not_requested"; name?: string };
+        let branchStep: {
+          status: "created" | "skipped_not_requested";
+          name?: string;
+        };
         let commitMessageForStep = input.commitMessage;
         let preResolvedCommitSuggestion: CommitAndBranchSuggestion | undefined = undefined;
 
@@ -2802,7 +2815,13 @@ export const make = Effect.gen(function* () {
               .pipe(
                 Effect.tap(() => Ref.set(currentPhase, Option.some("pr"))),
                 Effect.flatMap(() =>
-                  runPrStep(textGenerationSettings, input.cwd, currentBranch, progress.emit),
+                  runPrStep(
+                    textGenerationSettings,
+                    input.cwd,
+                    currentBranch,
+                    progress.emit,
+                    input.baseBranch,
+                  ),
                 ),
               )
           : { status: "skipped_not_requested" as const };

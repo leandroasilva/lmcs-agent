@@ -3,7 +3,7 @@ import {
   collectLimitPools,
   type LimitAccount,
   type LimitPresentations,
-} from "@lmcstools/shared/usageLimits";
+} from "@lmcstools/core/usageLimits";
 
 export interface SubscriptionUsageSnapshot {
   url?: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import type { ServerProviderSkill } from "@lmcstools/contracts";
+import type { ServerProviderSkill } from "@lmcstools/core";
 
 import { searchProviderSkills } from "./providerSkillSearch";
 

@@ -9,9 +9,9 @@ import * as Scope from "effect/Scope";
 import * as Types from "effect/Types";
 import * as ChildProcess from "effect/unstable/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
-import * as CodexClient from "effect-codex-app-server/client";
-import * as CodexSchema from "effect-codex-app-server/schema";
-import * as CodexErrors from "effect-codex-app-server/errors";
+import * as CodexClient from "@lmcstools/providers/codex/client";
+import * as CodexSchema from "@lmcstools/providers/codex/schema";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
 
 import type {
   CodexSettings,
@@ -22,15 +22,15 @@ import type {
   ProviderOptionDescriptor,
   ServerProviderModel,
   ServerProviderSkill,
-} from "@lmcstools/contracts";
-import { PREFERRED_DEFAULT_CODEX_MODELS, ServerSettingsError } from "@lmcstools/contracts";
+} from "@lmcstools/core";
+import { PREFERRED_DEFAULT_CODEX_MODELS, ServerSettingsError } from "@lmcstools/core";
 
 import {
   codexModelFamily,
   createModelCapabilities,
   readCustomModelEntries,
-} from "@lmcstools/shared/model";
-import { resolveSpawnCommand } from "@lmcstools/shared/shell";
+} from "@lmcstools/core/model";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import { codexAppServerArgs, resolveCodexLaunchArgs } from "./codexLaunchArgs.ts";
 import {
   AUTH_PROBE_TIMEOUT_MS,

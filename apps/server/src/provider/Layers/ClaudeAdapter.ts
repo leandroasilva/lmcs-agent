@@ -25,8 +25,8 @@ import {
   type SDKUserMessage,
   type ModelUsage,
 } from "@anthropic-ai/claude-agent-sdk";
-import { parseCliArgs } from "@lmcstools/shared/cliArgs";
-import { isWorkspaceImagePreviewPath } from "@lmcstools/shared/filePreview";
+import { parseCliArgs } from "@lmcstools/core/cliArgs";
+import { isWorkspaceImagePreviewPath } from "@lmcstools/core/filePreview";
 import { type ClaudeScopedLimitNames, claudeRateLimitEventToUpdate } from "./claudeUsageLimits.ts";
 import {
   ApprovalRequestId,
@@ -58,19 +58,19 @@ import {
   ThreadId,
   TurnId,
   type UserInputQuestion,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   applyClaudePromptEffortPrefix,
   getModelSelectionBooleanOptionValue,
   getModelSelectionStringOptionValue,
   getProviderOptionDescriptors,
   resolvePromptInjectedEffort,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 import {
   CLAUDE_RESUME_COMPACTION_NEVER_ANSWER,
   formatClaudeResumeCompactionQuestion,
-} from "@lmcstools/shared/claudeCompaction";
-import { HostProcessIsExecutable } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core/claudeCompaction";
+import { HostProcessIsExecutable } from "@lmcstools/core/hostProcess";
 import * as Cause from "effect/Cause";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -4603,7 +4603,7 @@ export const makeClaudeAdapter = Effect.fn("makeClaudeAdapter")(function* (
           return { behavior: "cancelled" as const };
         }
 
-        // The question copy lives in @lmcstools/shared/claudeCompaction because
+        // The question copy lives in @lmcstools/core/claudeCompaction because
         // the web client recognizes this exact text (and the "never" answer)
         // to mirror a permanent dismissal.
         const question = formatClaudeResumeCompactionQuestion({

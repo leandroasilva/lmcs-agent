@@ -7,10 +7,10 @@ import {
   type ChatAttachment,
   type ModelSelection,
   type OpenCodeSettings,
-} from "@lmcstools/contracts";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/shared/git";
-import { getModelSelectionStringOptionValue } from "@lmcstools/shared/model";
-import { extractJsonObject } from "@lmcstools/shared/schemaJson";
+} from "@lmcstools/core";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
+import { getModelSelectionStringOptionValue } from "@lmcstools/core/model";
+import { extractJsonObject } from "@lmcstools/core/schemaJson";
 
 import * as ServerConfig from "../config.ts";
 import { resolveAttachmentPath } from "../attachmentStore.ts";

@@ -1,4 +1,4 @@
-import { ThreadId } from "@lmcstools/contracts";
+import { ThreadId } from "@lmcstools/core";
 import * as SchemaIssue from "effect/SchemaIssue";
 import * as Schema from "effect/Schema";
 

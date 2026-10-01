@@ -5,8 +5,8 @@ import * as Result from "effect/Result";
 import * as Stream from "effect/Stream";
 import { describe, expect } from "vite-plus/test";
 
-import { ProviderInstanceId } from "@lmcstools/contracts";
-import { createModelSelection } from "@lmcstools/shared/model";
+import { ProviderInstanceId } from "@lmcstools/core";
+import { createModelSelection } from "@lmcstools/core/model";
 
 import type { ProviderInstance } from "../provider/ProviderDriver.ts";
 import * as ProviderInstanceRegistry from "../provider/Services/ProviderInstanceRegistry.ts";

@@ -1,5 +1,5 @@
-import type { EnvironmentConnectionPhase } from "@lmcstools/client-runtime/connection";
-import type { AssetUrlState as SharedAssetUrlState } from "@lmcstools/client-runtime/state/assets";
+import type { EnvironmentConnectionPhase } from "@lmcstools/client/connection";
+import type { AssetUrlState as SharedAssetUrlState } from "@lmcstools/client/state/assets";
 
 export type AssetUrlFailureReason = "disconnected" | "failed";
 

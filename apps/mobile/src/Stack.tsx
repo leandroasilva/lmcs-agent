@@ -11,6 +11,7 @@ import {
   type NativeStackNavigationOptions,
 } from "@react-navigation/native-stack";
 import { useEffect, useRef, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Platform,
   Pressable,
@@ -23,6 +24,7 @@ import { useResolveClassNames } from "uniwind";
 
 import { AppText as Text } from "./components/AppText";
 import { getCompactBrandHeaderOptions } from "./components/CompactBrandTitle";
+import { translateDynamic } from "./i18n";
 import {
   RenderErrorBoundary,
   RenderFailureView,
@@ -68,6 +70,7 @@ import {
 import { NewTaskFlowProvider } from "./features/threads/new-task-flow-provider";
 import { NewTaskRouteScreen } from "./features/threads/NewTaskRouteScreen";
 import { SettingsAppearanceRouteScreen } from "./features/settings/SettingsAppearanceRouteScreen";
+import { SettingsLanguageRouteScreen } from "./features/settings/SettingsLanguageRouteScreen";
 import { SettingsClientStorageRouteScreen } from "./features/settings/SettingsClientStorageRouteScreen";
 import { SettingsDiagnosticsRouteScreen } from "./features/diagnostics/SettingsDiagnosticsRouteScreen";
 import { SettingsAuthRouteScreen } from "./features/settings/SettingsAuthRouteScreen";
@@ -172,6 +175,9 @@ const LEGAL_DOCUMENT_HEADER_OPTIONS: AppScreenOptions = {
   presentation: "fullScreenModal",
 };
 
+// Titles go through translateDynamic at module load: a screen pushed later
+// reads the language chosen by then; an already-mounted title refreshes on the
+// next navigation rather than live.
 const SettingsContentStack = createNativeStackNavigator({
   initialRouteName: "Settings",
   screenOptions: {
@@ -184,115 +190,132 @@ const SettingsContentStack = createNativeStackNavigator({
       screen: SettingsRouteScreen,
       linking: "",
       options: {
-        title: "Settings",
+        title: translateDynamic("nav.settings", "Settings"),
       },
     }),
     SettingsEnvironments: createNativeStackScreen({
       screen: SettingsEnvironmentsRouteScreen,
       linking: "environments",
       options: {
-        title: "Environments",
+        title: translateDynamic("nav.environments", "Environments"),
       },
     }),
     SettingsEnvironmentDetail: createNativeStackScreen({
       screen: SettingsEnvironmentDetailRouteScreen,
       linking: "environments/:environmentId",
-      options: { title: "Environment" },
+      options: { title: translateDynamic("nav.environment", "Environment") },
     }),
     SettingsEnvironmentNewThreads: createNativeStackScreen({
       screen: SettingsEnvironmentNewThreadsRouteScreen,
       linking: "new-threads",
-      options: { title: "New threads" },
+      options: { title: translateDynamic("nav.newThreads", "New threads") },
     }),
     SettingsEnvironmentSourceControl: createNativeStackScreen({
       screen: SettingsEnvironmentSourceControlRouteScreen,
       linking: "source-control",
-      options: { title: "Source control" },
+      options: {
+        title: translateDynamic("nav.sourceControl", "Source control"),
+      },
     }),
     SettingsEnvironmentAgentBehavior: createNativeStackScreen({
       screen: SettingsEnvironmentAgentBehaviorRouteScreen,
       linking: "agent-behavior",
-      options: { title: "Agent behavior" },
+      options: {
+        title: translateDynamic("nav.agentBehavior", "Agent behavior"),
+      },
     }),
     SettingsEnvironmentMaintenance: createNativeStackScreen({
       screen: SettingsEnvironmentMaintenanceRouteScreen,
       linking: "maintenance",
-      options: { title: "Maintenance" },
+      options: { title: translateDynamic("nav.maintenance", "Maintenance") },
     }),
     SettingsNotifications: createNativeStackScreen({
       screen: SettingsNotificationsRouteScreen,
       linking: "notifications",
-      options: { title: "Notifications" },
+      options: {
+        title: translateDynamic("nav.notifications", "Notifications"),
+      },
     }),
     SettingsThreads: createNativeStackScreen({
       screen: SettingsThreadsRouteScreen,
       linking: "thread-preferences",
-      options: { title: "Thread behavior" },
+      options: {
+        title: translateDynamic("nav.threadBehavior", "Thread behavior"),
+      },
     }),
     SettingsAbout: createNativeStackScreen({
       screen: SettingsAboutRouteScreen,
       linking: "about",
-      options: { title: "About LMCS Code" },
+      options: { title: translateDynamic("nav.about", "About LMCS Code") },
     }),
     SettingsEnvironmentNew: createNativeStackScreen({
       screen: ConnectionsNewRouteScreen,
       linking: "environment-new",
       options: {
-        title: "Add Environment",
+        title: translateDynamic("nav.addEnvironment", "Add Environment"),
       },
     }),
     SettingsArchive: createNativeStackScreen({
       screen: ArchivedThreadsRouteScreen,
       linking: "archive",
       options: {
-        title: "Archived Threads",
+        title: translateDynamic("nav.archivedThreads", "Archived Threads"),
       },
     }),
     SettingsAppearance: createNativeStackScreen({
       screen: SettingsAppearanceRouteScreen,
       linking: "appearance",
       options: {
-        title: "Appearance",
+        title: translateDynamic("nav.appearance", "Appearance"),
+      },
+    }),
+    SettingsLanguage: createNativeStackScreen({
+      screen: SettingsLanguageRouteScreen,
+      linking: "language",
+      options: {
+        title: translateDynamic("nav.language", "Language"),
       },
     }),
     SettingsProjectGrouping: createNativeStackScreen({
       screen: SettingsProjectGroupingRouteScreen,
       linking: "project-grouping",
       options: {
-        title: "Organization",
+        title: translateDynamic("nav.organization", "Organization"),
       },
     }),
     SettingsOrganization: createNativeStackScreen({
       screen: SettingsProjectGroupingRouteScreen,
       linking: "organization",
       options: {
-        title: "Organization",
+        title: translateDynamic("nav.organization", "Organization"),
       },
     }),
     SettingsProjectOverview: createNativeStackScreen({
       screen: SettingsProjectOverviewRouteScreen,
       linking: "project",
-      options: { title: "Project overview" },
+      options: {
+        title: translateDynamic("nav.projectOverview", "Project overview"),
+      },
     }),
     SettingsKeyboard: createNativeStackScreen({
       screen: SettingsKeyboardRouteScreen,
       linking: "keyboard",
       options: {
-        title: "Keyboard",
+        title: translateDynamic("nav.keyboard", "Keyboard"),
       },
     }),
     SettingsClientStorage: createNativeStackScreen({
       screen: SettingsClientStorageRouteScreen,
       linking: "client-storage",
       options: {
-        title: "Client Storage",
+        title: translateDynamic("nav.clientStorage", "Client Storage"),
       },
     }),
     SettingsDiagnostics: createNativeStackScreen({
       screen: SettingsDiagnosticsRouteScreen,
       linking: "diagnostics",
       options: {
-        title: "Diagnostics",
+        title: translateDynamic("nav.diagnostics", "Diagnostics"),
       },
     }),
     // Deliberately the one settings screen with no `linking:` path. Its params
@@ -306,27 +329,27 @@ const SettingsContentStack = createNativeStackNavigator({
     // tapped account segment.
     SettingsUsageAccount: createNativeStackScreen({
       screen: UsageLimitAccountScreen,
-      options: { title: "Account" },
+      options: { title: translateDynamic("nav.account", "Account") },
     }),
     SettingsOpenSourceLicenses: createNativeStackScreen({
       screen: SettingsOpenSourceLicensesRouteScreen,
       linking: "open-source-licenses",
       options: {
-        title: "Open source licenses",
+        title: translateDynamic("nav.openSourceLicenses", "Open source licenses"),
       },
     }),
     SettingsOpenSourceLicense: createNativeStackScreen({
       screen: SettingsOpenSourceLicenseRouteScreen,
       linking: "open-source-licenses/:entryKey",
       options: {
-        title: "License notice",
+        title: translateDynamic("nav.licenseNotice", "License notice"),
       },
     }),
     SettingsUsage: createNativeStackScreen({
       screen: UsageRouteScreen,
       linking: "usage",
       options: {
-        title: "Usage",
+        title: translateDynamic("nav.usage", "Usage"),
       },
     }),
   },
@@ -388,7 +411,7 @@ const NewTaskSheetStack = createNativeStackNavigator({
       screen: NewTaskRouteScreen,
       linking: "",
       options: {
-        title: "Choose project",
+        title: translateDynamic("nav.chooseProject", "Choose project"),
       },
     }),
     NewTaskDraft: createNativeStackScreen({
@@ -410,7 +433,7 @@ const NewTaskSheetStack = createNativeStackNavigator({
       screen: NewTaskBranchPickerRouteScreen,
       linking: "draft/branch",
       options: {
-        title: "Branch",
+        title: translateDynamic("nav.branch", "Branch"),
       },
     }),
     // The same file view the thread composer pushes. A draft has no thread, so it names its
@@ -444,7 +467,7 @@ const NewTaskSheetStack = createNativeStackNavigator({
       screen: AddProjectSourceRoute,
       linking: "add-project",
       options: {
-        title: "Add Project",
+        title: translateDynamic("nav.addProject", "Add Project"),
       },
     }),
     AddProjectRepository: createNativeStackScreen({
@@ -560,6 +583,7 @@ function RootStackLayout(props: {
 
 function NotFoundScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const screenBgStyle = StyleSheet.flatten(useResolveClassNames("bg-screen"));
   const primaryBgStyle = StyleSheet.flatten(useResolveClassNames("bg-primary"));
   const returnHomeButtonStyle = StyleSheet.flatten([
@@ -585,13 +609,15 @@ function NotFoundScreen() {
       style={[{ flex: 1 }, screenBgStyle]}
     >
       <Text className="text-3xl font-t3-bold text-foreground" selectable>
-        Route not found
+        {t("nav.routeNotFound")}
       </Text>
       <Pressable
         style={returnHomeButtonStyle}
         onPress={() => navigation.dispatch(StackActions.replace("Home"))}
       >
-        <Text className="text-base font-t3-bold text-primary-foreground">Return home</Text>
+        <Text className="text-base font-t3-bold text-primary-foreground">
+          {t("nav.returnHome")}
+        </Text>
       </Pressable>
     </ScrollView>
   );
@@ -656,7 +682,7 @@ const RootStackConfig = createNativeStackNavigator({
       linking: `${THREAD_LINKING_PREFIX}/files`,
       options: {
         ...GLASS_HEADER_OPTIONS,
-        title: "Files",
+        title: translateDynamic("nav.files", "Files"),
       },
     }),
     ThreadFile: createNativeStackScreen({
@@ -740,7 +766,7 @@ const RootStackConfig = createNativeStackNavigator({
       linking: "settings/legal",
       options: {
         ...LEGAL_DOCUMENT_HEADER_OPTIONS,
-        title: "Legal",
+        title: translateDynamic("nav.legal", "Legal"),
       },
     }),
     ConnectOnboarding: createNativeStackScreen({
@@ -750,7 +776,7 @@ const RootStackConfig = createNativeStackNavigator({
         // A root-level Android formSheet does not host the native stack bar;
         // the route renders an embedded AndroidSheetHeader instead.
         ...(Platform.OS === "android" ? { headerShown: false } : SHEET_SOLID_HEADER_OPTIONS),
-        title: "Set up LMCS Connect",
+        title: translateDynamic("nav.setUpConnect", "Set up LMCS Connect"),
         gestureEnabled: true,
         ...FORM_SHEET_PRESENTATION_OPTIONS,
         sheetAllowedDetents: [0.6, 0.95],
@@ -761,7 +787,7 @@ const RootStackConfig = createNativeStackNavigator({
       screen: ConnectionsRouteScreen,
       linking: "connections",
       options: {
-        title: "Environments",
+        title: translateDynamic("nav.environments", "Environments"),
         // Android: full page; the screen renders its own AndroidScreenHeader,
         // so the native bar stays hidden. iOS keeps the sheet.
         ...(Platform.OS === "android"
@@ -810,7 +836,10 @@ const RootStackConfig = createNativeStackNavigator({
 
 function GuardedScreenLayout(props: {
   readonly children: ReactNode;
-  readonly route: { readonly name: string; readonly params?: object | undefined };
+  readonly route: {
+    readonly name: string;
+    readonly params?: object | undefined;
+  };
 }) {
   return (
     <RenderErrorBoundary
@@ -826,11 +855,18 @@ function GuardedScreenLayout(props: {
 
 function ScreenRenderFallback(props: RenderFailureProps & { readonly routeName: string }) {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const exit = navigation.canGoBack()
-    ? { label: "Go back", onPress: () => navigation.goBack() }
+    ? { label: t("common.goBack"), onPress: () => navigation.goBack() }
     : props.routeName === "Home"
-      ? { label: "Open settings", onPress: () => navigation.navigate("SettingsSheet") }
-      : { label: "Return home", onPress: () => navigation.dispatch(StackActions.replace("Home")) };
+      ? {
+          label: t("nav.openSettings"),
+          onPress: () => navigation.navigate("SettingsSheet"),
+        }
+      : {
+          label: t("nav.returnHome"),
+          onPress: () => navigation.dispatch(StackActions.replace("Home")),
+        };
 
   return <RenderFailureView {...props} exit={exit} />;
 }

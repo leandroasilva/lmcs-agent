@@ -1,4 +1,4 @@
-import { quoteGitPatchPath } from "@lmcstools/shared/gitPatchPath";
+import { quoteGitPatchPath } from "@lmcstools/core/gitPatchPath";
 import { structuredPatch } from "diff";
 
 import type { AzureDevOpsChangeEntry } from "./azureDevOpsPullRequestJson.ts";

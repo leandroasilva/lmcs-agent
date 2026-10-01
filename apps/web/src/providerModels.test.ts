@@ -2,7 +2,7 @@ import {
   ProviderDriverKind,
   type ModelCapabilities,
   type ServerProviderModel,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { getProviderModelCapabilities } from "./providerModels";

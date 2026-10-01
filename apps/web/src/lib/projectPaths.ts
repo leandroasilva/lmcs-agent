@@ -14,4 +14,4 @@ export {
   normalizeProjectPathForComparison,
   normalizeProjectPathForDispatch,
   resolveProjectPathForDispatch,
-} from "@lmcstools/client-runtime/state/projects";
+} from "@lmcstools/client/state/projects";

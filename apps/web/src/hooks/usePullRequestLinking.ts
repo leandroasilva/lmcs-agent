@@ -1,23 +1,23 @@
 import { useMemo } from "react";
-import { sourceControlRepositorySelector } from "@lmcstools/shared/sourceControl";
+import { sourceControlRepositorySelector } from "@lmcstools/core/sourceControl";
 import type {
   EnvironmentId,
   ScopedThreadRef,
   ThreadLinkedPullRequest,
   ThreadPullRequestLink,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/state/runtime";
 import {
   planThreadPullRequestMutation,
   threadPullRequestLinkMode,
-} from "@lmcstools/client-runtime/thread-pull-request-compatibility";
+} from "@lmcstools/client/thread-pull-request-compatibility";
 import {
   threadPullRequestKeysEqual,
   visibleThreadPullRequests,
-} from "@lmcstools/shared/threadPullRequests";
+} from "@lmcstools/core/threadPullRequests";
 import {
   findProjectForChangeRequest,
   findProjectOnChangeRequestHost,

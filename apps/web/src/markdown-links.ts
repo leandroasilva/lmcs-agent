@@ -9,7 +9,7 @@ import {
   safeDecodeURIComponent,
   splitFilePathPosition,
   workspaceRelativeFilePath,
-} from "@lmcstools/client-runtime/markdown-links";
+} from "@lmcstools/client/markdown-links";
 
 import { formatWorkspaceRelativePath } from "./filePathDisplay";
 import { isTerminalLinkActivation, resolvePathLinkTarget } from "./terminal-links";

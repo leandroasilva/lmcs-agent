@@ -51,7 +51,7 @@ describe("Pierre file icons", () => {
   });
 
   it("leaves directory rendering to the shared folder fallback", () => {
-    assert.isNull(resolvePierreIconForEntry("packages/client-runtime", "directory"));
+    assert.isNull(resolvePierreIconForEntry("packages/client", "directory"));
   });
 
   it("normalizes common markdown fence language aliases", () => {

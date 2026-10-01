@@ -1,6 +1,6 @@
-import { filterComposerPullRequestMatches } from "@lmcstools/shared/composerPullRequestMatches";
+import { filterComposerPullRequestMatches } from "@lmcstools/core/composerPullRequestMatches";
 import { describe, expect, it } from "@effect/vitest";
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 
 import { buildCheckpointDiffTargets, normalizeComposerPathSearchQuery } from "./queryTargets";
 

@@ -14,7 +14,7 @@ import {
   type PullRequestRef,
   type PullRequestSummary,
   type ThreadLinkedPullRequest,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "@effect/vitest";
 import * as Crypto from "effect/Crypto";
 import * as Deferred from "effect/Deferred";

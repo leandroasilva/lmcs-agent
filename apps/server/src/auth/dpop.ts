@@ -1,8 +1,8 @@
 import {
   type DpopVerificationFailureCode as DpopVerificationFailureCodeType,
   verifyDpopProof,
-} from "@lmcstools/shared/dpop";
-import type { DpopFailureReason } from "@lmcstools/contracts";
+} from "@lmcstools/core/dpop";
+import type { DpopFailureReason } from "@lmcstools/core";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";

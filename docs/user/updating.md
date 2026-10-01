@@ -43,9 +43,10 @@ asks before restarting the background service; if you decline, run
 stop it and start it again afterwards with your usual options such as `--host`
 or `--tailscale-serve`.
 
-If you run the server with `npx` rather than an installed `t3`, there is
-nothing to update on the host: stop the server and relaunch it as
-`npx t3@<client-version>` with the same subcommand and options.
+If you run the server from a source checkout rather than an installed `t3`,
+there is nothing to update in place: on the host, run `git pull`, reinstall
+dependencies (`npm run setup`), rebuild (`npm run build:desktop`), and restart
+the server with your usual options.
 
 ## If an update fails
 
@@ -70,8 +71,6 @@ Provider update checks and restart continuation preferences are in
 **Settings → Maintenance**. If provider update checks are disabled, enable them
 there before refreshing to find newer versions.
 
-Install App Store or Google Play releases as usual. The mobile app can also
-download updates in the background and apply them when you next leave the app.
-It saves drafts and queued messages before restarting. If you keep the app open
-for a long time, it may ask to install immediately; choosing **Later** leaves the
-update queued for the next suitable moment.
+The mobile app itself updates when you install a newer build; private builds
+have no store or OTA channel. The environment update controls above work the
+same from any mobile build.

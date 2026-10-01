@@ -1,11 +1,12 @@
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { AppText as Text, AppTextInput } from "../../components/AppText";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
-import { deriveProjectGroupLabel } from "@lmcstools/client-runtime/state/project-grouping";
-import type { EnvironmentProject } from "@lmcstools/client-runtime/state/shell";
+import { deriveProjectGroupLabel } from "@lmcstools/client/state/project-grouping";
+import type { EnvironmentProject } from "@lmcstools/client/state/shell";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { projectEnvironment } from "../../state/projects";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -18,6 +19,7 @@ import {
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
 
 export function SettingsProjectOverviewRouteScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
   const group = projectGroups.find((entry) => entry.key === selectedProjectKey);
@@ -30,18 +32,22 @@ export function SettingsProjectOverviewRouteScreen() {
   return (
     <>
       <SettingsEnvironmentFilterHeader />
-      <SettingsScreen title="Project overview" trailing={<AndroidSettingsEnvironmentFilter />}>
+      <SettingsScreen
+        title={t("nav.projectOverview")}
+        trailing={<AndroidSettingsEnvironmentFilter />}
+      >
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
           className="flex-1"
           contentContainerClassName="gap-6 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+          contentContainerStyle={{
+            paddingBottom: Math.max(insets.bottom, 18) + 18,
+          }}
         >
           {members.length === 0 ? (
             <Text className="px-2 text-base text-foreground-muted">
-              This project has no checkout on the selected connected environments. Change the filter
-              above.
+              {t("settings.projectOverview.noCheckouts")}
             </Text>
           ) : (
             <ProjectOverviewContent
@@ -60,8 +66,12 @@ function ProjectOverviewContent(props: {
   readonly members: readonly EnvironmentProject[];
   readonly environments: readonly SettingsTarget[];
 }) {
+  const { t } = useTranslation();
   const representative = props.members[0]!;
-  const displayName = deriveProjectGroupLabel({ representative, members: props.members });
+  const displayName = deriveProjectGroupLabel({
+    representative,
+    members: props.members,
+  });
   const [draftName, setDraftName] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const updateProject = useAtomCommand(projectEnvironment.update, {
@@ -107,17 +117,24 @@ function ProjectOverviewContent(props: {
             {displayName}
           </Text>
           <Text className="text-sm text-foreground-muted">
-            {props.members.length === 1 ? "1 checkout" : `${props.members.length} checkouts`}
+            {t(
+              props.members.length === 1
+                ? "settings.projectOverview.checkoutCount"
+                : "settings.projectOverview.checkoutsCount",
+              { total: props.members.length },
+            )}
           </Text>
         </View>
       </View>
 
-      <SettingsSection title="Project">
+      <SettingsSection title={t("settings.projectOverview.project")}>
         <View className="gap-3 p-4">
-          <Text className="text-sm font-t3-medium text-foreground-muted">Name</Text>
+          <Text className="text-sm font-t3-medium text-foreground-muted">
+            {t("settings.projectOverview.name")}
+          </Text>
           <View className="flex-row items-center gap-3">
             <AppTextInput
-              accessibilityLabel="Project name"
+              accessibilityLabel={t("settings.projectOverview.nameAria")}
               className="min-h-11 min-w-0 flex-1 rounded-xl border-continuous bg-card px-3 text-base text-foreground"
               value={draftName ?? displayName}
               onChangeText={setDraftName}
@@ -128,18 +145,20 @@ function ProjectOverviewContent(props: {
             {canSave ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Save project name"
+                accessibilityLabel={t("settings.projectOverview.saveAria")}
                 onPress={saveName}
                 className="rounded-full bg-subtle-strong px-4 py-2 active:opacity-70"
               >
-                <Text className="text-sm font-t3-medium text-foreground">Save</Text>
+                <Text className="text-sm font-t3-medium text-foreground">
+                  {t("settings.projectOverview.save")}
+                </Text>
               </Pressable>
             ) : null}
           </View>
         </View>
       </SettingsSection>
 
-      <SettingsSection title="Checkouts">
+      <SettingsSection title={t("settings.projectOverview.checkouts")}>
         {props.members.map((member, index) => {
           const environment = props.environments.find(
             (entry) => entry.environmentId === member.environmentId,
@@ -156,7 +175,7 @@ function ProjectOverviewContent(props: {
                     : "text-lg text-foreground"
                 }
               >
-                {environment?.label ?? "Environment"}
+                {environment?.label ?? t("common.environment")}
               </Text>
               {environment?.displayUrl ? (
                 <Text className="text-sm leading-normal text-foreground-muted">

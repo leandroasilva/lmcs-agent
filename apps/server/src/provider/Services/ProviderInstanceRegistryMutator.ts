@@ -28,7 +28,7 @@
  *
  * @module provider/Services/ProviderInstanceRegistryMutator
  */
-import type { ProviderInstanceConfigMap } from "@lmcstools/contracts";
+import type { ProviderInstanceConfigMap } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 

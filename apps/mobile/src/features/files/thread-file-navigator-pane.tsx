@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@lmcstools/contracts";
+import type { EnvironmentId } from "@lmcstools/core";
 import { SymbolView } from "../../components/AppSymbol";
 import { MaterialScreenContent } from "../../components/MaterialScreenContent";
 import { useCallback, useMemo, useState, type ComponentProps } from "react";

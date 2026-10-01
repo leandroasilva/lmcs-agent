@@ -1,4 +1,4 @@
-import type { DesktopBridge } from "@lmcstools/contracts";
+import type { DesktopBridge } from "@lmcstools/core";
 
 export const DESKTOP_PASTE_AS_TEXT_EVENT = "t3:paste-as-text";
 

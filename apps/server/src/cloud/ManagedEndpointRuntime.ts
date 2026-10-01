@@ -1,5 +1,5 @@
-import type { RelayManagedEndpointRuntimeConfig } from "@lmcstools/contracts/relay";
-import * as RelayClient from "@lmcstools/shared/relayClient";
+import type { RelayManagedEndpointRuntimeConfig } from "@lmcstools/core/relay";
+import * as RelayClient from "@lmcstools/core/relayClient";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";

@@ -1,4 +1,4 @@
-import type { ProjectCloneStage } from "@lmcstools/contracts";
+import type { ProjectCloneStage } from "@lmcstools/core";
 
 export interface GitCloneProgressLine {
   readonly stage: ProjectCloneStage;

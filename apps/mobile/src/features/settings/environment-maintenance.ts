@@ -3,13 +3,13 @@ import {
   type AuthSessionState,
   type ExecutionEnvironmentCapabilities,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   cliReleaseChannelOf,
   cliReleaseIndexPageUrl,
   newestCliReleaseVersion,
-} from "@lmcstools/shared/cliRelease";
-import { compareSemverVersions } from "@lmcstools/shared/semver";
+} from "@lmcstools/core/cliRelease";
+import { compareSemverVersions } from "@lmcstools/core/semver";
 import * as Schema from "effect/Schema";
 
 export function canMaintainEnvironment(session: AuthSessionState | null, connected: boolean) {

@@ -3,12 +3,12 @@ import {
   buildMenuItems,
   getGitActionDisabledReason,
   requiresDefaultBranchConfirmation,
-} from "@lmcstools/client-runtime/state/vcs";
+} from "@lmcstools/client/state/vcs";
 import {
   resolveThreadPullRequestChains,
   threadPullRequestKeyOf,
-} from "@lmcstools/shared/threadPullRequests";
-import { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/core/threadPullRequests";
+import { EnvironmentId, ThreadId } from "@lmcstools/core";
 import {
   CommonActions,
   StackActions,

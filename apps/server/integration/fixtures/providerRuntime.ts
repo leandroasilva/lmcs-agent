@@ -1,4 +1,4 @@
-import { EventId, ProviderDriverKind, RuntimeRequestId } from "@lmcstools/contracts";
+import { EventId, ProviderDriverKind, RuntimeRequestId } from "@lmcstools/core";
 import type { LegacyProviderRuntimeEvent } from "../TestProviderAdapter.integration.ts";
 
 const PROVIDER = ProviderDriverKind.make("codex");

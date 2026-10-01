@@ -1,4 +1,4 @@
-import type { VcsListRefsResult } from "@lmcstools/contracts";
+import type { VcsListRefsResult } from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult } from "effect/unstable/reactivity";
 

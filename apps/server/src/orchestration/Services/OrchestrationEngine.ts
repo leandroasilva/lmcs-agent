@@ -15,7 +15,7 @@ import type {
   OrchestrationCommand,
   OrchestrationEvent,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type * as Scope from "effect/Scope";

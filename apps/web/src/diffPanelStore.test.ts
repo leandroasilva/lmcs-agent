@@ -1,5 +1,5 @@
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import { EnvironmentId, ThreadId, TurnId } from "@lmcstools/contracts";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import { EnvironmentId, ThreadId, TurnId } from "@lmcstools/core";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { selectThreadDiffPanelSelection, useDiffPanelStore } from "./diffPanelStore";

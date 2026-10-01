@@ -1,4 +1,4 @@
-import type { RelayManagedEndpointRuntimeConfig } from "@lmcstools/contracts/relay";
+import type { RelayManagedEndpointRuntimeConfig } from "@lmcstools/core/relay";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";

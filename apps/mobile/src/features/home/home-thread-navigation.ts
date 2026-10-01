@@ -1,4 +1,4 @@
-import type { EnvironmentThreadShell } from "@lmcstools/client-runtime/state/shell";
+import type { EnvironmentThreadShell } from "@lmcstools/client/state/shell";
 import {
   CommonActions,
   StackActions,

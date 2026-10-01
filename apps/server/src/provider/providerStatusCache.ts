@@ -2,8 +2,8 @@ import {
   type ProviderInstanceId,
   type ServerProvider,
   ServerProvider as ServerProviderSchema,
-} from "@lmcstools/contracts";
-import { causeErrorTag } from "@lmcstools/shared/observability";
+} from "@lmcstools/core";
+import { causeErrorTag } from "@lmcstools/core/observability";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";

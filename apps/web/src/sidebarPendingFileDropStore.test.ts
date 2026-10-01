@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
-import { scopeThreadRef } from "@lmcstools/client-runtime/environment";
-import { type EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import { scopeThreadRef } from "@lmcstools/client/environment";
+import { type EnvironmentId, ThreadId } from "@lmcstools/core";
 
 import {
   isSameSidebarThreadRef,

@@ -9,7 +9,7 @@ optional mobile notifications and Live Activities.
 
 The relay is intentionally not in the hot path for normal LMCS Code traffic. After a client connects,
 regular API and WebSocket traffic goes directly between that client and the selected environment.
-See the [LMCS Connect architecture note](../../docs/internals/t3-connect.md) for the larger system
+See the [LMCS Connect architecture note](../../docs/internals/connect.md) for the larger system
 design.
 
 ## Responsibilities
@@ -43,9 +43,9 @@ credential, or authorization behavior.
   schema and migration changes together.
 
 Shared request and response schemas live in
-[`packages/contracts/src/relay.ts`](../../packages/contracts/src/relay.ts). Shared client-side relay
+[`packages/core/src/contracts/relay.ts`](../../packages/core/src/contracts/relay.ts). Shared client-side relay
 calls live in
-[`packages/client-runtime/src/relay/managedRelay.ts`](../../packages/client-runtime/src/relay/managedRelay.ts).
+[`packages/client/src/relay/managedRelay.ts`](../../packages/client/src/relay/managedRelay.ts).
 
 ## Working Locally
 
@@ -113,7 +113,7 @@ domain override.
 The stack's `PublishClientConfig` action ([`src/clientConfig.ts`](./src/clientConfig.ts)) writes the
 deployed relay URL and tracing configuration into the repository-root `.env`, so subsequent source
 builds point at the relay that was just deployed without copying values manually. It runs only when
-one of those outputs changed, and `T3CODE_RELAY_CLIENT_CONFIG_ENV` redirects it to another file.
+one of those outputs changed, and `LMCS_RELAY_CLIENT_CONFIG_ENV` redirects it to another file.
 
 ### Deployment CI
 
@@ -165,4 +165,4 @@ See:
 
 - [LMCS Connect setup](../../docs/operations/connect-setup.md) for Clerk keys, JWT templates, and sign-up restrictions.
 - [Relay Observability](../../docs/operations/relay-observability.md) for deployment tracing and diagnostics.
-- [LMCS Connect architecture](../../docs/internals/t3-connect.md) for environment linking and trust boundaries.
+- [LMCS Connect architecture](../../docs/internals/connect.md) for environment linking and trust boundaries.

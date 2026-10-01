@@ -2,7 +2,7 @@ import { ConnectionTraceId } from "./ConnectionTraceId";
 import {
   type EnvironmentConnectionPhase,
   type EnvironmentConnectionPresentation,
-} from "@lmcstools/client-runtime/connection";
+} from "@lmcstools/client/connection";
 import { SymbolView } from "../../components/AppSymbol";
 import { ActivityIndicator, Pressable, View } from "react-native";
 

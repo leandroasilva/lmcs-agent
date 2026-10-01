@@ -2,8 +2,8 @@
 import { NativeHeaderToolbar, NativeStackScreenOptions } from "../../native/StackHeader";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import type { MenuAction } from "@react-native-menu/menu";
-import { EnvironmentId } from "@lmcstools/contracts";
-import { formatAttachmentSize } from "@lmcstools/client-runtime/state/attachments";
+import { EnvironmentId } from "@lmcstools/core";
+import { formatAttachmentSize } from "@lmcstools/client/state/attachments";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, View } from "react-native";
 

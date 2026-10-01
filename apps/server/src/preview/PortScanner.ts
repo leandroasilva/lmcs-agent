@@ -21,10 +21,10 @@ import {
   PREVIEW_URL_MAX_LENGTH,
   ThreadId,
   type DiscoveredLocalServer,
-} from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import * as Net from "@lmcstools/shared/Net";
-import { isLoopbackHost, LSOF_LOCAL_HOST_TOKENS } from "@lmcstools/shared/preview";
+} from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import * as Net from "@lmcstools/core/Net";
+import { isLoopbackHost, LSOF_LOCAL_HOST_TOKENS } from "@lmcstools/core/preview";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";

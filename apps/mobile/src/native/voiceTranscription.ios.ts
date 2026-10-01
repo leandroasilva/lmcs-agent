@@ -7,7 +7,7 @@ import {
   type PreparedVoiceTranscription,
   type VoiceTranscriber,
   type VoiceTranscriptionOptions,
-} from "@lmcstools/client-runtime/voice-input";
+} from "@lmcstools/client/voice-input";
 
 function getDeviceLocale(): string {
   return Intl.DateTimeFormat().resolvedOptions().locale;

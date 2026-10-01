@@ -1,5 +1,5 @@
-import { filterComposerPullRequestMatches } from "@lmcstools/shared/composerPullRequestMatches";
-import type { VcsRefTarget } from "@lmcstools/client-runtime/state/vcs";
+import { filterComposerPullRequestMatches } from "@lmcstools/core/composerPullRequestMatches";
+import type { VcsRefTarget } from "@lmcstools/client/state/vcs";
 import type {
   EnvironmentId,
   ProjectId,
@@ -7,12 +7,12 @@ import type {
   ThreadId,
   VcsListRefsResult,
   VcsRef,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   createThreadSearchResultsAtomFamily,
   makeThreadSearchKey,
   type EnvironmentThreadSearchMatch,
-} from "@lmcstools/client-runtime/state/thread-search";
+} from "@lmcstools/client/state/thread-search";
 import { useAtomValue } from "@effect/atom-react";
 import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";

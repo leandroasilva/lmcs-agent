@@ -1,15 +1,15 @@
 import {
   createAdvertisedEndpoint,
   type CreateAdvertisedEndpointInput,
-} from "@lmcstools/shared/advertisedEndpoint";
+} from "@lmcstools/core/advertisedEndpoint";
 import {
   DesktopServerExposureModeSchema,
   type AdvertisedEndpoint,
   type AdvertisedEndpointProvider,
   type DesktopServerExposureMode,
   type DesktopServerExposureState,
-} from "@lmcstools/contracts";
-import { isTailscaleIpv4Address, readTailscaleStatus } from "@lmcstools/tailscale";
+} from "@lmcstools/core";
+import { isTailscaleIpv4Address, readTailscaleStatus } from "@lmcstools/network/tailscale";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";

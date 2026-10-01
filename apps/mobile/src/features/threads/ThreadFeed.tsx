@@ -15,35 +15,35 @@ import type {
   OrchestrationMessageContext,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
-import { renderAssistantCitationsAsText } from "@lmcstools/shared/assistantCitations";
-import { encodeComposerContextFragment } from "@lmcstools/shared/composerContextClipboard";
+} from "@lmcstools/core";
+import { renderAssistantCitationsAsText } from "@lmcstools/core/assistantCitations";
+import { encodeComposerContextFragment } from "@lmcstools/core/composerContextClipboard";
 import {
   parseComposerContextHref,
   collectComposerContextReferences,
   replaceComposerContextReferences,
-} from "@lmcstools/shared/composerContextReferences";
+} from "@lmcstools/core/composerContextReferences";
 import { ComposerContextSheet } from "../../components/ComposerContextSheet";
 import { writeComposerContextClipboard } from "../../lib/composerContextClipboard";
 import {
   codexArtifactTemplatePresentationLabel,
   type CodexArtifactTemplate,
-} from "@lmcstools/client-runtime/codex-artifact-templates";
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
-import { formatAttachmentSize } from "@lmcstools/client-runtime/state/attachments";
-import { squashAtomCommandFailure } from "@lmcstools/client-runtime/state/runtime";
+} from "@lmcstools/client/codex-artifact-templates";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
+import { formatAttachmentSize } from "@lmcstools/client/state/attachments";
+import { squashAtomCommandFailure } from "@lmcstools/client/state/runtime";
 import {
   classifyMarkdownImageSource,
   markdownImageSourceFragment,
-} from "@lmcstools/client-runtime/markdown-images";
-import { resolveViewedImageAsset } from "@lmcstools/client-runtime/work-log/presentation";
+} from "@lmcstools/client/markdown-images";
+import { resolveViewedImageAsset } from "@lmcstools/client/work-log/presentation";
 import {
   renderCodexFileCitationsAsMarkdown,
   splitCodexArtifactTemplateMarkdown,
-} from "@lmcstools/client-runtime/codex-markdown-directives";
-import { CHAT_LIST_ANCHOR_OFFSET, resolveChatListAnchoredEndSpace } from "@lmcstools/shared/chatList";
-import { imageMimeType } from "@lmcstools/shared/image";
-import { videoMimeType } from "@lmcstools/shared/video";
+} from "@lmcstools/client/codex-markdown-directives";
+import { CHAT_LIST_ANCHOR_OFFSET, resolveChatListAnchoredEndSpace } from "@lmcstools/core/chatList";
+import { imageMimeType } from "@lmcstools/core/image";
+import { videoMimeType } from "@lmcstools/core/video";
 import { SymbolView, type AppSymbolName } from "../../components/AppSymbol";
 import { HeaderHeightContext } from "@react-navigation/elements";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -97,7 +97,7 @@ import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
 import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import { downloadAndShareAttachment } from "../../lib/attachmentDownload";
 import { hasWideMarkdownBlock } from "../../lib/wideMarkdownBlocks";
-import { faviconUrlForOrigin } from "@lmcstools/shared/favicon";
+import { faviconUrlForOrigin } from "@lmcstools/core/favicon";
 import {
   hasNativeSelectableMarkdownText,
   SelectableMarkdownText,

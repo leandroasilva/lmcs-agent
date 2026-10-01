@@ -5,10 +5,10 @@ import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 
-import * as NodeSqliteClient from "@lmcstools/shared/nodeSqliteClient";
+import * as NodeSqliteClient from "@lmcstools/core/nodeSqliteClient";
 import { runSqliteState } from "./t3-sqlite-state.ts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 const createFixtureDatabase = Effect.fn("createSqliteStateFixtureDatabase")(function* (
   baseDir: string,

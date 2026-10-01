@@ -12,4 +12,4 @@ export {
   type ProjectGroupingSettings,
   type ProjectGroup,
   type ProjectGroupMember,
-} from "@lmcstools/client-runtime/state/project-grouping";
+} from "@lmcstools/client/state/project-grouping";

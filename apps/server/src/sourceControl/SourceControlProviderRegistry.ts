@@ -7,9 +7,9 @@ import * as Layer from "effect/Layer";
 import {
   SourceControlProviderError,
   type SourceControlProviderDiscoveryItem,
-} from "@lmcstools/contracts";
-import type { SourceControlProviderKind } from "@lmcstools/contracts";
-import { detectSourceControlProviderFromRemoteUrl } from "@lmcstools/shared/sourceControl";
+} from "@lmcstools/core";
+import type { SourceControlProviderKind } from "@lmcstools/core";
+import { detectSourceControlProviderFromRemoteUrl } from "@lmcstools/core/sourceControl";
 
 import * as AzureDevOpsSourceControlProvider from "./AzureDevOpsSourceControlProvider.ts";
 import * as BitbucketSourceControlProvider from "./BitbucketSourceControlProvider.ts";

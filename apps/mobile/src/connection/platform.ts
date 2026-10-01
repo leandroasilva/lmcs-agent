@@ -6,15 +6,15 @@ import {
   PrimaryEnvironmentAuth,
   RelayDeviceIdentity,
   SshEnvironmentGateway,
-} from "@lmcstools/client-runtime/platform";
+} from "@lmcstools/client/platform";
 import {
   ConnectionBlockedError,
   ConnectionTransientError,
   Connectivity,
   Wakeups,
-} from "@lmcstools/client-runtime/connection";
-import { managedRelayAccountChanges, managedRelaySessionAtom } from "@lmcstools/client-runtime/relay";
-import { AuthStandardClientScopes } from "@lmcstools/contracts";
+} from "@lmcstools/client/connection";
+import { managedRelayAccountChanges, managedRelaySessionAtom } from "@lmcstools/client/relay";
+import { AuthStandardClientScopes } from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

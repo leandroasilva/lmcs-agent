@@ -28,7 +28,7 @@ import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Semaphore from "effect/Semaphore";
 
-import * as NetService from "@lmcstools/shared/Net";
+import * as NetService from "@lmcstools/core/Net";
 
 import * as DesktopObservability from "../app/DesktopObservability.ts";
 import * as DesktopBackendConfiguration from "../backend/DesktopBackendConfiguration.ts";

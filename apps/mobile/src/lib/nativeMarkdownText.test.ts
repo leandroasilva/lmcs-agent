@@ -266,9 +266,7 @@ describe("nativeMarkdownDocumentRuns", () => {
       children: [
         {
           type: "paragraph",
-          children: [
-            { type: "text", content: "Inspect @src/Checkout.tsx. Use @lmcstools/contracts." },
-          ],
+          children: [{ type: "text", content: "Inspect @src/Checkout.tsx. Use @lmcstools/core." }],
         },
       ],
     });
@@ -281,7 +279,7 @@ describe("nativeMarkdownDocumentRuns", () => {
         fileIcon: "react",
         sourceText: "@src/Checkout.tsx",
       },
-      { text: ". Use @lmcstools/contracts.", role: "body" },
+      { text: ". Use @lmcstools/core.", role: "body" },
     ]);
   });
 

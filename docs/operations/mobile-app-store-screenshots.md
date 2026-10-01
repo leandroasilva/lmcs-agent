@@ -105,7 +105,7 @@ folders, and each requested theme adds a sibling folder next to `t3-code/`.
 Edit [mobile-showcase.config.ts](../../scripts/mobile-showcase.config.ts) to change simulator or AVD
 names, light/dark appearance, default palette, iOS orientation, scenes, output directory, capture
 delay, Android ABI, or viewport. The selectable palette ids come from `MOBILE_THEME_IDS` in
-[themePalettes.ts](../../packages/shared/src/themePalettes.ts), so the harness and the app's
+[themePalettes.ts](../../packages/core/src/shared/themePalettes.ts), so the harness and the app's
 appearance settings can never drift apart.
 
 ## Capture in GitHub Actions

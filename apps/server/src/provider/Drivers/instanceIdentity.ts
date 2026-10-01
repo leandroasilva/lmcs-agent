@@ -1,4 +1,4 @@
-import type { ProviderDriverKind, ServerProvider } from "@lmcstools/contracts";
+import type { ProviderDriverKind, ServerProvider } from "@lmcstools/core";
 
 import type { ProviderInstance } from "../ProviderDriver.ts";
 import type { ServerProviderDraft } from "../providerSnapshot.ts";

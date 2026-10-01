@@ -1,5 +1,5 @@
-import { createEnvironmentRpcQueryAtomFamily } from "@lmcstools/client-runtime/state/runtime";
-import { WS_METHODS } from "@lmcstools/contracts";
+import { createEnvironmentRpcQueryAtomFamily } from "@lmcstools/client/state/runtime";
+import { WS_METHODS } from "@lmcstools/core";
 import { connectionAtomRuntime } from "../connection/runtime";
 
 export const composerPullRequests = {

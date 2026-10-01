@@ -1,4 +1,4 @@
-import type { ServerProviderSkill } from "@lmcstools/contracts";
+import type { ServerProviderSkill } from "@lmcstools/core";
 
 export function matchesSlashSkillQuery(skill: ServerProviderSkill, query: string): boolean {
   if (!skill.enabled) return false;

@@ -4,8 +4,8 @@ import {
   ProviderDriverKind,
   ProviderInstanceId,
   type ServerProvider,
-} from "@lmcstools/contracts";
-import { createModelCapabilities } from "@lmcstools/shared/model";
+} from "@lmcstools/core";
+import { createModelCapabilities } from "@lmcstools/core/model";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";

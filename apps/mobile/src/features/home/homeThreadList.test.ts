@@ -1,8 +1,5 @@
-import type {
-  EnvironmentProject,
-  EnvironmentThreadShell,
-} from "@lmcstools/client-runtime/state/shell";
-import { EnvironmentId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentProject, EnvironmentThreadShell } from "@lmcstools/client/state/shell";
+import { EnvironmentId, ProjectId, ProviderInstanceId, ThreadId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { buildHomeProjectScopes, sortHomeProjectScopes } from "./homeThreadList";

@@ -2,11 +2,11 @@ import type {
   DesktopDiscoveredSshHost,
   DesktopSshEnvironmentBootstrap,
   DesktopSshEnvironmentTarget,
-} from "@lmcstools/contracts";
-import * as NetService from "@lmcstools/shared/Net";
-import * as SshAuth from "@lmcstools/ssh/auth";
-import { resolveSshTarget } from "@lmcstools/ssh/command";
-import { discoverSshHosts } from "@lmcstools/ssh/config";
+} from "@lmcstools/core";
+import * as NetService from "@lmcstools/core/Net";
+import * as SshAuth from "@lmcstools/network/ssh/auth";
+import { resolveSshTarget } from "@lmcstools/network/ssh/command";
+import { discoverSshHosts } from "@lmcstools/network/ssh/config";
 import {
   SshCommandError,
   SshHostDiscoveryError,
@@ -15,8 +15,8 @@ import {
   SshPairingError,
   SshPasswordPromptError,
   SshReadinessError,
-} from "@lmcstools/ssh/errors";
-import * as SshTunnel from "@lmcstools/ssh/tunnel";
+} from "@lmcstools/network/ssh/errors";
+import * as SshTunnel from "@lmcstools/network/ssh/tunnel";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";

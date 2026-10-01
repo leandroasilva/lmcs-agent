@@ -10,9 +10,9 @@ import {
   DESKTOP_APP_ACTIVATION_PROTOCOL_VERSION,
   DesktopAppActivationRequest,
   type DesktopAppActivationResponse,
-} from "@lmcstools/contracts";
-import { resolveDesktopAppControlAddress } from "@lmcstools/shared/desktopAppControl";
-import { HostProcessUserId } from "@lmcstools/shared/hostProcess";
+} from "@lmcstools/core";
+import { resolveDesktopAppControlAddress } from "@lmcstools/core/desktopAppControl";
+import { HostProcessUserId } from "@lmcstools/core/hostProcess";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

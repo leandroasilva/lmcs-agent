@@ -1,5 +1,5 @@
-import { createEnvironmentProjectAtoms } from "@lmcstools/client-runtime/state/projects";
-import { createProjectEnvironmentAtoms } from "@lmcstools/client-runtime/state/projects";
+import { createEnvironmentProjectAtoms } from "@lmcstools/client/state/projects";
+import { createProjectEnvironmentAtoms } from "@lmcstools/client/state/projects";
 
 import { environmentCatalog } from "../connection/catalog";
 import { connectionAtomRuntime } from "../connection/runtime";

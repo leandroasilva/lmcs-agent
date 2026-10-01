@@ -16,7 +16,7 @@ import {
   ProviderSessionRuntimeStatus,
   RuntimeMode,
   ThreadId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 
 import {
   PersistenceDecodeError,

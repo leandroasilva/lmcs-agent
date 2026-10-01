@@ -1,4 +1,4 @@
-import { previewBridge } from "~/components/preview/previewBridge";
+import { previewBridge } from "~/components/features/preview/previewBridge";
 
 import { browserDefaultTabState, resolveBrowserDefaults } from "./browserDefaults";
 import { stopBrowserRecording } from "./browserRecording";

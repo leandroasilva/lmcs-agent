@@ -14,8 +14,8 @@ import * as VcsProcess from "../vcs/VcsProcess.ts";
 import * as WorkspaceEntries from "./WorkspaceEntries.ts";
 import * as WorkspaceFileSystem from "./WorkspaceFileSystem.ts";
 import * as WorkspacePaths from "./WorkspacePaths.ts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 const ProjectLayer = WorkspaceFileSystem.layer.pipe(
   Layer.provide(WorkspacePaths.layer),

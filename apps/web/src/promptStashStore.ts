@@ -1,4 +1,4 @@
-import { ComposerContextRecord, ForwardCompatibleArray } from "@lmcstools/contracts";
+import { ComposerContextRecord, ForwardCompatibleArray } from "@lmcstools/core";
 import * as Schema from "effect/Schema";
 import { create } from "zustand";
 

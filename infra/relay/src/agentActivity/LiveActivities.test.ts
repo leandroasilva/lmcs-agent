@@ -1,7 +1,7 @@
 import type {
   RelayAgentActivityAggregateState,
   RelayLiveActivityRegistrationRequest,
-} from "@lmcstools/contracts/relay";
+} from "@lmcstools/core/relay";
 import { describe, expect, it } from "@effect/vitest";
 import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";

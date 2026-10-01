@@ -2,15 +2,15 @@ import {
   PROVIDER_SEND_TURN_SUPPORTED_IMAGE_MIME_TYPES,
   type ChatAttachment,
   type EnvironmentId,
-} from "@lmcstools/contracts";
-import { parseScopedThreadKey } from "@lmcstools/client-runtime/environment";
-import { resolveAssetUrl } from "@lmcstools/client-runtime/state/assets";
+} from "@lmcstools/core";
+import { parseScopedThreadKey } from "@lmcstools/client/environment";
+import { resolveAssetUrl } from "@lmcstools/client/state/assets";
 import {
   deletePendingAttachmentUpload,
   runAttachmentUploadCycle,
   verifyPersistedAttachmentUpload,
   type PersistedAttachmentVerification,
-} from "@lmcstools/client-runtime/state/attachments";
+} from "@lmcstools/client/state/attachments";
 import { create } from "zustand";
 import * as Option from "effect/Option";
 import { AsyncResult } from "effect/unstable/reactivity";

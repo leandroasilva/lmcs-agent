@@ -1,6 +1,6 @@
 "use client";
 
-import type { PreviewViewportSetting, PreviewViewportSize } from "@lmcstools/contracts";
+import type { PreviewViewportSetting, PreviewViewportSize } from "@lmcstools/core";
 import {
   useCallback,
   useEffect,

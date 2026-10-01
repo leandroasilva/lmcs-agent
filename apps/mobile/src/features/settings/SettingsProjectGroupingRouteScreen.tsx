@@ -1,9 +1,10 @@
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import type { SidebarProjectGroupingMode } from "@lmcstools/contracts";
+import type { SidebarProjectGroupingMode } from "@lmcstools/core";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { AppText as Text } from "../../components/AppText";
 import { SymbolView } from "../../components/AppSymbol";
@@ -17,27 +18,15 @@ import { SettingsSection } from "./components/SettingsSection";
 
 const GROUPING_OPTIONS: ReadonlyArray<{
   readonly mode: SidebarProjectGroupingMode;
-  readonly label: string;
-  readonly description: string;
+  readonly labelKey: "groupByRepository" | "groupByRepositoryPath" | "keepSeparate";
 }> = [
-  {
-    mode: "repository",
-    label: "Group by repository",
-    description: "Matching repositories appear as one project.",
-  },
-  {
-    mode: "repository_path",
-    label: "Group by repository path",
-    description: "Keep monorepo paths separate.",
-  },
-  {
-    mode: "separate",
-    label: "Keep separate",
-    description: "Show every workspace as its own project.",
-  },
+  { mode: "repository", labelKey: "groupByRepository" },
+  { mode: "repository_path", labelKey: "groupByRepositoryPath" },
+  { mode: "separate", labelKey: "keepSeparate" },
 ];
 
 export function SettingsProjectGroupingRouteScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
@@ -47,15 +36,17 @@ export function SettingsProjectGroupingRouteScreen() {
     : null;
 
   return (
-    <SettingsScreen title="Organization">
+    <SettingsScreen title={t("nav.organization")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pt-4"
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, 18) + 18,
+        }}
       >
-        <SettingsSection title="Project grouping">
+        <SettingsSection title={t("settings.organization.projectGrouping")}>
           {GROUPING_OPTIONS.map((option, index) => (
             <Pressable
               key={option.mode}
@@ -73,9 +64,11 @@ export function SettingsProjectGroupingRouteScreen() {
               }
             >
               <View className="min-w-0 flex-1 gap-1">
-                <Text className="text-lg text-foreground">{option.label}</Text>
+                <Text className="text-lg text-foreground">
+                  {t(`settings.organization.${option.labelKey}`)}
+                </Text>
                 <Text className="text-sm leading-normal text-foreground-muted">
-                  {option.description}
+                  {t(`settings.organization.${option.labelKey}Description`)}
                 </Text>
               </View>
               {selectedMode === option.mode ? (

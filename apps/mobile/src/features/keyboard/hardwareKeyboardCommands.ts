@@ -1,4 +1,4 @@
-import { EnvironmentId, ThreadId, type ThreadJumpKeybindingCommand } from "@lmcstools/contracts";
+import { EnvironmentId, ThreadId, type ThreadJumpKeybindingCommand } from "@lmcstools/core";
 import { useEffect } from "react";
 
 export type HardwareKeyboardCommand =

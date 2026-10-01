@@ -8,9 +8,9 @@ import {
   WsRpcGroup,
   type OrchestrationProjectShell,
   type OrchestrationThreadShell,
-} from "@lmcstools/contracts";
-import type { RelayAgentActivityState } from "@lmcstools/contracts/relay";
-import { projectThreadAwareness } from "@lmcstools/shared/agentAwareness";
+} from "@lmcstools/core";
+import type { RelayAgentActivityState } from "@lmcstools/core/relay";
+import { projectThreadAwareness } from "@lmcstools/core/agentAwareness";
 import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
 import * as Clock from "effect/Clock";

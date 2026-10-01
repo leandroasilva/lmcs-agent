@@ -1,4 +1,4 @@
-import { createGitEnvironmentAtoms } from "@lmcstools/client-runtime/state/git";
+import { createGitEnvironmentAtoms } from "@lmcstools/client/state/git";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

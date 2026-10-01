@@ -1,5 +1,5 @@
-import { ManagedRelay } from "@lmcstools/client-runtime/relay";
-import { RelayMobileClientId } from "@lmcstools/contracts/relay";
+import { ManagedRelay } from "@lmcstools/client/relay";
+import { RelayMobileClientId } from "@lmcstools/core/relay";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";

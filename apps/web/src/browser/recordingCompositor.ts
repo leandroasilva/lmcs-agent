@@ -1,4 +1,4 @@
-import type { DesktopPreviewRecordingInput } from "@lmcstools/contracts";
+import type { DesktopPreviewRecordingInput } from "@lmcstools/core";
 
 import { readPreviewAnnotationTheme } from "./annotationTheme";
 

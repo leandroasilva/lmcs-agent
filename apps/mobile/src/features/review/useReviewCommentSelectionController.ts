@@ -5,7 +5,7 @@ import * as Arr from "effect/Array";
 import { pipe } from "effect/Function";
 import * as Result from "effect/Result";
 
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import {
   buildReviewCommentTarget,
   clearReviewCommentTarget,

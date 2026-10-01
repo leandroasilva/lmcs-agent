@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Semaphore from "effect/Semaphore";
-import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@lmcstools/contracts";
+import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@lmcstools/core";
 
 import * as AzureDevOpsPullRequestCli from "./AzureDevOpsPullRequestCli.ts";
 import {

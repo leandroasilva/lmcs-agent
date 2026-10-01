@@ -1,8 +1,8 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it } from "@effect/vitest";
-import { ClaudeSettings, ProviderInstanceId } from "@lmcstools/contracts";
-import { HostProcessPlatform, isHostWindows } from "@lmcstools/shared/hostProcess";
-import { createModelSelection } from "@lmcstools/shared/model";
+import { ClaudeSettings, ProviderInstanceId } from "@lmcstools/core";
+import { HostProcessPlatform, isHostWindows } from "@lmcstools/core/hostProcess";
+import { createModelSelection } from "@lmcstools/core/model";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";

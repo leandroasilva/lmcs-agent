@@ -50,7 +50,7 @@ const RESTRICTED_PULL_REQUEST_GLYPH_IMPORTS = {
     "GitPullRequestCreateArrowIcon",
   ],
   message:
-    "Pick a glyph by meaning from PullRequestGlyph in apps/web/src/components/pullRequest/pullRequestIcons.tsx so every surface draws the same pull request the same way.",
+    "Pick a glyph by meaning from PullRequestGlyph in apps/web/src/components/features/pullRequest/pullRequestIcons.tsx so every surface draws the same pull request the same way.",
 };
 
 export default defineConfig({
@@ -74,7 +74,7 @@ export default defineConfig({
     testTimeout: 60_000,
     setupFiles: [
       NodeURL.fileURLToPath(
-        new URL("./packages/shared/src/testing/longTempDir.ts", import.meta.url),
+        new URL("./packages/core/src/shared/testing/longTempDir.ts", import.meta.url),
       ),
     ],
   },
@@ -179,7 +179,7 @@ export default defineConfig({
     overrides: [
       {
         // The one place that reads the host platform to seed the injected references.
-        files: ["packages/shared/src/hostProcess.ts"],
+        files: ["packages/core/src/shared/hostProcess.ts"],
         rules: { "t3code/no-global-process-runtime": "off" },
       },
       {
@@ -198,7 +198,7 @@ export default defineConfig({
       {
         // The one module allowed to name lucide's pull-request glyphs; everything else picks
         // from its vocabulary. The other import restrictions still apply here.
-        files: ["apps/web/src/components/pullRequest/pullRequestIcons.tsx"],
+        files: ["apps/web/src/components/features/pullRequest/pullRequestIcons.tsx"],
         rules: {
           "eslint/no-restricted-imports": ["error", { paths: RESTRICTED_IMPORT_PATHS }],
         },
@@ -222,7 +222,10 @@ export default defineConfig({
       {
         // Third-party marks (brand logos, the macOS permission panes, Codex's Computer Use
         // mark) must keep their exact colors, so the files that hold them are exempt.
-        files: ["apps/web/src/components/Icons.tsx", "apps/web/src/components/JetBrainsIcons.tsx"],
+        files: [
+          "apps/web/src/components/shared/Icons.tsx",
+          "apps/web/src/components/shared/JetBrainsIcons.tsx",
+        ],
         rules: { "shadcn/no-raw-colors": "off" },
       },
       {
@@ -289,19 +292,14 @@ export default defineConfig({
       },
       {
         // The sign-in masthead is LMCS brand artwork: fixed gradients, not theme surfaces.
-        files: ["apps/web/src/components/auth/AuthSurfaceShell.tsx"],
+        files: ["apps/web/src/components/features/auth/AuthSurfaceShell.tsx"],
         rules: { "shadcn/no-arbitrary-values": "off" },
       },
       {
         // Shared client code must not call APIs missing from Hermes. Our ESNext
         // TypeScript target accepts them even when they would crash mobile at launch.
         // Tests run on Node and are exempt.
-        files: [
-          "apps/mobile/src/**",
-          "packages/client-runtime/src/**",
-          "packages/contracts/src/**",
-          "packages/shared/src/**",
-        ],
+        files: ["apps/mobile/src/**", "packages/client/src/**", "packages/core/src/**"],
         excludeFiles: ["**/*.test.ts", "**/*.test.tsx"],
         rules: { "t3code/no-hermes-unsupported-apis": "error" },
       },

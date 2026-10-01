@@ -25,7 +25,7 @@ import * as HttpRouter from "effect/unstable/http/HttpRouter";
 import * as HttpServerRequest from "effect/unstable/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
 
-import { buildConnectAuthorizeRequestUrl } from "@lmcstools/shared/connectAuth";
+import { buildConnectAuthorizeRequestUrl } from "@lmcstools/core/connectAuth";
 
 import * as ServerSecretStore from "../auth/ServerSecretStore.ts";
 import * as ExternalLauncher from "../process/externalLauncher.ts";

@@ -1,9 +1,9 @@
-import type { EnvironmentId, PullRequestRef } from "@lmcstools/contracts";
+import type { EnvironmentId, PullRequestRef } from "@lmcstools/core";
 import { useMemo } from "react";
 import {
   savedPullRequestStack,
   pullRequestStackView,
-} from "../components/pullRequest/pullRequestStackSnapshot";
+} from "../components/features/pullRequest/pullRequestStackSnapshot";
 import { useThreadShells } from "./entities";
 import { pullRequestStackAtom } from "./pullRequests";
 import { useEnvironmentQuery } from "./query";

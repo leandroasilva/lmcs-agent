@@ -1,5 +1,5 @@
-import { EnvironmentRegistry } from "@lmcstools/client-runtime/connection";
-import { createRuntimeCommand } from "@lmcstools/client-runtime/state/runtime";
+import { EnvironmentRegistry } from "@lmcstools/client/connection";
+import { createRuntimeCommand } from "@lmcstools/client/state/runtime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as SubscriptionRef from "effect/SubscriptionRef";

@@ -5,8 +5,8 @@ import * as NodeFS from "node:fs";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@lmcstools/contracts";
-import { HostProcessPlatform } from "@lmcstools/shared/hostProcess";
+import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@lmcstools/core";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Sink from "effect/Sink";
@@ -30,7 +30,7 @@ import {
   resolveProviderMaintenanceCapabilitiesEffect,
   type ProviderMaintenanceCapabilities,
 } from "./providerMaintenance.ts";
-import { symlinksSupported } from "@lmcstools/shared/testing/symlinks";
+import { symlinksSupported } from "@lmcstools/core/testing/symlinks";
 
 const driver = (value: string) => ProviderDriverKind.make(value);
 // These write `#!/bin/sh` stubs and evaluate them with darwin/linux path

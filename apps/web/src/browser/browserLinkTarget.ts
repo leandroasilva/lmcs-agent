@@ -8,7 +8,7 @@
  *
  * @module browserLinkTarget
  */
-import type { BrowserLinkTarget } from "@lmcstools/contracts";
+import type { BrowserLinkTarget } from "@lmcstools/core";
 
 import { ensureClientSettingsHydrated, getClientSettings } from "~/hooks/useSettings";
 import { isPreviewSupportedInRuntime } from "~/previewStateStore";

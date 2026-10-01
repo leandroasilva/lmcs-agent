@@ -1,4 +1,4 @@
-import { normalizeProjectPathForComparison } from "@lmcstools/shared/path";
+import { normalizeProjectPathForComparison } from "@lmcstools/core/path";
 
 export type FirstRunDecision = "pending" | "app" | "wizard";
 

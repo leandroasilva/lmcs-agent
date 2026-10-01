@@ -14,7 +14,7 @@ import * as Scope from "effect/Scope";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
-import * as CodexErrors from "effect-codex-app-server/errors";
+import * as CodexErrors from "@lmcstools/providers/codex/errors";
 import {
   ClaudeSettings,
   CodexSettings,
@@ -25,13 +25,13 @@ import {
   type ServerProvider,
   type ServerProviderSlashCommand,
   type ServerSettings as ContractServerSettings,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as PlatformError from "effect/PlatformError";
 import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { ChildProcessSpawner } from "effect/unstable/process";
-import { deepMerge } from "@lmcstools/shared/Struct";
-import { createModelCapabilities } from "@lmcstools/shared/model";
-import { applyServerSettingsPatch } from "@lmcstools/shared/serverSettings";
+import { deepMerge } from "@lmcstools/core/Struct";
+import { createModelCapabilities } from "@lmcstools/core/model";
+import { applyServerSettingsPatch } from "@lmcstools/core/serverSettings";
 
 import { checkCodexProviderStatus, type CodexAppServerProviderSnapshot } from "./CodexProvider.ts";
 import { checkClaudeProviderStatus } from "./ClaudeProvider.ts";
@@ -71,7 +71,7 @@ const disabledCodexSettings: CodexSettings = Schema.decodeSync(CodexSettings)({
   enabled: false,
 });
 
-process.env.T3CODE_CURSOR_ENABLED = "1";
+process.env.LMCS_CURSOR_ENABLED = "1";
 
 // ── Test helpers ────────────────────────────────────────────────────
 
@@ -427,7 +427,9 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
       it.effect("passes configured launch args to the Codex provider probe", () =>
         Effect.gen(function* () {
           let observedLaunchArgs: string | undefined;
-          const settings = decodeCodexSettings({ launchArgs: "--strict-config --enable foo" });
+          const settings = decodeCodexSettings({
+            launchArgs: "--strict-config --enable foo",
+          });
 
           const status = yield* checkCodexProviderStatus(settings, (input) => {
             observedLaunchArgs = input.launchArgs;
@@ -925,7 +927,12 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             "kindle-alpha",
             "ultima-alpha",
             "solstice-alpha",
-          ].map((slug) => ({ slug, name: slug, isCustom: false, capabilities: null })),
+          ].map((slug) => ({
+            slug,
+            name: slug,
+            isCustom: false,
+            capabilities: null,
+          })),
           slashCommands: [],
           skills: [],
         } satisfies ServerProvider;
@@ -939,7 +946,12 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
           ...cachedProvider,
           checkedAt: "2026-09-04T19:01:00.000Z",
           models: [
-            { slug: "gpt-6-astra", name: "GPT 6 Astra", isCustom: false, capabilities: null },
+            {
+              slug: "gpt-6-astra",
+              name: "GPT 6 Astra",
+              isCustom: false,
+              capabilities: null,
+            },
             cachedProvider.models[0]!,
             customModel,
           ],
@@ -988,9 +1000,18 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
         it("clears discovered models after sign-out, disable, uninstall, or empty discovery", () => {
           const emptyProvider = { ...refreshedProvider, models: [customModel] };
           const clearedProviders = [
-            { ...emptyProvider, status: "error", auth: { status: "unauthenticated" } },
+            {
+              ...emptyProvider,
+              status: "error",
+              auth: { status: "unauthenticated" },
+            },
             { ...emptyProvider, status: "disabled", enabled: false },
-            { ...emptyProvider, status: "error", installed: false, auth: { status: "unknown" } },
+            {
+              ...emptyProvider,
+              status: "error",
+              installed: false,
+              auth: { status: "unknown" },
+            },
             emptyProvider,
             { ...emptyProvider, models: [] },
           ] satisfies ReadonlyArray<ServerProvider>;
@@ -1010,7 +1031,10 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               cacheDir: config.providerStatusCacheDir,
               instanceId: cachedProvider.instanceId,
             });
-            yield* writeProviderStatusCache({ filePath, provider: cachedProvider });
+            yield* writeProviderStatusCache({
+              filePath,
+              provider: cachedProvider,
+            });
             const nextProvider = yield* Ref.make<ServerProvider>(refreshedProvider);
             const instance = {
               instanceId: cachedProvider.instanceId,
@@ -1180,11 +1204,24 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             models: [],
           } satisfies ServerProvider;
           const clearedProviders = [
-            { ...emptyProvider, status: "warning", auth: { status: "unauthenticated" } },
-            { ...emptyProvider, status: "error", auth: { status: "unauthenticated" } },
+            {
+              ...emptyProvider,
+              status: "warning",
+              auth: { status: "unauthenticated" },
+            },
+            {
+              ...emptyProvider,
+              status: "error",
+              auth: { status: "unauthenticated" },
+            },
             { ...emptyProvider, status: "disabled", enabled: false },
             { ...emptyProvider, status: "error", enabled: false },
-            { ...emptyProvider, status: "error", installed: false, auth: { status: "unknown" } },
+            {
+              ...emptyProvider,
+              status: "error",
+              installed: false,
+              auth: { status: "unknown" },
+            },
             emptyProvider,
           ] satisfies ReadonlyArray<ServerProvider>;
 
@@ -1209,7 +1246,11 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
           status: "ready",
           enabled: true,
           installed: true,
-          auth: { status: "authenticated", type: "oauth-personal", label: "Google account" },
+          auth: {
+            status: "authenticated",
+            type: "oauth-personal",
+            label: "Google account",
+          },
           checkedAt: "2026-09-05T00:00:00.000Z",
           version: "agy_acp_server_1.1.1",
           models: [
@@ -1280,7 +1321,10 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             { ...restartProbe, status: "error", installed: false },
             { ...restartProbe, driver: ProviderDriverKind.make("codex") },
             // The instance was rebuilt with another sign-in method.
-            { ...restartProbe, auth: { status: "unknown", type: "gemini-api-key" } },
+            {
+              ...restartProbe,
+              auth: { status: "unknown", type: "gemini-api-key" },
+            },
           ] satisfies ReadonlyArray<ServerProvider>;
           for (const next of untouched) {
             const merged = mergeProviderSnapshot(signedIn, next);
@@ -1550,7 +1594,10 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
 
           yield* Effect.gen(function* () {
             const registry = yield* ProviderRegistry.ProviderRegistry;
-            yield* registry.refreshWorkspaceSnapshot({ instanceId, cwd: "/workspace" });
+            yield* registry.refreshWorkspaceSnapshot({
+              instanceId,
+              cwd: "/workspace",
+            });
             assert.strictEqual((yield* registry.getProviders)[0]?.workspaceSnapshots, undefined);
             yield* Ref.set(returnPendingSnapshot, false);
             const workspaceUpdate = yield* registry.streamChanges.pipe(
@@ -1578,7 +1625,10 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               providers[0]?.workspaceSnapshots?.[0]?.skills,
               scopedProvider.skills,
             );
-            yield* registry.refreshWorkspaceSnapshot({ instanceId, cwd: "/workspace" });
+            yield* registry.refreshWorkspaceSnapshot({
+              instanceId,
+              cwd: "/workspace",
+            });
             assert.strictEqual(yield* Ref.get(snapshotCalls), 2);
 
             yield* Ref.set(instancesRef, [rebuiltInstance]);
@@ -2646,6 +2696,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
                 "cursor",
                 "grok",
                 "opencode",
+                "qoder",
               ]);
               assert.strictEqual(cursorProvider?.enabled, false);
               assert.strictEqual(cursorProvider?.status, "disabled");
@@ -2774,7 +2825,9 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             );
           const subscription = yield* check({ subscriptionType: "max" });
           const bedrock = yield* check({ apiProvider: "bedrock" });
-          assert.deepStrictEqual(subscription.usageLimits?.resetCredits, { availableCount: 2 });
+          assert.deepStrictEqual(subscription.usageLimits?.resetCredits, {
+            availableCount: 2,
+          });
           assert.strictEqual(bedrock.usageLimits?.resetCredits, undefined);
         }).pipe(
           Effect.provide(

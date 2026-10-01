@@ -1,4 +1,4 @@
-import type { ProjectEntry } from "@lmcstools/contracts";
+import type { ProjectEntry } from "@lmcstools/core";
 import { SymbolView } from "../../components/AppSymbol";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from "react-native";

@@ -1,4 +1,4 @@
-import type { VoiceInputState } from "@lmcstools/client-runtime/voice-input";
+import type { VoiceInputState } from "@lmcstools/client/voice-input";
 
 export type VoiceComposerPresentation = {
   readonly leadingAction: "cancel" | null;

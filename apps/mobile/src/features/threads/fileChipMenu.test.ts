@@ -1,4 +1,4 @@
-import { ThreadId } from "@lmcstools/contracts";
+import { ThreadId } from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { fileChipMenu, fileChipShareSource, resolveFileChipTarget } from "./fileChipMenu";

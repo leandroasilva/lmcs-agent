@@ -3,6 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { AndroidScreenHeader } from "../../components/AndroidScreenHeader";
 import { AppText as Text } from "../../components/AppText";
@@ -17,22 +18,14 @@ import { SettingsSection } from "./components/SettingsSection";
 
 const ENTER_BEHAVIOR_OPTIONS: ReadonlyArray<{
   readonly behavior: ComposerEnterBehavior;
-  readonly label: string;
-  readonly description: string;
+  readonly labelKey: "sendMessage" | "insertNewLine";
 }> = [
-  {
-    behavior: "send",
-    label: "Send message",
-    description: "Return sends the message. Shift-Return inserts a new line.",
-  },
-  {
-    behavior: "newline",
-    label: "Insert new line",
-    description: "Return inserts a new line. Command-Return sends the message.",
-  },
+  { behavior: "send", labelKey: "sendMessage" },
+  { behavior: "newline", labelKey: "insertNewLine" },
 ];
 
 export function SettingsKeyboardRouteScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
@@ -47,7 +40,10 @@ export function SettingsKeyboardRouteScreen() {
       {Platform.OS === "android" ? (
         <>
           <NativeStackScreenOptions options={{ headerShown: false }} />
-          <AndroidScreenHeader title="Keyboard" onBack={() => navigation.goBack()} />
+          <AndroidScreenHeader
+            title={t("settings.keyboard.title")}
+            onBack={() => navigation.goBack()}
+          />
         </>
       ) : null}
       <ScrollView
@@ -55,9 +51,11 @@ export function SettingsKeyboardRouteScreen() {
         showsVerticalScrollIndicator={false}
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pt-4"
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, 18) + 18,
+        }}
       >
-        <SettingsSection title="Return key">
+        <SettingsSection title={t("settings.keyboard.returnKey")}>
           {ENTER_BEHAVIOR_OPTIONS.map((option, index) => (
             <Pressable
               key={option.behavior}
@@ -75,9 +73,11 @@ export function SettingsKeyboardRouteScreen() {
               }
             >
               <View className="min-w-0 flex-1 gap-1">
-                <Text className="text-lg text-foreground">{option.label}</Text>
+                <Text className="text-lg text-foreground">
+                  {t(`settings.keyboard.${option.labelKey}`)}
+                </Text>
                 <Text className="text-sm leading-normal text-foreground-muted">
-                  {option.description}
+                  {t(`settings.keyboard.${option.labelKey}Description`)}
                 </Text>
               </View>
               {selectedBehavior === option.behavior ? (
@@ -93,7 +93,7 @@ export function SettingsKeyboardRouteScreen() {
           ))}
         </SettingsSection>
         <Text className="px-2 text-sm text-foreground-muted">
-          Applies to the composer when a hardware keyboard is connected.
+          {t("settings.keyboard.hardwareNote")}
         </Text>
       </ScrollView>
     </View>

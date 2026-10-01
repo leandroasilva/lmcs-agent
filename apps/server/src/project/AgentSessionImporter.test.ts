@@ -12,7 +12,7 @@ import {
   type OrchestrationProjectShell,
   type OrchestrationThread,
   type ProviderSendTurnInput,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as Deferred from "effect/Deferred";
 import * as Fiber from "effect/Fiber";

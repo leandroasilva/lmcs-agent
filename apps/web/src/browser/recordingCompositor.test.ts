@@ -1,4 +1,4 @@
-import type { DesktopPreviewRecordingInput } from "@lmcstools/contracts";
+import type { DesktopPreviewRecordingInput } from "@lmcstools/core";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { createRecordingCompositor, RecordingDecorations } from "./recordingCompositor";

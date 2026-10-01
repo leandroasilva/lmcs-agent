@@ -1,15 +1,15 @@
-import { T3_PROJECT_FILE_NAME, type EnvironmentId, type T3ProjectFile } from "@lmcstools/contracts";
-import { parseT3ProjectFile } from "@lmcstools/shared/t3ProjectFile";
-import { executeAtomQuery } from "@lmcstools/client-runtime/state/runtime";
+import { T3_PROJECT_FILE_NAME, type EnvironmentId, type T3ProjectFile } from "@lmcstools/core";
+import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
+import { executeAtomQuery } from "@lmcstools/client/state/runtime";
 
 import {
   getProjectFileQueryAtom,
   resolveProjectFileQueryData,
-} from "~/components/files/projectFilesQueryState";
+} from "~/components/features/files/projectFilesQueryState";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 
 /**
- * Read and decode the project's checked-in `t3.json`.
+ * Read and decode the project's checked-in `lmcs.json`.
  *
  * Imperative counterpart to `useT3ProjectFileState` for the new-thread path,
  * which resolves defaults at call time rather than render time. The file

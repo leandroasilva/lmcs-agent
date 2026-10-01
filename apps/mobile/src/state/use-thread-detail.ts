@@ -1,4 +1,4 @@
-import type { EnvironmentId, ThreadId } from "@lmcstools/contracts";
+import type { EnvironmentId, ThreadId } from "@lmcstools/core";
 import * as Option from "effect/Option";
 
 import { useEnvironmentThread } from "./threads";

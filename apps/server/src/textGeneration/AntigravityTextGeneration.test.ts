@@ -1,10 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { it } from "@effect/vitest";
-import {
-  ANTIGRAVITY_DEFAULT_MODEL,
-  ProviderInstanceId,
-  ProviderSetupError,
-} from "@lmcstools/contracts";
+import { ANTIGRAVITY_DEFAULT_MODEL, ProviderInstanceId, ProviderSetupError } from "@lmcstools/core";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -16,8 +12,8 @@ import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
-import { type AcpError, AcpRequestError } from "effect-acp/errors";
-import type * as AcpSchema from "effect-acp/schema";
+import { type AcpError, AcpRequestError } from "@lmcstools/providers/acp/errors";
+import type * as AcpSchema from "@lmcstools/providers/acp/schema";
 import { expect } from "vite-plus/test";
 
 import type { AcpSessionRuntimeEvent } from "../provider/acp/AcpSessionRuntime.ts";
@@ -492,17 +488,19 @@ it.layer(NodeServices.layer)("AntigravityTextGeneration", (it) => {
     }).pipe(Effect.scoped),
   );
 
-  it.effect("uses the native default without sending LMCS Code's default selection as a model ID", () =>
-    Effect.gen(function* () {
-      const fixture = yield* makeFixture();
-      const result = yield* fixture.textGeneration.generateThreadTitle({
-        ...fixture.titleInput,
-        modelSelection: { ...modelSelection, model: ANTIGRAVITY_DEFAULT_MODEL },
-      });
-      expect(result).toEqual({ title: "Repair login" });
-      expect(fixture.state.selectedModels).toEqual([]);
-      yield* fixture.assertCleaned;
-    }).pipe(Effect.scoped),
+  it.effect(
+    "uses the native default without sending LMCS Code's default selection as a model ID",
+    () =>
+      Effect.gen(function* () {
+        const fixture = yield* makeFixture();
+        const result = yield* fixture.textGeneration.generateThreadTitle({
+          ...fixture.titleInput,
+          modelSelection: { ...modelSelection, model: ANTIGRAVITY_DEFAULT_MODEL },
+        });
+        expect(result).toEqual({ title: "Repair login" });
+        expect(fixture.state.selectedModels).toEqual([]);
+        yield* fixture.assertCleaned;
+      }).pipe(Effect.scoped),
   );
 
   it.effect.each([

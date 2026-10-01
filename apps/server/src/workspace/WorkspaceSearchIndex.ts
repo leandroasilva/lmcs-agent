@@ -24,8 +24,8 @@ import type {
   ProjectSearchContentsInput,
   ProjectSearchContentsResult,
   ProjectSearchEntriesResult,
-} from "@lmcstools/contracts";
-import { isWorkspaceImagePreviewPath } from "@lmcstools/shared/filePreview";
+} from "@lmcstools/core";
+import { isWorkspaceImagePreviewPath } from "@lmcstools/core/filePreview";
 
 // fff-node stays external to the CLI bundle because it dlopens a native
 // library. A static `import` of an external package is a hard error inside a

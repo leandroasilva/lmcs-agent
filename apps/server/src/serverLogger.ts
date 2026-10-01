@@ -1,4 +1,4 @@
-import { otlpSerializationLayer } from "@lmcstools/shared/observability";
+import { otlpSerializationLayer } from "@lmcstools/core/observability";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Logger from "effect/Logger";

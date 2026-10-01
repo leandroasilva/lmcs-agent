@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { OrchestrationThreadActivity } from "@lmcstools/contracts";
+import type { OrchestrationThreadActivity } from "@lmcstools/core";
 import { projectActivityPayload } from "./ActivityPayloadProjection.ts";
 
 function activity(payload: Record<string, unknown>): OrchestrationThreadActivity {

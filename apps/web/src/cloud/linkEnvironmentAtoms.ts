@@ -1,7 +1,4 @@
-import {
-  createAtomCommandScheduler,
-  createRuntimeCommand,
-} from "@lmcstools/client-runtime/state/runtime";
+import { createAtomCommandScheduler, createRuntimeCommand } from "@lmcstools/client/state/runtime";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 import {

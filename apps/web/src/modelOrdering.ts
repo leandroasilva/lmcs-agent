@@ -1,4 +1,4 @@
-import type { ProviderInstanceId } from "@lmcstools/contracts";
+import type { ProviderInstanceId } from "@lmcstools/core";
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
 

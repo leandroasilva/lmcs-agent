@@ -1,4 +1,4 @@
-import type { PreviewAnnotationSubmission } from "@lmcstools/contracts";
+import type { PreviewAnnotationSubmission } from "@lmcstools/core";
 
 interface AnnotationKeyboardEvent {
   readonly key: string;

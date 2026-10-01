@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { serializeRenderedMarkdownFragment } from "./markdown-clipboard";
-import { EnvironmentId, MessageId, ThreadId } from "@lmcstools/contracts";
+import { EnvironmentId, MessageId, ThreadId } from "@lmcstools/core";
 import {
   collectAssistantCitations,
   serializeAssistantCitation,
-} from "@lmcstools/shared/assistantCitations";
+} from "@lmcstools/core/assistantCitations";
 
 const TEXT_NODE = 3;
 const ELEMENT_NODE = 1;

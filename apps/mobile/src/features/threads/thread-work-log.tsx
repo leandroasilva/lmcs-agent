@@ -1,8 +1,5 @@
 import { QuestionAnswerHistory } from "./QuestionAnswerHistory";
-import {
-  getQuestionAnswerPreview,
-  hasQuestionAnswer,
-} from "@lmcstools/client-runtime/work-log/user-input";
+import { getQuestionAnswerPreview, hasQuestionAnswer } from "@lmcstools/client/work-log/user-input";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { type AppSymbolName, SymbolView } from "../../components/AppSymbol";
@@ -32,11 +29,11 @@ import {
   View,
 } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import type { EnvironmentId, ToolActivityIcon } from "@lmcstools/contracts";
-import { toolActivityFaviconUrl } from "@lmcstools/shared/favicon";
+import type { EnvironmentId, ToolActivityIcon } from "@lmcstools/core";
+import { toolActivityFaviconUrl } from "@lmcstools/core/favicon";
 
 import { AppText as Text } from "../../components/AppText";
-import { T3Wordmark } from "../../components/T3Wordmark";
+import { LMCSWordmark } from "../../components/LMCSWordmark";
 import { cn } from "../../lib/cn";
 import { THREAD_WORK_ROW_MIN_HEIGHT, type deriveThreadWorkLogSizing } from "../../lib/layout";
 import {
@@ -53,8 +50,8 @@ import {
   resolveWorkEntryToolPresentation,
   type ToolGroupSummaryKind,
   workEntryViewedImagePath,
-} from "@lmcstools/client-runtime/work-log/presentation";
-import { resolveWorkGroupScrollAnchor } from "@lmcstools/client-runtime/work-log/scroll-anchor";
+} from "@lmcstools/client/work-log/presentation";
+import { resolveWorkGroupScrollAnchor } from "@lmcstools/client/work-log/scroll-anchor";
 import type { MarkdownImageRenderer } from "../../native/SelectableMarkdownText";
 import Animated, {
   cancelAnimation,
@@ -91,7 +88,10 @@ function WorkLogIcon(props: {
   const colorClassName = props.highlighted ? "accent-foreground" : props.colorClassName;
   if (props.icon === "lmcs-code") {
     return (
-      <T3Wordmark height={10} {...(colorClassName ? { colorClassName } : { color: props.color })} />
+      <LMCSWordmark
+        height={10}
+        {...(colorClassName ? { colorClassName } : { color: props.color })}
+      />
     );
   }
   return (
@@ -924,7 +924,7 @@ export function ThreadWorkGroupToggle(props: {
   readonly summaryKind: ToolGroupSummaryKind;
   readonly summaryToolIcon?: "browser" | "device" | "lmcs-code" | "pull-request" | "brain";
   readonly themeAppearance: "light" | "dark";
-  readonly toolSurface?: import("@lmcstools/contracts").ToolActivitySurface;
+  readonly toolSurface?: import("@lmcstools/core").ToolActivitySurface;
   readonly toolIcon?: ToolActivityIcon;
   readonly hasFailure: boolean;
   readonly shimmer: boolean;

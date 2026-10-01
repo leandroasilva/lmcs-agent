@@ -1,12 +1,12 @@
-import { scopeProjectRef } from "@lmcstools/client-runtime/environment";
-import { EnvironmentId, ProjectId, type ScopedThreadRef } from "@lmcstools/contracts";
+import { scopeProjectRef } from "@lmcstools/client/environment";
+import { EnvironmentId, ProjectId, type ScopedThreadRef } from "@lmcstools/core";
 import { useMemo } from "react";
 
 import {
   readPullRequestDetailSnapshot,
   resolveDisplayedPullRequestDetail,
   resolvePullRequestReferenceHost,
-} from "../components/pullRequest/pullRequestDetail.logic";
+} from "../components/features/pullRequest/pullRequestDetail.logic";
 import { gitHubPullRequestBrowserUrl } from "../lib/openPullRequestLink";
 import { selectActiveRightPanelSurface, useRightPanelStore } from "../rightPanelStore";
 import { useProject } from "../state/entities";

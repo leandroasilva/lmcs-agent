@@ -1,4 +1,4 @@
-import { sanitizeFeatureBranchName } from "@lmcstools/shared/git";
+import { sanitizeFeatureBranchName } from "@lmcstools/core/git";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { useState } from "react";
 import { Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";

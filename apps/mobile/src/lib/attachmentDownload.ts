@@ -1,4 +1,4 @@
-import type { ChatFileAttachment } from "@lmcstools/contracts";
+import type { ChatFileAttachment } from "@lmcstools/core";
 import type { Directory } from "expo-file-system";
 import type { SharingOptions } from "expo-sharing";
 

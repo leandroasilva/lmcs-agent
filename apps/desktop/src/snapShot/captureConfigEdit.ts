@@ -1,4 +1,4 @@
-import { parseKeybindingShortcut } from "@lmcstools/shared/keybindings";
+import { parseKeybindingShortcut } from "@lmcstools/core/keybindings";
 import { readKdlNodes, type KdlNode } from "./captureConfigKdl.ts";
 import { niriCaptureBinding } from "./linuxCaptureSession.ts";
 

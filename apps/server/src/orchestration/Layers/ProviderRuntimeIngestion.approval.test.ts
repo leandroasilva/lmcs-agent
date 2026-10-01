@@ -4,7 +4,7 @@ import {
   RuntimeRequestId,
   ThreadId,
   type ProviderRuntimeEvent,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { describe, expect, it } from "vite-plus/test";
 
 import { runtimeEventToActivities } from "./ProviderRuntimeIngestion.ts";

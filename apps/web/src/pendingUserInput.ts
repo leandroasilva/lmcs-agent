@@ -1,4 +1,4 @@
-import type { UserInputQuestion } from "@lmcstools/contracts";
+import type { UserInputQuestion } from "@lmcstools/core";
 
 export interface PendingUserInputDraftAnswer {
   selectedOptionValues?: string[];

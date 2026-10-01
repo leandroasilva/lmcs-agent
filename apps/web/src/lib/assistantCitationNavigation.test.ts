@@ -1,4 +1,4 @@
-import { EnvironmentId, MessageId, ThreadId, type AssistantCitation } from "@lmcstools/contracts";
+import { EnvironmentId, MessageId, ThreadId, type AssistantCitation } from "@lmcstools/core";
 import {
   createMemoryHistory,
   createRootRoute,

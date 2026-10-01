@@ -1,11 +1,11 @@
-import { projectQuestionToolInput } from "@lmcstools/shared/toolActivity";
+import { projectQuestionToolInput } from "@lmcstools/core/toolActivity";
 import type {
   OrchestrationEvent,
   OrchestrationThreadActivity,
   OrchestrationThreadDetailSnapshot,
-} from "@lmcstools/contracts";
-import { isWorkspaceImagePreviewPath } from "@lmcstools/shared/filePreview";
-import { extractJsonObject } from "@lmcstools/shared/schemaJson";
+} from "@lmcstools/core";
+import { isWorkspaceImagePreviewPath } from "@lmcstools/core/filePreview";
+import { extractJsonObject } from "@lmcstools/core/schemaJson";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)

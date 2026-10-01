@@ -39,7 +39,7 @@ import {
   type ProviderInstanceConfigMap,
   type ProviderDriverKind,
   type ServerProvider,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";

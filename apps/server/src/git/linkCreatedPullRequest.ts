@@ -1,4 +1,4 @@
-import { sourceControlRepositorySelector } from "@lmcstools/shared/sourceControl";
+import { sourceControlRepositorySelector } from "@lmcstools/core/sourceControl";
 import {
   type CommandId,
   pullRequestHostOf,
@@ -6,8 +6,8 @@ import {
   type OrchestrationProjectShell,
   type SourceControlProviderKind,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { parseChangeRequestUrl } from "@lmcstools/shared/changeRequestUrl";
+} from "@lmcstools/core";
+import { parseChangeRequestUrl } from "@lmcstools/core/changeRequestUrl";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";

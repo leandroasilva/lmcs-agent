@@ -2,11 +2,11 @@ import type {
   ModelCapabilities,
   ModelSelection,
   ServerConfig as T3ServerConfig,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   buildExplicitProviderOptionSelectionsFromDescriptors,
   getProviderOptionDescriptors,
-} from "@lmcstools/shared/model";
+} from "@lmcstools/core/model";
 
 export type ModelOption = {
   readonly key: string;

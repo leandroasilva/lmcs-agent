@@ -14,18 +14,22 @@ import {
 import {
   MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
   MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAppearancePreferences } from "../appearance/AppearancePreferencesProvider";
 import type { AutoSettleDaysFieldProps } from "./AutoSettleDaysField";
 
 const days = Array.from(
-  { length: MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS - MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS + 1 },
+  {
+    length: MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS - MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS + 1,
+  },
   (_, index) => MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS + index,
 );
 
 export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
+  const { t } = useTranslation();
   const { themeAppearance, themeVariables: colors, appearance } = useAppearancePreferences();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(props.value);
@@ -42,7 +46,7 @@ export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
             modifiers={[
               buttonStyle("bordered"),
               disabled(props.disabled),
-              accessibilityLabel(`Days before auto-settle: ${props.value}`),
+              accessibilityLabel(t("settings.autoSettle.daysValueAria", { value: props.value })),
               frame({ minWidth: 64, minHeight: 44 }),
               foregroundStyle(colors["--color-primary-text"]),
               font({ size: appearance.baseFontSize }),
@@ -60,7 +64,7 @@ export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
             ]}
           >
             <Picker
-              label="Days before auto-settle"
+              label={t("settings.autoSettle.daysLabel")}
               selection={draft}
               onSelectionChange={setDraft}
               modifiers={[pickerStyle("wheel"), frame({ height: 180 })]}
@@ -70,18 +74,20 @@ export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
                   key={value}
                   modifiers={[tag(value), foregroundStyle(colors["--color-foreground"])]}
                 >
-                  {`${value} ${value === 1 ? "day" : "days"}`}
+                  {value === 1
+                    ? t("settings.autoSettle.dayUnit", { value })
+                    : t("settings.autoSettle.daysUnit", { value })}
                 </Text>
               ))}
             </Picker>
             <HStack spacing={24}>
               <Button
-                label="Cancel"
+                label={t("common.cancel")}
                 onPress={() => setOpen(false)}
                 modifiers={[foregroundStyle(colors["--color-primary-text"])]}
               />
               <Button
-                label="Done"
+                label={t("settings.autoSettle.done")}
                 onPress={() => {
                   setOpen(false);
                   if (!props.disabled && draft !== props.value) props.onValueChange(draft);

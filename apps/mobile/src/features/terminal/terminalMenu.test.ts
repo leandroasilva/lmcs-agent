@@ -3,10 +3,10 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   EMPTY_TERMINAL_BUFFER_STATE,
   type KnownTerminalSession,
-} from "@lmcstools/client-runtime/state/terminal";
-import { DEFAULT_TERMINAL_ID, EnvironmentId, ThreadId } from "@lmcstools/contracts";
+} from "@lmcstools/client/state/terminal";
+import { DEFAULT_TERMINAL_ID, EnvironmentId, ThreadId } from "@lmcstools/core";
 
-import { getTerminalLabel } from "@lmcstools/shared/terminalLabels";
+import { getTerminalLabel } from "@lmcstools/core/terminalLabels";
 
 import {
   buildTerminalMenuSessions,

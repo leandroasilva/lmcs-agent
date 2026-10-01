@@ -3,7 +3,7 @@ import {
   createLinkedPullRequestSummaryAtomFamily,
   createPullRequestEnvironmentAtoms,
   createPullRequestStackAtomFamily,
-} from "@lmcstools/client-runtime/state/pull-requests";
+} from "@lmcstools/client/state/pull-requests";
 import type {
   EnvironmentId,
   PullRequestListInput,
@@ -11,7 +11,7 @@ import type {
   PullRequestListEntry,
   PullRequestRef,
   PullRequestSummary,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useCallback, useLayoutEffect, useMemo } from "react";
@@ -22,7 +22,7 @@ import {
   mergePullRequestLists,
   type EnvironmentPullRequestStat,
   type MergedPullRequestList,
-} from "../components/pullRequest/pullRequestList.logic";
+} from "../components/features/pullRequest/pullRequestList.logic";
 import { formatEnvironmentQueryError } from "./query";
 
 export const pullRequestEnvironment = createPullRequestEnvironmentAtoms(connectionAtomRuntime);

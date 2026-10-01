@@ -14,17 +14,17 @@ import {
   type ProviderInteractionMode,
   type RuntimeMode,
   type ThreadId,
-} from "@lmcstools/contracts";
-import { safeErrorLogAttributes } from "@lmcstools/client-runtime/errors";
-import { clampFileAttachmentUploadBytes } from "@lmcstools/client-runtime/state/attachments";
-import { nextPastedTextFileName, pastedTextDisposition } from "@lmcstools/client-runtime/text-paste";
+} from "@lmcstools/core";
+import { safeErrorLogAttributes } from "@lmcstools/client/errors";
+import { clampFileAttachmentUploadBytes } from "@lmcstools/client/state/attachments";
+import { nextPastedTextFileName, pastedTextDisposition } from "@lmcstools/client/text-paste";
 import {
   parseCodexFeedbackCommand,
   submitCodexFeedback,
   type CodexFeedbackSubmission,
-} from "@lmcstools/client-runtime/state/threads";
-import { deriveActiveWorkStartedAt } from "@lmcstools/shared/orchestrationTiming";
-import { upgradeLegacyContextMessage } from "@lmcstools/shared/composerContextLegacy";
+} from "@lmcstools/client/state/threads";
+import { deriveActiveWorkStartedAt } from "@lmcstools/core/orchestrationTiming";
+import { upgradeLegacyContextMessage } from "@lmcstools/core/composerContextLegacy";
 import { composerContextSendBlockReason, reidentifyComposerContext } from "../lib/composerContext";
 import { uuidv4 } from "../lib/uuid";
 

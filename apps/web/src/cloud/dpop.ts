@@ -2,7 +2,7 @@ import {
   computeDpopAccessTokenHash,
   computeDpopJwkThumbprint,
   DpopPublicJwk,
-} from "@lmcstools/shared/dpop";
+} from "@lmcstools/core/dpop";
 import * as Crypto from "effect/Crypto";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";

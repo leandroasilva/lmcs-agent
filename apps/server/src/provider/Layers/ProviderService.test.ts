@@ -11,7 +11,7 @@ import type {
   ProviderTurnStartResult,
   ProviderUploadFeedbackInput,
   ProviderUploadFeedbackResult,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   ASSISTANT_CITATION_MAX_TEXT_LENGTH,
   AssistantCitation,
@@ -27,12 +27,12 @@ import {
   ProviderSessionStartInput,
   ThreadId,
   TurnId,
-} from "@lmcstools/contracts";
+} from "@lmcstools/core";
 import {
   expandAssistantCitationsForProvider,
   serializeAssistantCitation,
-} from "@lmcstools/shared/assistantCitations";
-import { createModelSelection } from "@lmcstools/shared/model";
+} from "@lmcstools/core/assistantCitations";
+import { createModelSelection } from "@lmcstools/core/model";
 import { it, assert, describe, vi } from "@effect/vitest";
 import { afterAll } from "vite-plus/test";
 

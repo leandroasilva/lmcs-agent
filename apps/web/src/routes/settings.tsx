@@ -1,33 +1,35 @@
 import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { RotateCcwIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../components/ui/button";
-import { useSettingsRestore } from "../components/settings/SettingsPanels";
+import { useSettingsRestore } from "../components/features/settings/SettingsPanels";
 
-import { SettingsBreadcrumb } from "../components/settings/SettingsBreadcrumb";
+import { SettingsBreadcrumb } from "../components/features/settings/SettingsBreadcrumb";
 import { SidebarInset } from "../components/ui/sidebar";
-import { useNavigateToMainApp } from "../components/sidebar/mainAppLocation";
-import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
+import { useNavigateToMainApp } from "../components/layout/sidebar/mainAppLocation";
+import { WorkspacePageHeader } from "../components/layout/WorkspacePageHeader";
 import { isElectron } from "../env";
 import {
   SettingsScopeProvider,
   useSettingsScope,
-} from "../components/settings/SettingsScopeContext";
+} from "../components/features/settings/SettingsScopeContext";
 import { useEnvironments } from "../state/environments";
-import { SettingsScopeNotice } from "../components/settings/SettingsScopeNotice";
-import { SETTINGS_DEVICE_ONLY_PATHS } from "../components/settings/SettingsScopeSentence";
-import { SettingsPageContainer } from "../components/settings/settingsLayout";
+import { SettingsScopeNotice } from "../components/features/settings/SettingsScopeNotice";
+import { SETTINGS_DEVICE_ONLY_PATHS } from "../components/features/settings/SettingsScopeSentence";
+import { SettingsPageContainer } from "../components/features/settings/settingsLayout";
 import {
   retainSettingsScope,
   validateSettingsRouteSearch,
-} from "../components/settings/settingsScopeNavigation";
+} from "../components/features/settings/settingsScopeNavigation";
 import {
   getSettingsSearchTargetScope,
   getThreadAutoSettlementSearchAvailability,
   isSettingsSearchScopeAvailable,
-} from "../components/settings/settingsSearch";
+} from "../components/features/settings/settingsSearch";
 
 function RestoreDeviceDefaultsButton({ onRestored }: { onRestored: () => void }) {
+  const { t } = useTranslation();
   const { changedSettingLabels, restoreDefaults } = useSettingsRestore(onRestored);
   return (
     <Button
@@ -37,12 +39,13 @@ function RestoreDeviceDefaultsButton({ onRestored }: { onRestored: () => void })
       onClick={() => void restoreDefaults()}
     >
       <RotateCcwIcon className="mx-1 size-3.5" />
-      Restore device defaults
+      {t("settings.restoreDeviceDefaults")}
     </Button>
   );
 }
 
 function SettingsScopeBoundary({ pathname, children }: { pathname: string; children: ReactNode }) {
+  const { t } = useTranslation();
   const { scope, connectedEnvironments } = useSettingsScope();
   const { environments } = useEnvironments();
   const hash = useLocation({ select: (location) => location.hash });
@@ -63,8 +66,12 @@ function SettingsScopeBoundary({ pathname, children }: { pathname: string; child
         eligibleEnvironmentIds={autoSettlementAvailability.eligibleEnvironmentIds}
       >
         {autoSettlementAvailability.eligibleEnvironmentIds.length > 0
-          ? `${searchTarget.title} requires a supporting environment. Choose one to continue.`
-          : `${searchTarget.title} requires a supporting environment. Connect or update an environment to continue.`}
+          ? t("settings.scopeNotice.requiresEnvironmentChoose", {
+              title: searchTarget.title,
+            })
+          : t("settings.scopeNotice.requiresEnvironmentConnect", {
+              title: searchTarget.title,
+            })}
       </SettingsScopeNotice>
     );
   }
@@ -81,7 +88,9 @@ function SettingsScopeBoundary({ pathname, children }: { pathname: string; child
         : "all";
     return (
       <SettingsScopeNotice target={target} targetId={hash}>
-        {`${searchTarget.title} is not available for the selected target. Choose its owning scope to continue.`}
+        {t("settings.scopeNotice.notAvailableForTarget", {
+          title: searchTarget.title,
+        })}
       </SettingsScopeNotice>
     );
   }
@@ -101,7 +110,7 @@ function SettingsScopeBoundary({ pathname, children }: { pathname: string; child
     return (
       <SettingsPageContainer>
         <p className="text-sm text-muted-foreground">
-          Reconnect {scope.label} to change its settings.
+          {t("settings.scopeNotice.reconnectToChange", { label: scope.label })}
         </p>
       </SettingsPageContainer>
     );
