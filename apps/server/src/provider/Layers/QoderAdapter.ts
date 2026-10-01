@@ -338,7 +338,8 @@ export function makeQoderAdapter(
         const abortController = new AbortController();
         context.abortController = abortController;
 
-        const sdkSessionId = `lmcs-${String(input.threadId)}`;
+        // SDK requires a valid UUID for sessionId
+        const sdkSessionId = crypto.randomUUID();
 
         const queryOptions: QueryOptions = {
           auth: buildAuthOptions(),
