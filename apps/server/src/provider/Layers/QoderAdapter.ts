@@ -295,11 +295,20 @@ export function makeQoderAdapter(
         const abortController = new AbortController();
         context.abortController = abortController;
 
+        // Generate a unique sessionId per thread to ensure SDK queries are isolated
+        // and can run concurrently without blocking each other on the backend
+        const sdkSessionId = `lmcs-${String(input.threadId)}`;
+
         const queryOptions: QueryOptions = {
           auth: buildAuthOptions(),
           cwd: context.session.cwd ?? process.cwd(),
           ...(selectedModel ? { model: selectedModel } : {}),
           abortController,
+          // Fix 1: Unique sessionId per thread for proper isolation
+          sessionId: sdkSessionId,
+          // Fix 2: Disable session persistence to avoid disk I/O conflicts
+          // when running multiple concurrent threads
+          persistSession: false,
           canUseTool: (toolName, toolInput, _canUseToolOptions): Promise<PermissionResult> =>
             new Promise((resolve) => {
               const requestId = ApprovalRequestId.make(
@@ -329,15 +338,40 @@ export function makeQoderAdapter(
                 },
               });
 
+              // Fix 3: Add timeout to prevent indefinite blocking
+              // If no decision within 5 minutes, deny by default
+              const timeoutMs = 5 * 60 * 1000;
+              let resolved = false;
+
+              const timeoutId = setTimeout(() => {
+                if (!resolved) {
+                  resolved = true;
+                  void Effect.runPromise(
+                    Effect.logWarning("Qoder canUseTool timeout, denying by default", {
+                      toolName,
+                      requestId,
+                    }),
+                  );
+                  resolve({
+                    behavior: "deny",
+                    message: "Tool approval timed out (5 minutes)",
+                  });
+                }
+              }, timeoutMs);
+
               void Effect.runPromise(Deferred.await(decisionDeferred)).then(
                 (dec: ProviderApprovalDecision) => {
-                  if (dec === "accept" || dec === "acceptForSession" || dec === "acceptAlways") {
-                    resolve({ behavior: "allow" });
-                  } else {
-                    resolve({
-                      behavior: "deny",
-                      message: "User denied tool execution",
-                    });
+                  if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeoutId);
+                    if (dec === "accept" || dec === "acceptForSession" || dec === "acceptAlways") {
+                      resolve({ behavior: "allow" });
+                    } else {
+                      resolve({
+                        behavior: "deny",
+                        message: "User denied tool execution",
+                      });
+                    }
                   }
                 },
               );
