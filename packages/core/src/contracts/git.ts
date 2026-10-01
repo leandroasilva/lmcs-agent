@@ -123,6 +123,11 @@ export const GitRunStackedActionInput = Schema.Struct({
   ),
   /** The thread the action runs beside; a pull request it creates is linked to it. */
   threadId: Schema.optional(ThreadId),
+  /**
+   * User-selected target branch for pull request creation.
+   * When provided, overrides the auto-resolved base branch.
+   */
+  baseBranch: Schema.optional(TrimmedNonEmptyStringSchema),
 });
 export type GitRunStackedActionInput = typeof GitRunStackedActionInput.Type;
 

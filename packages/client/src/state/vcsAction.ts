@@ -79,6 +79,8 @@ export interface RunVcsStackedActionInput {
   readonly filePaths?: ReadonlyArray<string>;
   /** The thread the action runs beside; the server links a pull request it creates to it. */
   readonly threadId?: ThreadId;
+  /** User-selected target branch for pull request creation. */
+  readonly baseBranch?: string;
   readonly onProgress?: (event: GitActionProgressEvent) => void;
 }
 
@@ -467,6 +469,7 @@ export function createVcsActionManager<R, E>(
           ...(input.featureBranch ? { featureBranch: true } : {}),
           ...(input.filePaths?.length ? { filePaths: [...input.filePaths] } : {}),
           ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
+          ...(input.baseBranch ? { baseBranch: input.baseBranch } : {}),
         };
         return consumeVcsActionProgress(
           runStreamInEnvironment(

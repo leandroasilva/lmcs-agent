@@ -141,6 +141,14 @@ interface PendingDefaultBranchAction {
   filePaths?: string[];
 }
 
+interface PendingPrAction {
+  /** The original PR action waiting for base branch selection. */
+  action: "create_pr" | "commit_push_pr";
+  commitMessage?: string;
+  onConfirmed?: () => void;
+  filePaths?: string[];
+}
+
 type PublishProviderKind = Extract<
   SourceControlProviderKind,
   "github" | "gitlab" | "forgejo" | "bitbucket" | "azure-devops"
@@ -169,6 +177,8 @@ interface RunGitActionWithToastInput {
   featureBranch?: boolean;
   progressToastId?: GitActionToastId;
   filePaths?: string[];
+  /** User-selected target branch for PR creation. */
+  baseBranch?: string;
 }
 
 const GIT_STATUS_WINDOW_REFRESH_DEBOUNCE_MS = 250;
@@ -988,10 +998,26 @@ export default function GitActionsControl({
   const [commitStyleOpen, setCommitStyleOpen] = useState(false);
   const [pendingDefaultBranchAction, setPendingDefaultBranchAction] =
     useState<PendingDefaultBranchAction | null>(null);
+  const [pendingPrAction, setPendingPrAction] = useState<PendingPrAction | null>(null);
+  const [selectedPrBaseBranch, setSelectedPrBaseBranch] = useState<string>("");
   const activeGitActionProgressRef = useRef<ActiveGitActionProgress | null>(null);
   const sourceControlScope = useMemo(
     () => ({ environmentId: activeEnvironmentId, cwd: gitCwd }),
     [activeEnvironmentId, gitCwd],
+  );
+  // Fetch branches for PR base branch selector (only when dialog is open)
+  const prBaseBranchesQuery = useEnvironmentQuery(
+    pendingPrAction !== null && activeEnvironmentId !== null && gitCwd !== null
+      ? vcsEnvironment.listRefs({
+          environmentId: activeEnvironmentId,
+          input: {
+            cwd: gitCwd,
+            refKind: "local",
+            includeMatchingRemoteRefs: false,
+            limit: 100,
+          },
+        })
+      : null,
   );
   let runGitActionWithToast: (input: RunGitActionWithToastInput) => Promise<void>;
 
@@ -1308,6 +1334,7 @@ export default function GitActionsControl({
       featureBranch = false,
       progressToastId,
       filePaths,
+      baseBranch,
     }: RunGitActionWithToastInput) => {
       const actionStatus = statusOverride ?? gitStatusForActions;
       const actionBranch = actionStatus?.refName ?? null;
@@ -1451,6 +1478,7 @@ export default function GitActionsControl({
         // A pull request the action opens is linked to the thread it ran beside. Drafts
         // have no server thread yet, so there is nothing to link to.
         ...(activeServerThread ? { threadId: activeServerThread.id } : {}),
+        ...(baseBranch ? { baseBranch } : {}),
         onProgress: applyProgressEvent,
       });
 
@@ -1561,6 +1589,19 @@ export default function GitActionsControl({
     });
   };
 
+  const confirmPrActionWithBaseBranch = () => {
+    if (!pendingPrAction || !selectedPrBaseBranch.trim()) return;
+    const { action, commitMessage, onConfirmed, filePaths } = pendingPrAction;
+    setPendingPrAction(null);
+    void runGitActionWithToast({
+      action,
+      ...(commitMessage ? { commitMessage } : {}),
+      ...(onConfirmed ? { onConfirmed } : {}),
+      ...(filePaths ? { filePaths } : {}),
+      baseBranch: selectedPrBaseBranch.trim(),
+    });
+  };
+
   const runDialogActionOnNewBranch = () => {
     if (!isCommitDialogOpen) return;
     const commitMessage = dialogCommitMessage.trim();
@@ -1638,6 +1679,12 @@ export default function GitActionsControl({
       return;
     }
     if (quickAction.action) {
+      // Intercept PR creation to show base branch selector
+      if (quickAction.action === "create_pr" || quickAction.action === "commit_push_pr") {
+        setSelectedPrBaseBranch("");
+        setPendingPrAction({ action: quickAction.action });
+        return;
+      }
       void runGitActionWithToast({ action: quickAction.action });
     }
   };
@@ -1653,7 +1700,9 @@ export default function GitActionsControl({
       return;
     }
     if (item.dialogAction === "create_pr") {
-      void runGitActionWithToast({ action: "create_pr" });
+      // Show base branch selector dialog
+      setSelectedPrBaseBranch("");
+      setPendingPrAction({ action: "create_pr" });
       return;
     }
     setExcludedFiles(new Set());
@@ -2194,6 +2243,66 @@ export default function GitActionsControl({
               onClick={checkoutFeatureBranchAndContinuePendingAction}
             >
               Check out feature branch & continue
+            </Button>
+          </DialogFooter>
+        </DialogPopup>
+      </Dialog>
+
+      <Dialog
+        open={pendingPrAction !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingPrAction(null);
+          }
+        }}
+      >
+        <DialogPopup className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select target branch</DialogTitle>
+            <DialogDescription>
+              Choose the branch you want to merge your changes into.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label
+              htmlFor="pr-base-branch"
+              className="mb-1.5 block text-sm font-medium text-muted-foreground"
+            >
+              Base branch
+            </label>
+            <select
+              id="pr-base-branch"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+              value={selectedPrBaseBranch}
+              onChange={(e) => setSelectedPrBaseBranch(e.target.value)}
+            >
+              <option value="" disabled>
+                {prBaseBranchesQuery.isPending ? "Loading branches..." : "Select a branch..."}
+              </option>
+              {prBaseBranchesQuery.data?.refs.map((ref) => (
+                <option key={ref.name} value={ref.name}>
+                  {ref.name}
+                  {ref.isDefault ? " (default)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter variant="bare" className="sm:flex-wrap sm:items-center">
+            <Button
+              className="w-full sm:mr-auto sm:w-auto"
+              variant="outline"
+              size="sm"
+              onClick={() => setPendingPrAction(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="w-full max-w-full sm:w-auto"
+              size="sm-multiline"
+              disabled={!selectedPrBaseBranch.trim()}
+              onClick={confirmPrActionWithBaseBranch}
+            >
+              Create pull request
             </Button>
           </DialogFooter>
         </DialogPopup>
