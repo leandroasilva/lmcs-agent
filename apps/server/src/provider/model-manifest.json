@@ -106,6 +106,17 @@
           "status": "supported"
         }
       ]
+    },
+    {
+      "driver": "commandCode",
+      "t3CodeRange": ">=0.0.1",
+      "recommendedRange": ">=0.0.1",
+      "ranges": [
+        {
+          "range": ">=0.0.1",
+          "status": "supported"
+        }
+      ]
     }
   ],
   "currentModels": {

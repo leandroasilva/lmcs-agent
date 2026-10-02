@@ -2731,11 +2731,21 @@ export const make = Effect.gen(function* () {
         let preResolvedCommitSuggestion: CommitAndBranchSuggestion | undefined = undefined;
 
         const textGenerationSettings = yield* projectSettingsFor(input).pipe(
-          Effect.flatMap((settings) =>
-            settings.sourceControlWriterModelSelection === null
+          Effect.flatMap((settings) => {
+            const style = settings.sourceControlWritingStyle;
+            // Prefer the thread's model selection (passed from the client) over
+            // server settings. This ensures commit messages and PR content are
+            // generated using the same model the user selected for the thread.
+            if (input.modelSelection) {
+              return Effect.succeed({
+                modelSelection: input.modelSelection,
+                style,
+              });
+            }
+            return settings.sourceControlWriterModelSelection === null
               ? Effect.succeed({
                   modelSelection: settings.textGenerationModelSelection,
-                  style: settings.sourceControlWritingStyle,
+                  style,
                 })
               : providerRegistry.getProviders.pipe(
                   Effect.map((providers) => ({
@@ -2743,10 +2753,10 @@ export const make = Effect.gen(function* () {
                       settings,
                       providers,
                     ),
-                    style: settings.sourceControlWritingStyle,
+                    style,
                   })),
-                ),
-          ),
+                );
+          }),
           Effect.mapError(
             (cause) =>
               new GitManagerError({

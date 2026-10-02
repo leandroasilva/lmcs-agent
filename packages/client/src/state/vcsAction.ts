@@ -6,6 +6,7 @@ import {
   type GitRunStackedActionInput,
   type GitRunStackedActionResult,
   GitStackedAction,
+  type ModelSelection,
   type ThreadId,
   WS_METHODS,
 } from "@lmcstools/core";
@@ -81,6 +82,8 @@ export interface RunVcsStackedActionInput {
   readonly threadId?: ThreadId;
   /** User-selected target branch for pull request creation. */
   readonly baseBranch?: string;
+  /** The thread's model selection for text generation (commit messages, PR content). */
+  readonly modelSelection?: ModelSelection;
   readonly onProgress?: (event: GitActionProgressEvent) => void;
 }
 
@@ -470,6 +473,7 @@ export function createVcsActionManager<R, E>(
           ...(input.filePaths?.length ? { filePaths: [...input.filePaths] } : {}),
           ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
           ...(input.baseBranch ? { baseBranch: input.baseBranch } : {}),
+          ...(input.modelSelection ? { modelSelection: input.modelSelection } : {}),
         };
         return consumeVcsActionProgress(
           runStreamInEnvironment(

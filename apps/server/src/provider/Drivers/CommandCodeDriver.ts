@@ -1,4 +1,4 @@
-import { ProviderDriverKind, QoderSettings } from "@lmcstools/core";
+import { ProviderDriverKind, CommandCodeSettings } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
@@ -9,14 +9,14 @@ import * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
 import { ServerConfig } from "../../config.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import * as TextGeneration from "../../textGeneration/TextGeneration.ts";
-import { makeQoderTextGeneration } from "../../textGeneration/QoderTextGeneration.ts";
+import { makeCommandCodeTextGeneration } from "../../textGeneration/CommandCodeTextGeneration.ts";
 import { ProviderDriverError } from "../Errors.ts";
-import { makeQoderAdapter } from "../Layers/QoderAdapter.ts";
+import { makeCommandCodeAdapter } from "../Layers/CommandCodeAdapter.ts";
 import {
-  buildInitialQoderProviderSnapshot,
-  checkQoderProviderStatus,
-  enrichQoderSnapshot,
-} from "../Layers/QoderProvider.ts";
+  buildInitialCommandCodeProviderSnapshot,
+  checkCommandCodeProviderStatus,
+  enrichCommandCodeSnapshot,
+} from "../Layers/CommandCodeProvider.ts";
 import { ProviderEventLoggers } from "../Layers/ProviderEventLoggers.ts";
 import { makeManagedServerProvider } from "../makeManagedServerProvider.ts";
 import {
@@ -36,11 +36,11 @@ import {
   type ProviderSnapshotSettings,
 } from "../providerUpdateSettings.ts";
 
-const decodeQoderSettings = Schema.decodeSync(QoderSettings);
+const decodeCommandCodeSettings = Schema.decodeSync(CommandCodeSettings);
 
-const DRIVER_KIND = ProviderDriverKind.make("qoder");
+const DRIVER_KIND = ProviderDriverKind.make("commandCode");
 
-export type QoderDriverEnv =
+export type CommandCodeDriverEnv =
   | BackgroundPolicy.BackgroundPolicy
   | ChildProcessSpawner.ChildProcessSpawner
   | FileSystem.FileSystem
@@ -49,14 +49,14 @@ export type QoderDriverEnv =
   | ServerConfig
   | ServerSettingsService;
 
-export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
+export const CommandCodeDriver: ProviderDriver<CommandCodeSettings, CommandCodeDriverEnv> = {
   driverKind: DRIVER_KIND,
   metadata: {
-    displayName: "Qoder",
+    displayName: "Command Code",
     supportsMultipleInstances: true,
   },
-  configSchema: QoderSettings,
-  defaultConfig: (): QoderSettings => decodeQoderSettings({}),
+  configSchema: CommandCodeSettings,
+  defaultConfig: (): CommandCodeSettings => decodeCommandCodeSettings({}),
   create: ({ instanceId, displayName, accentColor, environment, enabled, config }) =>
     Effect.gen(function* () {
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -77,7 +77,10 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
         accentColor,
         continuationGroupKey: continuationIdentity.continuationKey,
       });
-      const effectiveConfig = { ...config, enabled } satisfies QoderSettings;
+      const effectiveConfig = {
+        ...config,
+        enabled,
+      } satisfies CommandCodeSettings;
       const resolveMaintenance = yield* makeCachedProviderMaintenanceResolution(
         Effect.succeed(
           makeManualOnlyProviderMaintenanceCapabilities({
@@ -90,15 +93,16 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
           Effect.provideService(Path.Path, path),
         ),
       );
-      const adapter = yield* makeQoderAdapter(effectiveConfig, {
+      const adapter = yield* makeCommandCodeAdapter(effectiveConfig, {
         environment: processEnv,
-        ...(eventLoggers.native ? { nativeEventLogger: eventLoggers.native } : {}),
         instanceId,
       });
 
-      const textGeneration = yield* makeQoderTextGeneration(effectiveConfig, processEnv);
+      const textGeneration = yield* makeCommandCodeTextGeneration(effectiveConfig, processEnv).pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      );
 
-      const checkProvider = checkQoderProviderStatus(effectiveConfig, processEnv, cwd).pipe(
+      const checkProvider = checkCommandCodeProviderStatus(effectiveConfig, processEnv, cwd).pipe(
         Effect.map(stampIdentity),
         Effect.provideService(FileSystem.FileSystem, fileSystem),
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
@@ -106,22 +110,22 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
       );
 
       const snapshotSettings = makeProviderSnapshotSettingsSource(effectiveConfig, serverSettings);
-      const snapshot = yield* makeManagedServerProvider<ProviderSnapshotSettings<QoderSettings>>({
+      const snapshot = yield* makeManagedServerProvider<
+        ProviderSnapshotSettings<CommandCodeSettings>
+      >({
         resolveMaintenance,
         getSettings: snapshotSettings.getSettings,
         streamSettings: snapshotSettings.streamSettings,
         haveSettingsChanged: haveProviderSnapshotSettingsChanged,
         initialSnapshot: (settings) =>
-          buildInitialQoderProviderSnapshot(settings.provider, processEnv).pipe(
+          buildInitialCommandCodeProviderSnapshot(settings.provider, processEnv).pipe(
             Effect.map(stampIdentity),
-            Effect.provideService(FileSystem.FileSystem, fileSystem),
-            Effect.provideService(Path.Path, path),
           ),
         checkProvider,
         enrichSnapshot: ({ settings, snapshot: currentSnapshot, publishSnapshot }) =>
           resolveMaintenance().pipe(
             Effect.flatMap((maintenanceCapabilities) =>
-              enrichQoderSnapshot({
+              enrichCommandCodeSnapshot({
                 snapshot: currentSnapshot,
                 maintenanceCapabilities,
                 enableProviderUpdateChecks: settings.enableProviderUpdateChecks,
@@ -135,7 +139,7 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
             new ProviderDriverError({
               driver: DRIVER_KIND,
               instanceId,
-              detail: `Failed to build Qoder snapshot: ${cause.message ?? String(cause)}`,
+              detail: `Failed to build Command Code snapshot: ${cause.message ?? String(cause)}`,
               cause,
             }),
         ),

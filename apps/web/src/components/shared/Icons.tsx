@@ -810,6 +810,26 @@ export const QoderIcon: Icon = ({ className, ...props }) => (
   </svg>
 );
 
+export const CommandCodeIcon: Icon = ({ className, ...props }) => (
+  <svg {...props} viewBox="0 0 24 24" fill="none" className={cn("fill-foreground", className)}>
+    <path
+      d="M7 8l-4 4 4 4"
+      strokeWidth="2"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M17 8l4 4-4 4"
+      strokeWidth="2"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M14 4l-4 16" strokeWidth="2" stroke="currentColor" strokeLinecap="round" />
+  </svg>
+);
+
 // Codex's Computer Use app mark, shown on computer-use rows in the work log.
 export const ComputerUseAppIcon: Icon = (props) => {
   const gradientId = `${useId().replaceAll(":", "")}-computer-use-app-gradient`;

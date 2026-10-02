@@ -1480,6 +1480,10 @@ export default function GitActionsControl({
         // have no server thread yet, so there is nothing to link to.
         ...(activeServerThread ? { threadId: activeServerThread.id } : {}),
         ...(baseBranch ? { baseBranch } : {}),
+        // Use the thread's model for commit/PR text generation when available.
+        ...(activeServerThread?.modelSelection
+          ? { modelSelection: activeServerThread.modelSelection }
+          : {}),
         onProgress: applyProgressEvent,
       });
 
@@ -1625,7 +1629,7 @@ export default function GitActionsControl({
       ...(commitMessage ? { commitMessage } : {}),
       ...(onConfirmed ? { onConfirmed } : {}),
       ...(filePaths ? { filePaths } : {}),
-      baseBranch: baseBranchValue,
+      baseBranch: selectedPrBaseBranch,
     });
   };
 
@@ -1732,12 +1736,6 @@ export default function GitActionsControl({
       setPendingPrAction({ action: "create_pr" });
       return;
     }
-    const baseBranchValue = selectedPrBaseBranch.trim();
-    console.log("[GitActionsControl] confirmPrActionWithBaseBranch", {
-      action,
-      baseBranch: baseBranchValue,
-      hasBaseBranch: !!baseBranchValue,
-    });
     setExcludedFiles(new Set());
     setIsEditingFiles(false);
     setIsCommitDialogOpen(true);

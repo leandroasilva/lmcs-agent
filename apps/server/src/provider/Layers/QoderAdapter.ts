@@ -13,13 +13,11 @@ import {
   DEFAULT_RUNTIME_MODE,
   type ThreadTokenUsageSnapshot,
   type TurnTokenUsage,
-  RuntimeItemId,
 } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import * as PubSub from "effect/PubSub";
 import * as Ref from "effect/Ref";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
@@ -30,8 +28,6 @@ import type {
   SDKAssistantMessage,
   SDKPartialAssistantMessage,
   SDKSystemMessage,
-  SDKStatusMessage,
-  SDKCommandLifecycleMessage,
   Query,
   Options as QueryOptions,
   PermissionResult,
@@ -212,6 +208,46 @@ export function makeQoderAdapter(
               ...(usage ? { tokenUsage: usage } : {}),
             },
           });
+        } else if (message.type === "command_lifecycle") {
+          // Track tool execution lifecycle events
+          const lifecycleMsg = message as {
+            type: "command_lifecycle";
+            subtype?: string;
+            command?: { name?: string; id?: string; status?: string };
+          };
+          const cmdStatus = lifecycleMsg.subtype || lifecycleMsg.command?.status;
+          const cmdName = lifecycleMsg.command?.name;
+          const cmdId = lifecycleMsg.command?.id;
+
+          if (cmdStatus === "started" && cmdName) {
+            yield* emit({
+              eventId: asEventId(`cmd-started-${cmdId ?? Date.now()}`),
+              provider: PROVIDER,
+              threadId: context.threadId,
+              turnId,
+              createdAt: now,
+              type: "item.started",
+              payload: {
+                itemType: "command_execution",
+                title: cmdName,
+                data: { commandName: cmdName, commandId: cmdId ?? "" },
+              },
+            });
+          } else if (cmdStatus === "completed" && cmdName) {
+            yield* emit({
+              eventId: asEventId(`cmd-completed-${cmdId ?? Date.now()}`),
+              provider: PROVIDER,
+              threadId: context.threadId,
+              turnId,
+              createdAt: now,
+              type: "item.completed",
+              payload: {
+                itemType: "command_execution",
+                title: cmdName,
+                data: { commandName: cmdName, commandId: cmdId ?? "" },
+              },
+            });
+          }
         } else if (message.type === "system") {
           const systemMsg = message as SDKSystemMessage;
           // Only emit session.configured once on the first init message
@@ -227,6 +263,8 @@ export function makeQoderAdapter(
             });
           }
         }
+        // Other message types (stream_event, user, system subtypes) are handled
+        // by the specific branches above or intentionally ignored.
       });
 
     const startSession = (input: {
@@ -348,6 +386,15 @@ export function makeQoderAdapter(
           abortController,
           sessionId: sdkSessionId,
           persistSession: false,
+          // Use default permission mode — canUseTool handles approval callbacks.
+          // The SDK enters push mode for permissions when canUseTool is provided.
+          includePartialMessages: true,
+          stderr: (data: string) => {
+            // Capture SDK/CLI stderr for debugging — surfaces auth errors,
+            // worker crashes, and initialization failures that would
+            // otherwise be silent.
+            void Effect.runPromise(Effect.logWarning("Qoder CLI stderr", { data: data.trimEnd() }));
+          },
           canUseTool: (toolName, toolInput, _canUseToolOptions): Promise<PermissionResult> =>
             new Promise((resolve) => {
               const requestId = ApprovalRequestId.make(
@@ -452,6 +499,7 @@ export function makeQoderAdapter(
             try {
               let messageCount = 0;
               let hasReceivedInit = false;
+              let hasEmittedTurnCompletion = false;
 
               for await (const message of q) {
                 // Check if we should stop processing (interrupt/stop requested)
@@ -475,6 +523,11 @@ export function makeQoderAdapter(
                   hasReceivedInit = true;
                 }
 
+                // Track if a turn.completed event was emitted via the result message
+                if (message.type === "result") {
+                  hasEmittedTurnCompletion = true;
+                }
+
                 await Effect.runPromise(processSdkMessage(message, context, turnId));
               }
 
@@ -491,6 +544,30 @@ export function makeQoderAdapter(
                     createdAt: now,
                     type: "session.configured",
                     payload: { config: {} },
+                  }),
+                );
+              }
+
+              // If the SDK stream ended without a result message (and we weren't
+              // stopped/interrupted), emit a turn.completed so the UI doesn't hang.
+              if (
+                !hasEmittedTurnCompletion &&
+                !context.stopped &&
+                !abortController.signal.aborted &&
+                messageCount > 0
+              ) {
+                const now = new Date().toISOString();
+                await Effect.runPromise(
+                  emit({
+                    eventId: asEventId(`turn-completed-fallback-${String(turnId)}`),
+                    provider: PROVIDER,
+                    threadId: context.threadId,
+                    turnId,
+                    createdAt: now,
+                    type: "turn.completed",
+                    payload: {
+                      state: "completed",
+                    },
                   }),
                 );
               }
@@ -550,7 +627,18 @@ export function makeQoderAdapter(
           });
         }
 
-        // Signal the message processing loop to stop
+        // Use the SDK's interrupt() method to properly signal the CLI
+        if (context.query) {
+          yield* Effect.tryPromise({
+            try: () => context.query!.interrupt(),
+            catch: (error: unknown) =>
+              new Error(
+                `Qoder interrupt failed: ${error instanceof Error ? error.message : String(error)}`,
+              ),
+          }).pipe(Effect.catch((error) => Effect.logWarning("Qoder interrupt failed", { error })));
+        }
+
+        // Also signal via AbortController as a fallback
         if (context.abortController) {
           context.abortController.abort();
         }
@@ -655,7 +743,23 @@ export function makeQoderAdapter(
 
         context.stopped = true;
 
-        // Signal the message processing loop to stop
+        // Use the SDK's close() method to properly shut down the query session.
+        // This closes the transport, rejects pending requests, and signals the
+        // consumer queue that no more messages will arrive. Without this, the
+        // qoder CLI child process keeps running indefinitely.
+        if (context.query) {
+          yield* Effect.tryPromise({
+            try: () => context.query!.close(),
+            catch: (error: unknown) =>
+              new Error(
+                `Qoder close failed: ${error instanceof Error ? error.message : String(error)}`,
+              ),
+          }).pipe(
+            Effect.catch((error) => Effect.logWarning("Qoder query close failed", { error })),
+          );
+        }
+
+        // Also signal via AbortController as a fallback
         if (context.abortController) {
           context.abortController.abort();
         }
