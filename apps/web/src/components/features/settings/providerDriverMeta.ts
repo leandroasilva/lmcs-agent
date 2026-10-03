@@ -91,7 +91,7 @@ const PROVIDER_CLIENT_DEFINITIONS: readonly ProviderClientDefinition[] = [
     value: ProviderDriverKind.make("qoder"),
     label: "Qoder",
     icon: QoderIcon,
-    badgeLabel: "SDK",
+    badgeLabel: "CLI",
     settingsSchema: QoderSettings,
   },
   {

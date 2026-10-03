@@ -92,11 +92,12 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
       );
       const adapter = yield* makeQoderAdapter(effectiveConfig, {
         environment: processEnv,
-        ...(eventLoggers.native ? { nativeEventLogger: eventLoggers.native } : {}),
         instanceId,
       });
 
-      const textGeneration = yield* makeQoderTextGeneration(effectiveConfig, processEnv);
+      const textGeneration = yield* makeQoderTextGeneration(effectiveConfig, processEnv).pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      );
 
       const checkProvider = checkQoderProviderStatus(effectiveConfig, processEnv, cwd).pipe(
         Effect.map(stampIdentity),

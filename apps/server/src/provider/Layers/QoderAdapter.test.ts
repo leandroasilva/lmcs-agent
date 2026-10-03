@@ -19,7 +19,7 @@ const qoderAdapterTestLayer = ServerConfig.layerTest(process.cwd(), {
   prefix: "lmcs-qoder-adapter-test-",
 }).pipe(Layer.provideMerge(NodeServices.layer));
 
-const makeTestAdapter = (overrides?: Partial<typeof QoderSettings.Type>) =>
+const makeTestAdapter = (overrides?: Partial<QoderSettings>) =>
   makeQoderAdapter(
     decodeQoderSettings({
       enabled: true,
@@ -35,7 +35,10 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
 
-        const session = yield* adapter.startSession({ threadId: THREAD_A });
+        const session = yield* adapter.startSession({
+          threadId: THREAD_A,
+          runtimeMode: "full-access",
+        });
 
         assert.equal(session.threadId, THREAD_A);
         assert.equal(session.status, "ready");
@@ -52,8 +55,8 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
 
-        yield* adapter.startSession({ threadId: THREAD_A });
-        yield* adapter.startSession({ threadId: THREAD_B });
+        yield* adapter.startSession({ threadId: THREAD_A, runtimeMode: "full-access" });
+        yield* adapter.startSession({ threadId: THREAD_B, runtimeMode: "full-access" });
 
         const sessions = yield* adapter.listSessions();
         assert.equal(sessions.length, 2);
@@ -68,7 +71,7 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
 
-        yield* adapter.startSession({ threadId: THREAD_A });
+        yield* adapter.startSession({ threadId: THREAD_A, runtimeMode: "full-access" });
         assert.isTrue(yield* adapter.hasSession(THREAD_A));
 
         yield* adapter.stopSession(THREAD_A);
@@ -83,8 +86,8 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
 
-        yield* adapter.startSession({ threadId: THREAD_A });
-        yield* adapter.startSession({ threadId: THREAD_B });
+        yield* adapter.startSession({ threadId: THREAD_A, runtimeMode: "full-access" });
+        yield* adapter.startSession({ threadId: THREAD_B, runtimeMode: "full-access" });
         assert.equal((yield* adapter.listSessions()).length, 2);
 
         yield* adapter.stopAll();
@@ -109,11 +112,11 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
     it.effect("returns a turn id for an active session", () =>
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
-        yield* adapter.startSession({ threadId: THREAD_A });
+        yield* adapter.startSession({ threadId: THREAD_A, runtimeMode: "full-access" });
 
         const result = yield* adapter.sendTurn({
           threadId: THREAD_A,
-          prompt: "Hello Qoder",
+          input: "Hello Qoder",
         });
 
         assert.equal(result.threadId, THREAD_A);
@@ -129,7 +132,7 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
         const unknownThread = ThreadId.make("ghost");
 
         const error = yield* adapter
-          .sendTurn({ threadId: unknownThread, prompt: "test" })
+          .sendTurn({ threadId: unknownThread, input: "test" })
           .pipe(Effect.flip);
 
         assert.equal(error._tag, "ProviderAdapterSessionNotFoundError");
@@ -152,7 +155,7 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
     it.effect("succeeds for an active session", () =>
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
-        yield* adapter.startSession({ threadId: THREAD_A });
+        yield* adapter.startSession({ threadId: THREAD_A, runtimeMode: "full-access" });
 
         yield* adapter.interruptTurn(THREAD_A);
       }),
@@ -163,7 +166,7 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
     it.effect("returns thread items for an active session", () =>
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
-        yield* adapter.startSession({ threadId: THREAD_A });
+        yield* adapter.startSession({ threadId: THREAD_A, runtimeMode: "full-access" });
 
         const thread = yield* adapter.readThread(THREAD_A);
         assert.equal(thread.threadId, THREAD_A);
@@ -196,7 +199,7 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
     it.effect("succeeds for an active session", () =>
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
-        yield* adapter.startSession({ threadId: THREAD_A });
+        yield* adapter.startSession({ threadId: THREAD_A, runtimeMode: "full-access" });
 
         yield* adapter.rollbackThread(THREAD_A, 1);
       }),
@@ -211,10 +214,11 @@ it.layer(qoderAdapterTestLayer)("QoderAdapter", (it) => {
       }),
     );
 
-    it.effect("advertises in-session model switching", () =>
+    it.effect("advertises CLI-mode capabilities", () =>
       Effect.gen(function* () {
         const adapter = yield* makeTestAdapter();
-        assert.equal(adapter.capabilities.sessionModelSwitch, "in-session");
+        assert.equal(adapter.capabilities.sessionModelSwitch, "unsupported");
+        assert.equal(adapter.capabilities.supportsConversationRollback, false);
       }),
     );
   });
