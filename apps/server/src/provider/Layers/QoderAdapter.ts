@@ -1,11 +1,16 @@
 /**
  * QoderAdapter — CLI-based adapter for the Qoder provider.
  *
- * Spawns `qoder -p` (print mode) with `--output-format json` for each turn,
- * parses the JSON result, and emits canonical runtime events.
+ * Spawns `qoder -p` (print mode) with `--output-format stream-json` for each
+ * turn and translates the NDJSON event stream into canonical runtime events as
+ * it arrives, so long turns report progress instead of going silent. Each
+ * thread maps to a deterministic Qoder session id: the first turn creates it
+ * with `--session-id` and later turns continue it with `--resume`, so the
+ * conversation survives across turns (and across server restarts).
  *
  * @module QoderAdapter
  */
+import { createHash } from "node:crypto";
 import {
   type QoderSettings,
   DEFAULT_RUNTIME_MODE,
@@ -16,20 +21,23 @@ import {
   type ProviderUserInputAnswers,
   ProviderDriverKind,
   ProviderInstanceId,
+  RuntimeItemId,
   type ThreadId,
   TurnId,
 } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Ref from "effect/Ref";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as Queue from "effect/Queue";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { resolveSpawnCommand } from "@lmcstools/core/shell";
+import type * as PlatformError from "effect/PlatformError";
+import { CommandResolutionError, resolveSpawnCommand } from "@lmcstools/core/shell";
 
 import { ProviderAdapterRequestError, ProviderAdapterSessionNotFoundError } from "../Errors.ts";
-import { spawnAndCollect } from "../providerSnapshot.ts";
+import { collectStreamAsString } from "../providerSnapshot.ts";
 import type { QoderAdapterShape } from "../Services/QoderAdapter.ts";
 
 const PROVIDER = ProviderDriverKind.make("qoder");
@@ -41,21 +49,36 @@ export interface QoderAdapterLiveOptions {
 
 interface QoderSessionContext {
   readonly threadId: ThreadId;
-  /** Deterministic Qoder session ID used with `--session-id` so that
-   *  consecutive turns resume the same conversation (and the session can
-   *  also be resumed from the terminal via `qoder --resume <id>`). */
-  readonly qoderSessionId: string;
   session: ProviderSession;
-  readonly scope: Scope.Closeable;
   turns: Array<{ id: TurnId; items: Array<unknown> }>;
   currentModel: string | undefined;
   activeTurnId: TurnId | undefined;
   stopped: boolean;
+  /** Deterministic Qoder CLI session id for this thread. */
+  qoderSessionId: string;
+  /** Whether the Qoder session has been created on disk yet. */
+  qoderSessionCreated: boolean;
+  /** In-flight CLI process so interruptTurn can stop it. */
+  activeProcess: ChildProcessSpawner.ChildProcessHandle | undefined;
+  /** Set by interruptTurn/stopSession; sendTurn consults it when the process ends without a result. */
+  turnInterrupted: boolean;
 }
 
-/** Safety-net timeout for a single CLI turn. Prevents the adapter
- *  from blocking indefinitely when the Qoder process hangs. */
-const TURN_TIMEOUT = "5 minutes";
+/**
+ * Derive a stable UUID from a seed so every turn of a thread maps to the same
+ * Qoder session, which can also be resumed from a terminal with
+ * `qoder --resume <id>`. The CLI rejects non-UUID session ids.
+ */
+const deterministicQoderSessionId = (seed: string): string => {
+  const digest = createHash("sha256").update(seed).digest("hex");
+  return [
+    digest.slice(0, 8),
+    digest.slice(8, 12),
+    `5${digest.slice(13, 16)}`,
+    `${((parseInt(digest.slice(16, 17), 16) & 0x3) | 0x8).toString(16)}${digest.slice(17, 20)}`,
+    digest.slice(20, 32),
+  ].join("-");
+};
 
 const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
 
@@ -72,8 +95,8 @@ function buildQoderAuthEnv(
 }
 
 /**
- * Parse a single JSON line from Qoder's `--output-format json` output.
- * Returns null for non-JSON lines (progress indicators, etc.).
+ * Parse a single JSON line from Qoder's `--output-format stream-json` output.
+ * Returns null for non-JSON lines (progress indicators, errors, etc.).
  */
 function parseQoderJsonLine(line: string): Record<string, unknown> | null {
   const trimmed = line.trim();
@@ -87,6 +110,26 @@ function parseQoderJsonLine(line: string): Record<string, unknown> | null {
     // Not JSON, skip
   }
   return null;
+}
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+
+const asNonEmptyString = (value: unknown): string | undefined =>
+  typeof value === "string" && value.length > 0 ? value : undefined;
+
+interface TurnTerminal {
+  readonly ok: boolean;
+  readonly errorMessage?: string;
+}
+
+interface TurnAttemptOutcome {
+  readonly terminal: TurnTerminal | null;
+  readonly stderrTail: string;
+  readonly exitCode: number;
+  readonly sessionIdInUse: boolean;
 }
 
 export function makeQoderAdapter(
@@ -119,7 +162,6 @@ export function makeQoderAdapter(
         }
 
         const now = yield* nowIso();
-        const scope = yield* Scope.make();
 
         const session: ProviderSession = {
           provider: PROVIDER,
@@ -134,19 +176,19 @@ export function makeQoderAdapter(
           updatedAt: now,
         };
 
-        // Deterministic session ID: same LMCS thread always maps to the same
-        // Qoder session, enabling multi-turn continuity and terminal resume.
-        const qoderSessionId = `lmcs-${String(input.threadId).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
-
         const context: QoderSessionContext = {
           threadId: input.threadId,
-          qoderSessionId,
           session,
-          scope,
           turns: [],
           currentModel: config.favoriteModel?.trim() || undefined,
           activeTurnId: undefined,
           stopped: false,
+          qoderSessionId: deterministicQoderSessionId(
+            `lmcs-qoder:${String(options.instanceId ?? "default")}:${String(input.threadId)}`,
+          ),
+          qoderSessionCreated: false,
+          activeProcess: undefined,
+          turnInterrupted: false,
         };
 
         yield* Ref.update(sessions, (map) => map.set(input.threadId, context));
@@ -171,13 +213,7 @@ export function makeQoderAdapter(
       Effect.gen(function* () {
         const allSessions = yield* Ref.get(sessions);
         const context = allSessions.get(input.threadId);
-        if (!context) {
-          return yield* new ProviderAdapterSessionNotFoundError({
-            provider: PROVIDER,
-            threadId: input.threadId,
-          });
-        }
-        if (context.stopped) {
+        if (!context || context.stopped) {
           return yield* new ProviderAdapterSessionNotFoundError({
             provider: PROVIDER,
             threadId: input.threadId,
@@ -188,6 +224,7 @@ export function makeQoderAdapter(
           `qoder-turn-${String(input.threadId)}-${context.turns.length + 1}`,
         );
         context.activeTurnId = turnId;
+        context.turnInterrupted = false;
 
         const selectedModel = input.modelSelection?.model || context.currentModel;
         if (selectedModel) {
@@ -226,129 +263,230 @@ export function makeQoderAdapter(
         const cwd = context.session.cwd ?? process.cwd();
         const binaryPath = config.binaryPath?.trim() || "qoder";
         const authEnv = buildQoderAuthEnv(config, options.environment);
+        const env = { ...process.env, ...options.environment, ...authEnv };
 
-        const args = [
-          "-p",
-          prompt,
-          "--output-format",
-          "json",
-          "--permission-mode",
-          "bypass_permissions",
-          "--session-id",
-          context.qoderSessionId,
-          "--max-turns",
-          "100",
-          ...(context.currentModel ? ["-m", context.currentModel] : []),
-        ];
+        const runAttempt = (
+          sessionMode: "session-id" | "resume",
+        ): Effect.Effect<
+          TurnAttemptOutcome,
+          PlatformError.PlatformError | CommandResolutionError
+        > =>
+          Effect.gen(function* () {
+            const args = [
+              "-p",
+              prompt,
+              "--output-format",
+              "stream-json",
+              "--permission-mode",
+              "bypass_permissions",
+              "--max-turns",
+              "100",
+              sessionMode === "session-id" ? "--session-id" : "--resume",
+              context.qoderSessionId,
+              ...(context.currentModel ? ["-m", context.currentModel] : []),
+            ];
 
-        const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, {
-          env: { ...process.env, ...authEnv },
-        });
+            const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, { env });
 
-        const collectEffect = Effect.gen(function* () {
-          return yield* spawnAndCollect(
-            binaryPath,
-            ChildProcess.make(spawnCommand.command, spawnCommand.args, {
-              env: { ...process.env, ...authEnv },
-              cwd,
-              shell: spawnCommand.shell,
-            }),
-          ).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner));
-        });
+            const turnScope = yield* Scope.make();
+            const handle = yield* spawner
+              .spawn(
+                ChildProcess.make(spawnCommand.command, spawnCommand.args, {
+                  env,
+                  cwd,
+                  shell: spawnCommand.shell,
+                  stdin: "ignore",
+                }),
+              )
+              .pipe(
+                Effect.provideService(Scope.Scope, turnScope),
+                Effect.ensuring(Scope.close(turnScope, Exit.void)),
+              );
 
-        const result = yield* collectEffect.pipe(
-          Effect.timeout(TURN_TIMEOUT),
-          Effect.catchTag("TimeoutError", () =>
-            Effect.fail(
-              new ProviderAdapterRequestError({
-                provider: PROVIDER,
-                method: "sendTurn",
-                detail: `Qoder CLI timed out after ${TURN_TIMEOUT}`,
-              }),
-            ),
-          ),
-        );
+            context.activeProcess = handle;
 
-        // Parse JSON output and emit events
-        const lines = result.stdout.split("\n");
-        let hasEmittedCompletion = false;
-
-        for (const line of lines) {
-          const parsed = parseQoderJsonLine(line);
-          if (!parsed) continue;
-
-          const eventType = parsed.type as string | undefined;
-
-          if (eventType === "result" && parsed.subtype === "success") {
-            const resultText = parsed.result as string | undefined;
-            if (resultText) {
-              yield* emit({
-                eventId: asEventId(`content-delta-${String(turnId)}-${yield* nowIso()}`),
-                provider: PROVIDER,
-                threadId: input.threadId,
-                turnId,
-                createdAt: yield* nowIso(),
-                type: "content.delta",
-                payload: {
-                  streamKind: "assistant_text",
-                  delta: resultText,
-                },
-              });
+            // An interrupt that raced in before the process registered still
+            // needs to stop the turn — kill now instead of running to completion.
+            if (context.turnInterrupted) {
+              yield* handle
+                .kill({ killSignal: "SIGINT", forceKillAfter: "5 seconds" })
+                .pipe(Effect.ignore);
             }
-            yield* emit({
-              eventId: asEventId(`turn-completed-${String(turnId)}`),
-              provider: PROVIDER,
-              threadId: input.threadId,
-              turnId,
-              createdAt: yield* nowIso(),
-              type: "turn.completed",
-              payload: { state: "completed" },
-            });
-            hasEmittedCompletion = true;
-          } else if (eventType === "assistant") {
-            const message = parsed.message as Record<string, unknown> | undefined;
-            if (message?.content) {
-              const content = message.content as Array<Record<string, unknown>> | undefined;
-              if (Array.isArray(content)) {
-                for (const block of content) {
-                  if (block.type === "text" && typeof block.text === "string") {
+
+            let contentSeq = 0;
+            let terminal: TurnTerminal | null = null;
+            const toolsInFlight = new Map<string, { name: string; input: unknown }>();
+
+            const processLine = (line: string): Effect.Effect<void> =>
+              Effect.gen(function* () {
+                const parsed = parseQoderJsonLine(line);
+                if (!parsed) return;
+
+                if (parsed.type === "assistant") {
+                  const message = asRecord(parsed.message);
+                  const content = message?.content;
+                  if (!Array.isArray(content)) return;
+                  for (const [blockIndex, blockValue] of content.entries()) {
+                    const block = asRecord(blockValue);
+                    if (!block) continue;
+                    if (block.type === "text") {
+                      const text = asNonEmptyString(block.text);
+                      if (!text) continue;
+                      contentSeq += 1;
+                      yield* emit({
+                        eventId: asEventId(`content-delta-${String(turnId)}-${contentSeq}`),
+                        provider: PROVIDER,
+                        threadId: input.threadId,
+                        turnId,
+                        createdAt: yield* nowIso(),
+                        type: "content.delta",
+                        payload: {
+                          streamKind: "assistant_text",
+                          delta: text,
+                          contentIndex: blockIndex,
+                        },
+                      });
+                    } else if (block.type === "thinking") {
+                      const thinking = asNonEmptyString(block.thinking);
+                      if (!thinking) continue;
+                      contentSeq += 1;
+                      yield* emit({
+                        eventId: asEventId(`content-delta-${String(turnId)}-${contentSeq}`),
+                        provider: PROVIDER,
+                        threadId: input.threadId,
+                        turnId,
+                        createdAt: yield* nowIso(),
+                        type: "content.delta",
+                        payload: {
+                          streamKind: "reasoning_text",
+                          delta: thinking,
+                          contentIndex: blockIndex,
+                        },
+                      });
+                    } else if (block.type === "tool_use") {
+                      const toolUseId = asNonEmptyString(block.id) ?? `tool-${String(blockIndex)}`;
+                      const toolName = asNonEmptyString(block.name) ?? "tool_call";
+                      toolsInFlight.set(toolUseId, { name: toolName, input: block.input });
+                      yield* emit({
+                        eventId: asEventId(`item-started-${String(turnId)}-${toolUseId}`),
+                        provider: PROVIDER,
+                        threadId: input.threadId,
+                        turnId,
+                        itemId: RuntimeItemId.make(toolUseId),
+                        createdAt: yield* nowIso(),
+                        type: "item.started",
+                        payload: {
+                          itemType: "dynamic_tool_call",
+                          status: "inProgress",
+                          title: toolName,
+                          data: { toolName, toolInput: block.input },
+                        },
+                      });
+                    }
+                  }
+                  return;
+                }
+
+                if (parsed.type === "user") {
+                  const message = asRecord(parsed.message);
+                  const content = message?.content;
+                  if (!Array.isArray(content)) return;
+                  for (const blockValue of content) {
+                    const block = asRecord(blockValue);
+                    if (!block || block.type !== "tool_result") continue;
+                    const toolUseId = asNonEmptyString(block.tool_use_id);
+                    const tool = toolUseId ? toolsInFlight.get(toolUseId) : undefined;
+                    if (!toolUseId || !tool) continue;
+                    toolsInFlight.delete(toolUseId);
                     yield* emit({
-                      eventId: asEventId(`content-delta-${String(turnId)}-${yield* nowIso()}`),
+                      eventId: asEventId(`item-finished-${String(turnId)}-${toolUseId}`),
                       provider: PROVIDER,
                       threadId: input.threadId,
                       turnId,
+                      itemId: RuntimeItemId.make(toolUseId),
                       createdAt: yield* nowIso(),
-                      type: "content.delta",
-                      payload: {
-                        streamKind: "assistant_text",
-                        delta: block.text,
-                      },
-                    });
-                  } else if (block.type === "tool_use") {
-                    yield* emit({
-                      eventId: asEventId(`item-started-${String(turnId)}-${yield* nowIso()}`),
-                      provider: PROVIDER,
-                      threadId: input.threadId,
-                      turnId,
-                      createdAt: yield* nowIso(),
-                      type: "item.started",
+                      type: "item.updated",
                       payload: {
                         itemType: "dynamic_tool_call",
-                        title: (block.name as string) ?? "tool_call",
-                        data: { toolName: block.name, toolInput: block.input },
+                        status: block.is_error === true ? "failed" : "completed",
+                        title: tool.name,
+                        data: {
+                          toolName: tool.name,
+                          toolInput: tool.input,
+                          toolResult: block.content,
+                        },
                       },
                     });
                   }
+                  return;
                 }
-              }
-            }
+
+                if (parsed.type === "result") {
+                  if (parsed.subtype === "success") {
+                    terminal = { ok: true };
+                  } else {
+                    const errors = Array.isArray(parsed.errors)
+                      ? parsed.errors.filter((e): e is string => typeof e === "string")
+                      : [];
+                    terminal = {
+                      ok: false,
+                      errorMessage:
+                        errors.join("; ") || asNonEmptyString(parsed.result) || "Qoder turn failed",
+                    };
+                  }
+                }
+              });
+
+            const [, stderr, exitCode] = yield* Effect.all(
+              [
+                handle.stdout.pipe(
+                  Stream.decodeText(),
+                  Stream.splitLines(),
+                  Stream.runForEach(processLine),
+                ),
+                collectStreamAsString(handle.stderr),
+                handle.exitCode,
+              ],
+              { concurrency: "unbounded" },
+            );
+
+            context.activeProcess = undefined;
+
+            const stderrTail = stderr.trim().slice(-500);
+            return {
+              terminal,
+              stderrTail,
+              exitCode: Number(exitCode),
+              sessionIdInUse: stderrTail.includes("is already in use"),
+            } satisfies TurnAttemptOutcome;
+          });
+
+        // The session is created on the first turn with `--session-id`; later
+        // turns continue it with `--resume`. When the server restarts mid-thread
+        // the in-memory flag is lost while the Qoder session still exists on
+        // disk — the "already in use" error recovers by switching to `--resume`.
+        const attempts: Array<"session-id" | "resume"> = context.qoderSessionCreated
+          ? ["resume"]
+          : ["session-id", "resume"];
+
+        let outcome: TurnAttemptOutcome | null = null;
+        for (const attempt of attempts) {
+          const attemptOutcome = yield* runAttempt(attempt);
+          outcome = attemptOutcome;
+          if (attemptOutcome.terminal?.ok) {
+            context.qoderSessionCreated = true;
+            break;
           }
+          if (context.turnInterrupted || !attemptOutcome.sessionIdInUse) {
+            break;
+          }
+          context.qoderSessionCreated = true;
         }
 
-        // Fallback completion if no result message was found
-        if (!hasEmittedCompletion && result.code === 0) {
+        const finalOutcome = outcome;
+        if (finalOutcome?.terminal?.ok) {
           yield* emit({
-            eventId: asEventId(`turn-completed-fallback-${String(turnId)}`),
+            eventId: asEventId(`turn-completed-${String(turnId)}`),
             provider: PROVIDER,
             threadId: input.threadId,
             turnId,
@@ -356,9 +494,17 @@ export function makeQoderAdapter(
             type: "turn.completed",
             payload: { state: "completed" },
           });
-        }
-
-        if (result.code !== 0) {
+        } else if (context.turnInterrupted) {
+          yield* emit({
+            eventId: asEventId(`turn-aborted-${String(turnId)}`),
+            provider: PROVIDER,
+            threadId: input.threadId,
+            turnId,
+            createdAt: yield* nowIso(),
+            type: "turn.aborted",
+            payload: { reason: "interrupted" },
+          });
+        } else {
           yield* emit({
             eventId: asEventId(`turn-completed-error-${String(turnId)}`),
             provider: PROVIDER,
@@ -366,7 +512,14 @@ export function makeQoderAdapter(
             turnId,
             createdAt: yield* nowIso(),
             type: "turn.completed",
-            payload: { state: "failed" },
+            payload: {
+              state: "failed",
+              errorMessage:
+                finalOutcome?.terminal?.errorMessage ??
+                (finalOutcome && finalOutcome.stderrTail.length > 0
+                  ? finalOutcome.stderrTail
+                  : `Qoder CLI exited with code ${finalOutcome?.exitCode ?? "unknown"} without a result`),
+            },
           });
         }
 
@@ -383,12 +536,12 @@ export function makeQoderAdapter(
             }),
           ),
         ),
-        Effect.catchTag("ProviderCommandNotFoundError", (error) =>
+        Effect.catchTag("CommandResolutionError", (error) =>
           Effect.fail(
             new ProviderAdapterRequestError({
               provider: PROVIDER,
               method: "sendTurn",
-              detail: `Qoder CLI not found: ${error.binaryPath}`,
+              detail: `Qoder CLI not found: ${error.command}`,
             }),
           ),
         ),
@@ -408,18 +561,21 @@ export function makeQoderAdapter(
           });
         }
 
-        if (context.activeTurnId) {
-          yield* emit({
-            eventId: asEventId(`turn-aborted-${String(context.activeTurnId)}`),
-            provider: PROVIDER,
-            threadId,
-            turnId: context.activeTurnId,
-            createdAt: yield* nowIso(),
-            type: "turn.aborted",
-            payload: { reason: "interrupted" },
-          });
-          context.activeTurnId = undefined;
+        context.turnInterrupted = true;
+        const process = context.activeProcess;
+        if (process) {
+          const running = yield* process.isRunning.pipe(
+            Effect.ignore,
+            Effect.orElseSucceed(() => false),
+          );
+          if (running) {
+            // SIGINT lets the CLI persist the session so the next turn can resume it.
+            yield* process
+              .kill({ killSignal: "SIGINT", forceKillAfter: "5 seconds" })
+              .pipe(Effect.ignore);
+          }
         }
+        // The terminal turn.aborted is emitted by sendTurn once the process ends.
       });
 
     // -----------------------------------------------------------------------
@@ -437,6 +593,19 @@ export function makeQoderAdapter(
         }
 
         context.stopped = true;
+        context.turnInterrupted = true;
+        const process = context.activeProcess;
+        if (process) {
+          const running = yield* process.isRunning.pipe(
+            Effect.ignore,
+            Effect.orElseSucceed(() => false),
+          );
+          if (running) {
+            yield* process
+              .kill({ killSignal: "SIGINT", forceKillAfter: "5 seconds" })
+              .pipe(Effect.ignore);
+          }
+        }
 
         yield* Ref.update(sessions, (map) => {
           const next = new Map(map);

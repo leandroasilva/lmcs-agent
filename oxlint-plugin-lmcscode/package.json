@@ -1,5 +1,5 @@
 {
-  "name": "@lmcstools/oxlint-plugin-t3code",
+  "name": "@lmcstools/oxlint-plugin-lmcscode",
   "private": true,
   "type": "module",
   "scripts": {

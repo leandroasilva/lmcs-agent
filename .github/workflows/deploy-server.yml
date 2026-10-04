@@ -1,8 +1,10 @@
-name: Deploy Server
+name: Deploy
 
-# Builds the server container image from this repository and pushes it to
-# GHCR. When hcloud secrets are configured, notifies the hcloud platform
-# to pull the new image automatically on every push to main.
+# On every push to main:
+#   1. Bump version (date + sha)
+#   2. Build & push Docker image, deploy to HCloud
+#   3. Build desktop apps (macOS, Linux, Windows)
+#   4. Build mobile apps (Android, iOS) via Expo EAS
 
 on:
   push:
@@ -16,47 +18,54 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-server-${{ github.ref }}
+  group: deploy-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   HCLOUD_URL: https://hcloud.net.br
+  HOSTED_APP_URL: https://lmcs-agent.cloud.hcloud.net.br
 
 jobs:
-  build:
-    name: Build and push image
+  # ─── Version ────────────────────────────────────────────────────────
+  version:
+    name: Resolve version
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      image: ${{ steps.image.outputs.name }}:${{ steps.version.outputs.version }}
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - id: version
-        name: Resolve image version
+      - id: resolve
+        name: Resolve version
         shell: bash
         run: |
           set -euo pipefail
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           else
-            echo "version=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            date_part=$(date -u +%Y.%m%d)
+            sha_part="${GITHUB_SHA::7}"
+            echo "version=${date_part}.${sha_part}" >> "$GITHUB_OUTPUT"
+            echo "tag=v${date_part}.${sha_part}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set image name
-        id: image
-        shell: bash
-        run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "name=${{ env.REGISTRY }}/${OWNER}/lmcs-agent" >> "$GITHUB_OUTPUT"
+  # ─── Server (Docker) ───────────────────────────────────────────────
+  server:
+    name: Build & push server image
+    needs: version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -72,11 +81,11 @@ jobs:
         name: Docker metadata
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/lmcs-agent
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=${{ needs.version.outputs.version }}
             type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' || github.ref_name == github.event.repository.default_branch }}
 
@@ -91,10 +100,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            HOSTED_APP_URL=${{ env.HOSTED_APP_URL }}
 
+  # ─── Deploy to HCloud ──────────────────────────────────────────────
   deploy:
     name: Deploy to HCloud
-    needs: build
+    needs: [version, server]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -119,7 +131,7 @@ jobs:
         env:
           HCLOUD_APP_ID: ${{ secrets.HCLOUD_APP_ID }}
           HCLOUD_APP_TOKEN: ${{ secrets.HCLOUD_APP_TOKEN }}
-          IMAGE: ${{ needs.build.outputs.image }}
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/lmcs-agent:${{ needs.version.outputs.version }}
         run: |
           set -euo pipefail
           HTTP_CODE=$(curl -s -o resposta.json -w "%{http_code}" \
@@ -134,3 +146,254 @@ jobs:
             exit 1
           fi
           echo "::notice::Deployed $IMAGE to HCloud (app $HCLOUD_APP_ID)"
+
+  # ─── Tag release ───────────────────────────────────────────────────
+  tag:
+    name: Create version tag
+    needs: [version, deploy]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && always() && !cancelled()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create version tag
+        shell: bash
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::notice::Tag $TAG already exists, skipping."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "::notice::Created tag $TAG"
+          fi
+
+  # ─── Desktop: macOS ────────────────────────────────────────────────
+  desktop_macos:
+    name: Desktop macOS
+    needs: version
+    if: github.event_name != 'pull_request'
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Enable corepack
+        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
+
+      - name: Set version
+        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
+
+      - name: Build web client
+        run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
+
+      - name: Build server bundle
+        run: pnpm --filter lmcs-agent run build
+
+      - name: Build desktop app
+        run: pnpm --filter @lmcstools/desktop run build
+
+      - name: Package macOS app
+        working-directory: apps/desktop
+        run: npx electron-builder --mac --arm64 --x64 --publish=never
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos
+          path: |
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.zip
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ─── Desktop: Linux ────────────────────────────────────────────────
+  desktop_linux:
+    name: Desktop Linux
+    needs: version
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Enable corepack
+        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config imagemagick
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
+
+      - name: Set version
+        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
+
+      - name: Build web client
+        run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
+
+      - name: Build server bundle
+        run: pnpm --filter lmcs-agent run build
+
+      - name: Build desktop app
+        run: pnpm --filter @lmcstools/desktop run build
+
+      - name: Package Linux app
+        working-directory: apps/desktop
+        run: npx electron-builder --linux --x64 --arm64 --publish=never
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.deb
+            apps/desktop/dist/*.rpm
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ─── Desktop: Windows ──────────────────────────────────────────────
+  desktop_windows:
+    name: Desktop Windows
+    needs: version
+    if: github.event_name != 'pull_request'
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Enable corepack
+        shell: bash
+        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
+
+      - name: Set version
+        shell: bash
+        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
+
+      - name: Build web client
+        shell: bash
+        run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
+
+      - name: Build server bundle
+        run: pnpm --filter lmcs-agent run build
+
+      - name: Build desktop app
+        run: pnpm --filter @lmcstools/desktop run build
+
+      - name: Package Windows app
+        working-directory: apps/desktop
+        run: npx electron-builder --win --x64 --arm64 --publish=never
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.msi
+            apps/desktop/dist/*.zip
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ─── Mobile: Android & iOS ─────────────────────────────────────────
+  mobile:
+    name: Build mobile apps
+    needs: version
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Enable corepack
+        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Set version
+        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
+
+      - name: Build Android
+        working-directory: apps/mobile
+        run: eas build --platform android --profile production --non-interactive --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS
+        working-directory: apps/mobile
+        run: eas build --platform ios --profile production --non-interactive --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  # ─── GitHub Release ────────────────────────────────────────────────
+  release:
+    name: Create GitHub release
+    needs: [version, tag, desktop_macos, desktop_linux, desktop_windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: LMCS Agent v${{ needs.version.outputs.version }}
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/desktop-macos/**/*
+            artifacts/desktop-linux/**/*
+            artifacts/desktop-windows/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

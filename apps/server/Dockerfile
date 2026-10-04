@@ -19,6 +19,9 @@ RUN corepack enable && corepack prepare pnpm@11.10.0 --activate
 WORKDIR /src
 COPY . .
 
+# Public URL baked into the web client at build time (for pairing/deep links).
+ARG HOSTED_APP_URL=https://lmcs-agent.cloud.hcloud.net.br
+
 # Only the trees the server build needs. This skips the desktop workspace,
 # which keeps the Electron download out of the image build.
 RUN --mount=type=cache,id=lmcs-pnpm-store,target=/pnpm/store \
@@ -28,7 +31,7 @@ RUN --mount=type=cache,id=lmcs-pnpm-store,target=/pnpm/store \
       --filter '@lmcstools/web...' \
       --filter '@lmcstools/scripts...'
 
-RUN pnpm --filter @lmcstools/web run build \
+RUN VITE_HOSTED_APP_URL="$HOSTED_APP_URL" pnpm --filter @lmcstools/web run build \
     && node apps/server/scripts/cli.ts build
 
 FROM node:24-bookworm-slim AS run
@@ -40,7 +43,7 @@ RUN apt-get update \
 
 ENV LMCS_HOME=/data \
     LMCS_HOST=0.0.0.0 \
-    LMCS_PORT=13773 \
+    LMCS_PORT=80 \
     LMCS_DISABLE_AUTO_UPDATE=1 \
     NODE_ENV=production
 
@@ -55,9 +58,9 @@ COPY --from=build /src/apps/server/package.json ./apps/server/package.json
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME ["/data"]
-EXPOSE 13773
+EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
-    CMD ["node", "-e", "const s=require('node:net').connect(13773,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1))"]
+    CMD ["node", "-e", "const s=require('node:net').connect(80,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1))"]
 
 CMD ["node", "apps/server/dist/bin.mjs", "serve"]
