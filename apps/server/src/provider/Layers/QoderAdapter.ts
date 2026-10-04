@@ -41,6 +41,10 @@ export interface QoderAdapterLiveOptions {
 
 interface QoderSessionContext {
   readonly threadId: ThreadId;
+  /** Deterministic Qoder session ID used with `--session-id` so that
+   *  consecutive turns resume the same conversation (and the session can
+   *  also be resumed from the terminal via `qoder --resume <id>`). */
+  readonly qoderSessionId: string;
   session: ProviderSession;
   readonly scope: Scope.Closeable;
   turns: Array<{ id: TurnId; items: Array<unknown> }>;
@@ -48,6 +52,10 @@ interface QoderSessionContext {
   activeTurnId: TurnId | undefined;
   stopped: boolean;
 }
+
+/** Safety-net timeout for a single CLI turn. Prevents the adapter
+ *  from blocking indefinitely when the Qoder process hangs. */
+const TURN_TIMEOUT = "5 minutes";
 
 const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
 
@@ -126,8 +134,13 @@ export function makeQoderAdapter(
           updatedAt: now,
         };
 
+        // Deterministic session ID: same LMCS thread always maps to the same
+        // Qoder session, enabling multi-turn continuity and terminal resume.
+        const qoderSessionId = `lmcs-${String(input.threadId).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+
         const context: QoderSessionContext = {
           threadId: input.threadId,
+          qoderSessionId,
           session,
           scope,
           turns: [],
@@ -221,7 +234,8 @@ export function makeQoderAdapter(
           "json",
           "--permission-mode",
           "bypass_permissions",
-          "--no-session-persistence",
+          "--session-id",
+          context.qoderSessionId,
           "--max-turns",
           "100",
           ...(context.currentModel ? ["-m", context.currentModel] : []),
@@ -231,14 +245,29 @@ export function makeQoderAdapter(
           env: { ...process.env, ...authEnv },
         });
 
-        const result = yield* spawnAndCollect(
-          binaryPath,
-          ChildProcess.make(spawnCommand.command, spawnCommand.args, {
-            env: { ...process.env, ...authEnv },
-            cwd,
-            shell: spawnCommand.shell,
-          }),
-        ).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner));
+        const collectEffect = Effect.gen(function* () {
+          return yield* spawnAndCollect(
+            binaryPath,
+            ChildProcess.make(spawnCommand.command, spawnCommand.args, {
+              env: { ...process.env, ...authEnv },
+              cwd,
+              shell: spawnCommand.shell,
+            }),
+          ).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner));
+        });
+
+        const result = yield* collectEffect.pipe(
+          Effect.timeout(TURN_TIMEOUT),
+          Effect.catchTag("TimeoutError", () =>
+            Effect.fail(
+              new ProviderAdapterRequestError({
+                provider: PROVIDER,
+                method: "sendTurn",
+                detail: `Qoder CLI timed out after ${TURN_TIMEOUT}`,
+              }),
+            ),
+          ),
+        );
 
         // Parse JSON output and emit events
         const lines = result.stdout.split("\n");
