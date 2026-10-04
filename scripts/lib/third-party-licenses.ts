@@ -519,7 +519,14 @@ async function collectProductionDependencyPackages(
   const visited = new Set<string>();
 
   const visitManifest = async (packageJsonPath: string, bundle: string): Promise<void> => {
-    const packageJson = await readPackageJson(packageJsonPath);
+    let packageJson: PackageJson;
+    try {
+      packageJson = await readPackageJson(packageJsonPath);
+    } catch (error) {
+      const code = isRecord(error) && typeof error.code === "string" ? error.code : null;
+      if (code === "ENOENT") return;
+      throw error;
+    }
     for (const dependencyName of dependencyNames(packageJson)) {
       const resolved = await resolveDependencyPackage(dependencyName, packageJsonPath);
       if (!resolved) continue;
