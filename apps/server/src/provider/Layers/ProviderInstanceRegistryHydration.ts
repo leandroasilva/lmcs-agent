@@ -75,22 +75,26 @@ export const deriveProviderInstanceConfigMap = (
 ): ProviderInstanceConfigMap => {
   const merged: Record<string, ProviderInstanceConfig> = { ...settings.providerInstances };
 
+  // Debug: log available providers in settings
+  console.log("[DEBUG] settings.providers keys:", Object.keys(settings.providers));
+  console.log("[DEBUG] settings.providerInstances keys:", Object.keys(settings.providerInstances));
+  console.log("[DEBUG] BUILT_IN_DRIVERS count:", BUILT_IN_DRIVERS.length);
+
   for (const driver of BUILT_IN_DRIVERS) {
     const instanceId = defaultInstanceIdForDriver(driver.driverKind);
+    console.log("[DEBUG] Processing driver:", driver.driverKind, "-> instanceId:", instanceId);
+
     if (instanceId in merged) {
-      // Explicit `providerInstances` entry for this slot — user-authored
-      // config always wins over the legacy mirror.
+      console.log("[DEBUG]   -> Already in merged (providerInstances), skipping");
       continue;
     }
 
-    // Only built-in drivers have a legacy mirror; the registry's
-    // `providers` struct is keyed on the same literal slug as
-    // `driverKind`. Access is dynamic (the driver kind is a branded string),
-    // but it's constrained to `keyof settings.providers` by the union of
-    // built-in driver kinds.
     const legacyKey = driver.driverKind as keyof ServerSettings["providers"];
     const legacyConfig = settings.providers[legacyKey];
+    console.log("[DEBUG]   -> legacyKey:", legacyKey, "legacyConfig:", legacyConfig);
+
     if (legacyConfig === undefined) {
+      console.log("[DEBUG]   -> legacyConfig is undefined, skipping");
       continue;
     }
 
@@ -98,8 +102,10 @@ export const deriveProviderInstanceConfigMap = (
       driver: driver.driverKind,
       config: legacyConfig,
     };
+    console.log("[DEBUG]   -> Added to merged");
   }
 
+  console.log("[DEBUG] Final merged keys:", Object.keys(merged));
   return merged as ProviderInstanceConfigMap;
 };
 
