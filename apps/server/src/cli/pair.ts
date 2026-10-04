@@ -14,7 +14,7 @@ import {
   ExecutionEnvironmentDescriptor,
   PortSchema,
 } from "@lmcstools/core";
-import { resolveWorktreeT3Home } from "@lmcstools/core/devHome";
+import { resolveWorktreeLmcsHome } from "@lmcstools/core/devHome";
 import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/core/observability";
 import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 import {
@@ -249,7 +249,7 @@ const discoverPairTarget = Effect.fn("pair.discoverPairTarget")(function* (
     // Same precedence as dev-runner: inside a linked worktree its own `.lmcs`
     // outranks the shared home, so `lmcs pair` in a worktree pairs with the dev
     // server under test rather than the daily-driver install.
-    const worktreeHome = yield* resolveWorktreeT3Home(process.cwd());
+    const worktreeHome = yield* resolveWorktreeLmcsHome(process.cwd());
     if (worktreeHome !== undefined) {
       bases.push(worktreeHome);
     }
