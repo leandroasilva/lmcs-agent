@@ -86,17 +86,6 @@
       ]
     },
     {
-      "driver": "antigravity",
-      "t3CodeRange": ">=0.0.1",
-      "recommendedRange": "=1.1.1",
-      "ranges": [
-        {
-          "range": "=1.1.1",
-          "status": "supported"
-        }
-      ]
-    },
-    {
       "driver": "qoder",
       "t3CodeRange": ">=0.0.1",
       "recommendedRange": ">=0.1.0",
@@ -127,8 +116,7 @@
       "gpt-daybreak-blue-latest",
       "gpt-daybreak-red-latest"
     ],
-    "claudeAgent": ["claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5"],
-    "antigravity": ["gemini-3.8-flash-high", "gemini-3.8-flash-medium", "gemini-3.8-flash-low"]
+    "claudeAgent": ["claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5"]
   },
   "providers": {
     "claudeAgent": {
@@ -858,29 +846,6 @@
           "aliases": ["haiku", "haiku-4.5", "claude-haiku-4.5", "claude-haiku-4-5-20251001"],
           "status": "legacy",
           "profile": "haiku-4-5"
-        }
-      ]
-    },
-    "antigravity": {
-      "defaults": {
-        "chat": "gemini-3.8-flash-high"
-      },
-      "profiles": {},
-      "models": [
-        {
-          "slug": "gemini-3.8-flash-high",
-          "name": "Gemini 3.8 Flash (High)",
-          "status": "current"
-        },
-        {
-          "slug": "gemini-3.8-flash-medium",
-          "name": "Gemini 3.8 Flash (Medium)",
-          "status": "current"
-        },
-        {
-          "slug": "gemini-3.8-flash-low",
-          "name": "Gemini 3.8 Flash (Low)",
-          "status": "current"
         }
       ]
     }

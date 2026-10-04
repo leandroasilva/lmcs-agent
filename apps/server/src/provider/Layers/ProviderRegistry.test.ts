@@ -36,7 +36,6 @@ import { applyServerSettingsPatch } from "@lmcstools/core/serverSettings";
 import { checkCodexProviderStatus, type CodexAppServerProviderSnapshot } from "./CodexProvider.ts";
 import { checkClaudeProviderStatus } from "./ClaudeProvider.ts";
 import * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
-import { AntigravityInstallation } from "../AntigravityInstallation.ts";
 import * as ModelManifest from "../ModelManifest.ts";
 import { applyProviderCompatibility } from "../providerCompatibility.ts";
 import * as ResetCreditCoordinator from "./resetCreditCoordinator.ts";
@@ -1113,10 +1112,10 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
         );
       });
 
-      describe("Antigravity model inventories", () => {
+      describe("Codex model inventories", () => {
         const previousProvider = {
-          instanceId: ProviderInstanceId.make("antigravity-personal"),
-          driver: ProviderDriverKind.make("antigravity"),
+          instanceId: ProviderInstanceId.make("codex-personal"),
+          driver: ProviderDriverKind.make("codex"),
           status: "ready",
           enabled: true,
           installed: true,
@@ -1239,10 +1238,10 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
         });
       });
 
-      describe("Antigravity saved account", () => {
+      describe("Codex saved account", () => {
         const signedIn = {
-          instanceId: ProviderInstanceId.make("antigravity-personal"),
-          driver: ProviderDriverKind.make("antigravity"),
+          instanceId: ProviderInstanceId.make("codex-personal"),
+          driver: ProviderDriverKind.make("codex"),
           status: "ready",
           enabled: true,
           installed: true,
@@ -1264,8 +1263,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
           slashCommands: [{ name: "plan" }],
           skills: [],
         } as const satisfies ServerProvider;
-        const uncheckedMessage =
-          "Antigravity is installed. Google account access is not checked yet.";
+        const uncheckedMessage = "Codex is installed. Google account access is not checked yet.";
         const restartProbe = {
           ...signedIn,
           status: "warning",
@@ -1294,7 +1292,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             ...restartProbe,
             installed: false,
             version: null,
-            message: "Checking Antigravity availability.",
+            message: "Checking Codex availability.",
           } satisfies ServerProvider;
           assert.deepStrictEqual(mergeProviderSnapshot(signedIn, booting), {
             ...booting,
@@ -1305,7 +1303,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
           const failed = {
             ...restartProbe,
             status: "error",
-            message: "Antigravity did not respond to its local health check within 90 seconds.",
+            message: "Codex did not respond to its local health check within 90 seconds.",
           } satisfies ServerProvider;
           assert.deepStrictEqual(mergeProviderSnapshot(signedIn, failed), {
             ...failed,
@@ -2354,7 +2352,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
           yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
           const providerRegistryLayer = ProviderRegistryLive.pipe(
             Layer.provideMerge(ProviderInstanceRegistryHydrationLive),
-            Layer.provideMerge(AntigravityInstallation.layer),
+            Layer.provideMerge(CodexInstallation.layer),
             Layer.provideMerge(
               Layer.succeed(ServerSettingsModule.ServerSettingsService, serverSettings),
             ),
@@ -2453,7 +2451,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
           yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
           const providerRegistryLayer = ProviderRegistryLive.pipe(
             Layer.provideMerge(ProviderInstanceRegistryHydrationLive),
-            Layer.provideMerge(AntigravityInstallation.layer),
+            Layer.provideMerge(CodexInstallation.layer),
             Layer.provideMerge(
               Layer.succeed(ServerSettingsModule.ServerSettingsService, serverSettings),
             ),
@@ -2569,7 +2567,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
           yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
           const providerRegistryLayer = ProviderRegistryLive.pipe(
             Layer.provideMerge(ProviderInstanceRegistryHydrationLive),
-            Layer.provideMerge(AntigravityInstallation.layer),
+            Layer.provideMerge(CodexInstallation.layer),
             Layer.provideMerge(
               Layer.succeed(ServerSettingsModule.ServerSettingsService, serverSettings),
             ),
@@ -2631,7 +2629,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             yield* Effect.addFinalizer(() => Scope.close(scope, Exit.void));
             const providerRegistryLayer = ProviderRegistryLive.pipe(
               Layer.provideMerge(ProviderInstanceRegistryHydrationLive),
-              Layer.provideMerge(AntigravityInstallation.layer),
+              Layer.provideMerge(CodexInstallation.layer),
               Layer.provideMerge(
                 Layer.succeed(ServerSettingsModule.ServerSettingsService, serverSettings),
               ),
@@ -2690,7 +2688,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               );
 
               assert.deepStrictEqual(providers.map((provider) => provider.instanceId).toSorted(), [
-                "antigravity",
+                "codex",
                 "claudeAgent",
                 "codex",
                 "commandCode",

@@ -69,7 +69,7 @@ const defaultSessionLoadTimeout = Duration.seconds(90);
 const defaultSessionLoadReplayIdleGap = Duration.seconds(2);
 const defaultCancelTimeout = Duration.seconds(15);
 const maxStartupMetadataUpdates = 32;
-// Antigravity can emit an accepted 16 KiB Google authorization URL on stderr.
+// Codex can emit an accepted 16 KiB Google authorization URL on stderr.
 const maxStderrChunkLength = 32_768;
 
 export interface AcpSpawnInput {

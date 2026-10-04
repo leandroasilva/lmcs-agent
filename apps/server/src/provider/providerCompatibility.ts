@@ -72,7 +72,7 @@ export function resolveProviderCompatibility(
   const stable =
     driver === "cursor"
       ? unprefixed?.replace(/^(\d{4}\.\d{2}\.\d{2})-[a-f0-9]+$/, "$1")
-      : driver === "antigravity"
+      : driver === "codex"
         ? unprefixed?.replace(/^agy_acp_server_(\d+\.\d+\.\d+)$/, "$1")
         : unprefixed;
   const status =

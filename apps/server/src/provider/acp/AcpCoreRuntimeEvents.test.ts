@@ -71,7 +71,7 @@ describe("AcpCoreRuntimeEvents", () => {
   it("preserves a native file approval without a remembered-allow choice", () => {
     const event = makeAcpRequestOpenedEvent({
       stamp: { eventId: "approval-1" as never, createdAt: "2026-09-02T00:00:00.000Z" },
-      provider: ProviderDriverKind.make("antigravity"),
+      provider: ProviderDriverKind.make("codex"),
       threadId: "thread-1" as never,
       turnId: TurnId.make("turn-1"),
       requestId: RuntimeRequestId.make("request-1"),

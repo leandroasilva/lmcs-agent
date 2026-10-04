@@ -14,7 +14,7 @@ import type * as AcpSchema from "@lmcstools/providers/acp/schema";
 
 const requestLogPath = process.env.LMCS_ACP_REQUEST_LOG_PATH;
 const exitLogPath = process.env.LMCS_ACP_EXIT_LOG_PATH;
-const antigravityProfile = process.env.LMCS_ACP_ANTIGRAVITY === "1";
+const isGrok = process.env.LMCS_ACP_GROK === "1";
 const emitToolCalls = process.env.LMCS_ACP_EMIT_TOOL_CALLS === "1";
 const emitInterleavedAssistantToolCalls =
   process.env.LMCS_ACP_EMIT_INTERLEAVED_ASSISTANT_TOOL_CALLS === "1";
@@ -73,7 +73,7 @@ const permissionRequestCount = Math.max(
 );
 const sessionId = "mock-session-1";
 
-let currentModeId = antigravityProfile ? "default" : "ask";
+let currentModeId = isGrok ? "default" : "ask";
 let currentModelId = "default";
 let parameterizedModelPicker = false;
 let currentReasoning = "medium";
@@ -120,7 +120,7 @@ process.once("exit", (code) => {
 });
 
 function configOptions(): ReadonlyArray<AcpSchema.SessionConfigOption> {
-  if (antigravityProfile) {
+  if (isGrok) {
     return [
       {
         id: "model",
@@ -128,7 +128,7 @@ function configOptions(): ReadonlyArray<AcpSchema.SessionConfigOption> {
         category: "model",
         type: "select",
         currentValue: currentModelId,
-        options: antigravityModels.map((model) => ({ value: model.modelId, name: model.name })),
+        options: grokModels.map((model) => ({ value: model.modelId, name: model.name })),
       },
       {
         id: "mode",
@@ -299,12 +299,12 @@ function availableModels(): ReadonlyArray<{
   }));
 }
 
-const antigravityModels = [
+const grokModels = [
   { modelId: "gemini-test-low", name: "Gemini Test Low" },
   { modelId: "gemini-test-high", name: "Gemini Test High" },
 ] satisfies ReadonlyArray<AcpSchema.ModelInfo>;
 
-const availableModes: ReadonlyArray<AcpSchema.SessionMode> = antigravityProfile
+const availableModes: ReadonlyArray<AcpSchema.SessionMode> = false
   ? [
       { id: "default", name: "Default" },
       { id: "auto_edit", name: "Auto edit" },
@@ -356,8 +356,8 @@ const grokAcpModels: ReadonlyArray<AcpSchema.ModelInfo> = [
 ];
 
 function modelState(): AcpSchema.SessionModelState {
-  if (antigravityProfile) {
-    return { currentModelId, availableModels: antigravityModels };
+  if (isGrok) {
+    return { currentModelId, availableModels: grokModels };
   }
   const modelId = grokAcpModels.some((model) => model.modelId === currentModelId)
     ? currentModelId
@@ -373,7 +373,7 @@ const program = Effect.gen(function* () {
   const resumeRelease = yield* Deferred.make<void>();
   const nativeCancelRequested = yield* Deferred.make<void>();
   const nativeCancelRelease = yield* Deferred.make<void>();
-  const publishAntigravityCommands = (targetSessionId: string) =>
+  const publishGrokCommands = (targetSessionId: string) =>
     agent.client.sessionUpdate({
       sessionId: targetSessionId,
       update: {
@@ -397,10 +397,10 @@ const program = Effect.gen(function* () {
       }
       parameterizedModelPicker =
         request.clientCapabilities?._meta?.parameterizedModelPicker === true;
-      if (antigravityProfile) {
+      if (isGrok) {
         return {
           protocolVersion: 1,
-          agentInfo: { name: "antigravity-acp", version: "mock" },
+          agentInfo: { name: "grok-acp", version: "mock" },
           agentCapabilities: {
             loadSession: true,
             sessionCapabilities: { resume: {} },
@@ -423,24 +423,24 @@ const program = Effect.gen(function* () {
   // Mirrors the real agent: the API key method reads GEMINI_API_KEY from the
   // process environment and rejects when it is missing.
   yield* agent.handleAuthenticate((request) =>
-    !antigravityProfile || request.methodId === "oauth-personal"
+    true || request.methodId === "oauth-personal"
       ? Effect.succeed({})
       : request.methodId === "gemini-api-key" && process.env.GEMINI_API_KEY
         ? Effect.succeed({})
         : Effect.fail(
             AcpError.AcpRequestError.invalidParams(
-              `Mock Antigravity rejected auth method ${request.methodId}.`,
+              `Mock Grok rejected auth method ${request.methodId}.`,
             ),
           ),
   );
-  if (antigravityProfile) {
+  if (isGrok) {
     yield* agent.handleLogout(() => Effect.succeed({}));
   }
 
   yield* agent.handleCreateSession(() =>
     Effect.gen(function* () {
-      if (antigravityProfile) {
-        yield* publishAntigravityCommands(sessionId);
+      if (isGrok) {
+        yield* publishGrokCommands(sessionId);
       }
       return {
         sessionId,
@@ -463,8 +463,8 @@ const program = Effect.gen(function* () {
       if (waitForResumeRelease) {
         yield* Deferred.await(resumeRelease);
       }
-      if (antigravityProfile) {
-        yield* publishAntigravityCommands(request.sessionId);
+      if (isGrok) {
+        yield* publishGrokCommands(request.sessionId);
       }
       return {
         modes: modeState(),

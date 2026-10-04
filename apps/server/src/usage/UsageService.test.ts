@@ -108,7 +108,6 @@ const serviceLayers = (input: {
         HOME: input.home,
         GROK_HOME: NodePath.join(input.home, "grok"),
         OPENCODE_DATA_DIR: NodePath.join(input.home, "opencode"),
-        ANTIGRAVITY_DATA_DIR: NodePath.join(input.home, "antigravity"),
         XDG_CONFIG_HOME: NodePath.join(input.home, "config"),
         APPDATA: NodePath.join(input.home, "config"),
         ...input.environment,
@@ -254,30 +253,17 @@ describe("UsageService", () => {
       }).pipe(Effect.scoped),
   );
 
-  it.live("counts aliased OpenCode and Antigravity directories once", () =>
+  it.live("counts aliased OpenCode directories once", () =>
     Effect.gen(function* () {
       const { settings, home } = yield* setup;
       const opencode = NodePath.join(home, "opencode-store");
       const opencodeAlias = NodePath.join(home, "opencode-alias");
-      const conversations = NodePath.join(home, "antigravity-conversations");
-      const antigravityA = NodePath.join(home, "antigravity-a");
-      const antigravityB = NodePath.join(home, "antigravity-b");
       yield* Effect.promise(async () => {
         await NodeFSP.mkdir(opencode);
         await NodeFSP.symlink(opencode, opencodeAlias, "junction");
         await NodeFSP.mkdir(conversations);
-        await NodeFSP.mkdir(antigravityA);
-        await NodeFSP.mkdir(antigravityB);
-        await NodeFSP.symlink(
-          conversations,
-          NodePath.join(antigravityA, "conversations"),
-          "junction",
-        );
-        await NodeFSP.symlink(
-          conversations,
-          NodePath.join(antigravityB, "conversations"),
-          "junction",
-        );
+        await NodeFSP.symlink(conversations, "junction");
+        await NodeFSP.symlink(conversations, "junction");
       });
       const service = yield* UsageService.make.pipe(
         Effect.provide(
@@ -287,24 +273,19 @@ describe("UsageService", () => {
             settings,
             environment: {
               OPENCODE_DATA_DIR: `${opencode},${opencodeAlias}`,
-              ANTIGRAVITY_DATA_DIR: `${antigravityA},${antigravityB}`,
             },
           }),
         ),
       );
       const summary = yield* service.readSummary(WINDOW);
-      const sourcesFor = (provider: "opencode" | "antigravity") =>
+      const sourcesFor = (provider: "opencode") =>
         summary.sources.filter((source) => source.fingerprint.provider === provider);
       assert.strictEqual(sourcesFor("opencode").length, 1);
-      assert.strictEqual(sourcesFor("antigravity").length, 1);
       assert.strictEqual(
         sourcesFor("opencode")[0]?.fingerprint.resolvedHomePath,
         yield* Effect.promise(() => NodeFSP.realpath(opencode)),
       );
-      assert.strictEqual(
-        sourcesFor("antigravity")[0]?.fingerprint.resolvedHomePath,
-        yield* Effect.promise(() => NodeFSP.realpath(conversations)),
-      );
+      assert.strictEqual(yield* Effect.promise(() => NodeFSP.realpath(conversations)));
     }).pipe(Effect.scoped),
   );
 

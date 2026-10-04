@@ -136,10 +136,6 @@ import * as ModelManifest from "./provider/ModelManifest.ts";
 import * as ProviderService from "./provider/Services/ProviderService.ts";
 import { ProviderAuthService } from "./provider/Services/ProviderAuthService.ts";
 import { ProviderInstanceRegistry } from "./provider/Services/ProviderInstanceRegistry.ts";
-import {
-  AntigravityInstallation,
-  AntigravityInstallationError,
-} from "./provider/AntigravityInstallation.ts";
 import type { ProviderInstance } from "./provider/ProviderDriver.ts";
 import * as ProviderSessionDirectory from "./provider/Services/ProviderSessionDirectory.ts";
 import { ProviderAdapterRequestError } from "./provider/Errors.ts";
@@ -233,8 +229,8 @@ const defaultModelSelection = {
   model: "gpt-5-codex",
 } as const;
 
-const providerSetupInstanceId = ProviderInstanceId.make("antigravity-custom-profile");
-const providerSetupDriver = ProviderDriverKind.make("antigravity");
+const providerSetupInstanceId = ProviderInstanceId.make("codex-custom-profile");
+const providerSetupDriver = ProviderDriverKind.make("codex");
 const providerSetupInstallState: ProviderInstallState = {
   driver: providerSetupDriver,
   operationId: "install-operation",
@@ -526,7 +522,6 @@ const buildAppUnderTest = (options?: {
     providerService?: Partial<ProviderService.ProviderService["Service"]>;
     providerAuth?: Partial<ProviderAuthService["Service"]>;
     providerInstanceRegistry?: Partial<ProviderInstanceRegistry["Service"]>;
-    antigravityInstallation?: Partial<AntigravityInstallation["Service"]>;
     serverSettings?: Partial<ServerSettings.ServerSettingsService["Service"]>;
     externalLauncher?: Partial<ExternalLauncher.ExternalLauncher["Service"]>;
     vcsDriver?: Partial<VcsDriver.VcsDriver["Service"]>;
@@ -825,10 +820,6 @@ const buildAppUnderTest = (options?: {
             getInstance: () => Effect.undefined,
             listInstances: Effect.succeed([]),
             ...options?.layers?.providerInstanceRegistry,
-          }),
-          Layer.mock(AntigravityInstallation)({
-            managedDirectory: "unused-test-antigravity-runtime",
-            ...options?.layers?.antigravityInstallation,
           }),
           Layer.mock(ProviderSessionDirectory.ProviderSessionDirectory)({
             upsert: () => Effect.void,
@@ -6201,7 +6192,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                 instanceId === providerSetupInstanceId ? providerSetupInstance : undefined,
               ),
           },
-          antigravityInstallation: {
+          providerInstallation: {
             start: Effect.sync(() => {
               installStarts += 1;
               return providerSetupInstallState;
@@ -6428,7 +6419,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                   instanceId === providerSetupInstanceId ? providerSetupInstance : undefined,
                 ),
             },
-            antigravityInstallation: {
+            providerInstallation: {
               start: Effect.sync(() => {
                 calls.push("start");
                 return state;
@@ -6437,11 +6428,13 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                 Effect.gen(function* () {
                   calls.push(`cancel:${operationId}`);
                   if (operationId !== state.operationId) {
-                    return yield* new AntigravityInstallationError({
-                      operation: "cancel",
-                      detail: "This installation is no longer running.",
-                      cause: new Error("Private download diagnostics."),
-                    });
+                    return Effect.fail(
+                      new ProviderInstallationError({
+                        operation: "cancel",
+                        detail: "This installation is no longer running.",
+                        cause: new Error("Private download diagnostics."),
+                      }),
+                    );
                   }
                   state = { ...state, phase: "cancelled" };
                   return state;

@@ -1107,33 +1107,33 @@ declaredCompaction.layer("ProviderService declared compaction", (it) => {
   );
 });
 
-const antigravityDriver = ProviderDriverKind.make("antigravity");
-const replacementAntigravity = makeFakeCodexAdapter(antigravityDriver);
-const originalAntigravityInstanceId = ProviderInstanceId.make("antigravity-personal");
-const replacementAntigravityInstanceId = ProviderInstanceId.make("antigravity");
-const antigravityRegistry = makeAdapterRegistryMock({
-  [antigravityDriver]: replacementAntigravity.adapter,
+const codexDriver = ProviderDriverKind.make("codex");
+const replacementCodex = makeFakeCodexAdapter(codexDriver);
+const originalCodexInstanceId = ProviderInstanceId.make("codex-personal");
+const replacementCodexInstanceId = ProviderInstanceId.make("codex");
+const codexRegistry = makeAdapterRegistryMock({
+  [codexDriver]: replacementCodex.adapter,
 });
-let originalAntigravityInstanceAvailable = true;
-const antigravityInstanceRouting = makeProviderServiceLayer({
+let originalCodexInstanceAvailable = true;
+const codexInstanceRouting = makeProviderServiceLayer({
   registry: {
-    ...antigravityRegistry,
+    ...codexRegistry,
     getInstanceInfo: (instanceId) =>
-      instanceId === originalAntigravityInstanceId && originalAntigravityInstanceAvailable
+      instanceId === originalCodexInstanceId && originalCodexInstanceAvailable
         ? Effect.succeed({
             instanceId,
-            driverKind: antigravityDriver,
+            driverKind: codexDriver,
             displayName: undefined,
             enabled: true,
             continuationIdentity: {
-              driverKind: antigravityDriver,
-              continuationKey: `${antigravityDriver}:instance:${instanceId}`,
+              driverKind: codexDriver,
+              continuationKey: `${codexDriver}:instance:${instanceId}`,
             },
           })
-        : antigravityRegistry.getInstanceInfo(instanceId),
+        : codexRegistry.getInstanceInfo(instanceId),
   },
 });
-antigravityInstanceRouting.layer("ProviderServiceLive instance-owned conversations", (it) => {
+codexInstanceRouting.layer("ProviderServiceLive instance-owned conversations", (it) => {
   it.effect(
     "does not replace a native conversation with another instance or a removed-instance fallback",
     () =>
@@ -1142,26 +1142,24 @@ antigravityInstanceRouting.layer("ProviderServiceLive instance-owned conversatio
         const directory = yield* ProviderSessionDirectory.ProviderSessionDirectory;
 
         for (const originalAvailable of [true, false]) {
-          originalAntigravityInstanceAvailable = originalAvailable;
+          originalCodexInstanceAvailable = originalAvailable;
           for (const passCursor of [true, false]) {
-            const threadId = asThreadId(
-              `thread-antigravity-instance-${originalAvailable}-${passCursor}`,
-            );
+            const threadId = asThreadId(`thread-codex-instance-${originalAvailable}-${passCursor}`);
             const resumeCursor = { sessionId: "native-session" };
             yield* directory.upsert({
               threadId,
-              provider: antigravityDriver,
-              providerInstanceId: originalAntigravityInstanceId,
+              provider: codexDriver,
+              providerInstanceId: originalCodexInstanceId,
               status: "stopped",
               runtimeMode: "approval-required",
               ...(passCursor ? {} : { resumeCursor }),
             });
             const originalBinding = yield* directory.getBinding(threadId);
-            replacementAntigravity.startSession.mockClear();
+            replacementCodex.startSession.mockClear();
 
             const error = yield* Effect.flip(
               provider.startSession(threadId, {
-                providerInstanceId: replacementAntigravityInstanceId,
+                providerInstanceId: replacementCodexInstanceId,
                 threadId,
                 runtimeMode: "approval-required",
                 ...(passCursor ? { resumeCursor } : {}),
@@ -1172,7 +1170,7 @@ antigravityInstanceRouting.layer("ProviderServiceLive instance-owned conversatio
               error._tag,
               originalAvailable ? "ProviderValidationError" : "ProviderUnsupportedError",
             );
-            assert.equal(replacementAntigravity.startSession.mock.calls.length, 0);
+            assert.equal(replacementCodex.startSession.mock.calls.length, 0);
             assert.deepEqual(yield* directory.getBinding(threadId), originalBinding);
           }
         }

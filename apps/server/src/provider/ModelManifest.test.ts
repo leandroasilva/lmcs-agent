@@ -99,12 +99,12 @@ describe("applyManifestDefault", () => {
     );
   });
   it("moves the default flag and its aliases to the manifest's chat default", () => {
-    const driver = ProviderDriverKind.make("antigravity");
+    const driver = ProviderDriverKind.make("codex");
     const manifest: ModelManifestData = {
       version: 1,
       currentModels: {},
       providers: {
-        antigravity: {
+        codex: {
           defaults: { chat: "gemini-new" },
           profiles: {},
           models: [{ slug: "gemini-new", name: "New", status: "current" }],
@@ -115,7 +115,7 @@ describe("applyManifestDefault", () => {
       model({
         slug: "gemini-old",
         isDefault: true,
-        aliases: ["antigravity-default"],
+        aliases: ["codex-default"],
       }),
       model({ slug: "gemini-new" }),
     ];
@@ -124,7 +124,7 @@ describe("applyManifestDefault", () => {
       model({
         slug: "gemini-new",
         isDefault: true,
-        aliases: ["antigravity-default"],
+        aliases: ["codex-default"],
       }),
     ]);
     // The account does not offer the manifest default: keep the runtime's choice.

@@ -4,8 +4,6 @@ import {
   type AtomCommandResult,
 } from "@lmcstools/client/state/runtime";
 import {
-  ANTIGRAVITY_AUTH_METHODS,
-  type AntigravityAuthMethod,
   type EnvironmentId,
   type ProviderAuthState,
   type ProviderInstanceId,
@@ -31,22 +29,12 @@ interface ProviderSetupSectionProps {
   readonly instanceId: ProviderInstanceId;
   readonly provider: ServerProvider | undefined;
   readonly binaryPath?: string | undefined;
-  readonly authMethod?: AntigravityAuthMethod | undefined;
   readonly enabled: boolean;
   readonly readOnly: boolean;
   readonly onEnable: () => void;
 }
 
 /** Read the configured method from the instance config. Unknown values fall back to personal. */
-export function readAntigravityAuthMethod(config: unknown): AntigravityAuthMethod {
-  const value =
-    config !== null && typeof config === "object" && "authMethod" in config
-      ? config.authMethod
-      : undefined;
-  return (
-    ANTIGRAVITY_AUTH_METHODS.find((method) => method.value === value)?.value ?? "oauth-personal"
-  );
-}
 
 /** Setup state belongs to the selected environment and is never saved in client settings. */
 export function ProviderSetupSection(props: ProviderSetupSectionProps) {
@@ -112,7 +100,6 @@ function ProviderSetupActions({
   "environmentId" | "environmentLabel" | "instanceId" | "enabled" | "binaryPath"
 > & {
   readonly provider: ServerProvider;
-  readonly authMethod: AntigravityAuthMethod;
 }) {
   const { t } = useTranslation();
   const target = { environmentId, input: { instanceId } };
@@ -121,9 +108,7 @@ function ProviderSetupActions({
     usesBrowser
       ? t(`settings.providers.setup.phases.browser.${phase}`)
       : t(`settings.providers.setup.phases.credential.${phase}`);
-  const methodLabel =
-    ANTIGRAVITY_AUTH_METHODS.find((method) => method.value === authMethod)?.label ??
-    "Google account";
+  const methodLabel = "Google account";
   const authQuery = useEnvironmentQuery(serverEnvironment.providerAuthState(target));
   const installQuery = useEnvironmentQuery(serverEnvironment.providerInstallState(target));
   const auth = authQuery.data;
@@ -267,11 +252,11 @@ function ProviderSetupActions({
     const confirmed = await ensureLocalApi().dialogs.confirm(
       usesBrowser
         ? t("settings.providers.setup.signOutConfirmGoogle", {
-            provider: provider.displayName ?? "Antigravity",
+            provider: provider.displayName ?? "Provider",
             environment: environmentLabel,
           })
         : t("settings.providers.setup.signOutConfirmDisconnect", {
-            provider: provider.displayName ?? "Antigravity",
+            provider: provider.displayName ?? "Provider",
             environment: environmentLabel,
           }),
     );

@@ -458,7 +458,6 @@ import {
   resolveBackgroundDraftWorkspaceOptions,
   resolveComposerInteractionMode,
   resolveComposerProviderSelection,
-  getAntigravitySendBlockReason,
   resolveDraftHeroState,
   findRecordedWorktreeSetup,
   resolveVisibleWorktreeSetup,
@@ -7865,11 +7864,6 @@ export default function ChatView(props: ChatViewProps) {
       );
       if (!provider?.enabled || !provider.isAvailable || provider.status !== "ready") {
         setThreadError(threadIdForSend, `Provider for ${selection.model} is unavailable.`);
-        return;
-      }
-      const providerBlockReason = getAntigravitySendBlockReason(provider.snapshot, selection.model);
-      if (providerBlockReason) {
-        setThreadError(threadIdForSend, providerBlockReason);
         return;
       }
       const providerState = getComposerProviderState({

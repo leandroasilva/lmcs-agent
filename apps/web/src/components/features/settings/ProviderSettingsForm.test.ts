@@ -35,11 +35,11 @@ describe("ProviderSettingsForm helpers", () => {
     });
   });
 
-  it("derives a select control with its choices for the Antigravity sign-in method", () => {
-    const antigravity = DRIVER_OPTION_BY_VALUE[ProviderDriverKind.make("antigravity")];
-    expect(antigravity).toBeDefined();
+  it("derives a select control with its choices for the Codex sign-in method", () => {
+    const codex = DRIVER_OPTION_BY_VALUE[ProviderDriverKind.make("codex")];
+    expect(codex).toBeDefined();
 
-    const fields = deriveProviderSettingsFields(antigravity!);
+    const fields = deriveProviderSettingsFields(codex!);
     expect(fields.map((field) => field.key)).toEqual([
       "authMethod",
       "apiKey",
