@@ -1,14 +1,18 @@
-# LMCS Code
+# LMCS Agent
 
-LMCS Code is an open-source control surface for coding agents. A Node.js WebSocket server wraps the provider CLIs installed on your machine and serves web, desktop (Electron), and mobile (React Native) clients over authenticated WebSocket RPC. The server runs where your code lives; clients can connect from any machine on your network, over Tailscale, or through LMCS Connect — our zero-config tunnel solution.
+LMCS Agent is an open-source control surface for coding agents. A Node.js WebSocket server wraps the provider CLIs installed on your machine and serves web, desktop (Electron), and mobile (React Native) clients over authenticated WebSocket RPC. The server runs where your code lives; clients can connect from any machine on your network, over Tailscale, or through a self-hosted relay.
 
-Think of LMCS Code as a bring-your-own-subscription alternative to apps like Claude Desktop, Codex App, or Cursor — except it runs on your hardware, uses your provider credentials, and gives you full control.
+Think of LMCS Agent as a bring-your-own-subscription alternative to apps like Claude Desktop, Codex App, or Cursor — except it runs on your hardware, uses your provider credentials, and gives you full control.
+
+### Origin
+
+This project was forked from [LMCS Code](https://github.com/pingdotgg/t3code) (originally T3 Code) and has been heavily customized to fit the daily workflow of its maintainer. What started as a set of personal tweaks — additional provider integrations, custom automations, deployment pipelines, and quality-of-life adjustments — grew into a more complete and opinionated solution. LMCS Agent extends the original with extra providers, streamlined self-hosted deployment via Docker and HCloud, automated CI/CD for desktop and mobile builds, and various enhancements shaped by real daily use.
 
 ## Features
 
 ### Multi-provider agent orchestration
 
-Run coding agents from a single interface. LMCS Code supports **eight providers** out of the box:
+Run coding agents from a single interface. LMCS Agent supports **eight providers** out of the box:
 
 | Provider        | CLI            | Authentication                           |
 | --------------- | -------------- | ---------------------------------------- |
@@ -25,17 +29,17 @@ Each provider is isolated by instance — multiple accounts, separate credential
 
 ### Three client surfaces
 
-- **Web** — React/Vite UI served by the Node.js server. Open it from any browser on your network. Also available as the hosted app at `app.lmcs.codes`.
+- **Web** — React/Vite UI served by the Node.js server. Open it from any browser on your network. Also available at the configured hosted app URL (default: `https://lmcs-agent.cloud.hcloud.net.br`).
 - **Desktop** — Full Electron app that bundles the server runner. Available for macOS (ARM64/x64), Windows (ARM64/x64), and Linux (AppImage/x64). Supports auto-update, global keyboard shortcuts, and native SnapShot captures.
-- **Mobile** — React Native app for iOS and Android. Connect to any LMCS Code server to control work remotely. Features device panel integration, push notifications, and home screen widgets for subscription tracking.
+- **Mobile** — React Native app for iOS and Android. Connect to any LMCS Agent server to control work remotely. Features device panel integration, push notifications, and home screen widgets for subscription tracking.
 
 ### Remote-ready architecture
 
 The server is designed to run headless and be controlled remotely:
 
-- **LMCS Connect** — Zero-config tunnel through a self-hostable relay. No router forwarding needed.
+- **Direct connection** — Connect clients directly to the server over HTTP/WebSocket on port 80.
 - **LAN pairing** — Direct pairing over your local network or Tailscale.
-- **SSH** — Desktop-managed SSH connections to remote hosts. LMCS Code installs its own server runtime automatically.
+- **Docker deployment** — Self-hosted container with persistent data volume, ready for HCloud or any cloud provider.
 - **Tailscale HTTPS** — Serve over your tailnet with automatic HTTPS.
 
 ### Integrated source control
@@ -201,7 +205,7 @@ cargo test --locked --manifest-path native/kde-snap-shot/Cargo.toml
 
 ## Architecture
 
-LMCS Code keeps execution in the environment that owns the workspace. Web, desktop, and mobile clients control it over authenticated RPC. A remote client never substitutes its own filesystem, provider credentials, or machine state for the environment's.
+LMCS Agent keeps execution in the environment that owns the workspace. Web, desktop, and mobile clients control it over authenticated RPC. A remote client never substitutes its own filesystem, provider credentials, or machine state for the environment's.
 
 ### How it works
 
@@ -299,6 +303,6 @@ We are most likely to accept small, focused bug fixes, reliability improvements,
 
 MIT License — see [LICENSE](./LICENSE) for details.
 
-Copyright (c) 2026 T3 Tools Inc.
+Copyright (c) 2026 Leandro Asci da Silva
 
-LMCS Code is a fork of LMCS Code. The source remains under the MIT license with its original attribution.
+LMCS Agent is a fork of [LMCS Code](https://github.com/pingdotgg/t3code) (originally T3 Code by T3 Tools Inc.), extended and customized for personal daily use. The source remains under the MIT license with its original attribution.

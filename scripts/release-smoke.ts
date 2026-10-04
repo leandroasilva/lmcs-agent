@@ -22,7 +22,7 @@ const workspaceFiles = [
   "apps/mobile/modules/t3-terminal/package.json",
   "apps/marketing/package.json",
   "infra/relay/package.json",
-  "oxlint-plugin-t3code/package.json",
+  "oxlint-plugin-lmcscode/package.json",
   "packages/client/package.json",
   "packages/core/package.json",
   "packages/network/package.json",
