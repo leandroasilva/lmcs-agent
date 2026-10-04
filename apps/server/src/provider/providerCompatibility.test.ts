@@ -111,11 +111,11 @@ describe("provider compatibility", () => {
     );
   });
 
-  it("recognizes Antigravity semver release tags while keeping dated candidates unknown", () => {
-    const antigravity = ProviderDriverKind.make("antigravity");
+  it("recognizes Codex semver release tags while keeping dated candidates unknown", () => {
+    const codex = ProviderDriverKind.make("codex");
     const taggedPolicy = {
       ...policy,
-      driver: antigravity,
+      driver: codex,
       ranges: [{ range: "=2.0.0", status: "supported" as const }],
     };
     for (const [version, expected] of [
@@ -126,7 +126,7 @@ describe("provider compatibility", () => {
       ["agy_acp_server_20260818_01_RC01", "unknown"],
     ] as const) {
       assert.strictEqual(
-        resolveProviderCompatibility([taggedPolicy], antigravity, version)?.status,
+        resolveProviderCompatibility([taggedPolicy], codex, version)?.status,
         expected,
       );
     }
@@ -156,7 +156,7 @@ describe("provider compatibility", () => {
       "cursor",
       "grok",
       "opencode",
-      "antigravity",
+      "codex",
       "customDriver",
     ]) {
       const adapter = ProviderDriverKind.make(kind);

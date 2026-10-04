@@ -1188,7 +1188,7 @@ export function NewTaskDraftScreen(props: {
     }
     const draft = getComposerDraftSnapshot(draftKey);
     if (appAtomRegistry.get(composerContextImportsAtom)[draftKey]) return;
-    // Read the latest explicit pick. Antigravity selections stay unchanged
+    // Read the latest explicit pick. Codex selections stay unchanged
     // when setup or a catalog change makes them unavailable.
     const modelSelection =
       resolveSelectableModelSelection(
@@ -1213,8 +1213,8 @@ export function NewTaskDraftScreen(props: {
       isModelSelectionUnavailable(selectedEnvironmentServerConfig, modelSelection)
     ) {
       Alert.alert(
-        "Antigravity model unavailable",
-        "Set up Antigravity on web or desktop, or choose another model.",
+        "Codex model unavailable",
+        "Set up Codex on web or desktop, or choose another model.",
       );
       return;
     }

@@ -66,7 +66,7 @@ describe("foldSubagentActivities", () => {
     const running = activity("task.progress", {
       taskId: "batch-1",
       taskType: "subagent_batch",
-      title: "Antigravity subagent batch",
+      title: "Codex subagent batch",
       status: "running",
       summary: "Launch readers",
     });
@@ -82,7 +82,7 @@ describe("foldSubagentActivities", () => {
     ]);
     expect(agents).toHaveLength(1);
     expect(agents[0]).toMatchObject({
-      title: "Antigravity subagent batch",
+      title: "Codex subagent batch",
       kind: "subagent_batch",
       status: "idle",
       progress: "Turn ended. Individual agent status is unavailable.",

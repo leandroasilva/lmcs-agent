@@ -30,7 +30,6 @@ import {
   MenuTrigger,
 } from "../../ui/menu";
 import {
-  AntigravityIcon,
   CursorIcon,
   FileExplorerIcon,
   FinderIcon,
@@ -108,8 +107,6 @@ export const resolveOpenInOptions = (
       kind: "brand",
     },
     {
-      Icon: AntigravityIcon,
-      value: "antigravity",
       kind: "brand",
     },
     {

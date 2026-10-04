@@ -1864,7 +1864,7 @@ describe("CheckpointReactor", () => {
   effectIt.effect("rejects unsupported rewind before changing files, checkpoints, or history", () =>
     Effect.gen(function* () {
       const harness = yield* Effect.promise(() =>
-        createHarness({ providerName: ProviderDriverKind.make("antigravity") }),
+        createHarness({ providerName: ProviderDriverKind.make("codex") }),
       );
       const threadId = ThreadId.make("thread-1");
       const createdAt = "2026-01-01T00:00:00.000Z";
@@ -1875,7 +1875,7 @@ describe("CheckpointReactor", () => {
             Effect.fail(
               new ProviderValidationError({
                 operation: "ProviderService.assertConversationRollbackSupported",
-                issue: "Provider 'antigravity' does not support conversation rewind.",
+                issue: "Provider 'codex' does not support conversation rewind.",
               }),
             ),
           ),

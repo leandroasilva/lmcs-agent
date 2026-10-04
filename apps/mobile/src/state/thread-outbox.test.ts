@@ -430,19 +430,19 @@ describe("thread outbox", () => {
 
   it("normalizes queued plan mode against the queued provider, not the current thread", () => {
     const codex = { instanceId: ProviderInstanceId.make("codex"), model: "gpt-5.6-sol" };
-    const antigravity = {
+    const codex = {
       instanceId: ProviderInstanceId.make("google-personal"),
       model: "gemini-test-thinking",
       options: [{ id: "native-option", value: "keep-this-choice" }],
     };
     const providers = [
       { instanceId: codex.instanceId, showInteractionModeToggle: true },
-      { instanceId: antigravity.instanceId, showInteractionModeToggle: false },
+      { instanceId: codex.instanceId, showInteractionModeToggle: false },
     ];
     const message = {
       ...queuedMessage({ messageId: "queued-plan", createdAt: "2026-09-02T10:00:00.000Z" }),
       text: "/plan inspect the project",
-      modelSelection: antigravity,
+      modelSelection: codex,
       interactionMode: "plan",
     } satisfies QueuedThreadMessage;
 
@@ -453,7 +453,7 @@ describe("thread outbox", () => {
         providers,
       ),
     ).toEqual({
-      modelSelection: antigravity,
+      modelSelection: codex,
       runtimeMode: "approval-required",
       interactionMode: "default",
     });
@@ -461,7 +461,7 @@ describe("thread outbox", () => {
       resolveQueuedThreadSettings(
         { ...message, modelSelection: codex },
         {
-          modelSelection: antigravity,
+          modelSelection: codex,
           runtimeMode: "approval-required",
           interactionMode: "default",
         },

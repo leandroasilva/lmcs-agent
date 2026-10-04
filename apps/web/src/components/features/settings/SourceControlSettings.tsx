@@ -55,7 +55,6 @@ import {
   GitIcon,
   GitLabIcon,
   ForgejoIcon,
-  JujutsuIcon,
   type Icon,
 } from "../../shared/Icons";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
@@ -86,7 +85,6 @@ const SOURCE_CONTROL_PROVIDER_ICONS: Partial<Record<SourceControlProviderKind, I
 
 const VCS_ICONS: Partial<Record<VcsDriverKind, Icon>> = {
   git: GitIcon,
-  jj: JujutsuIcon,
 };
 
 const SOURCE_CONTROL_SKELETON_ROWS = ["primary", "secondary"] as const;

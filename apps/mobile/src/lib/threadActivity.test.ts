@@ -3351,29 +3351,29 @@ describe("quiet timeline: nested agents", () => {
   });
 
   it.each(["cancelled", "failed", "interrupted", "idle"] as const)(
-    "replaces Antigravity batch progress with %s",
+    "replaces Codex batch progress with %s",
     (status) => {
       const detail =
         status === "idle"
           ? "Turn ended. Individual agent status is unavailable."
-          : "Antigravity process stopped.";
+          : "Codex process stopped.";
       const thread = makeThread({
-        id: ThreadId.make("antigravity-agents"),
+        id: ThreadId.make("codex-agents"),
         projectId: ProjectId.make("project-1"),
-        title: "Antigravity subagents",
+        title: "Codex subagents",
         activities: [
           ...["trajectory:4", "trajectory:5"].map((taskId, index) =>
             makeActivity({
               id: EventId.make(`progress-${index}`),
               kind: "task.progress",
-              summary: "Antigravity subagent batch",
+              summary: "Codex subagent batch",
               createdAt: `2026-04-01T00:00:0${index + 1}.000Z`,
               payload: {
                 taskId,
                 taskType: "subagent_batch",
                 agentKind: "agent",
-                title: "Antigravity subagent batch",
-                detail: "Antigravity subagent batch",
+                title: "Codex subagent batch",
+                detail: "Codex subagent batch",
                 status: "running",
               },
             }),
@@ -3387,7 +3387,7 @@ describe("quiet timeline: nested agents", () => {
               taskId: "trajectory:4",
               taskType: "subagent_batch",
               agentKind: "agent",
-              title: "Antigravity subagent batch",
+              title: "Codex subagent batch",
               status,
               ...(status === "idle" ? { detail, timelineBypass: true } : { error: detail }),
             },
@@ -3404,7 +3404,7 @@ describe("quiet timeline: nested agents", () => {
         summary: `Ran 1 subagent · ${status === "failed" ? "1 failed" : "1 stopped"}`,
         workEntry: {
           taskId: "trajectory:4",
-          toolTitle: "Antigravity subagent batch",
+          toolTitle: "Codex subagent batch",
           agentSpawn: { agents: [{ detail }] },
         },
       });

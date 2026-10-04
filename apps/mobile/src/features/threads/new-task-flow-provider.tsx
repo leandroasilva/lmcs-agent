@@ -478,7 +478,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
     : projectSettings.settings.defaultRuntimeMode;
   const runtimeMode = selectedProjectDraft.runtimeMode ?? defaultRuntimeMode;
 
-  // Antigravity keeps unavailable selections so sign-out or a catalog change
+  // Codex keeps unavailable selections so sign-out or a catalog change
   // cannot switch the user's model. Other providers retain their fallback
   // rules. Implicit defaults also exclude legacy models for those providers.
   const draftModelSelection = resolveSelectableModelSelection(
@@ -970,7 +970,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
       const draft = getComposerDraftSnapshot(selectedProjectDraftKey);
       const text = draft.text.trim();
       // Use the displayed selection rules without substituting an unavailable
-      // Antigravity model while the task is queued.
+      // Codex model while the task is queued.
       const draftModelSelection =
         resolveSelectableModelSelection(
           selectedEnvironmentServerConfig,

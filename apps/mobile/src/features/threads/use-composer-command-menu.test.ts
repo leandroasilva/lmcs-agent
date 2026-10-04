@@ -24,10 +24,10 @@ import {
 } from "./use-composer-command-menu";
 
 describe("mobile slash commands", () => {
-  const antigravity = {
-    driver: ProviderDriverKind.make("antigravity"),
+  const codex = {
+    driver: ProviderDriverKind.make("codex"),
     showInteractionModeToggle: false,
-    slashCommands: [{ name: "plan", description: "Plan with Antigravity" }],
+    slashCommands: [{ name: "plan", description: "Plan with Codex" }],
   };
 
   it.each([false, true])(
@@ -38,7 +38,7 @@ describe("mobile slash commands", () => {
         atMessageStart: true,
         hasThread: true,
         allowInteractionMode,
-        selectedProviderStatus: antigravity,
+        selectedProviderStatus: codex,
       });
 
       expect(items).toHaveLength(1);
@@ -63,7 +63,7 @@ describe("mobile slash commands", () => {
         atMessageStart: false,
         hasThread: false,
         allowInteractionMode: true,
-        selectedProviderStatus: antigravity,
+        selectedProviderStatus: codex,
       }),
     ).toEqual([]);
   });

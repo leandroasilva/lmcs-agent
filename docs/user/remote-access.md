@@ -146,9 +146,6 @@ If SSH reconnecting fails after an app update, retry the launch once. Removing
 the connection stops a server that LMCS Code launched; a server that was already
 running is left alone.
 
-For Antigravity's Google callback on a remote host, see
-[remote sign-in](./providers-antigravity.md#sign-in-from-a-remote-device).
-
 ## Manage or revoke access
 
 On the host, **Settings → Connections** lets authorized administrators create

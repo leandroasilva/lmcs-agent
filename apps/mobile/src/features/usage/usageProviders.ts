@@ -11,7 +11,7 @@ export const PROVIDER_ORDER: readonly UsageProviderKind[] = [
   "grok",
   "cursor",
   "opencode",
-  "antigravity",
+  "codex",
 ];
 
 export const PROVIDER_LABEL: Record<UsageProviderKind, string> = {
@@ -20,7 +20,7 @@ export const PROVIDER_LABEL: Record<UsageProviderKind, string> = {
   grok: "Grok Build",
   cursor: "Cursor",
   opencode: "OpenCode",
-  antigravity: "Antigravity",
+  codex: "Codex",
 };
 
 /**
@@ -35,6 +35,6 @@ export function useProviderColors(): Record<UsageProviderKind, string> {
     grok: scheme === "dark" ? "#a1a1aa" : "#52525b",
     cursor: "#8b8b8b",
     opencode: "#5b9bbd",
-    antigravity: "#8c7bd1",
+    codex: "#8c7bd1",
   };
 }

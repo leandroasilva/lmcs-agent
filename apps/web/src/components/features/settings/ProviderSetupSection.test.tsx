@@ -81,10 +81,10 @@ vi.mock("../../../localApi", () => ({
 import { ProviderSetupSection } from "./ProviderSetupSection";
 
 const environmentId = EnvironmentId.make("remote-google");
-const instanceId = ProviderInstanceId.make("antigravity_work");
+const instanceId = ProviderInstanceId.make("codex_work");
 const provider: ServerProvider = {
   instanceId,
-  driver: ProviderDriverKind.make("antigravity"),
+  driver: ProviderDriverKind.make("codex"),
   installed: true,
   enabled: true,
   version: "test-version",
@@ -198,13 +198,13 @@ async function flushPromises() {
   await Promise.resolve();
 }
 
-describe("Antigravity setup", () => {
+describe("Codex setup", () => {
   beforeEach(() => {
     hooks.reset();
     vi.clearAllMocks();
     setup.auth = authState();
     setup.installation = {
-      driver: ProviderDriverKind.make("antigravity"),
+      driver: ProviderDriverKind.make("codex"),
       operationId: null,
       phase: "idle",
       downloadedBytes: 0,
@@ -413,7 +413,7 @@ describe("Antigravity setup", () => {
     };
     const view = renderSetup({
       provider: { ...provider, installed: false },
-      binaryPath: "/missing/antigravity",
+      binaryPath: "/missing/codex",
     });
     expect(button(view, "Sign in with Google")?.props.disabled).toBe(true);
     expect(setup.startAuth).not.toHaveBeenCalled();

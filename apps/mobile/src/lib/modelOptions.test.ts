@@ -197,7 +197,7 @@ describe("mobile model options", () => {
     expect(resolveSelectableModelSelection(null, disabled)).toBe(disabled);
   });
 
-  describe("Antigravity selections", () => {
+  describe("Codex selections", () => {
     const selection = {
       instanceId: ProviderInstanceId.make("google_work"),
       model: "gemini-3.1-pro-high",
@@ -226,7 +226,7 @@ describe("mobile model options", () => {
       providers: [
         {
           instanceId: selection.instanceId,
-          driver: "antigravity",
+          driver: "codex",
           displayName: "Google Work",
           enabled: true,
           installed: true,
@@ -258,7 +258,7 @@ describe("mobile model options", () => {
         subtitle: "Google",
         providerKey: "google_work",
         providerLabel: "Google Work",
-        providerDriver: "antigravity",
+        providerDriver: "codex",
         isDefault: false,
         isLegacy: true,
         isUnavailable: true,
@@ -283,7 +283,7 @@ describe("mobile model options", () => {
       expect(missing).toMatchObject({
         label: selection.model,
         providerLabel: "Google Work",
-        providerDriver: "antigravity",
+        providerDriver: "codex",
         isUnavailable: true,
         capabilities: null,
       });
@@ -310,7 +310,7 @@ describe("mobile model options", () => {
         providers: [],
         settings: {
           providerInstances: {
-            [selection.instanceId]: { driver: "antigravity", displayName: "Google Work" },
+            [selection.instanceId]: { driver: "codex", displayName: "Google Work" },
           },
         },
       } as unknown as ServerConfig;
@@ -319,7 +319,7 @@ describe("mobile model options", () => {
       expect(isModelSelectionUnavailable(missingStatusConfig, selection)).toBe(true);
       expect(buildModelOptions(missingStatusConfig, selection)).toMatchObject([
         {
-          providerDriver: "antigravity",
+          providerDriver: "codex",
           providerLabel: "Google Work",
           isUnavailable: true,
           selection,
@@ -327,7 +327,7 @@ describe("mobile model options", () => {
       ]);
     });
 
-    it("keeps offline selections without assuming that an unknown instance is Antigravity", () => {
+    it("keeps offline selections without assuming that an unknown instance is Codex", () => {
       const unknownConfig = { ...config, providers: [] };
 
       expect(resolveDefaultableModelSelection(null, selection)).toBe(selection);

@@ -12,7 +12,7 @@ FROM node:24-bookworm-slim AS build
 
 # node-pty has no Linux prebuild and compiles from source.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ \
+    && apt-get install -y --no-install-recommends python3 make g++ git \
     && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@11.10.0 --activate
 

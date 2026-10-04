@@ -376,8 +376,8 @@ describe("ProviderCommandReactor", () => {
             ? "claudeAgent"
             : raw.startsWith("codex")
               ? "codex"
-              : raw.startsWith("antigravity")
-                ? "antigravity"
+              : raw.startsWith("codex")
+                ? "codex"
                 : raw,
         );
         return Effect.succeed({
@@ -639,7 +639,7 @@ describe("ProviderCommandReactor", () => {
     "handles sign-out for a %s thread before worktree repair, text helpers, or startup",
     (sessionStatus) =>
       Effect.gen(function* () {
-        const instanceId = ProviderInstanceId.make("antigravity-personal");
+        const instanceId = ProviderInstanceId.make("codex-personal");
         const handled = yield* Deferred.make<void>();
         const harness = yield* Effect.promise(() =>
           createHarness({
@@ -662,7 +662,7 @@ describe("ProviderCommandReactor", () => {
             session: {
               threadId,
               providerInstanceId: instanceId,
-              providerName: "antigravity",
+              providerName: "codex",
               status: sessionStatus,
               runtimeMode: "approval-required",
               activeTurnId: null,
@@ -693,7 +693,7 @@ describe("ProviderCommandReactor", () => {
           },
           modelSelection: {
             instanceId:
-              sessionStatus === "new" ? instanceId : ProviderInstanceId.make("antigravity-other"),
+              sessionStatus === "new" ? instanceId : ProviderInstanceId.make("codex-other"),
             model: "gemini-3.1-pro",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -708,7 +708,7 @@ describe("ProviderCommandReactor", () => {
         );
         expect(thread?.session).toMatchObject({
           status: "stopped",
-          providerName: "antigravity",
+          providerName: "codex",
           providerInstanceId: instanceId,
           activeTurnId: null,
           lastError: null,
@@ -734,7 +734,7 @@ describe("ProviderCommandReactor", () => {
 
   effectIt.effect("clears a failed sign-out request without sending it as a prompt", () =>
     Effect.gen(function* () {
-      const instanceId = ProviderInstanceId.make("antigravity-personal");
+      const instanceId = ProviderInstanceId.make("codex-personal");
       const handled = yield* Deferred.make<void>();
       const harness = yield* Effect.promise(() =>
         createHarness({
