@@ -5,7 +5,7 @@ import * as NodeOS from "node:os";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NetService from "@lmcstools/core/Net";
-import { resolveGitWorktreePath, resolveWorktreeT3Home } from "@lmcstools/core/devHome";
+import { resolveGitWorktreePath, resolveWorktreeLmcsHome } from "@lmcstools/core/devHome";
 import { HostProcessEnvironment, HostProcessWorkingDirectory } from "@lmcstools/core/hostProcess";
 import { resolveSpawnCommand } from "@lmcstools/core/shell";
 import * as Config from "effect/Config";
@@ -67,8 +67,8 @@ export function isProxiableBindHost(host: string): boolean {
   );
 }
 
-export const DEFAULT_T3_HOME = Effect.map(Effect.service(Path.Path), (path) =>
-  path.join(NodeOS.homedir(), ".t3"),
+export const DEFAULT_LMCS_HOME = Effect.map(Effect.service(Path.Path), (path) =>
+  path.join(NodeOS.homedir(), ".lmcs"),
 );
 
 const MODE_ARGS = {
@@ -275,7 +275,7 @@ function resolveBaseDir(baseDir: string | undefined): Effect.Effect<string, neve
       return path.resolve(configured);
     }
 
-    return yield* DEFAULT_T3_HOME;
+    return yield* DEFAULT_LMCS_HOME;
   });
 }
 
@@ -284,7 +284,7 @@ interface CreateDevRunnerEnvInput {
   readonly baseEnv: NodeJS.ProcessEnv;
   readonly serverOffset: number;
   readonly webOffset: number;
-  readonly t3Home: string | undefined;
+  readonly lmcsHome: string | undefined;
   readonly browser: boolean | undefined;
   readonly autoBootstrapProjectFromCwd: boolean | undefined;
   readonly logWebSocketEvents: boolean | undefined;
@@ -298,7 +298,7 @@ export function createDevRunnerEnv({
   baseEnv,
   serverOffset,
   webOffset,
-  t3Home,
+  lmcsHome,
   browser,
   autoBootstrapProjectFromCwd,
   logWebSocketEvents,
@@ -309,9 +309,9 @@ export function createDevRunnerEnv({
   return Effect.gen(function* () {
     const serverPort = port ?? BASE_SERVER_PORT + serverOffset;
     const webPort = BASE_WEB_PORT + webOffset;
-    // Precedence (--home-dir > worktree .t3 > ambient LMCS_HOME) is resolved
-    // by the caller; an unset t3Home here genuinely means "use the default".
-    const configuredBaseDir = t3Home?.trim() || undefined;
+    // Precedence (--home-dir > worktree .lmcs > ambient LMCS_HOME) is resolved
+    // by the caller; an unset lmcsHome here genuinely means "use the default".
+    const configuredBaseDir = lmcsHome?.trim() || undefined;
     const resolvedBaseDir = yield* resolveBaseDir(configuredBaseDir);
     const isDesktopMode = mode === "dev:desktop";
 
@@ -334,8 +334,8 @@ export function createDevRunnerEnv({
     // agent working inside LMCS Code), these leak through and the child server
     // fails startup with "The service launcher started a different t3 version"
     // (serviceLauncherClient.ts resolveStartup).
-    delete output.T3_SERVICE_LAUNCHER_CONTEXT;
-    delete output.T3_BOOT_SERVICE_UNIT;
+    delete output.LMCS_SERVICE_LAUNCHER_CONTEXT;
+    delete output.LMCS_BOOT_SERVICE_UNIT;
 
     if (!isDesktopMode) {
       output.LMCS_PORT = String(serverPort);
@@ -608,7 +608,7 @@ export function resolveModePortOffsets<R = NetService.NetService>({
 
 interface DevRunnerCliInput {
   readonly mode: DevMode;
-  readonly t3Home: string | undefined;
+  readonly lmcsHome: string | undefined;
   readonly browser: boolean | undefined;
   readonly autoBootstrapProjectFromCwd: boolean | undefined;
   readonly logWebSocketEvents: boolean | undefined;
@@ -665,14 +665,14 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
 
     const hostEnvironment = yield* HostProcessEnvironment;
     // A dev server started inside a worktree defaults to that worktree's own
-    // (gitignored) `.t3` — see @lmcstools/core/devHome for why this must
+    // (gitignored) `.lmcs` — see @lmcstools/core/devHome for why this must
     // outrank an ambient LMCS_HOME. `--home-dir` still wins.
-    const worktreeHome = yield* resolveWorktreeT3Home(yield* HostProcessWorkingDirectory);
+    const worktreeHome = yield* resolveWorktreeLmcsHome(yield* HostProcessWorkingDirectory);
     // Trim before choosing: `--home-dir ""` is not a selection, and treating it
     // as one would skip the worktree default and land on the shared home —
     // exactly the outcome this precedence exists to prevent.
-    const resolvedT3Home =
-      (input.t3Home?.trim() || undefined) ??
+    const resolvedLmcsHome =
+      (input.lmcsHome?.trim() || undefined) ??
       worktreeHome ??
       (hostEnvironment.LMCS_HOME?.trim() || undefined);
     const env = yield* createDevRunnerEnv({
@@ -680,7 +680,7 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
       baseEnv: hostEnvironment,
       serverOffset,
       webOffset,
-      t3Home: resolvedT3Home,
+      lmcsHome: resolvedLmcsHome,
       browser: input.browser,
       autoBootstrapProjectFromCwd: input.autoBootstrapProjectFromCwd,
       logWebSocketEvents: input.logWebSocketEvents,
@@ -693,7 +693,7 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
       serverOffset !== offset || webOffset !== offset
         ? ` selectedOffset(server=${serverOffset},web=${webOffset})`
         : "";
-    const baseDir = env.LMCS_HOME ?? (yield* DEFAULT_T3_HOME);
+    const baseDir = env.LMCS_HOME ?? (yield* DEFAULT_LMCS_HOME);
 
     yield* Effect.logInfo(
       `[dev-runner] mode=${input.mode} source=${source}${selectionSuffix} serverPort=${String(env.LMCS_PORT)} webPort=${String(env.PORT)} baseDir=${baseDir}`,
@@ -845,9 +845,9 @@ const devRunnerCli = Command.make("dev-runner", {
   mode: Argument.Literals("mode", DEV_RUNNER_MODES).pipe(
     Argument.withDescription("Development mode to run."),
   ),
-  t3Home: Flag.String("home-dir").pipe(
+  lmcsHome: Flag.String("home-dir").pipe(
     Flag.withDescription(
-      "Explicit LMCS Code data directory; runtime state is stored under userdata (equivalent to LMCS_HOME). Inside a git worktree this defaults to that worktree's own .t3 so dev state stays off the shared home.",
+      "Explicit LMCS Code data directory; runtime state is stored under userdata (equivalent to LMCS_HOME). Inside a git worktree this defaults to that worktree's own .lmcs so dev state stays off the shared home.",
     ),
     Flag.optional,
     Flag.map(Option.getOrUndefined),

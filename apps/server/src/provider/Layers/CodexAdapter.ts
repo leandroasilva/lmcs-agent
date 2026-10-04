@@ -2299,13 +2299,13 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
                     options?.environment ?? process.env,
                     mcpSession,
                   ),
-                  T3_MCP_BEARER_TOKEN: mcpSession.authorizationHeader.replace(/^Bearer\s+/, ""),
+                  LMCS_MCP_BEARER_TOKEN: mcpSession.authorizationHeader.replace(/^Bearer\s+/, ""),
                 },
                 appServerArgs: [
                   "-c",
                   `mcp_servers.lmcs-code.url=${mcpSession.endpoint}`,
                   "-c",
-                  'mcp_servers.lmcs-code.bearer_token_env_var="T3_MCP_BEARER_TOKEN"',
+                  'mcp_servers.lmcs-code.bearer_token_env_var="LMCS_MCP_BEARER_TOKEN"',
                 ],
                 mcpCapabilities: mcpSession.capabilities,
               }

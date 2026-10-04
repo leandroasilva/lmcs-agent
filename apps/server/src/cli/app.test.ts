@@ -130,11 +130,11 @@ const withTempDirectory = <A, E, R>(
     (root) => Effect.promise(() => NodeFSP.rm(root, { recursive: true, force: true })),
   );
 
-describe("t3 app", () => {
+describe("lmcs app", () => {
   it.effect("rejects SSH before it tries to reach a desktop app", () =>
-    withTempDirectory("t3-app-ssh-test-", (root) =>
+    withTempDirectory("lmcs-app-ssh-test-", (root) =>
       Effect.gen(function* () {
-        const baseDir = NodePath.join(root, "missing-t3-home");
+        const baseDir = NodePath.join(root, "missing-lmcs-home");
         const error = yield* runCli(["app", "--base-dir", baseDir], {
           SSH_CONNECTION: "client server",
         }).pipe(Effect.flip);
@@ -142,7 +142,7 @@ describe("t3 app", () => {
         expect(error).toMatchObject({
           _tag: "DesktopAppSshUnsupportedError",
           message:
-            "`t3 app` only controls a desktop app on the same machine. It cannot run over SSH.",
+            "`lmcs app` only controls a desktop app on the same machine. It cannot run over SSH.",
         });
         expect(yield* pathExists(baseDir)).toBe(false);
       }),
@@ -150,9 +150,9 @@ describe("t3 app", () => {
   );
 
   it.effect("rejects unsupported platforms without creating state", () =>
-    withTempDirectory("t3-app-platform-test-", (root) =>
+    withTempDirectory("lmcs-app-platform-test-", (root) =>
       Effect.gen(function* () {
-        const baseDir = NodePath.join(root, "missing-t3-home");
+        const baseDir = NodePath.join(root, "missing-lmcs-home");
         const error = yield* runCli(["app", "--base-dir", baseDir]).pipe(
           Effect.provideService(HostProcessPlatform, "freebsd"),
           Effect.flip,
@@ -161,7 +161,7 @@ describe("t3 app", () => {
         expect(error).toMatchObject({
           _tag: "DesktopAppPlatformUnsupportedError",
           platform: "freebsd",
-          message: "`t3 app` is not supported on freebsd.",
+          message: "`lmcs app` is not supported on freebsd.",
         });
         expect(yield* pathExists(baseDir)).toBe(false);
       }),
@@ -169,9 +169,9 @@ describe("t3 app", () => {
   );
 
   it.effect("does not create state when only a server or no desktop app is running", () =>
-    withTempDirectory("t3-app-missing-test-", (root) =>
+    withTempDirectory("lmcs-app-missing-test-", (root) =>
       Effect.gen(function* () {
-        const baseDir = NodePath.join(root, "missing-t3-home");
+        const baseDir = NodePath.join(root, "missing-lmcs-home");
         const error = yield* runCli(["app", "--base-dir", baseDir]).pipe(Effect.flip);
 
         expect(error).toMatchObject({
@@ -187,9 +187,9 @@ describe("t3 app", () => {
   );
 
   it.effect("uses LMCS_HOME or --base-dir and sends the default or explicit path", () =>
-    withTempDirectory("t3-app-command-test-", (root) =>
+    withTempDirectory("lmcs-app-command-test-", (root) =>
       Effect.gen(function* () {
-        const baseDir = NodePath.join(root, "t3-home");
+        const baseDir = NodePath.join(root, "lmcs-home");
         const explicitPath = NodePath.join(root, "project");
         const platform = yield* HostProcessPlatform;
         const workingDirectory = yield* HostProcessWorkingDirectory;
@@ -208,10 +208,10 @@ describe("t3 app", () => {
   );
 
   it.effect("prefers the installed desktop app when a dev desktop is also running", () =>
-    withTempDirectory("t3-app-preferred-test-", (root) =>
+    withTempDirectory("lmcs-app-preferred-test-", (root) =>
       Effect.gen(function* () {
         vi.mocked(NodeOS.homedir).mockReturnValue(root);
-        const baseDir = NodePath.join(root, ".t3");
+        const baseDir = NodePath.join(root, ".lmcs");
         const desktop = yield* fakeDesktop({ baseDir });
         const development = yield* fakeDesktop({ baseDir, stateSubdirectory: "dev" });
 
@@ -224,10 +224,10 @@ describe("t3 app", () => {
   );
 
   it.effect("finds the dev desktop when the default desktop socket is absent", () =>
-    withTempDirectory("t3-app-dev-test-", (root) =>
+    withTempDirectory("lmcs-app-dev-test-", (root) =>
       Effect.gen(function* () {
         vi.mocked(NodeOS.homedir).mockReturnValue(root);
-        const baseDir = NodePath.join(root, ".t3");
+        const baseDir = NodePath.join(root, ".lmcs");
         const development = yield* fakeDesktop({ baseDir, stateSubdirectory: "dev" });
 
         yield* runCli(["app"]);
@@ -240,10 +240,10 @@ describe("t3 app", () => {
   );
 
   it.effect("never searches a dev state directory for an explicit LMCS home", () =>
-    withTempDirectory("t3-app-explicit-test-", (root) =>
+    withTempDirectory("lmcs-app-explicit-test-", (root) =>
       Effect.gen(function* () {
         vi.mocked(NodeOS.homedir).mockReturnValue(root);
-        const baseDir = NodePath.join(root, ".t3");
+        const baseDir = NodePath.join(root, ".lmcs");
         const development = yield* fakeDesktop({ baseDir, stateSubdirectory: "dev" });
 
         const flagError = yield* runCli(["app", "--base-dir", baseDir]).pipe(Effect.flip);
@@ -258,10 +258,10 @@ describe("t3 app", () => {
 
   for (const responseKind of ["failure", "invalid"] as const) {
     it.effect(`never falls back after the default desktop sends a ${responseKind} response`, () =>
-      withTempDirectory("t3-app-response-test-", (root) =>
+      withTempDirectory("lmcs-app-response-test-", (root) =>
         Effect.gen(function* () {
           vi.mocked(NodeOS.homedir).mockReturnValue(root);
-          const baseDir = NodePath.join(root, ".t3");
+          const baseDir = NodePath.join(root, ".lmcs");
           const desktop = yield* fakeDesktop({
             baseDir,
             reply: (request) =>

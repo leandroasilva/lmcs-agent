@@ -2,7 +2,7 @@ import type { ProviderInteractionMode } from "@lmcstools/core";
 import type { V2TurnStartParams__AdditionalContextEntry } from "@lmcstools/providers/codex/schema";
 import { buildRuntimeInstructions } from "./RuntimeInstructions.ts";
 
-const T3_CODE_BROWSER_TOOL_INSTRUCTIONS = `## LMCS Code collaborative browser
+const LMCS_CODE_BROWSER_TOOL_INSTRUCTIONS = `## LMCS Code collaborative browser
 
 You are running inside LMCS Code. The \`lmcs-code\` MCP server is the product-native collaborative browser shared with the user. When it exposes \`preview_*\` tools, prefer those tools for browser navigation, inspection, interaction, screenshots, and recordings.
 
@@ -10,7 +10,7 @@ For browser work, first call \`preview_status\`. If no automation-capable previe
 
 Do not switch to global browser skills, Chrome, Node REPL browser automation, standalone Playwright, or agent-browser merely because the preview is initially closed or a first call fails. Use an alternative browser system only when the LMCS preview tools are absent, the user explicitly requests another browser, or \`preview_open\` returns an explicit unsupported/unavailable error. A failed LMCS preview tool call should be inspected and retried with corrected arguments when the error is actionable.`;
 
-const T3_CODE_DEVICE_TOOL_INSTRUCTIONS = `## LMCS Code devices
+const LMCS_CODE_DEVICE_TOOL_INSTRUCTIONS = `## LMCS Code devices
 
 The \`lmcs-code\` MCP server also exposes \`device_*\` tools for iOS Simulators and Android Emulators on this environment. For mobile verification, call \`device_list\`, then \`device_open\` so the user can watch the device in their Device panel; its result explains how to drive the device. Driving happens through the \`agent-device\` CLI, which is on PATH. Keep the host config and session flags returned by \`device_open\` on every command so concurrent devices stay independent: prefer \`agent-device snapshot -i\` refs over coordinates, and use \`device_screenshot\` when you need to see the screen. Do not call simctl, adb, xcrun, or serve-sim directly while these tools are present. If \`device_list\` reports a platform as unavailable, say so instead of trying another route.`;
 
@@ -34,8 +34,8 @@ const normalizeAvailability = (
 const toolInstructions = (availability: boolean | T3CodeToolAvailability): string => {
   const tools = normalizeAvailability(availability);
   return [
-    tools.browser ? T3_CODE_BROWSER_TOOL_INSTRUCTIONS : "",
-    tools.device ? T3_CODE_DEVICE_TOOL_INSTRUCTIONS : "",
+    tools.browser ? LMCS_CODE_BROWSER_TOOL_INSTRUCTIONS : "",
+    tools.device ? LMCS_CODE_DEVICE_TOOL_INSTRUCTIONS : "",
   ]
     .filter(Boolean)
     .join("\n\n");

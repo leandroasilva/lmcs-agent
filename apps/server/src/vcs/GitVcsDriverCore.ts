@@ -20,7 +20,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import {
   GitCommandError,
-  T3_PROJECT_FILE_NAME,
+  LMCS_PROJECT_FILE_NAME,
   type ReviewDiffFileContentsInput,
   type ReviewDiffPreviewInput,
   type ReviewDiffFileStat,
@@ -3154,20 +3154,22 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
           options?.submodules ?? null,
           options?.submodules != null
             ? null
-            : yield* fileSystem.readFileString(path.join(worktreePath, T3_PROJECT_FILE_NAME)).pipe(
-                Effect.flatMap((contents) => {
-                  const file = parseT3ProjectFile(contents);
-                  return file === null
-                    ? Effect.logWarning(
-                        "lmcs.json is invalid; initializing submodules recursively",
-                        {
-                          worktreePath,
-                        },
-                      ).pipe(Effect.as(null))
-                    : Effect.succeed(file);
-                }),
-                Effect.orElseSucceed(() => null),
-              ),
+            : yield* fileSystem
+                .readFileString(path.join(worktreePath, LMCS_PROJECT_FILE_NAME))
+                .pipe(
+                  Effect.flatMap((contents) => {
+                    const file = parseT3ProjectFile(contents);
+                    return file === null
+                      ? Effect.logWarning(
+                          "lmcs.json is invalid; initializing submodules recursively",
+                          {
+                            worktreePath,
+                          },
+                        ).pipe(Effect.as(null))
+                      : Effect.succeed(file);
+                  }),
+                  Effect.orElseSucceed(() => null),
+                ),
         );
     if (hasSubmodules && submoduleMode.value === "none" && progress?.onSubmodulesDisabled) {
       yield* progress.onSubmodulesDisabled({

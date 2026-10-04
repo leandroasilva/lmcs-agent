@@ -489,9 +489,9 @@ const makeBrowserOtlpPayload = (spanName: string) =>
         url: collector.url,
         exportInterval: "10 millis",
         resource: {
-          serviceName: "t3-web",
+          serviceName: "lmcs-web",
           attributes: {
-            "service.runtime": "t3-web",
+            "service.runtime": "lmcs-web",
             "service.mode": "browser",
             "service.version": "test",
           },
@@ -571,7 +571,7 @@ const buildAppUnderTest = (options?: {
 }) =>
   Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
-    const tempBaseDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-test-" });
+    const tempBaseDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-router-test-" });
     const baseDir = options?.config?.baseDir ?? tempBaseDir;
     const devUrl = options?.config?.devUrl;
     const derivedPaths = yield* ServerConfig.deriveServerPaths(baseDir, devUrl);
@@ -588,7 +588,7 @@ const buildAppUnderTest = (options?: {
       otlpTracesExport: DEFAULT_SIGNAL_EXPORT,
       otlpMetricsExport: DEFAULT_SIGNAL_EXPORT,
       otlpLogsExport: DEFAULT_SIGNAL_EXPORT,
-      otlpServiceName: "t3-server",
+      otlpServiceName: "lmcs-server",
       otelEnvironment: OtelEnvironment.none,
       mode: "desktop",
       port: 0,
@@ -1471,7 +1471,7 @@ const makeCloudMintCredentialRequest = (input: {
 }) => {
   const payload = {
     iss: input.issuer ?? "https://relay.example.test",
-    aud: input.audience ?? `t3-env:${input.environmentId}`,
+    aud: input.audience ?? `lmcs-env:${input.environmentId}`,
     sub: input.subject ?? "user_123",
     jti: input.jti ?? "cloud-mint-jti-1",
     environmentId: input.environmentId,
@@ -1508,7 +1508,7 @@ const makeCloudEnvironmentHealthRequest = (input: {
 }) => {
   const payload = {
     iss: input.issuer ?? "https://relay.example.test",
-    aud: input.audience ?? `t3-env:${input.environmentId}`,
+    aud: input.audience ?? `lmcs-env:${input.environmentId}`,
     sub: input.subject ?? "user_123",
     jti: input.jti ?? "cloud-health-jti-1",
     environmentId: input.environmentId,
@@ -1733,7 +1733,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-gate-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-router-gate-" });
       yield* fileSystem.writeFileString(path.join(staticDir, "index.html"), "ready");
       const entered = yield* Deferred.make<void>();
       const ready = yield* Deferred.make<void>();
@@ -1766,7 +1766,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-router-static-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-router-static-",
+      });
       const indexPath = path.join(staticDir, "index.html");
       yield* fileSystem.writeFileString(indexPath, "<html>router-static-ok</html>");
 
@@ -1782,7 +1784,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-static-cache-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-static-cache-" });
       const assetPath = path.join(staticDir, "app.js");
       yield* fileSystem.writeFileString(assetPath, 'export const build = "first";');
       yield* buildAppUnderTest({ config: { staticDir } });
@@ -1829,7 +1831,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-static-html-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-static-html-" });
       const indexPath = path.join(staticDir, "index.html");
       const modifiedAt = DateTime.toDateUtc(DateTime.makeUnsafe("1985-10-26T08:15:00.000Z"));
       yield* fileSystem.writeFileString(indexPath, "<html>old build</html>");
@@ -1869,7 +1871,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-static-hashes-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-static-hashes-",
+      });
       yield* fileSystem.makeDirectory(path.join(staticDir, "assets"));
       yield* fileSystem.makeDirectory(path.join(staticDir, ".vite"));
       yield* fileSystem.writeFileString(
@@ -1953,7 +1957,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         const fileSystem = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         const staticDir = yield* fileSystem.makeTempDirectoryScoped({
-          prefix: "t3-static-mutable-",
+          prefix: "lmcs-static-mutable-",
         });
         yield* fileSystem.makeDirectory(path.join(staticDir, "assets"));
         if (manifest.contents !== null) {
@@ -1987,7 +1991,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-static-replace-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-static-replace-",
+      });
       const beforeOpenPath = path.join(staticDir, "before-open.txt");
       const afterOpenPath = path.join(staticDir, "after-open.txt");
       const afterOpenSnapshotPath = path.join(staticDir, "after-open-snapshot.txt");
@@ -2051,7 +2057,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-static-close-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-static-close-" });
       const filePath = path.join(staticDir, "app.txt");
       const body = "file content\n".repeat(1024);
       yield* fileSystem.writeFileString(filePath, body);
@@ -2149,7 +2155,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       yield* buildAppUnderTest();
 
-      const url = yield* getHttpServerUrl("/.well-known/t3/environment");
+      const url = yield* getHttpServerUrl("/.well-known/lmcs/environment");
       const response = yield* fetchEffect(url);
       const body = yield* responseJsonEffect<typeof testEnvironmentDescriptor>(response);
 
@@ -2207,7 +2213,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         },
       });
 
-      const url = yield* getHttpServerUrl("/.well-known/t3/environment");
+      const url = yield* getHttpServerUrl("/.well-known/lmcs/environment");
       const response = yield* fetchEffect(url, {
         headers: {
           "accept-encoding": "gzip",
@@ -2226,7 +2232,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       yield* buildAppUnderTest();
 
-      const url = yield* getHttpServerUrl("/.well-known/t3/environment");
+      const url = yield* getHttpServerUrl("/.well-known/lmcs/environment");
       const response = yield* fetchEffect(url, {
         headers: {
           origin: crossOriginClientOrigin,
@@ -2511,7 +2517,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           body: new URLSearchParams({
             grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
             subject_token: credential.credential,
-            subject_token_type: "urn:t3:params:oauth:token-type:environment-bootstrap",
+            subject_token_type: "urn:lmcs:params:oauth:token-type:environment-bootstrap",
             requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
             scope: "orchestration:read orchestration:operate terminal:operate review:write",
           }).toString(),
@@ -2996,7 +3002,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       Effect.gen(function* () {
         const installedRelayClient = {
           status: "available" as const,
-          executablePath: "/tmp/t3/tools/cloudflared",
+          executablePath: "/tmp/lmcs/tools/cloudflared",
           source: "managed" as const,
           version: RelayClient.CLOUDFLARED_VERSION,
         };
@@ -3569,7 +3575,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         issuedAt: DateTime.formatIso(now),
         expiresAt: DateTime.formatIso(DateTime.add(now, { minutes: 5 })),
       });
-      const mintUrl = yield* getHttpServerUrl("/api/t3-connect/mint-credential");
+      const mintUrl = yield* getHttpServerUrl("/api/lmcs-connect/mint-credential");
       const response = yield* fetchEffect(mintUrl, {
         method: "POST",
         headers: {
@@ -3627,7 +3633,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         issuedAt: DateTime.formatIso(now),
         expiresAt: DateTime.formatIso(DateTime.add(now, { minutes: 5 })),
       });
-      const healthUrl = yield* getHttpServerUrl("/api/t3-connect/health");
+      const healthUrl = yield* getHttpServerUrl("/api/lmcs-connect/health");
       const response = yield* fetchEffect(healthUrl, {
         method: "POST",
         headers: {
@@ -3687,7 +3693,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         issuedAt: DateTime.formatIso(now),
         expiresAt: DateTime.formatIso(DateTime.add(now, { minutes: 5 })),
       });
-      const healthUrl = yield* getHttpServerUrl("/api/t3-connect/health");
+      const healthUrl = yield* getHttpServerUrl("/api/lmcs-connect/health");
       const postHealth = () =>
         fetchEffect(healthUrl, {
           method: "POST",
@@ -3741,7 +3747,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         assert.equal(relayConfigResponse.status, 200);
 
         const now = yield* DateTime.now;
-        const mintUrl = yield* getHttpServerUrl("/api/t3-connect/mint-credential");
+        const mintUrl = yield* getHttpServerUrl("/api/lmcs-connect/mint-credential");
         const postMint = (request: ReturnType<typeof makeCloudMintCredentialRequest>) =>
           fetchEffect(mintUrl, {
             method: "POST",
@@ -4047,7 +4053,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           privateKey: cloudKeyPair.privateKey,
           environmentId: testEnvironmentDescriptor.environmentId,
           clientProofKeyThumbprint: "client-proof-key-thumbprint",
-          audience: "t3-env:other-environment",
+          audience: "lmcs-env:other-environment",
           jti: "cloud-mint-jti-wrong-audience",
           nonce: "cloud-mint-nonce-wrong-audience",
           issuedAt: DateTime.formatIso(now),
@@ -4087,7 +4093,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.equal(relayConfigResponse.status, 200);
 
       const now = yield* DateTime.now;
-      const mintUrl = yield* getHttpServerUrl("/api/t3-connect/mint-credential");
+      const mintUrl = yield* getHttpServerUrl("/api/lmcs-connect/mint-credential");
       const response = yield* fetchEffect(mintUrl, {
         method: "POST",
         headers: {
@@ -4138,7 +4144,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.equal(relayConfigResponse.status, 200);
 
       const now = yield* DateTime.now;
-      const mintUrl = yield* getHttpServerUrl("/api/t3-connect/mint-credential");
+      const mintUrl = yield* getHttpServerUrl("/api/lmcs-connect/mint-credential");
       const response = yield* fetchEffect(mintUrl, {
         method: "POST",
         headers: {
@@ -4189,7 +4195,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.equal(relayConfigResponse.status, 200);
 
       const now = yield* DateTime.now;
-      const healthUrl = yield* getHttpServerUrl("/api/t3-connect/health");
+      const healthUrl = yield* getHttpServerUrl("/api/lmcs-connect/health");
       const postHealth = (request: ReturnType<typeof makeCloudEnvironmentHealthRequest>) =>
         fetchEffect(healthUrl, {
           method: "POST",
@@ -4214,7 +4220,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         makeCloudEnvironmentHealthRequest({
           privateKey: cloudKeyPair.privateKey,
           environmentId: testEnvironmentDescriptor.environmentId,
-          audience: "t3-env:other-environment",
+          audience: "lmcs-env:other-environment",
           jti: "cloud-health-jti-wrong-audience",
           nonce: "cloud-health-nonce-wrong-audience",
           issuedAt: DateTime.formatIso(now),
@@ -4254,7 +4260,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.equal(relayConfigResponse.status, 200);
 
       const now = yield* DateTime.now;
-      const healthUrl = yield* getHttpServerUrl("/api/t3-connect/health");
+      const healthUrl = yield* getHttpServerUrl("/api/lmcs-connect/health");
       const response = yield* fetchEffect(healthUrl, {
         method: "POST",
         headers: {
@@ -4304,7 +4310,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.equal(relayConfigResponse.status, 200);
 
       const now = yield* DateTime.now;
-      const healthUrl = yield* getHttpServerUrl("/api/t3-connect/health");
+      const healthUrl = yield* getHttpServerUrl("/api/lmcs-connect/health");
       const response = yield* fetchEffect(healthUrl, {
         method: "POST",
         headers: {
@@ -5283,7 +5289,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               attributes: [
                 {
                   key: "service.name",
-                  value: { stringValue: "t3-web" },
+                  value: { stringValue: "lmcs-web" },
                 },
               ],
             },
@@ -5425,7 +5431,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
             "rpc.method": "server.getSettings",
           },
           resourceAttributes: {
-            "service.name": "t3-web",
+            "service.name": "lmcs-web",
           },
           scope: {
             name: "effect",
@@ -5556,7 +5562,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       // the stub's utf8 decode even though the surrounding bytes don't.
       assert.notEqual(forwarded.body[0], "{");
       assert.include(forwarded.body, "client.protobuf.test");
-      assert.include(forwarded.body, "t3-web");
+      assert.include(forwarded.body, "lmcs-web");
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
@@ -5657,7 +5663,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         assert.deepEqual(record.links, []);
         assert.equal(record.scope.name, scopeSpan.scope.name);
         assert.deepEqual(record.scope.attributes, {});
-        assert.equal(record.resourceAttributes["service.name"], "t3-web");
+        assert.equal(record.resourceAttributes["service.name"], "lmcs-web");
         assert.equal(record.status?.code, String(span.status.code));
       }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
@@ -5758,10 +5764,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const codexHome = yield* fileSystem.makeTempDirectoryScoped({
-        prefix: "t3-agent-import-rpc-codex-",
+        prefix: "lmcs-agent-import-rpc-codex-",
       });
       const workspaceRoot = yield* fileSystem.makeTempDirectoryScoped({
-        prefix: "t3-agent-import-rpc-workspace-",
+        prefix: "lmcs-agent-import-rpc-workspace-",
       });
       const transcriptDirectory = path.join(codexHome, "sessions", "2026", "08", "31");
       const transcriptPath = path.join(transcriptDirectory, "rollout-skipped.jsonl");
@@ -5861,7 +5867,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       yield* buildAppUnderTest();
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const directory = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-host-media-" });
+      const directory = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-host-media-" });
       const wsUrl = yield* getWsServerUrl("/ws");
       const threadId = ThreadId.make("thread-on-another-environment");
 
@@ -5899,7 +5905,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const wsUrl = yield* getWsServerUrl("/ws");
-      const directory = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-draft-media-" });
+      const directory = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-draft-media-" });
       yield* fileSystem.writeFileString(path.join(directory, "note.html"), "<p>draft</p>");
 
       yield* Effect.scoped(
@@ -6152,7 +6158,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-ws-auth-required-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-auth-required-" });
       yield* fs.writeFileString(
         path.join(workspaceDir, "needle-file.ts"),
         "export const needle = 1;",
@@ -7228,7 +7234,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-ws-project-search-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-search-" });
       yield* fs.writeFileString(
         path.join(workspaceDir, "needle-file.ts"),
         "export const needle = 1;",
@@ -7257,7 +7263,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-ws-project-files-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-files-" });
       yield* fs.makeDirectory(path.join(workspaceDir, "src"), { recursive: true });
       yield* fs.writeFileString(
         path.join(workspaceDir, "src", "index.ts"),
@@ -7294,7 +7300,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const workspaceDir = yield* fs.makeTempDirectoryScoped({
-        prefix: "t3-ws-project-search-gitignored-",
+        prefix: "lmcs-ws-project-search-gitignored-",
       });
       yield* fs.writeFileString(path.join(workspaceDir, ".gitignore"), ".venv/\n");
       yield* fs.makeDirectory(path.join(workspaceDir, ".venv", "lib"), { recursive: true });
@@ -7351,10 +7357,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const workspaceDir = yield* fs.makeTempDirectoryScoped({
-        prefix: "t3-ws-workspace-errors-",
+        prefix: "lmcs-ws-workspace-errors-",
       });
       const outsideDir = yield* fs.makeTempDirectoryScoped({
-        prefix: "t3-ws-workspace-errors-outside-",
+        prefix: "lmcs-ws-workspace-errors-outside-",
       });
       const outsideFile = path.join(outsideDir, "outside.txt");
       yield* fs.writeFileString(outsideFile, "outside\n");
@@ -7464,7 +7470,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const blockedRoot = yield* fs.makeTempDirectoryScoped({
-        prefix: "t3-ws-workspace-stat-error-",
+        prefix: "lmcs-ws-workspace-stat-error-",
       });
       const workspaceRoot = path.join(blockedRoot, "workspace");
       yield* fs.makeDirectory(workspaceRoot);
@@ -7494,7 +7500,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-ws-project-write-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-write-" });
 
       yield* buildAppUnderTest();
 
@@ -7519,7 +7525,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const parentDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-ws-project-create-" });
+      const parentDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-create-" });
       const missingWorkspaceRoot = path.join(parentDir, "nested", "new-project");
 
       yield* buildAppUnderTest();
@@ -7553,7 +7559,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const parentDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-ws-project-clone-" });
+      const parentDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-clone-" });
       const destinationPath = path.join(parentDir, "t3code");
       const projectId = ProjectId.make("project-clone-1");
       const dispatched: Array<string> = [];
@@ -7876,7 +7882,7 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
   it.effect("routes websocket rpc projects.writeFile errors", () =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-ws-project-write-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-write-" });
 
       yield* buildAppUnderTest();
 

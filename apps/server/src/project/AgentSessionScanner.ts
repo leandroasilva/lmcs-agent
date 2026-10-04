@@ -194,7 +194,7 @@ export class AgentSessionScanner extends Context.Service<
       completedSources?: ReadonlyArray<AgentSessionImportSource>,
     ) => Stream.Stream<AgentSessionRecentThread, AgentSessionScanError>;
   }
->()("t3/project/AgentSessionScanner") {}
+>()("lmcs/project/AgentSessionScanner") {}
 
 type AgentSessionSource = AgentSessionProjectCandidate["sources"][number];
 
@@ -539,7 +539,7 @@ function shouldRetainDecodedRecord(
  * LMCS Code runs its own agent sessions inside disposable worktrees. Their
  * transcripts look exactly like user sessions, but re-importing the app's own
  * sandboxes as projects is never right. Matches this server's configured
- * worktrees directory plus the conventional `.t3/worktrees` layout, which
+ * worktrees directory plus the conventional `.lmcs/worktrees` layout, which
  * also catches sandboxes from other LMCS homes on the same machine. Separators
  * are normalized (and, on Windows, case folded) so the prefix match holds
  * there too. Callers check both the recorded spelling and its realpath so a
@@ -558,7 +558,7 @@ function isT3ManagedWorktree(
   const normalized = normalizeForWorktreeMatch(candidatePath, caseFold);
   return (
     normalized.startsWith(normalizeForWorktreeMatch(worktreesDir, caseFold)) ||
-    normalized.includes("/.t3/worktrees/")
+    normalized.includes("/.lmcs/worktrees/")
   );
 }
 

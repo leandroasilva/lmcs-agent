@@ -42,7 +42,7 @@ const configLayer = (overrides: Partial<ServerConfig.ServerConfig["Service"]>) =
     ServerConfig.ServerConfig,
     Effect.gen(function* () {
       const path = yield* Path.Path;
-      const baseDir = path.join(NodeOS.tmpdir(), "t3-server-logger-test");
+      const baseDir = path.join(NodeOS.tmpdir(), "lmcs-server-logger-test");
       const derivedPaths = yield* ServerConfig.deriveServerPaths(baseDir, undefined);
       return ServerConfig.make({
         logLevel: "Info",
@@ -57,7 +57,7 @@ const configLayer = (overrides: Partial<ServerConfig.ServerConfig["Service"]>) =
         otlpTracesExport: DEFAULT_SIGNAL_EXPORT,
         otlpMetricsExport: DEFAULT_SIGNAL_EXPORT,
         otlpLogsExport: DEFAULT_SIGNAL_EXPORT,
-        otlpServiceName: "t3-server",
+        otlpServiceName: "lmcs-server",
         otelEnvironment: OtelEnvironment.none,
         cwd: baseDir,
         baseDir,
@@ -146,7 +146,7 @@ describe("ServerLoggerLive", () => {
       const [request] = requests;
       assert.strictEqual(request?.url, "https://collector.example.com/v1/logs");
       assert.include(request?.body ?? "", "server logger under test");
-      assert.include(request?.body ?? "", "t3-server");
+      assert.include(request?.body ?? "", "lmcs-server");
       assert.include(request?.body ?? "", "service.runtime");
     }),
   );

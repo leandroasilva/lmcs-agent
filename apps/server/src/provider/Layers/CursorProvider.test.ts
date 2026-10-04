@@ -161,7 +161,7 @@ const makeExitLogFixture = Effect.fn("makeExitLogFixture")(function* (prefix: st
   return {
     exitLogPath,
     wrapperPath: yield* makeMockAgentWrapper({
-      T3_ACP_EXIT_LOG_PATH: exitLogPath,
+      LMCS_ACP_EXIT_LOG_PATH: exitLogPath,
     }),
   };
 });
@@ -313,7 +313,7 @@ const cursorAcpDiscoveryFailedMessage = [
   "See https://cursor.com/docs/cli/installation.",
   "Check server logs for ACP details.",
 ].join(" ");
-const missingCursorBinaryPath = "/definitely/not/installed/t3-cursor-agent";
+const missingCursorBinaryPath = "/definitely/not/installed/lmcs-cursor-agent";
 const cursorCliCommandMissingMessage = [
   `Cursor CLI command \`${missingCursorBinaryPath}\` was not found.`,
   `Install or enable the Cursor CLI, make sure \`${missingCursorBinaryPath}\` is on PATH, then restart LMCS Code.`,
@@ -715,7 +715,7 @@ describe("checkCursorProviderStatus", () => {
         },
         {
           ...process.env,
-          T3_ACP_REQUEST_LOG_PATH: requestLogPath,
+          LMCS_ACP_REQUEST_LOG_PATH: requestLogPath,
         },
       ),
     );
@@ -744,7 +744,7 @@ describe("discoverCursorModelsViaAcp", () => {
         };
         const { discover, invalidate } = yield* makeCursorModelDiscovery(settings, {
           ...process.env,
-          T3_ACP_REQUEST_LOG_PATH: requestLogPath,
+          LMCS_ACP_REQUEST_LOG_PATH: requestLogPath,
         });
         const about = {
           version: "2026.08.11",

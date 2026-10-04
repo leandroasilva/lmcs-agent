@@ -295,7 +295,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config build-essential
 
       - name: Test
-        run: vp run --parallel --concurrency-limit 4 --filter '!t3' --filter '!lmcs-agent' test
+        run: vp run --parallel --concurrency-limit 4 --filter '!lmcs' --filter '!lmcs-agent' test
 
   test_server:
     name: Release server tests ${{ matrix.shard }}
@@ -324,11 +324,11 @@ jobs:
           cache: true
           run-install: true
 
-      # No Electron setup here: `t3` (apps/server) has no Electron dependency
+      # No Electron setup here: `lmcs` (apps/server) has no Electron dependency
       # and none of its tests touch the runtime. Only the non-server `test`
       # job, which covers @lmcstools/desktop, needs the download.
       - name: Test
-        run: vp run --filter t3 test --shard ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: vp run --filter lmcs test --shard ${{ matrix.shard }}/${{ strategy.job-total }}
 
   relay_public_config:
     name: Resolve LMCS Connect public config
@@ -486,7 +486,7 @@ jobs:
       - name: Install bundle dependencies
         env:
           pnpm_config_cache_dir: ${{ runner.temp }}/pnpm-metadata
-        run: vp install --filter=t3... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
+        run: vp install --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
 
       - name: Download relay client tracing config
         uses: actions/download-artifact@v8
@@ -512,7 +512,7 @@ jobs:
       - name: Install browser secret helper build libraries
         run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config
 
-      # Runs t3#build (which depends on @lmcstools/web#build) and
+      # Runs lmcs#build (which depends on @lmcstools/web#build) and
       # @lmcstools/desktop#build, so apps/server/dist holds the server bundle
       # plus the web client and apps/desktop/dist-electron the Electron main.
       - name: Build JS bundle
@@ -724,7 +724,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=t3...
+              - --filter=lmcs...
               - --filter=@lmcstools/scripts...
 
       - name: Download all CLI archives
@@ -738,12 +738,12 @@ jobs:
         run: node scripts/build-npm-platform-packages.ts --archives-dir release-cli --version "${{ needs.preflight.outputs.version }}" --output-dir npm-packages
 
       # A dry run of every package first: an auth or scope error here (the
-      # @t3code org missing, a package without a trusted publisher) fails
+      # @lmcstools org missing, a package without a trusted publisher) fails
       # before anything is live, instead of after some platforms already are.
       - name: Check npm publish access (dry run)
         run: |
           if ! node apps/server/scripts/cli.ts publish --packages-dir npm-packages --tag "${{ needs.preflight.outputs.cli_dist_tag }}" --provenance --dry-run --verbose; then
-            echo "::error::npm publish --dry-run failed. Make sure the @t3code npm org exists and that t3 and every @t3code/t3-<platform> package has a trusted publisher registered for .github/workflows/release.yml (see docs/operations/release.md)." >&2
+            echo "::error::npm publish --dry-run failed. Make sure the @lmcstools npm org exists and that lmcs and every @lmcstools/lmcs-<platform> package has a trusted publisher registered for .github/workflows/release.yml (see docs/operations/release.md)." >&2
             exit 1
           fi
 
@@ -809,7 +809,7 @@ jobs:
           set -euo pipefail
           cd release-assets
           shopt -s nullglob
-          archives=(t3-*.tar.gz t3-*.zip)
+          archives=(lmcs-*.tar.gz lmcs-*.zip)
           if [[ ${#archives[@]} -eq 0 ]]; then
             echo "No CLI archives were produced." >&2
             exit 1

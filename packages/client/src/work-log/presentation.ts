@@ -71,7 +71,7 @@ export function normalizeCompactToolLabel(value: string): string {
   return value.replace(/\s+(?:complete|completed)\s*$/i, "").trim();
 }
 
-const T3_MCP_TOOL_LABELS: Record<
+const LMCS_MCP_TOOL_LABELS: Record<
   string,
   readonly [action: string, running: string, completed: string, detail: string]
 > = {
@@ -141,9 +141,9 @@ function resolveT3McpToolPresentation(
     /^(?:mcp__(?:lmcs-code|t3_code|t3code)__|(?:lmcs-code|t3_code|t3code)(?:[.:/]|\s*·\s*))/i,
     "",
   );
-  if (!Object.hasOwn(T3_MCP_TOOL_LABELS, name)) return null;
+  if (!Object.hasOwn(LMCS_MCP_TOOL_LABELS, name)) return null;
 
-  const [action, running, completed, detail] = T3_MCP_TOOL_LABELS[name]!;
+  const [action, running, completed, detail] = LMCS_MCP_TOOL_LABELS[name]!;
   const verb =
     status === "inProgress"
       ? running

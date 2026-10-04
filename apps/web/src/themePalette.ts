@@ -8,9 +8,9 @@ import {
   GROVE_THEME,
   IRIS_THEME,
   OCEAN_THEME,
-  T3_CHAT_THEME,
-  T3_CODE_LIGHT_THEME_COLORS,
-  T3_CODE_DARK_THEME_COLORS,
+  LMCS_CHAT_THEME,
+  LMCS_CODE_LIGHT_THEME_COLORS,
+  LMCS_CODE_DARK_THEME_COLORS,
   RESERVED_THEME_IDS,
   THEME_COLOR_ROLES,
   type ThemeAppearance,
@@ -20,10 +20,10 @@ import {
   type ThemeVariants,
 } from "@lmcstools/core/themePalettes";
 
-export { EMBER_THEME, GROVE_THEME, IRIS_THEME, OCEAN_THEME, T3_CHAT_THEME, THEME_COLOR_ROLES };
+export { EMBER_THEME, GROVE_THEME, IRIS_THEME, OCEAN_THEME, LMCS_CHAT_THEME, THEME_COLOR_ROLES };
 export type { ThemeAppearance, ThemeColorRole, ThemeColors, ThemeDefinition, ThemeVariants };
 
-export const T3_CHAT_THEME_ID = "t3-chat" as const;
+export const LMCS_CHAT_THEME_ID = "t3-chat" as const;
 const GROVE_THEME_ID = "grove" as const;
 export const OCEAN_THEME_ID = "ocean" as const;
 const EMBER_THEME_ID = "ember" as const;
@@ -34,7 +34,7 @@ export const THEME_FOLLOW_SYSTEM_STORAGE_KEY = "t3code:theme-follow-system";
 export const THEME_APPEARANCE_MODE_STORAGE_KEY = "t3code:theme-appearance-mode";
 export const THEME_HALVES_STORAGE_KEY = "t3code:theme-halves:v1";
 
-const LEGACY_T3_CHAT_DARK_THEME_ID = "t3-chat-dark";
+const LEGACY_LMCS_CHAT_DARK_THEME_ID = "t3-chat-dark";
 
 export const ThemePreference = Schema.String;
 export type ThemePreference = typeof ThemePreference.Type;
@@ -298,7 +298,7 @@ export function subscribeToCustomThemes(listener: () => void): () => void {
 // genuinely LMCS-branded palette keeps it. Stored preferences and mixes with the
 // old ids stay readable through this alias table.
 const LEGACY_THEME_ID_ALIASES: Readonly<Record<string, string>> = {
-  [LEGACY_T3_CHAT_DARK_THEME_ID]: T3_CHAT_THEME_ID,
+  [LEGACY_LMCS_CHAT_DARK_THEME_ID]: LMCS_CHAT_THEME_ID,
   "t3-grove": GROVE_THEME_ID,
   "t3-ocean": OCEAN_THEME_ID,
   "t3-ember": EMBER_THEME_ID,
@@ -315,7 +315,7 @@ function normalizeThemeId(themeId: string): string {
  * still carries the appearance hint getThemePreferenceMode reads.
  */
 export function canonicalThemePreference(theme: string): string {
-  return theme === LEGACY_T3_CHAT_DARK_THEME_ID ? theme : normalizeThemeId(theme);
+  return theme === LEGACY_LMCS_CHAT_DARK_THEME_ID ? theme : normalizeThemeId(theme);
 }
 
 function themeIdFromPreference(theme: ThemePreference): string {
@@ -325,7 +325,7 @@ function themeIdFromPreference(theme: ThemePreference): string {
 // Older builds stored the dark LMCS Chat palette as a separate theme. Keep
 // those preferences readable while mapping them to the dark variant.
 function legacyThemeMode(theme: ThemePreference): ThemeAppearance | null {
-  return theme === LEGACY_T3_CHAT_DARK_THEME_ID ? "dark" : null;
+  return theme === LEGACY_LMCS_CHAT_DARK_THEME_ID ? "dark" : null;
 }
 
 /**
@@ -336,9 +336,9 @@ function legacyThemeMode(theme: ThemePreference): ThemeAppearance | null {
  */
 export function getStandardThemeColors(appearance: ThemeAppearance): ThemeColors {
   if (appearance === "dark") {
-    return (standardDarkThemeColors ??= decodeThemeColors(T3_CODE_DARK_THEME_COLORS));
+    return (standardDarkThemeColors ??= decodeThemeColors(LMCS_CODE_DARK_THEME_COLORS));
   }
-  return (standardLightThemeColors ??= decodeThemeColors(T3_CODE_LIGHT_THEME_COLORS));
+  return (standardLightThemeColors ??= decodeThemeColors(LMCS_CODE_LIGHT_THEME_COLORS));
 }
 
 type ThemeRgbColor = {
@@ -872,7 +872,7 @@ function standardMutedThemeText(
 
 /** Theme-file defaults follow the flagship palette for the requested mode. */
 export function getDefaultThemeColors(appearance: ThemeAppearance): ThemeColors {
-  return appearance === "dark" ? T3_CHAT_THEME.variants!.dark! : T3_CHAT_THEME.colors;
+  return appearance === "dark" ? LMCS_CHAT_THEME.variants!.dark! : LMCS_CHAT_THEME.colors;
 }
 
 /**

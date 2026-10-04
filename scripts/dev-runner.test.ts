@@ -61,7 +61,7 @@ function mockProcess(exit: number | PlatformError.PlatformError) {
 
 const devServerInput = {
   mode: "dev:server",
-  t3Home: "/tmp/t3code-dev-runner",
+  lmcsHome: "/tmp/t3code-dev-runner",
   browser: undefined,
   autoBootstrapProjectFromCwd: undefined,
   logWebSocketEvents: undefined,
@@ -158,7 +158,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: { LMCS_DEV_AUTH_TOKEN: "reusable-dev-auth-token-that-is-long-enough" },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -180,7 +180,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -201,7 +201,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: true,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -221,7 +221,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: { LMCS_NO_BROWSER: "0" },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: false,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -242,7 +242,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          t3Home: "/tmp/custom-t3",
+          lmcsHome: "/tmp/custom-t3",
           browser: false,
           autoBootstrapProjectFromCwd: false,
           logWebSocketEvents: true,
@@ -268,12 +268,12 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
         const env = yield* createDevRunnerEnv({
           mode: "dev",
           baseEnv: {
-            T3_SERVICE_LAUNCHER_CONTEXT: '{"childVersion":"9.9.9"}',
-            T3_BOOT_SERVICE_UNIT: "t3code.service",
+            LMCS_SERVICE_LAUNCHER_CONTEXT: '{"childVersion":"9.9.9"}',
+            LMCS_BOOT_SERVICE_UNIT: "t3code.service",
           },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -282,8 +282,8 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           devUrl: undefined,
         });
 
-        assert.equal(env.T3_SERVICE_LAUNCHER_CONTEXT, undefined);
-        assert.equal(env.T3_BOOT_SERVICE_UNIT, undefined);
+        assert.equal(env.LMCS_SERVICE_LAUNCHER_CONTEXT, undefined);
+        assert.equal(env.LMCS_BOOT_SERVICE_UNIT, undefined);
       }),
     );
 
@@ -296,7 +296,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -319,7 +319,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: false,
@@ -332,7 +332,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       }),
     );
 
-    it.effect("uses custom t3Home when provided", () =>
+    it.effect("uses custom lmcsHome when provided", () =>
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const env = yield* createDevRunnerEnv({
@@ -340,7 +340,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          t3Home: "/tmp/my-t3",
+          lmcsHome: "/tmp/my-t3",
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -368,7 +368,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: "/tmp/my-t3",
+          lmcsHome: "/tmp/my-t3",
           browser: true,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -397,7 +397,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -425,7 +425,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
             },
             serverOffset: 0,
             webOffset: 0,
-            t3Home: undefined,
+            lmcsHome: undefined,
             browser: undefined,
             autoBootstrapProjectFromCwd: undefined,
             logWebSocketEvents: undefined,
@@ -454,7 +454,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: { LMCS_SINGLE_ORIGIN_DEV: "1" },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -475,7 +475,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: { LMCS_SINGLE_ORIGIN_DEV: "1" },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -500,7 +500,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
             baseEnv: { HOST: "0.0.0.0" },
             serverOffset: 0,
             webOffset: 0,
-            t3Home: undefined,
+            lmcsHome: undefined,
             browser: undefined,
             autoBootstrapProjectFromCwd: undefined,
             logWebSocketEvents: undefined,
@@ -523,7 +523,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: { HOST: "0.0.0.0" },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -545,7 +545,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: { HOST: "0.0.0.0" },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -565,7 +565,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -910,7 +910,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
 
     // `tailscale serve` config outlives the process, so a dry run that shared
     // would replace and then tear down whatever mapping the port already had.
-    // Base-dir precedence (--home-dir > worktree .t3 > ambient LMCS_HOME)
+    // Base-dir precedence (--home-dir > worktree .lmcs > ambient LMCS_HOME)
     // lives in runDevRunnerWithInput; the env builder must not consult the
     // ambient variable on its own, or it would silently outrank the worktree
     // default and land dev state on the user's real database.
@@ -918,10 +918,10 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       Effect.gen(function* () {
         const env = yield* createDevRunnerEnv({
           mode: "dev",
-          baseEnv: { LMCS_HOME: "/home/user/.t3" },
+          baseEnv: { LMCS_HOME: "/home/user/.lmcs" },
           serverOffset: 0,
           webOffset: 0,
-          t3Home: undefined,
+          lmcsHome: undefined,
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -1256,7 +1256,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       );
 
       const spawnedHome = (input: {
-        readonly t3Home: string | undefined;
+        readonly lmcsHome: string | undefined;
         readonly cwd: string;
         readonly ambientHome: string | undefined;
       }) =>
@@ -1274,7 +1274,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
             }),
           );
 
-          yield* runDevRunnerWithInput({ ...devServerInput, t3Home: input.t3Home }).pipe(
+          yield* runDevRunnerWithInput({ ...devServerInput, lmcsHome: input.lmcsHome }).pipe(
             Effect.provide(Layer.mergeAll(emptyConfigLayer, netServiceLayer, spawnerLayer)),
             Effect.provideService(HostProcessPlatform, "linux"),
             Effect.provideService(HostProcessWorkingDirectory, input.cwd),
@@ -1292,9 +1292,9 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           const path = yield* Path.Path;
           const root = yield* makeWorktree;
           const home = yield* spawnedHome({
-            t3Home: "/tmp/explicit-home",
+            lmcsHome: "/tmp/explicit-home",
             cwd: root,
-            ambientHome: "/home/user/.t3",
+            ambientHome: "/home/user/.lmcs",
           });
           assert.equal(home, path.resolve("/tmp/explicit-home"));
         }).pipe(Effect.scoped),
@@ -1305,24 +1305,24 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           const path = yield* Path.Path;
           const root = yield* makeWorktree;
           const home = yield* spawnedHome({
-            t3Home: "   ",
+            lmcsHome: "   ",
             cwd: root,
-            ambientHome: "/home/user/.t3",
+            ambientHome: "/home/user/.lmcs",
           });
-          assert.equal(home, path.join(path.resolve(root), ".t3"));
+          assert.equal(home, path.join(path.resolve(root), ".lmcs"));
         }).pipe(Effect.scoped),
       );
 
-      it.effect("prefers the worktree .t3 over an ambient LMCS_HOME", () =>
+      it.effect("prefers the worktree .lmcs over an ambient LMCS_HOME", () =>
         Effect.gen(function* () {
           const path = yield* Path.Path;
           const root = yield* makeWorktree;
           const home = yield* spawnedHome({
-            t3Home: undefined,
+            lmcsHome: undefined,
             cwd: root,
-            ambientHome: "/home/user/.t3",
+            ambientHome: "/home/user/.lmcs",
           });
-          assert.equal(home, path.join(path.resolve(root), ".t3"));
+          assert.equal(home, path.join(path.resolve(root), ".lmcs"));
         }).pipe(Effect.scoped),
       );
 
@@ -1330,18 +1330,18 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
         Effect.gen(function* () {
           const path = yield* Path.Path;
           const home = yield* spawnedHome({
-            t3Home: undefined,
+            lmcsHome: undefined,
             cwd: NodeOS.tmpdir(),
-            ambientHome: "/home/user/.t3",
+            ambientHome: "/home/user/.lmcs",
           });
-          assert.equal(home, path.resolve("/home/user/.t3"));
+          assert.equal(home, path.resolve("/home/user/.lmcs"));
         }),
       );
 
       it.effect("leaves the home implicit with no worktree and no ambient value", () =>
         Effect.gen(function* () {
           const home = yield* spawnedHome({
-            t3Home: undefined,
+            lmcsHome: undefined,
             cwd: NodeOS.tmpdir(),
             ambientHome: undefined,
           });

@@ -1466,7 +1466,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               Layer.provideMerge(instanceRegistryLayer),
               Layer.provideMerge(
                 ServerConfig.layerTest(process.cwd(), {
-                  prefix: "t3-provider-registry-background-refresh-",
+                  prefix: "lmcs-provider-registry-background-refresh-",
                 }),
               ),
               Layer.provideMerge(NodeServices.layer),
@@ -1585,7 +1585,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               Layer.provideMerge(instanceRegistryLayer),
               Layer.provideMerge(
                 ServerConfig.layerTest(process.cwd(), {
-                  prefix: "t3-provider-registry-workspace-snapshot-",
+                  prefix: "lmcs-provider-registry-workspace-snapshot-",
                 }),
               ),
               Layer.provideMerge(NodeServices.layer),
@@ -1787,7 +1787,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               Layer.provideMerge(instanceRegistryLayer),
               Layer.provideMerge(
                 ServerConfig.layerTest(process.cwd(), {
-                  prefix: "t3-provider-registry-reconnect-refresh-",
+                  prefix: "lmcs-provider-registry-reconnect-refresh-",
                 }),
               ),
               Layer.provideMerge(NodeServices.layer),
@@ -1913,7 +1913,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               Layer.provideMerge(instanceRegistryLayer),
               Layer.provideMerge(
                 ServerConfig.layerTest(process.cwd(), {
-                  prefix: "t3-provider-registry-merged-persist-",
+                  prefix: "lmcs-provider-registry-merged-persist-",
                 }),
               ),
               Layer.provideMerge(BackgroundPolicyAlwaysRunLayer),
@@ -2041,7 +2041,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
                 Layer.provideMerge(instanceRegistryLayer),
                 Layer.provideMerge(
                   ServerConfig.layerTest(process.cwd(), {
-                    prefix: "t3-provider-registry-opencode-authoritative-persist-",
+                    prefix: "lmcs-provider-registry-opencode-authoritative-persist-",
                   }),
                 ),
                 Layer.provideMerge(NodeServices.layer),
@@ -2144,7 +2144,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               Layer.provideMerge(instanceRegistryLayer),
               Layer.provideMerge(
                 ServerConfig.layerTest(process.cwd(), {
-                  prefix: "t3-provider-registry-refresh-failure-",
+                  prefix: "lmcs-provider-registry-refresh-failure-",
                 }),
               ),
               Layer.provideMerge(BackgroundPolicyAlwaysRunLayer),
@@ -2260,7 +2260,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               Layer.provideMerge(instanceRegistryLayer),
               Layer.provideMerge(
                 ServerConfig.layerTest(process.cwd(), {
-                  prefix: "t3-provider-registry-sync-failure-",
+                  prefix: "lmcs-provider-registry-sync-failure-",
                 }),
               ),
               Layer.provideMerge(BackgroundPolicyAlwaysRunLayer),
@@ -2334,7 +2334,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
                 // accepts + decodes them. Cast the patch to `unknown` so
                 // the `Schema.decodeSync` below does the real validation.
                 providerInstances: {
-                  // Matches the shape the user had in `.t3/dev/settings.json`
+                  // Matches the shape the user had in `.lmcs/dev/settings.json`
                   // when the bug was reported: a custom enabled Codex instance
                   // pointing at a binary the server has to actually spawn.
                   codex_personal: {
@@ -2360,7 +2360,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             ),
             Layer.provideMerge(
               ServerConfig.layerTest(process.cwd(), {
-                prefix: "t3-provider-registry-",
+                prefix: "lmcs-provider-registry-",
               }),
             ),
             Layer.provideMerge(TestHttpClientLive),
@@ -2459,7 +2459,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             ),
             Layer.provideMerge(
               ServerConfig.layerTest(process.cwd(), {
-                prefix: "t3-provider-registry-",
+                prefix: "lmcs-provider-registry-",
               }),
             ),
             Layer.provideMerge(TestHttpClientLive),
@@ -2575,7 +2575,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
             ),
             Layer.provideMerge(
               ServerConfig.layerTest(process.cwd(), {
-                prefix: "t3-provider-registry-",
+                prefix: "lmcs-provider-registry-",
               }),
             ),
             Layer.provideMerge(TestHttpClientLive),
@@ -2637,7 +2637,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, ServerSettingsModule.layerTest(), Te
               ),
               Layer.provideMerge(
                 ServerConfig.layerTest(process.cwd(), {
-                  prefix: "t3-provider-registry-",
+                  prefix: "lmcs-provider-registry-",
                 }),
               ),
               Layer.provideMerge(TestHttpClientLive),

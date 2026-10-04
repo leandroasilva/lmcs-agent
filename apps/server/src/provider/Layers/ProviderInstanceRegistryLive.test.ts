@@ -150,7 +150,7 @@ const makeTildeProviderFixtures = Effect.fn(
   const homePath = expandHomePath("~");
   const fixtureDir = yield* fileSystem.makeTempDirectoryScoped({
     directory: homePath,
-    prefix: ".t3-provider-path-test-",
+    prefix: ".lmcs-provider-path-test-",
   });
   const codexPath = path.join(fixtureDir, "codex");
   const claudePath = path.join(fixtureDir, "claude");
@@ -189,8 +189,8 @@ const makeTildeProviderFixtures = Effect.fn(
       "  const message = JSON.parse(line);",
       '  if (message.type !== "control_request") return;',
       '  if (message.request?.subtype === "get_usage") {',
-      "    const marker = process.env.T3_CLAUDE_RESET_MARKER;",
-      "    if (process.env.T3_CLAUDE_USAGE_FAILS_AFTER_CLAIM && marker && existsSync(marker)) {",
+      "    const marker = process.env.LMCS_CLAUDE_RESET_MARKER;",
+      "    if (process.env.LMCS_CLAUDE_USAGE_FAILS_AFTER_CLAIM && marker && existsSync(marker)) {",
       "      process.stdout.write(JSON.stringify({",
       '        type: "control_response",',
       '        response: { subtype: "error", request_id: message.request_id, error: "usage failed" },',
@@ -382,7 +382,11 @@ describe("ProviderInstanceRegistryLive — multi-instance codex slice", () => {
             driver: ProviderDriverKind.make("codex"),
             enabled: true,
             environment: [
-              { name: "T3_CODEX_COLLAB_SCRIPT", value: fixtures.codexScriptPath, sensitive: false },
+              {
+                name: "LMCS_CODEX_COLLAB_SCRIPT",
+                value: fixtures.codexScriptPath,
+                sensitive: false,
+              },
             ],
             config: makeCodexConfig({ enabled: true, binaryPath: fixtures.codexBinaryPath }),
           },
@@ -410,7 +414,7 @@ describe("ProviderInstanceRegistryLive — multi-instance codex slice", () => {
           enabled: true,
           environment: [
             {
-              name: "T3_CODEX_COLLAB_SCRIPT",
+              name: "LMCS_CODEX_COLLAB_SCRIPT",
               value: fixtures.codexScriptPath,
               sensitive: false,
             },
@@ -493,9 +497,9 @@ describe("ProviderInstanceRegistryLive — multi-instance codex slice", () => {
             driver: ProviderDriverKind.make("claudeAgent"),
             enabled: true,
             environment: [
-              { name: "T3_CLAUDE_RESET_MARKER", value: marker, sensitive: false },
+              { name: "LMCS_CLAUDE_RESET_MARKER", value: marker, sensitive: false },
               ...(claim.usageFailsAfterClaim
-                ? [{ name: "T3_CLAUDE_USAGE_FAILS_AFTER_CLAIM", value: "1", sensitive: false }]
+                ? [{ name: "LMCS_CLAUDE_USAGE_FAILS_AFTER_CLAIM", value: "1", sensitive: false }]
                 : []),
             ],
             config: makeClaudeConfig({

@@ -25,7 +25,7 @@ import {
 
 export const ANTIGRAVITY_AUTH_STDOUT_PREFIX =
   "Open the following link to authenticate the ACP server: ";
-export const ANTIGRAVITY_AUTH_BROWSER_MARKER = "__T3_ANTIGRAVITY_AUTH_URL__";
+export const ANTIGRAVITY_AUTH_BROWSER_MARKER = "__LMCS_ANTIGRAVITY_AUTH_URL__";
 export const ANTIGRAVITY_SIGN_IN_REQUIRED_MESSAGE =
   "Sign in to Antigravity in Settings before you continue.";
 
@@ -58,7 +58,7 @@ const browserHelperSource =
   `process.stderr.on("error",()=>process.exit(0)).write(` +
   `"${ANTIGRAVITY_AUTH_BROWSER_MARKER}"+JSON.stringify(process.argv[1])+"\\n",` +
   `()=>process.exit(0))`;
-const browserPreflightUrl = "https://example.invalid/t3-antigravity-browser-preflight";
+const browserPreflightUrl = "https://example.invalid/lmcs-antigravity-browser-preflight";
 
 const removedEnvironmentKeys = new Set([
   "GEMINI_API_KEY",

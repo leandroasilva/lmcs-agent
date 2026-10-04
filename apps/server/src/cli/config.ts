@@ -106,7 +106,7 @@ const EnvServerConfig = Config.all({
     Config.map(Option.getOrUndefined),
   ),
   otlpExportIntervalMs: Config.Int("LMCS_OTLP_EXPORT_INTERVAL_MS").pipe(Config.withDefault(10_000)),
-  otlpServiceName: Config.String("LMCS_OTLP_SERVICE_NAME").pipe(Config.withDefault("t3-server")),
+  otlpServiceName: Config.String("LMCS_OTLP_SERVICE_NAME").pipe(Config.withDefault("lmcs-server")),
   otlpHeaders: Config.schema(OtlpHeadersFromString, "LMCS_OTLP_HEADERS").pipe(
     Config.option,
     Config.map(Option.getOrUndefined),
@@ -120,7 +120,7 @@ const EnvServerConfig = Config.all({
   ),
   port: Config.Port("LMCS_PORT").pipe(Config.option, Config.map(Option.getOrUndefined)),
   host: Config.String("LMCS_HOST").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  t3Home: Config.String("LMCS_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
+  lmcsHome: Config.String("LMCS_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
   devUrl: Config.URL("VITE_DEV_SERVER_URL").pipe(Config.option, Config.map(Option.getOrUndefined)),
   devAllowedOrigins: Config.String("LMCS_DEV_ALLOWED_ORIGINS").pipe(
     Config.withDefault(""),
@@ -312,11 +312,11 @@ export const resolveServerConfig = (
       mode === "web" && devUrl !== undefined ? yield* DevAuthTokenConfig : undefined;
     const explicitBaseDir = resolveOptionPrecedence(
       normalizedFlags.baseDir,
-      Option.fromUndefinedOr(env.t3Home),
+      Option.fromUndefinedOr(env.lmcsHome),
     ).pipe(Option.filter((value) => value.trim().length > 0));
     const baseDir = yield* resolveBaseDir(
       Option.getOrUndefined(
-        resolveOptionPrecedence(explicitBaseDir, Option.fromUndefinedOr(bootstrap?.t3Home)),
+        resolveOptionPrecedence(explicitBaseDir, Option.fromUndefinedOr(bootstrap?.lmcsHome)),
       ),
     );
     const rawCwd = Option.getOrElse(normalizedFlags.cwd, () => process.cwd());

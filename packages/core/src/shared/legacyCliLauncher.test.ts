@@ -17,11 +17,11 @@ const hostArch = NodeOS.arch();
 it.skipIf(hostPlatform === "win32")(
   "keeps service IPC, arguments, and termination connected",
   async () => {
-    const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3-legacy-launcher-"));
-    const entry = NodePath.join(root, "node_modules/t3/dist/bin.mjs");
+    const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "lmcs-legacy-launcher-"));
+    const entry = NodePath.join(root, "node_modules/lmcs/dist/bin.mjs");
     const executable = NodePath.join(
       root,
-      `node_modules/@t3code/t3-${hostPlatform}-${hostArch}/t3`,
+      `node_modules/@lmcstools/lmcs-${hostPlatform}-${hostArch}/lmcs`,
     );
     await NodeFSP.mkdir(NodePath.dirname(entry), { recursive: true });
     await NodeFSP.mkdir(NodePath.dirname(executable), { recursive: true });

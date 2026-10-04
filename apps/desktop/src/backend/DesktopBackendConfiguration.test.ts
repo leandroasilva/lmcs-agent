@@ -252,7 +252,7 @@ describe("DesktopBackendConfiguration", () => {
         assert.equal(first.bootstrap.noBrowser, true);
         assert.equal(first.bootstrap.port, 4888);
         assert.equal(first.bootstrap.host, "0.0.0.0");
-        assert.equal(first.bootstrap.t3Home, environment.baseDir);
+        assert.equal(first.bootstrap.lmcsHome, environment.baseDir);
         assert.equal(first.bootstrap.tailscaleServeEnabled, true);
         assert.equal(first.bootstrap.tailscaleServePort, 8443);
         assert.match(first.bootstrap.desktopBootstrapToken, /^[0-9a-f]{48}$/i);
@@ -388,7 +388,7 @@ describe("DesktopBackendConfiguration", () => {
     }> = [];
     const observedProbeRoots: string[] = [];
     let legacyCleanupCount = 0;
-    const linuxAppRoot = "/home/test/.t3/wsl-runtime/1.2.3-x64";
+    const linuxAppRoot = "/home/test/.lmcs/wsl-runtime/1.2.3-x64";
     const resolvedPath = "/home/test/.local/bin:/usr/bin:/bin";
 
     return withPackagedWslHarness(
@@ -525,7 +525,7 @@ describe("DesktopBackendConfiguration", () => {
 
   it.effect("resolveWsl retires a staged runtime whose executable does not start", () => {
     const archiveHash = "c".repeat(64);
-    const stagedAppRoot = `/home/test/.t3/wsl-runtime/sha256-${archiveHash}`;
+    const stagedAppRoot = `/home/test/.lmcs/wsl-runtime/sha256-${archiveHash}`;
     const observedProbeRoots: string[] = [];
     const observedNodePtyRoots: string[] = [];
     const invalidatedRuntimeIds: string[] = [];
@@ -567,7 +567,7 @@ describe("DesktopBackendConfiguration", () => {
   });
 
   it.effect("resolveWsl keeps the staged runtime when the mounted tree fails too", () => {
-    const stagedAppRoot = "/home/test/.t3/wsl-runtime/cache";
+    const stagedAppRoot = "/home/test/.lmcs/wsl-runtime/cache";
     const invalidatedRuntimeIds: string[] = [];
     return withPackagedWslHarness(
       {
@@ -603,7 +603,7 @@ describe("DesktopBackendConfiguration", () => {
   });
 
   it.effect("resolveWsl keeps WSL retryable when the mounted fallback fails transiently", () => {
-    const stagedAppRoot = "/home/test/.t3/wsl-runtime/cache";
+    const stagedAppRoot = "/home/test/.lmcs/wsl-runtime/cache";
     const invalidatedRuntimeIds: string[] = [];
     return withPackagedWslHarness(
       {
@@ -1087,7 +1087,7 @@ describe("DesktopBackendConfiguration", () => {
           // not spawn wsl.exe (which would loop on preflight failures while the
           // Connections backend control is hidden). Resolve the Windows primary.
           assert.equal(config.executablePath, process.execPath);
-          assert.equal(config.bootstrap.t3Home, environment.baseDir);
+          assert.equal(config.bootstrap.lmcsHome, environment.baseDir);
           assert.isTrue(Option.isNone(config.preflightFailure));
         }).pipe(
           Effect.provide(
@@ -1337,8 +1337,8 @@ describe("DesktopBackendConfiguration", () => {
       });
       const resourcesPath = path.join(baseDir, "resources");
       const dirname = `${resourcesPath}/app.asar/apps/desktop/dist-electron`;
-      const embeddedMonitorPath = `${resourcesPath}/app.asar/apps/desktop/prod-resources/resource-monitor/t3-resource-monitor`;
-      const monitorPath = path.join(resourcesPath, "resource-monitor/t3-resource-monitor");
+      const embeddedMonitorPath = `${resourcesPath}/app.asar/apps/desktop/prod-resources/resource-monitor/lmcs-resource-monitor`;
+      const monitorPath = path.join(resourcesPath, "resource-monitor/lmcs-resource-monitor");
       yield* fileSystem.makeDirectory(
         `${resourcesPath}/app.asar/apps/desktop/prod-resources/resource-monitor`,
         { recursive: true },
@@ -1387,11 +1387,11 @@ describe("DesktopBackendConfiguration", () => {
       const dirname = path.join(baseDir, "apps/desktop/src");
       const releaseMonitorPath = path.join(
         baseDir,
-        "native/resource-monitor/target/release/t3-resource-monitor",
+        "native/resource-monitor/target/release/lmcs-resource-monitor",
       );
       const debugMonitorPath = path.join(
         baseDir,
-        "native/resource-monitor/target/debug/t3-resource-monitor",
+        "native/resource-monitor/target/debug/lmcs-resource-monitor",
       );
       yield* fileSystem.makeDirectory(path.dirname(releaseMonitorPath), { recursive: true });
       yield* fileSystem.makeDirectory(path.dirname(debugMonitorPath), { recursive: true });
