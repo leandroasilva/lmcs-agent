@@ -14,16 +14,15 @@ This project was forked from [LMCS Code](https://github.com/pingdotgg/t3code) (o
 
 Run coding agents from a single interface. LMCS Agent supports **eight providers** out of the box:
 
-| Provider        | CLI            | Authentication                           |
-| --------------- | -------------- | ---------------------------------------- |
-| **Codex**       | `codex`        | `codex login`                            |
-| **Claude**      | `claude`       | `claude auth login`                      |
-| **Cursor**      | `cursor-agent` | `agent login`                            |
-| **Grok Build**  | `grok`         | `grok login`                             |
-| **OpenCode**    | `opencode`     | `opencode auth login`                    |
-| **Antigravity** | Google-managed | Sign in from LMCS Code provider settings |
-| **Qoder**       | `qoder`        | Qoder SDK authentication                 |
-| **CommandCode** | `cmd`          | `cmd auth login`                         |
+| Provider        | CLI            | Authentication        |
+| --------------- | -------------- | --------------------- |
+| **Codex**       | `codex`        | `codex login`         |
+| **Claude**      | `claude`       | `claude auth login`   |
+| **Cursor**      | `cursor-agent` | `agent login`         |
+| **Grok Build**  | `grok`         | `grok login`          |
+| **OpenCode**    | `opencode`     | `opencode auth login` |
+| **Qoder**       | `qoder`        | `qoder login`         |
+| **CommandCode** | `cmd`          | `cmd auth login`      |
 
 Each provider is isolated by instance — multiple accounts, separate credentials, independent model catalogs. Switch between providers and models mid-thread. Configure per-instance environment variables, API keys, and custom base URLs.
 
@@ -280,7 +279,7 @@ scripts/           Repository tooling
 - [Appearance and themes](./docs/user/appearance.md)
 - [Project settings](./docs/user/project-settings.md)
 - [Updating LMCS Code](./docs/user/updating.md)
-- Provider guides: [Codex](./docs/user/providers-codex.md), [Claude](./docs/user/providers-claude.md), [OpenCode](./docs/user/providers-opencode.md), [Antigravity](./docs/user/providers-antigravity.md)
+- Provider guides: [Codex](./docs/user/providers-codex.md), [Claude](./docs/user/providers-claude.md), [OpenCode](./docs/user/providers-opencode.md)
 
 ### Working on the codebase
 
