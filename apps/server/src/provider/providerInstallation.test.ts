@@ -15,8 +15,8 @@ import { makeProviderInstallation } from "./providerInstallation.ts";
 import { ProviderInstanceRegistry } from "./Services/ProviderInstanceRegistry.ts";
 import { ProviderRegistry } from "./Services/ProviderRegistry.ts";
 
-const instanceId = ProviderInstanceId.make("antigravity");
-const driver = ProviderDriverKind.make("antigravity");
+const instanceId = ProviderInstanceId.make("codex");
+const driver = ProviderDriverKind.make("codex");
 const state: ProviderInstallState = {
   driver,
   operationId: null,
@@ -147,7 +147,7 @@ describe("provider installation routing", () => {
       const executable = path.join(directory, binary);
       yield* fs.writeFileString(executable, "test");
       yield* fs.chmod(executable, 0o755);
-      const other = ProviderInstanceId.make("antigravity-work");
+      const other = ProviderInstanceId.make("codex-work");
       const harness = yield* makeHarness({
         settings: {
           providerInstances: {

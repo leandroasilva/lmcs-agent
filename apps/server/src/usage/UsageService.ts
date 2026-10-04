@@ -48,10 +48,8 @@ import { ServerConfig } from "../config.ts";
 import { expandHomePath } from "../pathExpansion.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import { resolveCodexHomeLayout } from "../provider/Drivers/CodexHomeLayout.ts";
-import { resolveAntigravityInstanceDirectories } from "../provider/antigravityAuthSupport.ts";
 import { mergeProviderInstanceEnvironment } from "../provider/ProviderInstanceEnvironment.ts";
 import { readOpenCodeUsage } from "./opencodeUsageReader.ts";
-import { readAntigravityUsage } from "./antigravityUsageReader.ts";
 import { readCursorAccountUsage } from "./cursorUsageReader.ts";
 import { UsageAggregator } from "./usageAggregation.ts";
 import { createOverrideRateTable, parseRateTable, type RateTable } from "./usagePricing.ts";
@@ -524,62 +522,6 @@ export const make = Effect.gen(function* () {
         files: result.missing && !result.error ? null : result.files,
         status: result.error ? "partial" : "ok",
         ...(result.error ? { message: "Some OpenCode history could not be read." } : {}),
-      });
-    }
-    const antigravityRoots = yield* envRoots("ANTIGRAVITY_DATA_DIR", [
-      ...["antigravity", "antigravity-cli", "antigravity-ide", "antigravity-backup"].map((name) =>
-        path.join(home, ".gemini", name),
-      ),
-      path.join(home, ".config", "antigravity"),
-    ]);
-    for (const [instanceId, instance] of Object.entries(settings.providerInstances)) {
-      if (instance.driver === "antigravity") {
-        const directories = yield* resolveAntigravityInstanceDirectories(
-          config.stateDir,
-          ProviderInstanceId.make(instanceId),
-        ).pipe(
-          Effect.provideService(Crypto.Crypto, crypto),
-          Effect.provideService(Path.Path, path),
-          Effect.mapError(
-            (cause) =>
-              new UsageReadError({
-                reason: "scanFailed",
-                detail: "Antigravity profile directory could not be resolved.",
-                cause,
-              }),
-          ),
-        );
-        antigravityRoots.push(path.join(directories.profile, "antigravity-acp"));
-      }
-    }
-    const antigravityDirs = new Set<string>();
-    for (const root of antigravityRoots) {
-      const resolvedRoot = yield* fileSystem.realPath(root).pipe(Effect.orElseSucceed(() => root));
-      const nested = path.join(resolvedRoot, "conversations");
-      const dir = (yield* fileSystem
-        .exists(nested)
-        .pipe(Effect.catchCause(() => Effect.succeed(false))))
-        ? nested
-        : resolvedRoot;
-      antigravityDirs.add(yield* fileSystem.realPath(dir).pipe(Effect.orElseSucceed(() => dir)));
-    }
-    const antigravity = yield* Effect.promise(() =>
-      readAntigravityUsage([...antigravityDirs], windowStartMs),
-    );
-    for (const dir of antigravityDirs) {
-      const exists = yield* fileSystem
-        .exists(dir)
-        .pipe(Effect.catchCause(() => Effect.succeed(false)));
-      const failed = antigravity.errors.some(
-        (error) => error === dir || error.startsWith(`${dir}${path.sep}`),
-      );
-      scanned.push({
-        provider: "antigravity",
-        dir,
-        volumeId: yield* Effect.promise(() => readDirectoryVolumeId(dir)),
-        files: !exists && !failed ? null : antigravity.files.filter((file) => file.root === dir),
-        status: failed ? "partial" : "ok",
-        ...(failed ? { message: "Some Antigravity history could not be read." } : {}),
       });
     }
     const cursorUserHome =
