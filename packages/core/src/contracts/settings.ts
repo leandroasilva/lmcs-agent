@@ -975,7 +975,6 @@ export type QoderSettings = typeof QoderSettings.Type;
 
 export const CommandCodeSettings = makeProviderSettingsSchema(
   {
-    // Off by default: the integration is new and users opt in from Settings.
     enabled: Schema.Boolean.pipe(
       Schema.withDecodingDefault(Effect.succeed(false)),
       Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
@@ -987,25 +986,25 @@ export const CommandCodeSettings = makeProviderSettingsSchema(
         providerSettingsForm: { placeholder: "cmd", clearWhenEmpty: "omit" },
       }),
     ),
-    customModels: Schema.Array(CustomModelSetting).pipe(
-      Schema.withDecodingDefault(Effect.succeed([])),
-      Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
-    ),
-    favoriteModel: TrimmedString.pipe(
+    apiKey: TrimmedString.pipe(
       Schema.withDecodingDefault(Effect.succeed("")),
       Schema.annotateKey({
-        title: "Favorite Model",
-        description:
-          "Default model to use for Command Code sessions. Leave empty for the CLI default.",
+        title: "API Key",
+        description: "Command Code API key. Generate at commandcode.ai/studio.",
         providerSettingsForm: {
-          placeholder: "deepseek/deepseek-v4-flash",
+          control: "password",
+          placeholder: "Optional",
           clearWhenEmpty: "omit",
         },
       }),
     ),
+    customModels: Schema.Array(CustomModelSetting).pipe(
+      Schema.withDecodingDefault(Effect.succeed([])),
+      Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
+    ),
   },
   {
-    order: ["binaryPath", "favoriteModel"],
+    order: ["binaryPath", "apiKey"],
   },
 );
 export type CommandCodeSettings = typeof CommandCodeSettings.Type;
@@ -1395,7 +1394,7 @@ export const ServerSettings = Schema.Struct({
     opencode: OpenCodeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     antigravity: AntigravitySettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     qoder: QoderSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
-    commandcode: CommandCodeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+    commandCode: CommandCodeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   }).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   // New driver-agnostic instance map. Keyed by `ProviderInstanceId`; values
   // are `ProviderInstanceConfig` envelopes. The driver-specific config blob
@@ -1584,8 +1583,8 @@ const QoderSettingsPatch = Schema.Struct({
 const CommandCodeSettingsPatch = Schema.Struct({
   enabled: Schema.optionalKey(Schema.Boolean),
   binaryPath: Schema.optionalKey(TrimmedString),
+  apiKey: Schema.optionalKey(TrimmedString),
   customModels: Schema.optionalKey(Schema.Array(CustomModelSetting)),
-  favoriteModel: Schema.optionalKey(TrimmedString),
 });
 
 export const ServerSettingsPatch = Schema.Struct({
@@ -1691,7 +1690,7 @@ export const ServerSettingsPatch = Schema.Struct({
       opencode: Schema.optionalKey(OpenCodeSettingsPatch),
       antigravity: Schema.optionalKey(AntigravitySettingsPatch),
       qoder: Schema.optionalKey(QoderSettingsPatch),
-      commandcode: Schema.optionalKey(CommandCodeSettingsPatch),
+      commandCode: Schema.optionalKey(CommandCodeSettingsPatch),
     }),
   ),
   // Whole-map replacement for the new instance config. Patching individual

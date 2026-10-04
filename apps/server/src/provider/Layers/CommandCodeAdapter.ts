@@ -1,44 +1,47 @@
+/**
+ * CommandCodeAdapterLive — CLI-based adapter for the Command Code provider.
+ *
+ * Spawns `cmd -p` (print mode) with `--output-format json` for each turn,
+ * parses the newline-delimited AgentEvent frames, and emits canonical
+ * runtime events.
+ *
+ * @module CommandCodeAdapter
+ */
 import {
+  ApprovalRequestId,
   type CommandCodeSettings,
+  DEFAULT_RUNTIME_MODE,
   EventId,
+  type ProviderApprovalDecision,
+  type ProviderRuntimeEvent,
+  type ProviderSession,
+  type ProviderUserInputAnswers,
   ProviderDriverKind,
   ProviderInstanceId,
-  type ProviderRuntimeEvent,
-  type ProviderSendTurnInput,
-  type ProviderSession,
-  type ProviderSessionStartInput,
-  type ProviderTurnStartResult,
   type ThreadId,
   TurnId,
-  DEFAULT_RUNTIME_MODE,
-  type ThreadTokenUsageSnapshot,
-  type TurnTokenUsage,
 } from "@lmcstools/core";
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import * as NodeChildProcess from "node:child_process";
-
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import * as Exit from "effect/Exit";
-import * as PubSub from "effect/PubSub";
 import * as Ref from "effect/Ref";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
+import * as Queue from "effect/Queue";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
-import { ProviderAdapterSessionNotFoundError } from "../Errors.ts";
-import type { CommandCodeAdapterShape } from "../Services/CommandCodeAdapter.ts";
 import {
-  type CommandCodeHeadlessResult,
-  type CommandCodeNdjsonLine,
-  type CommandCodeUsage,
-  parseCommandCodeNdjsonLine,
-} from "../commandCodeRuntime.ts";
+  ProviderAdapterRequestError,
+  ProviderAdapterSessionNotFoundError,
+  ProviderAdapterValidationError,
+} from "../Errors.ts";
+import { spawnAndCollect } from "../providerSnapshot.ts";
+import type { CommandCodeAdapterShape } from "../Services/CommandCodeAdapter.ts";
 
-const PROVIDER = ProviderDriverKind.make("commandcode");
+const PROVIDER = ProviderDriverKind.make("commandCode");
 
 export interface CommandCodeAdapterLiveOptions {
   readonly environment?: NodeJS.ProcessEnv;
-  readonly nativeEventLogPath?: string;
   readonly instanceId?: ProviderInstanceId;
 }
 
@@ -48,154 +51,81 @@ interface CommandCodeSessionContext {
   readonly scope: Scope.Closeable;
   turns: Array<{ id: TurnId; items: Array<unknown> }>;
   currentModel: string | undefined;
-  tokenUsage: ThreadTokenUsageSnapshot | null;
-  abortController: AbortController | null;
-  runningChild: NodeChildProcess.ChildProcess | null;
+  activeTurnId: TurnId | undefined;
+  stopped: boolean;
 }
 
 const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
 
+function buildCmdAuthEnv(
+  config: CommandCodeSettings,
+  environment?: NodeJS.ProcessEnv,
+): Record<string, string | undefined> {
+  const apiKey = config.apiKey?.trim() || environment?.COMMAND_CODE_API_KEY?.trim();
+  if (apiKey) {
+    return { COMMAND_CODE_API_KEY: apiKey };
+  }
+  return {};
+}
+
 /**
- * Command Code adapter — CLI-based integration.
- *
- * Uses `cmd -p "message" --output-format json` for headless turns. Each turn
- * spawns a new subprocess, streams NDJSON events, and maps them onto the
- * LMCS Code `ProviderRuntimeEvent` protocol.
+ * Parse a single JSON line from CommandCode's `--output-format json` output.
+ * Returns null for non-JSON lines (progress indicators, etc.).
  */
+function parseCmdJsonLine(line: string): Record<string, unknown> | null {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) return null;
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (typeof parsed === "object" && parsed !== null) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Not JSON, skip
+  }
+  return null;
+}
+
 export function makeCommandCodeAdapter(
   config: CommandCodeSettings,
   options: CommandCodeAdapterLiveOptions = {},
-): Effect.Effect<CommandCodeAdapterShape, never> {
+): Effect.Effect<CommandCodeAdapterShape, never, ChildProcessSpawner.ChildProcessSpawner> {
   return Effect.gen(function* () {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const sessions = yield* Ref.make(new Map<ThreadId, CommandCodeSessionContext>());
-    const eventPubSub = yield* PubSub.unbounded<ProviderRuntimeEvent>();
+    const eventQueue = yield* Queue.unbounded<ProviderRuntimeEvent>();
 
-    const favoriteModel = config.favoriteModel?.trim() || undefined;
-    const binaryPath = config.binaryPath || "cmd";
-
-    const emit = (event: ProviderRuntimeEvent) => PubSub.publish(eventPubSub, event);
+    const emit = (event: ProviderRuntimeEvent) =>
+      Queue.offer(eventQueue, event).pipe(Effect.asVoid);
 
     const asEventId = (suffix: string) =>
-      EventId.make(`commandcode:${options.instanceId ?? "default"}:${suffix}`);
+      EventId.make(`commandCode:${options.instanceId ?? "default"}:${suffix}`);
 
-    const providerInstanceFields = options.instanceId
-      ? { providerInstanceId: options.instanceId }
-      : {};
-
-    const normalizeUsage = (usage: CommandCodeUsage | undefined): TurnTokenUsage | undefined => {
-      if (!usage) return undefined;
-      const inputTokens = usage.inputTokens ?? 0;
-      const outputTokens = usage.outputTokens ?? 0;
-      if (inputTokens === 0 && outputTokens === 0) return undefined;
-      return {
-        usageStatus: "complete",
-        usageScope: "main_agent",
-        hasSubagents: false,
-        inputTokens,
-        outputTokens,
-        ...(usage.cacheReadTokens ? { cachedInputTokens: usage.cacheReadTokens } : {}),
-      };
-    };
-
-    const buildTokenUsageSnapshot = (
-      result: CommandCodeHeadlessResult,
-      previousSnapshot: ThreadTokenUsageSnapshot | null,
-    ): ThreadTokenUsageSnapshot => {
-      const usage = result.usage;
-      const inputTokens = usage?.inputTokens ?? 0;
-      const outputTokens = usage?.outputTokens ?? 0;
-      const totalTokens = inputTokens + outputTokens;
-      const previousTotal = previousSnapshot?.usedTokens ?? 0;
-      return {
-        usedTokens: previousTotal + totalTokens,
-        lastUsedTokens: totalTokens,
-        inputTokens,
-        outputTokens,
-        ...(usage?.cacheReadTokens ? { cachedInputTokens: usage.cacheReadTokens } : {}),
-        ...(result.durationMs ? { durationMs: result.durationMs } : {}),
-      };
-    };
-
-    const processEvent = (
-      parsed: CommandCodeNdjsonLine,
-      context: CommandCodeSessionContext,
-      turnId: TurnId,
-    ): Effect.Effect<void> =>
+    // -----------------------------------------------------------------------
+    // startSession
+    // -----------------------------------------------------------------------
+    const startSession: CommandCodeAdapterShape["startSession"] = (input) =>
       Effect.gen(function* () {
-        const now = yield* nowIso();
-
-        if (parsed.type !== "event") return;
-        const event = parsed.event as Record<string, unknown>;
-        const eventType = event.type as string;
-
-        switch (eventType) {
-          case "text_delta": {
-            const delta = typeof event.delta === "string" ? event.delta : "";
-            yield* emit({
-              type: "content.delta",
-              eventId: asEventId(
-                `content-${String(turnId)}-${yield* Effect.map(DateTime.now, (d) => d.toJSON())}`,
-              ),
-              provider: PROVIDER,
-              ...providerInstanceFields,
-              createdAt: now,
-              threadId: context.threadId,
-              turnId,
-              payload: { streamKind: "assistant_text", delta },
-            } as ProviderRuntimeEvent);
-            break;
-          }
-          case "model_request_start": {
-            if (typeof event.model === "string") {
-              context.currentModel = event.model;
-            }
-            break;
-          }
-          case "message_update": {
-            const content = Array.isArray(event.content) ? event.content : [];
-            for (const block of content) {
-              if (!block || typeof block !== "object") continue;
-              const b = block as Record<string, unknown>;
-              if (b.type === "tool_use" || b.type === "tool-call") {
-                const toolName = String(b.name ?? b.toolName ?? "unknown");
-                const toolId = String(b.id ?? b.toolUseId ?? "");
-                yield* emit({
-                  type: "item.started",
-                  eventId: asEventId(`tool-${toolId}`),
-                  provider: PROVIDER,
-                  ...providerInstanceFields,
-                  createdAt: now,
-                  threadId: context.threadId,
-                  turnId,
-                  payload: {
-                    itemType: "dynamic_tool_call",
-                    title: toolName,
-                    data: { toolName, toolUseId: toolId, input: b.input ?? b.args ?? {} },
-                  },
-                } as ProviderRuntimeEvent);
-              }
-            }
-            break;
-          }
-          default:
-            break;
+        const allSessions = yield* Ref.get(sessions);
+        if (allSessions.has(input.threadId)) {
+          return yield* new ProviderAdapterRequestError({
+            provider: PROVIDER,
+            method: "startSession",
+            detail: `Session already exists for thread ${input.threadId}`,
+          });
         }
-      });
 
-    const startSession = (input: ProviderSessionStartInput) =>
-      Effect.gen(function* () {
         const now = yield* nowIso();
         const scope = yield* Scope.make();
 
         const session: ProviderSession = {
           provider: PROVIDER,
-          ...(input.providerInstanceId ? { providerInstanceId: input.providerInstanceId } : {}),
+          ...(input.providerInstanceId !== undefined
+            ? { providerInstanceId: input.providerInstanceId }
+            : {}),
           status: "ready",
-          runtimeMode: DEFAULT_RUNTIME_MODE,
+          runtimeMode: input.runtimeMode ?? DEFAULT_RUNTIME_MODE,
           threadId: input.threadId,
-          resumeCursor: input.resumeCursor ?? {
-            opaque: `commandcode-resume-${String(input.threadId)}`,
-          },
           cwd: input.cwd ?? process.cwd(),
           createdAt: now,
           updatedAt: now,
@@ -206,43 +136,40 @@ export function makeCommandCodeAdapter(
           session,
           scope,
           turns: [],
-          currentModel: favoriteModel,
-          tokenUsage: null,
-          abortController: null,
-          runningChild: null,
+          currentModel: undefined,
+          activeTurnId: undefined,
+          stopped: false,
         };
 
         yield* Ref.update(sessions, (map) => map.set(input.threadId, context));
 
         yield* emit({
-          type: "session.started",
           eventId: asEventId(`session-started-${String(input.threadId)}`),
           provider: PROVIDER,
-          ...providerInstanceFields,
-          createdAt: now,
           threadId: input.threadId,
-          payload: { message: "Command Code session started" },
-        } as ProviderRuntimeEvent);
-
-        yield* emit({
-          type: "session.configured",
-          eventId: asEventId(`session-configured-${String(input.threadId)}`),
-          provider: PROVIDER,
-          ...providerInstanceFields,
+          turnId: undefined,
           createdAt: now,
-          threadId: input.threadId,
-          payload: { config: {} },
-        } as ProviderRuntimeEvent);
+          type: "session.started",
+          payload: {},
+        });
 
         return session;
       });
 
-    const sendTurn = (input: ProviderSendTurnInput) =>
+    // -----------------------------------------------------------------------
+    // sendTurn
+    // -----------------------------------------------------------------------
+    const sendTurn: CommandCodeAdapterShape["sendTurn"] = (input) =>
       Effect.gen(function* () {
-        const sessionMap = yield* Ref.get(sessions);
-        const context = sessionMap.get(input.threadId);
-
+        const allSessions = yield* Ref.get(sessions);
+        const context = allSessions.get(input.threadId);
         if (!context) {
+          return yield* new ProviderAdapterSessionNotFoundError({
+            provider: PROVIDER,
+            threadId: input.threadId,
+          });
+        }
+        if (context.stopped) {
           return yield* new ProviderAdapterSessionNotFoundError({
             provider: PROVIDER,
             threadId: input.threadId,
@@ -250,179 +177,205 @@ export function makeCommandCodeAdapter(
         }
 
         const turnId = TurnId.make(
-          `commandcode-turn-${String(input.threadId)}-${context.turns.length + 1}`,
+          `cmd-turn-${String(input.threadId)}-${context.turns.length + 1}`,
         );
+        context.activeTurnId = turnId;
 
-        const selectedModel = input.modelSelection?.model || favoriteModel;
-        context.currentModel = selectedModel;
-        context.turns.push({ id: turnId, items: [] });
-
-        yield* emit({
-          type: "turn.started",
-          eventId: asEventId(`turn-started-${String(turnId)}`),
-          provider: PROVIDER,
-          ...providerInstanceFields,
-          createdAt: context.session.updatedAt,
-          threadId: input.threadId,
-          turnId,
-          payload: selectedModel !== undefined ? { model: selectedModel } : {},
-        } as ProviderRuntimeEvent);
-
-        const prompt = input.input ?? "";
-        if (!prompt && !input.continuation) {
-          const now = yield* DateTime.now;
-          yield* emit({
-            type: "turn.aborted",
-            eventId: asEventId(`turn-error-${String(turnId)}`),
-            provider: PROVIDER,
-            ...providerInstanceFields,
-            createdAt: DateTime.formatIso(now),
-            threadId: input.threadId,
-            turnId,
-            payload: { reason: "empty_input" },
-          } as ProviderRuntimeEvent);
-          return { threadId: input.threadId, turnId } satisfies ProviderTurnStartResult;
+        const selectedModel = input.modelSelection?.model || context.currentModel;
+        if (selectedModel) {
+          context.currentModel = selectedModel;
         }
 
-        const args: Array<string> = [
+        context.turns.push({ id: turnId, items: [] });
+
+        const startedAt = yield* nowIso();
+
+        yield* emit({
+          eventId: asEventId(`turn-started-${String(turnId)}`),
+          provider: PROVIDER,
+          threadId: input.threadId,
+          turnId,
+          createdAt: startedAt,
+          type: "turn.started",
+          payload: context.currentModel ? { model: context.currentModel } : {},
+        });
+
+        const prompt = input.input ?? "";
+        if (!prompt) {
+          yield* emit({
+            eventId: asEventId(`turn-error-${String(turnId)}`),
+            provider: PROVIDER,
+            threadId: input.threadId,
+            turnId,
+            createdAt: yield* nowIso(),
+            type: "turn.aborted",
+            payload: { reason: "empty_input" },
+          });
+          context.activeTurnId = undefined;
+          return { threadId: input.threadId, turnId };
+        }
+
+        const cwd = context.session.cwd ?? process.cwd();
+        const binaryPath = config.binaryPath?.trim() || "cmd";
+        const authEnv = buildCmdAuthEnv(config, options.environment);
+
+        const args = [
           "-p",
           prompt,
           "--output-format",
           "json",
-          "--no-session",
+          "--yolo",
           "--skip-onboarding",
+          "--max-turns",
+          "100",
+          ...(context.currentModel ? ["-m", context.currentModel] : []),
         ];
-        if (selectedModel) {
-          args.push("--model", selectedModel);
+
+        const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, {
+          env: { ...process.env, ...authEnv },
+        });
+
+        const result = yield* spawnAndCollect(
+          binaryPath,
+          ChildProcess.make(spawnCommand.command, spawnCommand.args, {
+            env: { ...process.env, ...authEnv },
+            cwd,
+            shell: spawnCommand.shell,
+          }),
+        ).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner));
+
+        // Parse JSON output and emit events
+        const lines = result.stdout.split("\n");
+        let hasEmittedCompletion = false;
+
+        for (const line of lines) {
+          const parsed = parseCmdJsonLine(line);
+          if (!parsed) continue;
+
+          const eventType = parsed.type as string | undefined;
+
+          if (eventType === "result" && parsed.subtype === "success") {
+            const resultText = parsed.result as string | undefined;
+            if (resultText) {
+              yield* emit({
+                eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                provider: PROVIDER,
+                threadId: input.threadId,
+                turnId,
+                createdAt: yield* nowIso(),
+                type: "content.delta",
+                payload: {
+                  streamKind: "assistant_text",
+                  delta: resultText,
+                },
+              });
+            }
+            yield* emit({
+              eventId: asEventId(`turn-completed-${String(turnId)}`),
+              provider: PROVIDER,
+              threadId: input.threadId,
+              turnId,
+              createdAt: yield* nowIso(),
+              type: "turn.completed",
+              payload: { state: "completed" },
+            });
+            hasEmittedCompletion = true;
+          } else if (eventType === "assistant") {
+            const message = parsed.message as Record<string, unknown> | undefined;
+            if (message?.content) {
+              const content = message.content as Array<Record<string, unknown>> | undefined;
+              if (Array.isArray(content)) {
+                for (const block of content) {
+                  if (block.type === "text" && typeof block.text === "string") {
+                    yield* emit({
+                      eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                      provider: PROVIDER,
+                      threadId: input.threadId,
+                      turnId,
+                      createdAt: yield* nowIso(),
+                      type: "content.delta",
+                      payload: {
+                        streamKind: "assistant_text",
+                        delta: block.text,
+                      },
+                    });
+                  } else if (block.type === "tool_use") {
+                    yield* emit({
+                      eventId: asEventId(`item-started-${String(turnId)}-${Date.now()}`),
+                      provider: PROVIDER,
+                      threadId: input.threadId,
+                      turnId,
+                      createdAt: yield* nowIso(),
+                      type: "item.started",
+                      payload: {
+                        itemType: "dynamic_tool_call",
+                        title: (block.name as string) ?? "tool_call",
+                        data: { toolName: block.name, toolInput: block.input },
+                      },
+                    });
+                  }
+                }
+              }
+            }
+          }
         }
 
-        const abortController = new AbortController();
-        context.abortController = abortController;
+        // Fallback completion if no result message was found
+        if (!hasEmittedCompletion && result.code === 0) {
+          yield* emit({
+            eventId: asEventId(`turn-completed-fallback-${String(turnId)}`),
+            provider: PROVIDER,
+            threadId: input.threadId,
+            turnId,
+            createdAt: yield* nowIso(),
+            type: "turn.completed",
+            payload: { state: "completed" },
+          });
+        }
 
-        // Spawn the Command Code CLI in the background using Node.js child_process
-        // directly, avoiding the need to thread Effect services through the
-        // background work.
-        const env = { ...(options.environment ?? process.env) };
-        const cwd = context.session.cwd ?? process.cwd();
+        if (result.code !== 0) {
+          yield* emit({
+            eventId: asEventId(`turn-completed-error-${String(turnId)}`),
+            provider: PROVIDER,
+            threadId: input.threadId,
+            turnId,
+            createdAt: yield* nowIso(),
+            type: "turn.completed",
+            payload: { state: "failed" },
+          });
+        }
 
-        const child = NodeChildProcess.spawn(binaryPath, args, {
-          env,
-          cwd,
-          shell: true,
-        });
-        context.runningChild = child;
+        context.activeTurnId = undefined;
 
-        // Process stdout NDJSON in the background
-        let stdoutBuffer = "";
-        let finalResult: CommandCodeHeadlessResult | null = null;
-
-        child.stdout?.on("data", (chunk: Buffer) => {
-          stdoutBuffer += chunk.toString();
-          const lines = stdoutBuffer.split("\n");
-          // Keep the last (possibly incomplete) line in the buffer
-          stdoutBuffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            const parsed = parseCommandCodeNdjsonLine(line);
-            if (!parsed) continue;
-            if (parsed.type === "result") {
-              finalResult = parsed;
-            } else {
-              void Effect.runPromise(processEvent(parsed, context, turnId));
-            }
-          }
-        });
-
-        let stderrBuffer = "";
-        child.stderr?.on("data", (chunk: Buffer) => {
-          stderrBuffer += chunk.toString();
-        });
-
-        child.on("close", (code: number | null) => {
-          // Process any remaining buffered output
-          if (stdoutBuffer.trim()) {
-            const parsed = parseCommandCodeNdjsonLine(stdoutBuffer.trim());
-            if (parsed?.type === "result") {
-              finalResult = parsed;
-            }
-          }
-
-          context.runningChild = null;
-          context.abortController = null;
-
-          void Effect.runPromise(
-            Effect.gen(function* () {
-              const now = yield* nowIso();
-
-              if (abortController.signal.aborted) {
-                yield* emit({
-                  type: "turn.aborted",
-                  eventId: asEventId(`turn-aborted-${String(turnId)}`),
-                  provider: PROVIDER,
-                  ...providerInstanceFields,
-                  createdAt: now,
-                  threadId: input.threadId,
-                  turnId,
-                  payload: { reason: "interrupted" },
-                } as ProviderRuntimeEvent);
-                return;
-              }
-
-              if (finalResult) {
-                const usage = normalizeUsage(finalResult.usage);
-                context.tokenUsage = buildTokenUsageSnapshot(finalResult, context.tokenUsage);
-
-                yield* emit({
-                  type: "turn.completed",
-                  eventId: asEventId(`turn-completed-${String(turnId)}`),
-                  provider: PROVIDER,
-                  ...providerInstanceFields,
-                  createdAt: now,
-                  threadId: input.threadId,
-                  turnId,
-                  payload: {
-                    state: finalResult.subtype === "success" ? "completed" : "failed",
-                    ...(usage ? { tokenUsage: usage } : {}),
-                  },
-                } as ProviderRuntimeEvent);
-              } else if (code !== 0) {
-                yield* emit({
-                  type: "turn.aborted",
-                  eventId: asEventId(`turn-error-${String(turnId)}`),
-                  provider: PROVIDER,
-                  ...providerInstanceFields,
-                  createdAt: now,
-                  threadId: input.threadId,
-                  turnId,
-                  payload: {
-                    reason: "error",
-                    ...(stderrBuffer.trim() ? { detail: stderrBuffer.trim() } : {}),
-                  },
-                } as ProviderRuntimeEvent);
-              } else {
-                yield* emit({
-                  type: "turn.completed",
-                  eventId: asEventId(`turn-completed-${String(turnId)}`),
-                  provider: PROVIDER,
-                  ...providerInstanceFields,
-                  createdAt: now,
-                  threadId: input.threadId,
-                  turnId,
-                  payload: { state: "completed" },
-                } as ProviderRuntimeEvent);
-              }
+        return { threadId: input.threadId, turnId };
+      }).pipe(
+        Effect.catchTag("PlatformError", (error) =>
+          Effect.fail(
+            new ProviderAdapterRequestError({
+              provider: PROVIDER,
+              method: "sendTurn",
+              detail: `Process error: ${error.message ?? String(error)}`,
             }),
-          );
-        });
+          ),
+        ),
+        Effect.catchTag("ProviderCommandNotFoundError", (error) =>
+          Effect.fail(
+            new ProviderAdapterRequestError({
+              provider: PROVIDER,
+              method: "sendTurn",
+              detail: `Command Code CLI not found: ${error.binaryPath}`,
+            }),
+          ),
+        ),
+      );
 
-        return { threadId: input.threadId, turnId } satisfies ProviderTurnStartResult;
-      });
-
-    const interruptTurn = (threadId: ThreadId, _turnId?: TurnId) =>
+    // -----------------------------------------------------------------------
+    // interruptTurn
+    // -----------------------------------------------------------------------
+    const interruptTurn: CommandCodeAdapterShape["interruptTurn"] = (threadId, _turnId?) =>
       Effect.gen(function* () {
-        const sessionMap = yield* Ref.get(sessions);
-        const context = sessionMap.get(threadId);
-
+        const allSessions = yield* Ref.get(sessions);
+        const context = allSessions.get(threadId);
         if (!context) {
           return yield* new ProviderAdapterSessionNotFoundError({
             provider: PROVIDER,
@@ -430,43 +383,35 @@ export function makeCommandCodeAdapter(
           });
         }
 
-        if (context.abortController) {
-          context.abortController.abort();
+        if (context.activeTurnId) {
+          yield* emit({
+            eventId: asEventId(`turn-aborted-${String(context.activeTurnId)}`),
+            provider: PROVIDER,
+            threadId,
+            turnId: context.activeTurnId,
+            createdAt: yield* nowIso(),
+            type: "turn.aborted",
+            payload: { reason: "interrupted" },
+          });
+          context.activeTurnId = undefined;
         }
-        if (context.runningChild) {
-          context.runningChild.kill("SIGTERM");
-        }
-
-        yield* emit({
-          type: "turn.aborted",
-          eventId: asEventId(`turn-aborted-${String(threadId)}`),
-          provider: PROVIDER,
-          ...providerInstanceFields,
-          createdAt: yield* nowIso(),
-          threadId,
-          payload: { reason: "interrupted" },
-        } as ProviderRuntimeEvent);
       });
 
-    const respondToRequest = () => Effect.void;
-
-    const respondToUserInput = () => Effect.void;
-
-    const stopSession = (threadId: ThreadId) =>
+    // -----------------------------------------------------------------------
+    // stopSession
+    // -----------------------------------------------------------------------
+    const stopSession: CommandCodeAdapterShape["stopSession"] = (threadId) =>
       Effect.gen(function* () {
-        const sessionMap = yield* Ref.get(sessions);
-        const context = sessionMap.get(threadId);
-
-        if (!context) return;
-
-        if (context.abortController) {
-          context.abortController.abort();
-        }
-        if (context.runningChild) {
-          context.runningChild.kill("SIGTERM");
+        const allSessions = yield* Ref.get(sessions);
+        const context = allSessions.get(threadId);
+        if (!context) {
+          return yield* new ProviderAdapterSessionNotFoundError({
+            provider: PROVIDER,
+            threadId,
+          });
         }
 
-        yield* Scope.close(context.scope, Exit.void);
+        context.stopped = true;
 
         yield* Ref.update(sessions, (map) => {
           const next = new Map(map);
@@ -475,80 +420,98 @@ export function makeCommandCodeAdapter(
         });
 
         yield* emit({
-          type: "session.exited",
           eventId: asEventId(`session-exited-${String(threadId)}`),
           provider: PROVIDER,
-          ...providerInstanceFields,
+          threadId,
+          turnId: undefined,
           createdAt: yield* nowIso(),
-          threadId,
-          payload: { reason: "stopped" },
-        } as ProviderRuntimeEvent);
+          type: "session.exited",
+          payload: {},
+        });
       });
 
-    const listSessions = () =>
-      Ref.get(sessions).pipe(
-        Effect.map((map) => Array.from(map.values()).map((ctx) => ctx.session)),
-      );
+    // -----------------------------------------------------------------------
+    // listSessions / hasSession
+    // -----------------------------------------------------------------------
+    const listSessions: CommandCodeAdapterShape["listSessions"] = () =>
+      Effect.map(Ref.get(sessions), (map) => Array.from(map.values()).map((ctx) => ctx.session));
 
-    const hasSession = (threadId: ThreadId) =>
-      Ref.get(sessions).pipe(Effect.map((map) => map.has(threadId)));
+    const hasSession: CommandCodeAdapterShape["hasSession"] = (threadId) =>
+      Effect.map(Ref.get(sessions), (map) => map.has(threadId));
 
-    const readThread = (threadId: ThreadId) =>
+    // -----------------------------------------------------------------------
+    // readThread / rollbackThread
+    // -----------------------------------------------------------------------
+    const readThread: CommandCodeAdapterShape["readThread"] = (threadId) =>
       Effect.gen(function* () {
-        const sessionMap = yield* Ref.get(sessions);
-        const context = sessionMap.get(threadId);
-
+        const allSessions = yield* Ref.get(sessions);
+        const context = allSessions.get(threadId);
         if (!context) {
           return yield* new ProviderAdapterSessionNotFoundError({
             provider: PROVIDER,
             threadId,
           });
         }
-
         return {
-          threadId,
-          turns: context.turns.map((t) => ({
-            id: t.id,
-            items: t.items,
-          })),
+          threadId: context.threadId,
+          turns: context.turns.map((t) => ({ id: t.id, items: t.items })),
         };
       });
 
-    const rollbackThread = (threadId: ThreadId, _numTurns: number) =>
+    const rollbackThread: CommandCodeAdapterShape["rollbackThread"] = (threadId, numTurns) =>
       Effect.gen(function* () {
-        const sessionMap = yield* Ref.get(sessions);
-        const context = sessionMap.get(threadId);
-
+        const allSessions = yield* Ref.get(sessions);
+        const context = allSessions.get(threadId);
         if (!context) {
           return yield* new ProviderAdapterSessionNotFoundError({
             provider: PROVIDER,
             threadId,
           });
         }
-
+        const newTurns = context.turns.slice(0, Math.max(0, context.turns.length - numTurns));
+        context.turns = newTurns;
         return {
-          threadId,
-          turns: context.turns.map((t) => ({
-            id: t.id,
-            items: t.items,
-          })),
+          threadId: context.threadId,
+          turns: newTurns.map((t) => ({ id: t.id, items: t.items })),
         };
       });
 
-    const stopAll = () =>
+    // -----------------------------------------------------------------------
+    // respondToRequest / respondToUserInput (no-op for print mode)
+    // -----------------------------------------------------------------------
+    const respondToRequest: CommandCodeAdapterShape["respondToRequest"] = (
+      _threadId,
+      _requestId,
+      _decision,
+    ) => Effect.void;
+
+    const respondToUserInput: CommandCodeAdapterShape["respondToUserInput"] = (
+      _threadId,
+      _requestId,
+      _answers,
+    ) => Effect.void;
+
+    // -----------------------------------------------------------------------
+    // stopAll
+    // -----------------------------------------------------------------------
+    const stopAll: CommandCodeAdapterShape["stopAll"] = () =>
       Effect.gen(function* () {
-        const sessionMap = yield* Ref.get(sessions);
-        for (const threadId of sessionMap.keys()) {
-          yield* stopSession(threadId);
+        const allSessions = yield* Ref.get(sessions);
+        for (const threadId of allSessions.keys()) {
+          yield* stopSession(threadId).pipe(Effect.ignore);
         }
       });
 
-    const streamEvents = Stream.fromPubSub(eventPubSub);
+    // -----------------------------------------------------------------------
+    // streamEvents
+    // -----------------------------------------------------------------------
+    const streamEvents = Stream.fromQueue(eventQueue);
 
     return {
       provider: PROVIDER,
       capabilities: {
-        sessionModelSwitch: "in-session",
+        sessionModelSwitch: "unsupported",
+        supportsConversationRollback: false,
       },
       startSession,
       sendTurn,

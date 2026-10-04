@@ -10,6 +10,7 @@ import type {
   GitActionProgressEvent,
   GitResolvePullRequestResult,
   GitStackedAction,
+  ModelSelection,
   SourceControlCloneProtocol,
   SourceControlRepositoryVisibility,
   ThreadId,
@@ -155,7 +156,12 @@ export function useVcsInitAction(scope: SourceControlActionScope) {
       input: { cwd: target.cwd },
     });
   }, [init, scope]);
-  return useAction({ kind: "init", label: "Initializing repository", scope, action });
+  return useAction({
+    kind: "init",
+    label: "Initializing repository",
+    scope,
+    action,
+  });
 }
 
 export function useVcsPullAction(scope: SourceControlActionScope) {
@@ -216,6 +222,7 @@ export function useGitStackedAction(scope: SourceControlActionScope) {
       featureBranch?: boolean;
       filePaths?: string[];
       threadId?: ThreadId;
+      modelSelection?: ModelSelection;
       onProgress?: (event: GitActionProgressEvent) => void;
     }) => {
       if (resolveScope(scope) === null) {
@@ -236,6 +243,7 @@ export function useGitStackedAction(scope: SourceControlActionScope) {
         ...(input.featureBranch ? { featureBranch: true } : {}),
         ...(input.filePaths?.length ? { filePaths: input.filePaths } : {}),
         ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
+        ...(input.modelSelection ? { modelSelection: input.modelSelection } : {}),
         ...(input.onProgress ? { onProgress: input.onProgress } : {}),
       });
     },

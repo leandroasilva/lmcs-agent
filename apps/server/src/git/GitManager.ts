@@ -130,7 +130,7 @@ export class GitManager extends Context.Service<
       options?: GitRunStackedActionOptions,
     ) => Effect.Effect<GitRunStackedActionResult, GitManagerServiceError>;
   }
->()("t3/git/GitManager") {}
+>()("lmcs/git/GitManager") {}
 
 const COMMIT_TIMEOUT_MS = 10 * 60_000;
 const MAX_PROGRESS_TEXT_LENGTH = 500;
@@ -2048,9 +2048,23 @@ export const make = Effect.gen(function* () {
       };
     }
 
-    const baseBranch = userBaseBranch
-      ? yield* Effect.succeed(userBaseBranch)
-      : yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext);
+    // Log the userBaseBranch value for debugging
+    yield* Effect.logInfo("runPrStep: userBaseBranch received", {
+      userBaseBranch,
+      hasValue: !!userBaseBranch,
+      trimmedLength: userBaseBranch?.trim().length ?? 0,
+    });
+
+    const baseBranch =
+      userBaseBranch && userBaseBranch.trim().length > 0
+        ? yield* Effect.succeed(userBaseBranch.trim())
+        : yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext);
+
+    yield* Effect.logInfo("runPrStep: resolved baseBranch", {
+      baseBranch,
+      source:
+        userBaseBranch && userBaseBranch.trim().length > 0 ? "user-provided" : "auto-resolved",
+    });
     yield* emit({
       kind: "phase_started",
       phase: "pr",
@@ -2717,11 +2731,21 @@ export const make = Effect.gen(function* () {
         let preResolvedCommitSuggestion: CommitAndBranchSuggestion | undefined = undefined;
 
         const textGenerationSettings = yield* projectSettingsFor(input).pipe(
-          Effect.flatMap((settings) =>
-            settings.sourceControlWriterModelSelection === null
+          Effect.flatMap((settings) => {
+            const style = settings.sourceControlWritingStyle;
+            // Prefer the thread's model selection (passed from the client) over
+            // server settings. This ensures commit messages and PR content are
+            // generated using the same model the user selected for the thread.
+            if (input.modelSelection) {
+              return Effect.succeed({
+                modelSelection: input.modelSelection,
+                style,
+              });
+            }
+            return settings.sourceControlWriterModelSelection === null
               ? Effect.succeed({
                   modelSelection: settings.textGenerationModelSelection,
-                  style: settings.sourceControlWritingStyle,
+                  style,
                 })
               : providerRegistry.getProviders.pipe(
                   Effect.map((providers) => ({
@@ -2729,10 +2753,10 @@ export const make = Effect.gen(function* () {
                       settings,
                       providers,
                     ),
-                    style: settings.sourceControlWritingStyle,
+                    style,
                   })),
-                ),
-          ),
+                );
+          }),
           Effect.mapError(
             (cause) =>
               new GitManagerError({

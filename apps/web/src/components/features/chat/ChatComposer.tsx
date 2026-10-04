@@ -148,6 +148,7 @@ import {
   type ComposerBannerStackItem,
 } from "./ComposerBannerStack";
 import { compressImageForStash, prepareImageForAttachment } from "../../../lib/imageCompression";
+import type { QueuedComposerMessage } from "../../../queuedMessageStore";
 import {
   fileAttachmentTooLargeMessage,
   formatAttachmentSize,
@@ -940,6 +941,7 @@ import {
   PaperclipIcon,
   PencilRulerIcon,
   PlayIcon,
+  ArrowUpIcon,
   ShieldIcon,
   XIcon,
 } from "lucide-react";
@@ -1489,6 +1491,12 @@ export interface ChatComposerProps {
   setThreadError: (threadId: ThreadId | null, error: string | null) => void;
   onExpandImage: (preview: ExpandedImagePreview) => void;
   onFileOpen: (attachment: ChatFileAttachment) => void;
+
+  // Queued messages
+  queuedMessages: ReadonlyArray<QueuedComposerMessage>;
+  onSteerQueuedMessage: (id: string) => void;
+  onRemoveQueuedMessage: (id: string) => void;
+  steerQueuedMessageShortcutLabel: string | null;
 }
 
 // --------------------------------------------------------------------------
@@ -1590,6 +1598,10 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     setThreadError,
     onExpandImage,
     onFileOpen,
+    queuedMessages,
+    onSteerQueuedMessage,
+    onRemoveQueuedMessage,
+    steerQueuedMessageShortcutLabel,
   } = props;
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const composerDraftTargetKey = composerTargetKey(composerDraftTarget);
@@ -6291,6 +6303,96 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       className="mx-auto w-full min-w-0 max-w-3xl"
       data-chat-composer-form="true"
     >
+      {/* Queued messages list - positioned above the composer */}
+      {queuedMessages.length > 0 ? (
+        <div className="relative mb-2">
+          <div className="absolute bottom-full left-0 right-0 mb-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-background/95 backdrop-blur-sm shadow-lg">
+            {queuedMessages.map((message, index) => {
+              const isNext = index === 0;
+              const attachmentCount = message.images.length + message.files.length;
+              const contextCount =
+                message.terminalContexts.length +
+                message.previewAnnotations.length +
+                message.reviewComments.length;
+              const text = message.prompt.trim();
+              const statusLabel = message.holdUntilUserAction
+                ? "Waits for Send now"
+                : isNext
+                  ? "Sends after the next tool call or when the turn ends"
+                  : "Sends after the messages above it";
+
+              return (
+                <div
+                  key={message.id}
+                  className="flex items-start gap-2 border-b border-border/50 p-3 last:border-b-0"
+                  data-queued-message-id={message.id}
+                >
+                  <div className="flex-1 min-w-0">
+                    {text.length > 0 ? (
+                      <p className="text-sm text-foreground/80 line-clamp-2">{text}</p>
+                    ) : null}
+                    {(attachmentCount > 0 || contextCount > 0) && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {attachmentCount > 0
+                          ? `${attachmentCount} attachment${attachmentCount === 1 ? "" : "s"}`
+                          : ""}
+                        {attachmentCount > 0 && contextCount > 0 ? ", " : ""}
+                        {contextCount > 0
+                          ? `${contextCount} context ${contextCount === 1 ? "item" : "items"}`
+                          : ""}
+                      </div>
+                    )}
+                    <div className="mt-1 text-xs text-muted-foreground/70">{statusLabel}</div>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    {isNext ? (
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              size="icon-xs"
+                              variant="ghost-muted"
+                              onPointerDown={(event) => event.preventDefault()}
+                              onClick={() => onSteerQueuedMessage(message.id)}
+                              aria-label="Send now"
+                            />
+                          }
+                        >
+                          <ArrowUpIcon className="size-3.5" aria-hidden />
+                        </TooltipTrigger>
+                        <TooltipPopup side="bottom">
+                          Send now{" "}
+                          {steerQueuedMessageShortcutLabel
+                            ? `(${steerQueuedMessageShortcutLabel})`
+                            : ""}
+                        </TooltipPopup>
+                      </Tooltip>
+                    ) : null}
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost-muted"
+                            onPointerDown={(event) => event.preventDefault()}
+                            onClick={() => onRemoveQueuedMessage(message.id)}
+                            aria-label="Cancel and return to the composer"
+                          />
+                        }
+                      >
+                        <XIcon className="size-3.5" aria-hidden />
+                      </TooltipTrigger>
+                      <TooltipPopup side="bottom">Cancel and return to the composer</TooltipPopup>
+                    </Tooltip>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
       {composerControlsInStrip && restingControlsHost
         ? createPortal(
             <div

@@ -2,6 +2,7 @@ import {
   AntigravitySettings,
   ClaudeSettings,
   CodexSettings,
+  CommandCodeSettings,
   CursorSettings,
   GrokSettings,
   OpenCodeSettings,
@@ -12,6 +13,7 @@ import type * as Schema from "effect/Schema";
 import {
   AntigravityIcon,
   ClaudeAI,
+  CommandCodeIcon,
   CursorIcon,
   GrokIcon,
   type Icon,
@@ -89,8 +91,15 @@ const PROVIDER_CLIENT_DEFINITIONS: readonly ProviderClientDefinition[] = [
     value: ProviderDriverKind.make("qoder"),
     label: "Qoder",
     icon: QoderIcon,
-    badgeLabel: "SDK",
+    badgeLabel: "CLI",
     settingsSchema: QoderSettings,
+  },
+  {
+    value: ProviderDriverKind.make("commandCode"),
+    label: "Command Code",
+    icon: CommandCodeIcon,
+    badgeLabel: "CLI",
+    settingsSchema: CommandCodeSettings,
   },
 ];
 

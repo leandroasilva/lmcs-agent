@@ -1,8 +1,4 @@
-import {
-  ProviderDriverKind,
-  QoderSettings,
-  TextGenerationError,
-} from "@lmcstools/core";
+import { ProviderDriverKind, QoderSettings } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
@@ -13,6 +9,7 @@ import * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
 import { ServerConfig } from "../../config.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import * as TextGeneration from "../../textGeneration/TextGeneration.ts";
+import { makeQoderTextGeneration } from "../../textGeneration/QoderTextGeneration.ts";
 import { ProviderDriverError } from "../Errors.ts";
 import { makeQoderAdapter } from "../Layers/QoderAdapter.ts";
 import {
@@ -60,14 +57,7 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
   },
   configSchema: QoderSettings,
   defaultConfig: (): QoderSettings => decodeQoderSettings({}),
-  create: ({
-    instanceId,
-    displayName,
-    accentColor,
-    environment,
-    enabled,
-    config,
-  }) =>
+  create: ({ instanceId, displayName, accentColor, environment, enabled, config }) =>
     Effect.gen(function* () {
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
       const fileSystem = yield* FileSystem.FileSystem;
@@ -95,72 +85,29 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
             packageName: null,
           }),
         ).pipe(
-          Effect.provideService(
-            ChildProcessSpawner.ChildProcessSpawner,
-            spawner,
-          ),
+          Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
           Effect.provideService(FileSystem.FileSystem, fileSystem),
           Effect.provideService(Path.Path, path),
         ),
       );
       const adapter = yield* makeQoderAdapter(effectiveConfig, {
         environment: processEnv,
-        ...(eventLoggers.native
-          ? { nativeEventLogger: eventLoggers.native }
-          : {}),
         instanceId,
       });
 
-      // TODO: Implement proper text generation via Qoder SDK
-      const textGeneration: TextGeneration.TextGeneration["Service"] = {
-        generateThreadTitle: (input) =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generateThreadTitle",
-              detail: "Qoder text generation is not yet implemented.",
-            }),
-          ),
-        generateCommitMessage: (input) =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generateCommitMessage",
-              detail: "Qoder text generation is not yet implemented.",
-            }),
-          ),
-        generateBranchName: (input) =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generateBranchName",
-              detail: "Qoder text generation is not yet implemented.",
-            }),
-          ),
-        generatePrContent: (input) =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generatePrContent",
-              detail: "Qoder text generation is not yet implemented.",
-            }),
-          ),
-      };
+      const textGeneration = yield* makeQoderTextGeneration(effectiveConfig, processEnv).pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      );
 
-      const checkProvider = checkQoderProviderStatus(
-        effectiveConfig,
-        processEnv,
-        cwd,
-      ).pipe(
+      const checkProvider = checkQoderProviderStatus(effectiveConfig, processEnv, cwd).pipe(
         Effect.map(stampIdentity),
         Effect.provideService(FileSystem.FileSystem, fileSystem),
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
         Effect.provideService(Path.Path, path),
       );
 
-      const snapshotSettings = makeProviderSnapshotSettingsSource(
-        effectiveConfig,
-        serverSettings,
-      );
-      const snapshot = yield* makeManagedServerProvider<
-        ProviderSnapshotSettings<QoderSettings>
-      >({
+      const snapshotSettings = makeProviderSnapshotSettingsSource(effectiveConfig, serverSettings);
+      const snapshot = yield* makeManagedServerProvider<ProviderSnapshotSettings<QoderSettings>>({
         resolveMaintenance,
         getSettings: snapshotSettings.getSettings,
         streamSettings: snapshotSettings.streamSettings,
@@ -172,11 +119,7 @@ export const QoderDriver: ProviderDriver<QoderSettings, QoderDriverEnv> = {
             Effect.provideService(Path.Path, path),
           ),
         checkProvider,
-        enrichSnapshot: ({
-          settings,
-          snapshot: currentSnapshot,
-          publishSnapshot,
-        }) =>
+        enrichSnapshot: ({ settings, snapshot: currentSnapshot, publishSnapshot }) =>
           resolveMaintenance().pipe(
             Effect.flatMap((maintenanceCapabilities) =>
               enrichQoderSnapshot({

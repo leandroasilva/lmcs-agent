@@ -1,7 +1,7 @@
 import * as Exit from "effect/Exit";
 import * as Schema from "effect/Schema";
 
-import { T3ProjectFile, T3_PROJECT_FILE_SCHEMA_URL } from "@lmcstools/core";
+import { T3ProjectFile, LMCS_PROJECT_FILE_SCHEMA_URL } from "@lmcstools/core";
 
 import { fromLenientJson } from "./schemaJson.ts";
 
@@ -26,7 +26,7 @@ export function parseT3ProjectFile(contents: string): T3ProjectFile | null {
 /**
  * Build the publishable JSON Schema document for `lmcs.json` (draft 2020-12).
  *
- * Served from the marketing site at {@link T3_PROJECT_FILE_SCHEMA_URL} so
+ * Served from the marketing site at {@link LMCS_PROJECT_FILE_SCHEMA_URL} so
  * editors get LSP support via a `$schema` reference.
  */
 export function buildT3ProjectFileJsonSchema(): Record<string, unknown> {
@@ -37,7 +37,7 @@ export function buildT3ProjectFileJsonSchema(): Record<string, unknown> {
   });
   const jsonSchema: Record<string, unknown> = {
     $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: T3_PROJECT_FILE_SCHEMA_URL,
+    $id: LMCS_PROJECT_FILE_SCHEMA_URL,
     ...document.schema,
   };
   if (document.definitions && Object.keys(document.definitions).length > 0) {

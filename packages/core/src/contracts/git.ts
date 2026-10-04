@@ -128,6 +128,11 @@ export const GitRunStackedActionInput = Schema.Struct({
    * When provided, overrides the auto-resolved base branch.
    */
   baseBranch: Schema.optional(TrimmedNonEmptyStringSchema),
+  /**
+   * The thread's model selection to use for text generation (commit messages, PR content).
+   * When provided, takes precedence over the server settings model.
+   */
+  modelSelection: Schema.optional(ModelSelection),
 });
 export type GitRunStackedActionInput = typeof GitRunStackedActionInput.Type;
 

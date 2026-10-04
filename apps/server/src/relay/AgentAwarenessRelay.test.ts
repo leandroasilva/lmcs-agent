@@ -442,7 +442,7 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
         publicKeyEncoding: { format: "pem", type: "spki" },
       });
       const payload = {
-        iss: "t3-env:env",
+        iss: "lmcs-env:env",
         aud: "https://relay.example.test",
         sub: "env",
         jti: "nonce-1",
@@ -461,7 +461,7 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
           publicKey: keyPair.publicKey,
           token,
           typ: RELAY_ACTIVITY_PUBLISH_TYP,
-          issuer: "t3-env:env",
+          issuer: "lmcs-env:env",
           audience: "https://relay.example.test",
           nowEpochSeconds: 150,
         });

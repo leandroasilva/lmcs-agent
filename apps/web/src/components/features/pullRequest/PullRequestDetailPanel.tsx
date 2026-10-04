@@ -665,36 +665,33 @@ export function PullRequestDetailPanel({
       ),
     [resolvedCoreDetail, observedSummary, listSummary],
   );
-  const coreDetail = useMemo(
-    () =>
-      resolvedCoreDetail === null || sharedSummary === null || sharedSummary === resolvedCoreDetail
-        ? resolvedCoreDetail
-        : {
-            ...resolvedCoreDetail,
-            title: sharedSummary.title,
-            state: sharedSummary.state,
-            headBranch: sharedSummary.headBranch,
-            baseBranch: sharedSummary.baseBranch,
-            updatedAt: sharedSummary.updatedAt,
-            author: sharedSummary.author ?? resolvedCoreDetail.author,
-            additions: sharedSummary.additions ?? resolvedCoreDetail.additions,
-            deletions: sharedSummary.deletions ?? resolvedCoreDetail.deletions,
-            changedFiles: sharedSummary.changedFiles ?? resolvedCoreDetail.changedFiles,
-            mergeability: sharedSummary.mergeability ?? resolvedCoreDetail.mergeability,
-            closedAt:
-              sharedSummary.closedAt === undefined
-                ? resolvedCoreDetail.closedAt
-                : sharedSummary.closedAt,
-            mergedAt:
-              sharedSummary.mergedAt === undefined
-                ? resolvedCoreDetail.mergedAt
-                : sharedSummary.mergedAt,
-            // A summary may come from an older server that does not report draft state. Keep the
-            // detail's required value instead of making the complete detail shape partial.
-            isDraft: sharedSummary.isDraft ?? resolvedCoreDetail.isDraft,
-          },
-    [resolvedCoreDetail, sharedSummary],
-  );
+  // When the live detail query has fresh data, prefer it over the cached/shared summary.
+  // This ensures that after a refresh (e.g. user edited the PR on GitHub), the panel shows
+  // the updated values (like baseBranch) instead of stale cached data.
+  const coreDetail = useMemo(() => {
+    // If we have no live data or no shared summary, use whatever we have
+    if (resolvedCoreDetail === null || sharedSummary === null) {
+      return resolvedCoreDetail;
+    }
+    // If the shared summary is the same reference as the resolved detail, no merge needed
+    if (sharedSummary === resolvedCoreDetail) {
+      return resolvedCoreDetail;
+    }
+    // Live query data takes precedence over cached/shared summary for critical fields
+    // like baseBranch and headBranch, which can be edited externally (e.g. on GitHub)
+    return {
+      ...resolvedCoreDetail,
+      // Only use shared summary fields when the live detail doesn't have them
+      author: resolvedCoreDetail.author ?? sharedSummary.author,
+      additions: resolvedCoreDetail.additions ?? sharedSummary.additions,
+      deletions: resolvedCoreDetail.deletions ?? sharedSummary.deletions,
+      changedFiles: resolvedCoreDetail.changedFiles ?? sharedSummary.changedFiles,
+      mergeability: resolvedCoreDetail.mergeability ?? sharedSummary.mergeability,
+      closedAt: resolvedCoreDetail.closedAt ?? sharedSummary.closedAt,
+      mergedAt: resolvedCoreDetail.mergedAt ?? sharedSummary.mergedAt,
+      isDraft: resolvedCoreDetail.isDraft ?? sharedSummary.isDraft,
+    };
+  }, [resolvedCoreDetail, sharedSummary]);
   const activity = activityQuery.data;
   const detail = useMemo(
     () =>
@@ -745,7 +742,10 @@ export function PullRequestDetailPanel({
   }, [detail?.autoMergeMethod, pullRequestKey]);
   const repositoryUrl = detail === null ? null : changeRequestRepositoryUrl(detail.url);
   const markdownContext = useMemo(
-    () => ({ repositoryUrl: detail?.provider === "github" ? repositoryUrl : null, threadRef }),
+    () => ({
+      repositoryUrl: detail?.provider === "github" ? repositoryUrl : null,
+      threadRef,
+    }),
     [detail?.provider, repositoryUrl, threadRef],
   );
   const authorProfileUrl =
@@ -793,7 +793,10 @@ export function PullRequestDetailPanel({
     () =>
       detail === null || detail.capabilities.stacks !== true || !supportsThreadPullRequests
         ? null
-        : { ...reference, host: reference.host ?? parseChangeRequestUrl(detail.url)?.host },
+        : {
+            ...reference,
+            host: reference.host ?? parseChangeRequestUrl(detail.url)?.host,
+          },
     [detail, reference, supportsThreadPullRequests],
   );
   const nativeStackQuery = usePullRequestStack(environmentId, stackReference);
@@ -819,9 +822,10 @@ export function PullRequestDetailPanel({
   }, [activityQuery.refresh, detailQuery.refresh, nativeStackQuery.refresh]);
   const [refreshToken, setRefreshToken] = useState(0);
   const codeRefreshToken = refreshToken + (turnRefresh ?? 0);
-  const activityRevision = useRef<{ readonly key: string; readonly updatedAt: string } | null>(
-    null,
-  );
+  const activityRevision = useRef<{
+    readonly key: string;
+    readonly updatedAt: string;
+  } | null>(null);
   useEffect(() => {
     if (!coreDetail) return;
     const next = { key: tabScopeKey, updatedAt: coreDetail.updatedAt };
@@ -847,7 +851,9 @@ export function PullRequestDetailPanel({
   // the answer for a reader who can see that what they are looking at is behind. The
   // invalidation goes first so the re-reads miss that cache; if it fails, the reads still run
   // and at worst answer from it.
-  const invalidate = useAtomCommand(pullRequestEnvironment.invalidate, { reportFailure: false });
+  const invalidate = useAtomCommand(pullRequestEnvironment.invalidate, {
+    reportFailure: false,
+  });
   const [isInvalidating, setIsInvalidating] = useState(false);
   // One word for "the host is being asked again", whichever of the two halves is in flight:
   // the invalidation round trip, then the detail read it kicks off.
@@ -869,13 +875,19 @@ export function PullRequestDetailPanel({
     appliedForcedToken.current = forcedRefreshToken;
     void refreshFromHost();
   }, [forcedRefreshToken, refreshFromHost]);
-  const runAction = useAtomCommand(pullRequestEnvironment.runAction, { reportFailure: false });
-  const postComment = useAtomCommand(pullRequestEnvironment.comment, { reportFailure: false });
+  const runAction = useAtomCommand(pullRequestEnvironment.runAction, {
+    reportFailure: false,
+  });
+  const postComment = useAtomCommand(pullRequestEnvironment.comment, {
+    reportFailure: false,
+  });
   // Which action is in flight, not merely that one is: every control here is disabled while any
   // of them runs, but only the button that was pressed may say what it is doing.
   const [pendingAction, setPendingAction] = useState<PullRequestAction | null>(null);
   const actionPending = pendingAction !== null;
-  const update = useAtomCommand(pullRequestEnvironment.update, { reportFailure: false });
+  const update = useAtomCommand(pullRequestEnvironment.update, {
+    reportFailure: false,
+  });
   // Scoped to the pull request it was typed against, since this one panel shows a different one
   // every time it is opened and a half-written title must not follow it there.
   const [titleScope, setTitleScope] = useState<{
@@ -1044,7 +1056,10 @@ export function PullRequestDetailPanel({
       return;
     }
     setTitleSaving(true);
-    const result = await update({ environmentId, input: { ...reference, title } });
+    const result = await update({
+      environmentId,
+      input: { ...reference, title },
+    });
     setTitleSaving(false);
     if (result._tag === "Failure") {
       // The draft stays open with the words still in it: retyping a title somebody has just
@@ -1180,7 +1195,10 @@ export function PullRequestDetailPanel({
   // before sending. Checking out is the whole point of the ones that carry nothing.
   const startHandoff = async (
     kind: string,
-    task: { prompt: string; reviewComments?: ReadonlyArray<ReviewCommentContext> } | null,
+    task: {
+      prompt: string;
+      reviewComments?: ReadonlyArray<ReviewCommentContext>;
+    } | null,
     // A worktree leaves whatever is open alone, which is why it is the default. Checking out in
     // the repository itself is what you want when the point is to run the thing where you
     // already work — and it moves the branch under everything else that is open there.
@@ -1910,7 +1928,10 @@ export function PullRequestDetailPanel({
                           variant="default"
                           disabled={actionPending}
                           onClick={() =>
-                            setConfirmation({ open: true, action: "enable-auto-merge" })
+                            setConfirmation({
+                              open: true,
+                              action: "enable-auto-merge",
+                            })
                           }
                           aria-label={
                             pendingAction === "enable-auto-merge"
@@ -2108,7 +2129,10 @@ export function PullRequestDetailPanel({
                         <MenuItem
                           disabled={actionPending}
                           onClick={() =>
-                            setConfirmation({ open: true, action: "enable-auto-merge" })
+                            setConfirmation({
+                              open: true,
+                              action: "enable-auto-merge",
+                            })
                           }
                         >
                           <PullRequestGlyph.merged className="size-3.5" />
@@ -2396,7 +2420,10 @@ export function PullRequestDetailPanel({
                       value={titleDraft}
                       aria-label="Pull request title"
                       onChange={(event) =>
-                        setTitleScope({ pullRequestKey, text: event.target.value })
+                        setTitleScope({
+                          pullRequestKey,
+                          text: event.target.value,
+                        })
                       }
                       onKeyDown={(event) => {
                         if (event.key === "Enter") {
@@ -2562,7 +2589,10 @@ export function PullRequestDetailPanel({
                             variant="warning-outline"
                             disabled={actionPending}
                             onClick={() =>
-                              setConfirmation({ open: true, action: "approve-workflows" })
+                              setConfirmation({
+                                open: true,
+                                action: "approve-workflows",
+                              })
                             }
                             aria-label={
                               pendingAction === "approve-workflows"

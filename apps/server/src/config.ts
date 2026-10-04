@@ -104,7 +104,7 @@ export class ServerConfig extends Context.Service<
     readonly tailscaleServeEnabled: boolean;
     readonly tailscaleServePort: number;
   }
->()("t3/config/ServerConfig") {
+>()("lmcs/config/ServerConfig") {
   /** @deprecated Import and use `layerTest` from this module. */
   static readonly layerTest = (
     cwd: string,
@@ -121,7 +121,7 @@ export const make = (config: ServerConfig["Service"]) => ServerConfig.of(config)
 export const otlpResource = (config: ServerConfig["Service"]) => ({
   serviceName: config.otlpServiceName,
   attributes: {
-    "service.runtime": "t3-server",
+    "service.runtime": "lmcs-server",
     "service.mode": config.mode,
   },
 });
@@ -222,7 +222,7 @@ const makeTest = Effect.fn("ServerConfig.makeTest")(function* (
     otlpTracesExport: DEFAULT_SIGNAL_EXPORT,
     otlpMetricsExport: DEFAULT_SIGNAL_EXPORT,
     otlpLogsExport: DEFAULT_SIGNAL_EXPORT,
-    otlpServiceName: "t3-server",
+    otlpServiceName: "lmcs-server",
     otelEnvironment: OtelEnvironment.none,
     cwd,
     baseDir,

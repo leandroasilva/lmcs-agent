@@ -887,7 +887,11 @@ function attachTrailingToolGroupsToAssistant(
   const result: MessagesTimelineRow[] = [];
   for (const [index, row] of rows.entries()) {
     if (row.kind === "message" && messageRowsWithoutMeta.has(row.id)) {
-      result.push({ ...row, showAssistantMeta: false, showAssistantCopyButton: false });
+      result.push({
+        ...row,
+        showAssistantMeta: false,
+        showAssistantCopyButton: false,
+      });
     } else {
       result.push(row);
     }
@@ -1453,15 +1457,6 @@ export function deriveMessagesTimelineRows(input: {
     });
   }
   const rows = attachTrailingToolGroupsToAssistant(nextRows);
-  input.queuedMessages?.forEach((queuedMessage, index) => {
-    rows.push({
-      kind: "queued-message",
-      id: `queued-message:${queuedMessage.id}`,
-      createdAt: queuedMessage.createdAt,
-      queuedMessage,
-      isNext: index === 0,
-    });
-  });
   return rows;
 }
 

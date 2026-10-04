@@ -1,13 +1,4 @@
-/**
- * CommandCodeDriver — `ProviderDriver` for the Command Code runtime.
- *
- * Mirrors the Qoder driver pattern: a plain value whose `create()` bundles
- * `snapshot` / `adapter` / `textGeneration` closures over the per-instance
- * `CommandCodeSettings`.
- *
- * @module provider/Drivers/CommandCodeDriver
- */
-import { CommandCodeSettings, ProviderDriverKind, TextGenerationError } from "@lmcstools/core";
+import { ProviderDriverKind, CommandCodeSettings } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
@@ -18,6 +9,7 @@ import * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
 import { ServerConfig } from "../../config.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import * as TextGeneration from "../../textGeneration/TextGeneration.ts";
+import { makeCommandCodeTextGeneration } from "../../textGeneration/CommandCodeTextGeneration.ts";
 import { ProviderDriverError } from "../Errors.ts";
 import { makeCommandCodeAdapter } from "../Layers/CommandCodeAdapter.ts";
 import {
@@ -46,7 +38,7 @@ import {
 
 const decodeCommandCodeSettings = Schema.decodeSync(CommandCodeSettings);
 
-const DRIVER_KIND = ProviderDriverKind.make("commandcode");
+const DRIVER_KIND = ProviderDriverKind.make("commandCode");
 
 export type CommandCodeDriverEnv =
   | BackgroundPolicy.BackgroundPolicy
@@ -85,12 +77,15 @@ export const CommandCodeDriver: ProviderDriver<CommandCodeSettings, CommandCodeD
         accentColor,
         continuationGroupKey: continuationIdentity.continuationKey,
       });
-      const effectiveConfig = { ...config, enabled } satisfies CommandCodeSettings;
+      const effectiveConfig = {
+        ...config,
+        enabled,
+      } satisfies CommandCodeSettings;
       const resolveMaintenance = yield* makeCachedProviderMaintenanceResolution(
         Effect.succeed(
           makeManualOnlyProviderMaintenanceCapabilities({
             provider: DRIVER_KIND,
-            packageName: "command-code",
+            packageName: null,
           }),
         ).pipe(
           Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
@@ -100,44 +95,18 @@ export const CommandCodeDriver: ProviderDriver<CommandCodeSettings, CommandCodeD
       );
       const adapter = yield* makeCommandCodeAdapter(effectiveConfig, {
         environment: processEnv,
-        ...(eventLoggers.native ? { nativeEventLogger: eventLoggers.native } : {}),
         instanceId,
       });
 
-      const textGeneration: TextGeneration.TextGeneration["Service"] = {
-        generateThreadTitle: () =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generateThreadTitle",
-              detail: "Command Code text generation is not yet implemented.",
-            }),
-          ),
-        generateCommitMessage: () =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generateCommitMessage",
-              detail: "Command Code text generation is not yet implemented.",
-            }),
-          ),
-        generateBranchName: () =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generateBranchName",
-              detail: "Command Code text generation is not yet implemented.",
-            }),
-          ),
-        generatePrContent: () =>
-          Effect.fail(
-            new TextGenerationError({
-              operation: "generatePrContent",
-              detail: "Command Code text generation is not yet implemented.",
-            }),
-          ),
-      };
+      const textGeneration = yield* makeCommandCodeTextGeneration(effectiveConfig, processEnv).pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      );
 
       const checkProvider = checkCommandCodeProviderStatus(effectiveConfig, processEnv, cwd).pipe(
         Effect.map(stampIdentity),
+        Effect.provideService(FileSystem.FileSystem, fileSystem),
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+        Effect.provideService(Path.Path, path),
       );
 
       const snapshotSettings = makeProviderSnapshotSettingsSource(effectiveConfig, serverSettings);

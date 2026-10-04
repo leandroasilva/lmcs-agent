@@ -1,4 +1,4 @@
-import { T3_PROJECT_FILE_NAME, type EnvironmentId, type T3ProjectFile } from "@lmcstools/core";
+import { LMCS_PROJECT_FILE_NAME, type EnvironmentId, type T3ProjectFile } from "@lmcstools/core";
 import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import { executeAtomQuery } from "@lmcstools/client/state/runtime";
 
@@ -24,13 +24,13 @@ export async function readT3ProjectFile(
 ): Promise<T3ProjectFile | null> {
   const result = await executeAtomQuery(
     appAtomRegistry,
-    getProjectFileQueryAtom(environmentId, workspaceRoot, T3_PROJECT_FILE_NAME),
+    getProjectFileQueryAtom(environmentId, workspaceRoot, LMCS_PROJECT_FILE_NAME),
     { reportDefect: false, reportFailure: false },
   );
   const data = resolveProjectFileQueryData(
     environmentId,
     workspaceRoot,
-    T3_PROJECT_FILE_NAME,
+    LMCS_PROJECT_FILE_NAME,
     result._tag === "Success" ? result.value : null,
   );
   if (data === null || data.truncated) return null;

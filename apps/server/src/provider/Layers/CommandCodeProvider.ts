@@ -1,17 +1,28 @@
+/**
+ * CommandCodeProvider — snapshot/probe layer for the Command Code provider.
+ *
+ * Probes `cmd --version` to verify CLI availability and checks auth
+ * via COMMAND_CODE_API_KEY env or settings.
+ *
+ * @module CommandCodeProvider
+ */
 import {
   type CommandCodeSettings,
+  type ModelCapabilities,
   type ServerProvider,
   type ServerProviderAuth,
   type ServerProviderModel,
 } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
+import * as Path from "effect/Path";
 import * as Result from "effect/Result";
-import * as Schema from "effect/Schema";
-import { ChildProcessSpawner, ChildProcess } from "effect/unstable/process";
-
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { createModelCapabilities } from "@lmcstools/core/model";
+import { resolveSpawnCommand } from "@lmcstools/core/shell";
+
 import {
   buildServerProvider,
   isCommandMissingCause,
@@ -20,50 +31,122 @@ import {
   spawnAndCollect,
   type ServerProviderDraft,
 } from "../providerSnapshot.ts";
-import { resolveSpawnCommand } from "@lmcstools/core/shell";
-import {
-  formatCommandCodeModelName,
-  parseCommandCodeModelsOutput,
-  CommandCodeStatusSchema,
-} from "../commandCodeRuntime.ts";
+import { makeUnavailableUsageLimits } from "../providerUsageLimits.ts";
 
 const VERSION_PROBE_TIMEOUT_MS = 4_000;
-const MODELS_PROBE_TIMEOUT_MS = 5_000;
+const MODELS_PROBE_TIMEOUT_MS = 8_000;
+const COMMAND_CODE_API_KEY_ENV = "COMMAND_CODE_API_KEY";
+
+/** Section headers in `cmd --list-models` output — not model lines. */
+const COMMANDCODE_SECTION_HEADERS = new Set([
+  "Open Source",
+  "Stealth",
+  "Anthropic",
+  "OpenAI",
+  "Google",
+  "Sakana",
+  "Meta",
+  "xAI",
+]);
+
+const EMPTY_CAPABILITIES: ModelCapabilities = createModelCapabilities({
+  optionDescriptors: [],
+});
 
 const COMMANDCODE_PRESENTATION = {
   displayName: "Command Code",
   supportsConversationRollback: false,
+  badgeLabel: "CLI",
   showInteractionModeToggle: false,
+  reportsContextWindow: false,
 } as const;
 
-const EMPTY_CAPABILITIES = createModelCapabilities({
-  optionDescriptors: [],
-});
+/**
+ * Built-in model catalog for Command Code.
+ * Used as fallback when `cmd --list-models` is unavailable.
+ */
+const BUILTIN_COMMANDCODE_MODELS: ReadonlyArray<ServerProviderModel> = [
+  {
+    slug: "claude-sonnet-4-20250514",
+    name: "Claude Sonnet 4",
+    isCustom: false,
+    capabilities: EMPTY_CAPABILITIES,
+  },
+  {
+    slug: "claude-opus-4-20250514",
+    name: "Claude Opus 4",
+    isCustom: false,
+    capabilities: EMPTY_CAPABILITIES,
+  },
+  {
+    slug: "gpt-4.1",
+    name: "GPT-4.1",
+    isCustom: false,
+    capabilities: EMPTY_CAPABILITIES,
+  },
+];
 
-const runCommandCodeCli = (
-  binaryPath: string,
-  args: ReadonlyArray<string>,
-  environment: NodeJS.ProcessEnv,
-) =>
-  Effect.gen(function* () {
-    const command = binaryPath || "cmd";
-    const spawnCommand = yield* resolveSpawnCommand(command, args, {
-      env: environment,
-    });
-    return yield* spawnAndCollect(
-      command,
-      ChildProcess.make(spawnCommand.command, spawnCommand.args, {
-        env: environment,
-        shell: spawnCommand.shell,
-      }),
-    );
-  });
+/**
+ * Parse model slugs from `cmd --list-models` output.
+ *
+ * Output format:
+ *   Available models  ·  N models
+ *
+ *   <Section Header>
+ *
+ *   <slug>               <description>
+ *   <slug>               <description>
+ *
+ *   Pass the full id, or just the short name...
+ *
+ * Lines are either the header, section headers, model rows (slug + padded
+ * description), or footer instructions. Model rows are identified by a
+ * non-empty first token that contains no spaces and is not a section header.
+ */
+function parseCommandCodeModelsOutput(output: string): ReadonlyArray<string> {
+  const slugs: string[] = [];
+  for (const rawLine of output.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    // Skip empty lines, header, and footer
+    if (!line) continue;
+    if (line.startsWith("Available models")) continue;
+    if (line.startsWith("Pass the full id")) break;
+    if (line.startsWith("Decision models")) break;
+    // Skip section headers (known multi-word headers)
+    if (COMMANDCODE_SECTION_HEADERS.has(line)) continue;
+    // Model rows: first whitespace-delimited token is the slug
+    const parts = line.split(/\s+/);
+    if (parts.length < 1) continue;
+    const slug = parts[0]!;
+    // Skip if slug looks like a section header or instruction
+    if (slug.includes(" ") || slug === "Docs:") continue;
+    slugs.push(slug);
+  }
+  return slugs;
+}
+
+/**
+ * Format a model slug into a display name.
+ * e.g. "claude-sonnet-5-5" -> "Claude Sonnet 5.5"
+ *      "deepseek/deepseek-v4-pro" -> "Deepseek V4 Pro"
+ */
+function formatCommandCodeModelName(slug: string): string {
+  const short = slug.includes("/") ? (slug.split("/").pop() ?? slug) : slug;
+  return short
+    .split(/[-_.]/)
+    .map((part) => {
+      if (part.length === 0) return "";
+      return part[0]!.toUpperCase() + part.slice(1);
+    })
+    .join(" ");
+}
 
 /**
  * Fetch available models from Command Code CLI via `cmd --list-models`.
+ * Falls back to the built-in catalog on failure.
  */
 function fetchCommandCodeModels(
-  settings: CommandCodeSettings,
+  cmdSettings: CommandCodeSettings,
   environment: NodeJS.ProcessEnv,
 ): Effect.Effect<
   ReadonlyArray<ServerProviderModel>,
@@ -71,47 +154,77 @@ function fetchCommandCodeModels(
   ChildProcessSpawner.ChildProcessSpawner
 > {
   return Effect.gen(function* () {
-    const modelsResult = yield* runCommandCodeCli(
-      settings.binaryPath,
-      ["--list-models"],
-      environment,
-    ).pipe(Effect.timeoutOption(MODELS_PROBE_TIMEOUT_MS), Effect.result);
+    const modelsResult = yield* runCmdCliCommand(cmdSettings, ["--list-models"], environment).pipe(
+      Effect.timeoutOption(MODELS_PROBE_TIMEOUT_MS),
+      Effect.result,
+    );
 
     if (Result.isFailure(modelsResult) || Option.isNone(modelsResult.success)) {
-      yield* Effect.logWarning("Failed to fetch Command Code models from CLI, using empty list.");
-      return providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+      yield* Effect.logWarning(
+        "Failed to fetch Command Code models from CLI, using built-in catalog.",
+      );
+      return BUILTIN_COMMANDCODE_MODELS;
     }
 
     const output = modelsResult.success.value;
     if (output.code !== 0) {
-      return providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+      yield* Effect.logWarning("cmd --list-models exited with non-zero status.", {
+        exitCode: output.code,
+      });
+      return BUILTIN_COMMANDCODE_MODELS;
     }
 
     const slugs = parseCommandCodeModelsOutput(output.stdout);
     if (slugs.length === 0) {
-      return providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+      yield* Effect.logWarning(
+        "cmd --list-models returned no parseable models, using built-in catalog.",
+      );
+      return BUILTIN_COMMANDCODE_MODELS;
     }
 
-    const models: ServerProviderModel[] = slugs.map((slug) => ({
+    return slugs.map((slug) => ({
       slug,
       name: formatCommandCodeModelName(slug),
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
     }));
-
-    return providerModelsFromSettings(models, settings.customModels, EMPTY_CAPABILITIES);
   });
 }
 
-export function buildInitialCommandCodeProviderSnapshot(
-  settings: CommandCodeSettings,
-  environment: NodeJS.ProcessEnv = process.env,
-): Effect.Effect<ServerProviderDraft, never> {
-  return Effect.gen(function* () {
-    const checkedAt = yield* Effect.map(DateTime.now, DateTime.formatIso);
-    const models = providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+function scopeCommandCodeModelCatalog(
+  customModels: CommandCodeSettings["customModels"],
+): ReadonlyArray<ServerProviderModel> {
+  return providerModelsFromSettings(BUILTIN_COMMANDCODE_MODELS, customModels, EMPTY_CAPABILITIES);
+}
 
-    if (!settings.enabled) {
+const runCmdCliCommand = (
+  cmdSettings: CommandCodeSettings,
+  args: ReadonlyArray<string>,
+  environment: NodeJS.ProcessEnv,
+) =>
+  Effect.gen(function* () {
+    const binaryPath = cmdSettings.binaryPath || "cmd";
+    const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, {
+      env: environment,
+    });
+    return yield* spawnAndCollect(
+      binaryPath,
+      ChildProcess.make(spawnCommand.command, spawnCommand.args, {
+        env: environment,
+        shell: spawnCommand.shell,
+      }),
+    );
+  });
+
+export function buildInitialCommandCodeProviderSnapshot(
+  cmdSettings: CommandCodeSettings,
+  environment: NodeJS.ProcessEnv = process.env,
+): Effect.Effect<ServerProviderDraft> {
+  return Effect.gen(function* () {
+    const checkedAt = DateTime.formatIso(yield* DateTime.now);
+    const models = scopeCommandCodeModelCatalog(cmdSettings.customModels);
+
+    if (!cmdSettings.enabled) {
       return buildServerProvider({
         presentation: COMMANDCODE_PRESENTATION,
         enabled: false,
@@ -133,11 +246,11 @@ export function buildInitialCommandCodeProviderSnapshot(
       checkedAt,
       models,
       probe: {
-        installed: false,
+        installed: true,
         version: null,
-        status: "warning",
+        status: "ready",
         auth: { status: "unknown" },
-        message: "Command Code provider status has not been checked in this session yet.",
+        message: "Command Code provider is ready.",
       },
     });
   });
@@ -145,14 +258,18 @@ export function buildInitialCommandCodeProviderSnapshot(
 
 export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProviderStatus")(
   function* (
-    settings: CommandCodeSettings,
+    cmdSettings: CommandCodeSettings,
     environment: NodeJS.ProcessEnv = process.env,
     _cwd?: string,
-  ): Effect.fn.Return<ServerProviderDraft, never, ChildProcessSpawner.ChildProcessSpawner> {
+  ): Effect.fn.Return<
+    ServerProviderDraft,
+    never,
+    ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
+  > {
     const checkedAt = DateTime.formatIso(yield* DateTime.now);
 
-    if (!settings.enabled) {
-      const models = providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+    if (!cmdSettings.enabled) {
+      const models = scopeCommandCodeModelCatalog(cmdSettings.customModels);
       return buildServerProvider({
         presentation: COMMANDCODE_PRESENTATION,
         enabled: false,
@@ -168,18 +285,20 @@ export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProvide
       });
     }
 
-    const versionResult = yield* runCommandCodeCli(
-      settings.binaryPath,
-      ["--version"],
-      environment,
-    ).pipe(Effect.timeoutOption(VERSION_PROBE_TIMEOUT_MS), Effect.result);
+    const versionResult = yield* runCmdCliCommand(cmdSettings, ["--version"], environment).pipe(
+      Effect.timeoutOption(VERSION_PROBE_TIMEOUT_MS),
+      Effect.result,
+    );
 
     if (Result.isFailure(versionResult)) {
       const error = versionResult.failure;
-      const models = providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+      yield* Effect.logWarning("Command Code CLI health check failed.", {
+        errorTag: error._tag,
+      });
+      const models = scopeCommandCodeModelCatalog(cmdSettings.customModels);
       return buildServerProvider({
         presentation: COMMANDCODE_PRESENTATION,
-        enabled: settings.enabled,
+        enabled: cmdSettings.enabled,
         checkedAt,
         models,
         probe: {
@@ -195,10 +314,10 @@ export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProvide
     }
 
     if (Option.isNone(versionResult.success)) {
-      const models = providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+      const models = scopeCommandCodeModelCatalog(cmdSettings.customModels);
       return buildServerProvider({
         presentation: COMMANDCODE_PRESENTATION,
-        enabled: settings.enabled,
+        enabled: cmdSettings.enabled,
         checkedAt,
         models,
         probe: {
@@ -215,10 +334,13 @@ export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProvide
     const version = parseGenericCliVersion(`${versionOutput.stdout}\n${versionOutput.stderr}`);
 
     if (versionOutput.code !== 0) {
-      const models = providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+      yield* Effect.logWarning("Command Code CLI version probe exited with a non-zero status.", {
+        exitCode: versionOutput.code,
+      });
+      const models = scopeCommandCodeModelCatalog(cmdSettings.customModels);
       return buildServerProvider({
         presentation: COMMANDCODE_PRESENTATION,
-        enabled: settings.enabled,
+        enabled: cmdSettings.enabled,
         checkedAt,
         models,
         probe: {
@@ -231,36 +353,25 @@ export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProvide
       });
     }
 
-    // Check auth status via `cmd status --json`
-    const statusResult = yield* runCommandCodeCli(
-      settings.binaryPath,
-      ["status", "--json"],
-      environment,
-    ).pipe(Effect.timeoutOption(VERSION_PROBE_TIMEOUT_MS), Effect.result);
-
-    let auth: ServerProviderAuth = { status: "unauthenticated" };
-    if (Result.isSuccess(statusResult) && Option.isSome(statusResult.success)) {
-      const statusOutput = statusResult.success.value;
-      if (statusOutput.code === 0) {
-        const parsed = yield* Schema.decodeUnknownEffect(CommandCodeStatusSchema)(
-          statusOutput.stdout.trim(),
-        ).pipe(Effect.orElseSucceed(() => null));
-        if (parsed && parsed.authenticated === true) {
-          auth = {
-            status: "authenticated",
-            type: "commandcode",
-            label:
-              typeof parsed.user === "string" ? `Command Code (${parsed.user})` : "Command Code",
-          };
+    const auth: ServerProviderAuth = environment[COMMAND_CODE_API_KEY_ENV]?.trim()
+      ? {
+          status: "authenticated",
+          type: "api_key",
+          label: "Command Code API Key (env)",
         }
-      }
-    }
+      : cmdSettings.apiKey
+        ? {
+            status: "authenticated",
+            type: "api_key",
+            label: "Command Code API Key",
+          }
+        : { status: "unauthenticated" };
 
     if (auth.status === "unauthenticated") {
-      const models = providerModelsFromSettings([], settings.customModels, EMPTY_CAPABILITIES);
+      const models = scopeCommandCodeModelCatalog(cmdSettings.customModels);
       return buildServerProvider({
         presentation: COMMANDCODE_PRESENTATION,
-        enabled: settings.enabled,
+        enabled: cmdSettings.enabled,
         checkedAt,
         models,
         probe: {
@@ -268,25 +379,32 @@ export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProvide
           version,
           status: "error",
           auth,
-          message: "Command Code CLI is installed but not authenticated. Run `cmd login`.",
+          message:
+            "Command Code CLI is installed but not authenticated. Set apiKey in settings or COMMAND_CODE_API_KEY env.",
         },
       });
     }
 
-    // Fetch models from CLI
-    const models = yield* fetchCommandCodeModels(settings, environment);
+    const usageLimits = makeUnavailableUsageLimits({
+      checkedAt,
+      reason: "unsupported",
+    });
+
+    // Fetch models dynamically from CLI; fall back to built-in on failure.
+    const models = yield* fetchCommandCodeModels(cmdSettings, environment);
 
     return buildServerProvider({
       presentation: COMMANDCODE_PRESENTATION,
-      enabled: settings.enabled,
+      enabled: cmdSettings.enabled,
       checkedAt,
-      models,
+      models: providerModelsFromSettings(models, cmdSettings.customModels, EMPTY_CAPABILITIES),
       probe: {
         installed: true,
         version,
         status: "ready",
         auth,
         message: "Command Code is ready.",
+        usageLimits,
       },
     });
   },

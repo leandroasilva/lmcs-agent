@@ -61,12 +61,12 @@ const exists = (filePath: string) =>
     return fileInfo._tag === "Success";
   });
 
-const BaseTestLayer = makeProjectionPipelinePrefixedTestLayer("t3-projection-pipeline-test-");
+const BaseTestLayer = makeProjectionPipelinePrefixedTestLayer("lmcs-projection-pipeline-test-");
 const encodeThreadLinkedPullRequest = Schema.encodeSync(
   Schema.fromJsonString(ThreadLinkedPullRequest),
 );
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-cursor-batch-")))(
+it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-cursor-batch-")))(
   "OrchestrationProjectionPipeline cursor batches",
   (it) => {
     it.effect("writes a project and all projector cursors in two statements", () =>
@@ -114,7 +114,7 @@ it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-curs
   },
 );
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-import-shell-")))(
+it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-import-shell-")))(
   "imported thread shell projection",
   (it) => {
     it.effect("does not mark imported user messages as queued work in thread shells", () =>
@@ -215,7 +215,7 @@ it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-import-shell-")
   },
 );
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-branch-pr-projection-")))(
+it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-branch-pr-projection-")))(
   "branch pull request projection",
   (it) => {
     it.effect("persists branch pull request updates without changing manual links", () =>
@@ -631,7 +631,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
   );
 });
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-base-")))(
+it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-base-")))(
   "OrchestrationProjectionPipeline",
   (it) => {
     it.effect("stores message attachment references without mutating payloads", () =>
@@ -698,7 +698,7 @@ it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-base-")))(
   },
 );
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-pull-requests-")))(
+it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-pull-requests-")))(
   "OrchestrationProjectionPipeline pull request links",
   (it) => {
     it.effect("projects link, sync, unlink, legacy replay and delete into the link table", () =>
@@ -970,7 +970,7 @@ it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-pull
   },
 );
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-attachments-safe-")))(
+it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-attachments-safe-")))(
   "OrchestrationProjectionPipeline",
   (it) => {
     it.effect("preserves mixed image attachment metadata as-is", () =>
@@ -1181,7 +1181,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
 });
 
 it.layer(
-  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-attachments-overwrite-")),
+  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-attachments-overwrite-")),
 )("OrchestrationProjectionPipeline", (it) => {
   it.effect("overwrites stored attachment references when a message updates attachments", () =>
     Effect.gen(function* () {
@@ -1325,7 +1325,7 @@ it.layer(
 });
 
 it.layer(
-  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-attachments-rollback-")),
+  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-attachments-rollback-")),
 )("OrchestrationProjectionPipeline", (it) => {
   it.effect("does not persist attachment files when projector transaction rolls back", () =>
     Effect.gen(function* () {
@@ -1469,7 +1469,7 @@ it.layer(
 });
 
 it.layer(
-  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-attachments-overwrite-")),
+  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-attachments-overwrite-")),
 )("OrchestrationProjectionPipeline", (it) => {
   it.effect("prunes reverted attachments only after every projector commits", () =>
     Effect.gen(function* () {
@@ -1553,7 +1553,7 @@ it.layer(
           threadId,
           turnId: TurnId.make("turn-keep"),
           checkpointTurnCount: 1,
-          checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-revert-files/turn/1"),
+          checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-revert-files/turn/1"),
           status: "ready",
           files: [],
           assistantMessageId: MessageId.make("message-keep"),
@@ -1613,7 +1613,7 @@ it.layer(
           threadId,
           turnId: TurnId.make("turn-remove"),
           checkpointTurnCount: 2,
-          checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-revert-files/turn/2"),
+          checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-revert-files/turn/2"),
           status: "ready",
           files: [],
           assistantMessageId: MessageId.make("message-remove"),
@@ -1828,63 +1828,226 @@ it.layer(
   );
 });
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-attachments-revert-")))(
-  "OrchestrationProjectionPipeline",
-  (it) => {
-    it.effect("removes thread attachment directory when thread is deleted", () =>
-      Effect.gen(function* () {
-        const fileSystem = yield* FileSystem.FileSystem;
-        const path = yield* Path.Path;
-        const projectionPipeline = yield* OrchestrationProjectionPipeline;
-        const eventStore = yield* OrchestrationEventStore;
-        const { attachmentsDir } = yield* ServerConfig;
-        const now = "2026-01-01T00:00:00.000Z";
-        const threadId = ThreadId.make("Thread Delete.Files");
-        const attachmentId = "thread-delete-files-00000000-0000-4000-8000-000000000001";
-        const fileAttachmentId = "thread-delete-files-00000000-0000-4000-8000-000000000003-pdf";
-        const otherThreadAttachmentId =
-          "thread-delete-files-extra-00000000-0000-4000-8000-000000000002";
+it.layer(
+  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-attachments-revert-")),
+)("OrchestrationProjectionPipeline", (it) => {
+  it.effect("removes thread attachment directory when thread is deleted", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const projectionPipeline = yield* OrchestrationProjectionPipeline;
+      const eventStore = yield* OrchestrationEventStore;
+      const { attachmentsDir } = yield* ServerConfig;
+      const now = "2026-01-01T00:00:00.000Z";
+      const threadId = ThreadId.make("Thread Delete.Files");
+      const attachmentId = "thread-delete-files-00000000-0000-4000-8000-000000000001";
+      const fileAttachmentId = "thread-delete-files-00000000-0000-4000-8000-000000000003-pdf";
+      const otherThreadAttachmentId =
+        "thread-delete-files-extra-00000000-0000-4000-8000-000000000002";
 
-        const appendAndProject = (event: Parameters<typeof eventStore.append>[0]) =>
-          eventStore
-            .append(event)
-            .pipe(Effect.flatMap((savedEvent) => projectionPipeline.projectEvent(savedEvent)));
+      const appendAndProject = (event: Parameters<typeof eventStore.append>[0]) =>
+        eventStore
+          .append(event)
+          .pipe(Effect.flatMap((savedEvent) => projectionPipeline.projectEvent(savedEvent)));
 
-        yield* appendAndProject({
-          type: "project.created",
-          eventId: EventId.make("evt-delete-files-1"),
-          aggregateKind: "project",
-          aggregateId: ProjectId.make("project-delete-files"),
-          occurredAt: now,
-          commandId: CommandId.make("cmd-delete-files-1"),
-          causationEventId: null,
-          correlationId: CorrelationId.make("cmd-delete-files-1"),
-          metadata: {},
-          payload: {
-            projectId: ProjectId.make("project-delete-files"),
-            title: "Project Delete Files",
-            workspaceRoot: "/tmp/project-delete-files",
-            defaultModelSelection: null,
-            scripts: [],
-            createdAt: now,
-            updatedAt: now,
+      yield* appendAndProject({
+        type: "project.created",
+        eventId: EventId.make("evt-delete-files-1"),
+        aggregateKind: "project",
+        aggregateId: ProjectId.make("project-delete-files"),
+        occurredAt: now,
+        commandId: CommandId.make("cmd-delete-files-1"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-delete-files-1"),
+        metadata: {},
+        payload: {
+          projectId: ProjectId.make("project-delete-files"),
+          title: "Project Delete Files",
+          workspaceRoot: "/tmp/project-delete-files",
+          defaultModelSelection: null,
+          scripts: [],
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      yield* appendAndProject({
+        type: "thread.created",
+        eventId: EventId.make("evt-delete-files-2"),
+        aggregateKind: "thread",
+        aggregateId: threadId,
+        occurredAt: now,
+        commandId: CommandId.make("cmd-delete-files-2"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-delete-files-2"),
+        metadata: {},
+        payload: {
+          threadId,
+          projectId: ProjectId.make("project-delete-files"),
+          title: "Thread Delete Files",
+          modelSelection: {
+            instanceId: ProviderInstanceId.make("codex"),
+            model: "gpt-5-codex",
           },
-        });
+          runtimeMode: "full-access",
+          branch: null,
+          worktreePath: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
 
-        yield* appendAndProject({
+      yield* appendAndProject({
+        type: "thread.message-sent",
+        eventId: EventId.make("evt-delete-files-3"),
+        aggregateKind: "thread",
+        aggregateId: threadId,
+        occurredAt: now,
+        commandId: CommandId.make("cmd-delete-files-3"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-delete-files-3"),
+        metadata: {},
+        payload: {
+          threadId,
+          messageId: MessageId.make("message-delete-files"),
+          role: "user",
+          text: "Delete",
+          attachments: [
+            {
+              type: "image",
+              id: attachmentId,
+              name: "delete.png",
+              mimeType: "image/png",
+              sizeBytes: 5,
+            },
+            {
+              type: "file",
+              id: fileAttachmentId,
+              name: "delete.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 6,
+            },
+          ],
+          turnId: null,
+          streaming: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      const threadAttachmentPath = path.join(attachmentsDir, `${attachmentId}.png`);
+      const threadFileAttachmentPath = path.join(attachmentsDir, `${fileAttachmentId}.pdf`);
+      const otherThreadAttachmentPath = path.join(attachmentsDir, `${otherThreadAttachmentId}.png`);
+      yield* fileSystem.makeDirectory(attachmentsDir, { recursive: true });
+      yield* fileSystem.writeFileString(threadAttachmentPath, "delete");
+      yield* fileSystem.writeFileString(threadFileAttachmentPath, "delete");
+      yield* fileSystem.writeFileString(otherThreadAttachmentPath, "other-thread");
+      assert.isTrue(yield* exists(threadAttachmentPath));
+      assert.isTrue(yield* exists(threadFileAttachmentPath));
+      assert.isTrue(yield* exists(otherThreadAttachmentPath));
+
+      yield* appendAndProject({
+        type: "thread.deleted",
+        eventId: EventId.make("evt-delete-files-4"),
+        aggregateKind: "thread",
+        aggregateId: threadId,
+        occurredAt: now,
+        commandId: CommandId.make("cmd-delete-files-4"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-delete-files-4"),
+        metadata: {},
+        payload: {
+          threadId,
+          deletedAt: now,
+        },
+      });
+
+      assert.isFalse(yield* exists(threadAttachmentPath));
+      assert.isFalse(yield* exists(threadFileAttachmentPath));
+      assert.isTrue(yield* exists(otherThreadAttachmentPath));
+    }),
+  );
+});
+
+it.layer(
+  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-attachments-delete-")),
+)("OrchestrationProjectionPipeline", (it) => {
+  it.effect("ignores unsafe thread ids for attachment cleanup paths", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const projectionPipeline = yield* OrchestrationProjectionPipeline;
+      const eventStore = yield* OrchestrationEventStore;
+      const now = "2026-01-01T00:00:00.000Z";
+      const { attachmentsDir: attachmentsRootDir, stateDir } = yield* ServerConfig;
+      const attachmentsSentinelPath = path.join(attachmentsRootDir, "sentinel.txt");
+      const stateDirSentinelPath = path.join(stateDir, "state-sentinel.txt");
+      yield* fileSystem.makeDirectory(attachmentsRootDir, { recursive: true });
+      yield* fileSystem.writeFileString(attachmentsSentinelPath, "keep-attachments-root");
+      yield* fileSystem.writeFileString(stateDirSentinelPath, "keep-state-dir");
+
+      yield* eventStore.append({
+        type: "thread.deleted",
+        eventId: EventId.make("evt-unsafe-thread-delete"),
+        aggregateKind: "thread",
+        aggregateId: ThreadId.make(".."),
+        occurredAt: now,
+        commandId: CommandId.make("cmd-unsafe-thread-delete"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-unsafe-thread-delete"),
+        metadata: {},
+        payload: {
+          threadId: ThreadId.make(".."),
+          deletedAt: now,
+        },
+      });
+
+      yield* projectionPipeline.bootstrap;
+
+      assert.isTrue(yield* exists(attachmentsRootDir));
+      assert.isTrue(yield* exists(attachmentsSentinelPath));
+      assert.isTrue(yield* exists(stateDirSentinelPath));
+    }),
+  );
+});
+
+it.layer(
+  Layer.fresh(makeProjectionPipelinePrefixedTestLayer("lmcs-projection-attachments-replay-")),
+)("OrchestrationProjectionPipeline", (it) => {
+  it.effect("replaying a superseded thread.deleted keeps the re-created thread's files", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const projectionPipeline = yield* OrchestrationProjectionPipeline;
+      const eventStore = yield* OrchestrationEventStore;
+      const { attachmentsDir } = yield* ServerConfig;
+      const now = "2026-01-01T00:00:00.000Z";
+      const projectId = ProjectId.make("project-replay");
+      const retriedThreadId = ThreadId.make("thread-replay-retried");
+      const goneThreadId = ThreadId.make("thread-replay-gone");
+      const retriedAttachmentPath = path.join(
+        attachmentsDir,
+        "thread-replay-retried-00000000-0000-4000-8000-000000000001.png",
+      );
+      const goneAttachmentPath = path.join(
+        attachmentsDir,
+        "thread-replay-gone-00000000-0000-4000-8000-000000000002.png",
+      );
+      const threadCreated = (threadId: ThreadId, suffix: string) =>
+        eventStore.append({
           type: "thread.created",
-          eventId: EventId.make("evt-delete-files-2"),
+          eventId: EventId.make(`evt-replay-create-${suffix}`),
           aggregateKind: "thread",
           aggregateId: threadId,
           occurredAt: now,
-          commandId: CommandId.make("cmd-delete-files-2"),
+          commandId: CommandId.make(`cmd-replay-create-${suffix}`),
           causationEventId: null,
-          correlationId: CorrelationId.make("cmd-delete-files-2"),
+          correlationId: CorrelationId.make(`cmd-replay-create-${suffix}`),
           metadata: {},
           payload: {
             threadId,
-            projectId: ProjectId.make("project-delete-files"),
-            title: "Thread Delete Files",
+            projectId,
+            title: `Thread ${suffix}`,
             modelSelection: {
               instanceId: ProviderInstanceId.make("codex"),
               model: "gpt-5-codex",
@@ -1896,230 +2059,61 @@ it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-atta
             updatedAt: now,
           },
         });
-
-        yield* appendAndProject({
-          type: "thread.message-sent",
-          eventId: EventId.make("evt-delete-files-3"),
+      const threadDeleted = (threadId: ThreadId, suffix: string) =>
+        eventStore.append({
+          type: "thread.deleted",
+          eventId: EventId.make(`evt-replay-delete-${suffix}`),
           aggregateKind: "thread",
           aggregateId: threadId,
           occurredAt: now,
-          commandId: CommandId.make("cmd-delete-files-3"),
+          commandId: CommandId.make(`cmd-replay-delete-${suffix}`),
           causationEventId: null,
-          correlationId: CorrelationId.make("cmd-delete-files-3"),
+          correlationId: CorrelationId.make(`cmd-replay-delete-${suffix}`),
           metadata: {},
-          payload: {
-            threadId,
-            messageId: MessageId.make("message-delete-files"),
-            role: "user",
-            text: "Delete",
-            attachments: [
-              {
-                type: "image",
-                id: attachmentId,
-                name: "delete.png",
-                mimeType: "image/png",
-                sizeBytes: 5,
-              },
-              {
-                type: "file",
-                id: fileAttachmentId,
-                name: "delete.pdf",
-                mimeType: "application/pdf",
-                sizeBytes: 6,
-              },
-            ],
-            turnId: null,
-            streaming: false,
-            createdAt: now,
-            updatedAt: now,
-          },
+          payload: { threadId, deletedAt: now },
         });
 
-        const threadAttachmentPath = path.join(attachmentsDir, `${attachmentId}.png`);
-        const threadFileAttachmentPath = path.join(attachmentsDir, `${fileAttachmentId}.pdf`);
-        const otherThreadAttachmentPath = path.join(
-          attachmentsDir,
-          `${otherThreadAttachmentId}.png`,
-        );
-        yield* fileSystem.makeDirectory(attachmentsDir, { recursive: true });
-        yield* fileSystem.writeFileString(threadAttachmentPath, "delete");
-        yield* fileSystem.writeFileString(threadFileAttachmentPath, "delete");
-        yield* fileSystem.writeFileString(otherThreadAttachmentPath, "other-thread");
-        assert.isTrue(yield* exists(threadAttachmentPath));
-        assert.isTrue(yield* exists(threadFileAttachmentPath));
-        assert.isTrue(yield* exists(otherThreadAttachmentPath));
+      yield* eventStore.append({
+        type: "project.created",
+        eventId: EventId.make("evt-replay-project"),
+        aggregateKind: "project",
+        aggregateId: projectId,
+        occurredAt: now,
+        commandId: CommandId.make("cmd-replay-project"),
+        causationEventId: null,
+        correlationId: CorrelationId.make("cmd-replay-project"),
+        metadata: {},
+        payload: {
+          projectId,
+          title: "Replay",
+          workspaceRoot: "/tmp/project-replay",
+          defaultModelSelection: null,
+          scripts: [],
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      // A failed first send: create, roll back, then the draft retries the id.
+      yield* threadCreated(retriedThreadId, "retried-1");
+      yield* threadDeleted(retriedThreadId, "retried");
+      yield* threadCreated(retriedThreadId, "retried-2");
+      // A thread that was deleted for good.
+      yield* threadCreated(goneThreadId, "gone");
+      yield* threadDeleted(goneThreadId, "gone");
 
-        yield* appendAndProject({
-          type: "thread.deleted",
-          eventId: EventId.make("evt-delete-files-4"),
-          aggregateKind: "thread",
-          aggregateId: threadId,
-          occurredAt: now,
-          commandId: CommandId.make("cmd-delete-files-4"),
-          causationEventId: null,
-          correlationId: CorrelationId.make("cmd-delete-files-4"),
-          metadata: {},
-          payload: {
-            threadId,
-            deletedAt: now,
-          },
-        });
+      // Files on disk are not event-sourced: by the time anything replays,
+      // the retried thread's attachments already belong to its second life.
+      yield* fileSystem.makeDirectory(attachmentsDir, { recursive: true });
+      yield* fileSystem.writeFileString(retriedAttachmentPath, "second incarnation");
+      yield* fileSystem.writeFileString(goneAttachmentPath, "gone");
 
-        assert.isFalse(yield* exists(threadAttachmentPath));
-        assert.isFalse(yield* exists(threadFileAttachmentPath));
-        assert.isTrue(yield* exists(otherThreadAttachmentPath));
-      }),
-    );
-  },
-);
+      yield* projectionPipeline.bootstrap;
 
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-attachments-delete-")))(
-  "OrchestrationProjectionPipeline",
-  (it) => {
-    it.effect("ignores unsafe thread ids for attachment cleanup paths", () =>
-      Effect.gen(function* () {
-        const fileSystem = yield* FileSystem.FileSystem;
-        const path = yield* Path.Path;
-        const projectionPipeline = yield* OrchestrationProjectionPipeline;
-        const eventStore = yield* OrchestrationEventStore;
-        const now = "2026-01-01T00:00:00.000Z";
-        const { attachmentsDir: attachmentsRootDir, stateDir } = yield* ServerConfig;
-        const attachmentsSentinelPath = path.join(attachmentsRootDir, "sentinel.txt");
-        const stateDirSentinelPath = path.join(stateDir, "state-sentinel.txt");
-        yield* fileSystem.makeDirectory(attachmentsRootDir, { recursive: true });
-        yield* fileSystem.writeFileString(attachmentsSentinelPath, "keep-attachments-root");
-        yield* fileSystem.writeFileString(stateDirSentinelPath, "keep-state-dir");
-
-        yield* eventStore.append({
-          type: "thread.deleted",
-          eventId: EventId.make("evt-unsafe-thread-delete"),
-          aggregateKind: "thread",
-          aggregateId: ThreadId.make(".."),
-          occurredAt: now,
-          commandId: CommandId.make("cmd-unsafe-thread-delete"),
-          causationEventId: null,
-          correlationId: CorrelationId.make("cmd-unsafe-thread-delete"),
-          metadata: {},
-          payload: {
-            threadId: ThreadId.make(".."),
-            deletedAt: now,
-          },
-        });
-
-        yield* projectionPipeline.bootstrap;
-
-        assert.isTrue(yield* exists(attachmentsRootDir));
-        assert.isTrue(yield* exists(attachmentsSentinelPath));
-        assert.isTrue(yield* exists(stateDirSentinelPath));
-      }),
-    );
-  },
-);
-
-it.layer(Layer.fresh(makeProjectionPipelinePrefixedTestLayer("t3-projection-attachments-replay-")))(
-  "OrchestrationProjectionPipeline",
-  (it) => {
-    it.effect("replaying a superseded thread.deleted keeps the re-created thread's files", () =>
-      Effect.gen(function* () {
-        const fileSystem = yield* FileSystem.FileSystem;
-        const path = yield* Path.Path;
-        const projectionPipeline = yield* OrchestrationProjectionPipeline;
-        const eventStore = yield* OrchestrationEventStore;
-        const { attachmentsDir } = yield* ServerConfig;
-        const now = "2026-01-01T00:00:00.000Z";
-        const projectId = ProjectId.make("project-replay");
-        const retriedThreadId = ThreadId.make("thread-replay-retried");
-        const goneThreadId = ThreadId.make("thread-replay-gone");
-        const retriedAttachmentPath = path.join(
-          attachmentsDir,
-          "thread-replay-retried-00000000-0000-4000-8000-000000000001.png",
-        );
-        const goneAttachmentPath = path.join(
-          attachmentsDir,
-          "thread-replay-gone-00000000-0000-4000-8000-000000000002.png",
-        );
-        const threadCreated = (threadId: ThreadId, suffix: string) =>
-          eventStore.append({
-            type: "thread.created",
-            eventId: EventId.make(`evt-replay-create-${suffix}`),
-            aggregateKind: "thread",
-            aggregateId: threadId,
-            occurredAt: now,
-            commandId: CommandId.make(`cmd-replay-create-${suffix}`),
-            causationEventId: null,
-            correlationId: CorrelationId.make(`cmd-replay-create-${suffix}`),
-            metadata: {},
-            payload: {
-              threadId,
-              projectId,
-              title: `Thread ${suffix}`,
-              modelSelection: {
-                instanceId: ProviderInstanceId.make("codex"),
-                model: "gpt-5-codex",
-              },
-              runtimeMode: "full-access",
-              branch: null,
-              worktreePath: null,
-              createdAt: now,
-              updatedAt: now,
-            },
-          });
-        const threadDeleted = (threadId: ThreadId, suffix: string) =>
-          eventStore.append({
-            type: "thread.deleted",
-            eventId: EventId.make(`evt-replay-delete-${suffix}`),
-            aggregateKind: "thread",
-            aggregateId: threadId,
-            occurredAt: now,
-            commandId: CommandId.make(`cmd-replay-delete-${suffix}`),
-            causationEventId: null,
-            correlationId: CorrelationId.make(`cmd-replay-delete-${suffix}`),
-            metadata: {},
-            payload: { threadId, deletedAt: now },
-          });
-
-        yield* eventStore.append({
-          type: "project.created",
-          eventId: EventId.make("evt-replay-project"),
-          aggregateKind: "project",
-          aggregateId: projectId,
-          occurredAt: now,
-          commandId: CommandId.make("cmd-replay-project"),
-          causationEventId: null,
-          correlationId: CorrelationId.make("cmd-replay-project"),
-          metadata: {},
-          payload: {
-            projectId,
-            title: "Replay",
-            workspaceRoot: "/tmp/project-replay",
-            defaultModelSelection: null,
-            scripts: [],
-            createdAt: now,
-            updatedAt: now,
-          },
-        });
-        // A failed first send: create, roll back, then the draft retries the id.
-        yield* threadCreated(retriedThreadId, "retried-1");
-        yield* threadDeleted(retriedThreadId, "retried");
-        yield* threadCreated(retriedThreadId, "retried-2");
-        // A thread that was deleted for good.
-        yield* threadCreated(goneThreadId, "gone");
-        yield* threadDeleted(goneThreadId, "gone");
-
-        // Files on disk are not event-sourced: by the time anything replays,
-        // the retried thread's attachments already belong to its second life.
-        yield* fileSystem.makeDirectory(attachmentsDir, { recursive: true });
-        yield* fileSystem.writeFileString(retriedAttachmentPath, "second incarnation");
-        yield* fileSystem.writeFileString(goneAttachmentPath, "gone");
-
-        yield* projectionPipeline.bootstrap;
-
-        assert.isTrue(yield* exists(retriedAttachmentPath));
-        assert.isFalse(yield* exists(goneAttachmentPath));
-      }),
-    );
-  },
-);
+      assert.isTrue(yield* exists(retriedAttachmentPath));
+      assert.isFalse(yield* exists(goneAttachmentPath));
+    }),
+  );
+});
 
 it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
   it.effect("replays a bootstrap backlog larger than the event store default limit", () =>
@@ -2858,7 +2852,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
             threadId: ThreadId.make("thread-conflict"),
             turnId: TurnId.make("turn-completed"),
             checkpointTurnCount: 1,
-            checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-conflict/turn/1"),
+            checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-conflict/turn/1"),
             status: "ready",
             files: [],
             assistantMessageId: MessageId.make("assistant-conflict"),
@@ -3503,7 +3497,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
             threadId: ThreadId.make("thread-shell-summary"),
             turnId: TurnId.make("turn-shell-summary-1"),
             checkpointTurnCount: 1,
-            checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-shell-summary/1"),
+            checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-shell-summary/1"),
             status: "ready",
             files: [],
             assistantMessageId: MessageId.make("message-shell-summary-assistant"),
@@ -3872,7 +3866,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
           threadId: ThreadId.make("thread-revert"),
           turnId: TurnId.make("turn-1"),
           checkpointTurnCount: 1,
-          checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-revert/turn/1"),
+          checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-revert/turn/1"),
           status: "ready",
           files: [],
           assistantMessageId: MessageId.make("assistant-keep"),
@@ -3916,7 +3910,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
           threadId: ThreadId.make("thread-revert"),
           turnId: TurnId.make("turn-2"),
           checkpointTurnCount: 2,
-          checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-revert/turn/2"),
+          checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-revert/turn/2"),
           status: "ready",
           files: [],
           assistantMessageId: MessageId.make("assistant-remove"),
@@ -4079,7 +4073,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
           threadId: ThreadId.make("thread-checkpoint-guard"),
           turnId: TurnId.make("turn-ready"),
           checkpointTurnCount: 1,
-          checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-checkpoint-guard/turn/1"),
+          checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-checkpoint-guard/turn/1"),
           status: "ready",
           files: [],
           assistantMessageId: MessageId.make("assistant-ready"),
@@ -4101,7 +4095,7 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
           threadId: ThreadId.make("thread-checkpoint-guard"),
           turnId: TurnId.make("turn-ready"),
           checkpointTurnCount: 1,
-          checkpointRef: CheckpointRef.make("refs/t3/checkpoints/thread-checkpoint-guard/turn/1"),
+          checkpointRef: CheckpointRef.make("refs/lmcs/checkpoints/thread-checkpoint-guard/turn/1"),
           status: "missing",
           files: [],
           assistantMessageId: MessageId.make("assistant-ready"),
@@ -4125,14 +4119,14 @@ it.layer(BaseTestLayer)("OrchestrationProjectionPipeline", (it) => {
         {
           turnId: "turn-ready",
           checkpointStatus: "ready",
-          checkpointRef: "refs/t3/checkpoints/thread-checkpoint-guard/turn/1",
+          checkpointRef: "refs/lmcs/checkpoints/thread-checkpoint-guard/turn/1",
         },
       ]);
     }),
   );
 });
 
-it.layer(makeProjectionPipelinePrefixedTestLayer("t3-pending-turn-terminal-test-"))(
+it.layer(makeProjectionPipelinePrefixedTestLayer("lmcs-pending-turn-terminal-test-"))(
   "OrchestrationProjectionPipeline pending turn cleanup",
   (it) => {
     it.effect("clears pending turn starts when startup reaches a terminal session state", () =>
@@ -4384,7 +4378,7 @@ it.effect("restores pending turn-start metadata across projection pipeline resta
     Effect.provide(
       Layer.provideMerge(
         ServerConfig.layerTest(process.cwd(), {
-          prefix: "t3-projection-pipeline-restart-",
+          prefix: "lmcs-projection-pipeline-restart-",
         }),
         NodeServices.layer,
       ),
@@ -4404,7 +4398,7 @@ const engineLayer = it.layer(
     Layer.provideMerge(SqlitePersistenceMemory),
     Layer.provideMerge(
       ServerConfig.layerTest(process.cwd(), {
-        prefix: "t3-projection-pipeline-engine-dispatch-",
+        prefix: "lmcs-projection-pipeline-engine-dispatch-",
       }),
     ),
     Layer.provideMerge(NodeServices.layer),

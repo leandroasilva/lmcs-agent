@@ -1,4 +1,4 @@
-import { T3_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/core";
+import { LMCS_PROJECT_FILE_NAME, type T3ProjectFile } from "@lmcstools/core";
 import { parseT3ProjectFile } from "@lmcstools/core/t3ProjectFile";
 import { useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
@@ -28,7 +28,7 @@ function useMemberProjectFiles(scope: ReturnType<typeof resolveSettingsScope>) {
               getProjectFileQueryAtom(
                 member.environmentId,
                 member.workspaceRoot,
-                T3_PROJECT_FILE_NAME,
+                LMCS_PROJECT_FILE_NAME,
               ),
             );
             if (result.waiting) continue;
@@ -38,7 +38,7 @@ function useMemberProjectFiles(scope: ReturnType<typeof resolveSettingsScope>) {
                 optimisticFileAtom(
                   member.environmentId,
                   member.workspaceRoot,
-                  T3_PROJECT_FILE_NAME,
+                  LMCS_PROJECT_FILE_NAME,
                 ),
               )?.data ?? Option.getOrNull(AsyncResult.value(result));
             files.set(

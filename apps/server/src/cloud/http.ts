@@ -439,7 +439,7 @@ const makeCloudLinkProof = Effect.fn("environment.cloud.makeLinkProof")(function
   const nowSeconds = Math.floor(now.epochMilliseconds / 1_000);
   const descriptor = yield* dependencies.environment.getDescriptor;
   const payload = {
-    iss: `t3-env:${descriptor.environmentId}`,
+    iss: `lmcs-env:${descriptor.environmentId}`,
     aud: normalizeRelayIssuer(request.relayIssuer),
     sub: descriptor.environmentId,
     jti: yield* Crypto.Crypto.pipe(Effect.flatMap((crypto) => crypto.randomUUIDv4)),
@@ -791,7 +791,7 @@ const reconcileDesiredCloudLinkWith = Effect.fn("environment.cloud.reconcileDesi
           onNone: () =>
             Effect.fail(
               new EnvironmentHttpUnauthorizedError({
-                message: "Run `t3 connect link` to authorize this environment.",
+                message: "Run `lmcs connect link` to authorize this environment.",
               }),
             ),
           onSome: Effect.succeed,
@@ -914,7 +914,7 @@ const makeManagedTunnelRecoveryProof = Effect.fn(
   const now = yield* DateTime.now;
   const issuedAt = Math.floor(now.epochMilliseconds / 1_000);
   const claims = {
-    iss: `t3-env:${input.environmentId}`,
+    iss: `lmcs-env:${input.environmentId}`,
     aud: normalizeRelayIssuer(
       Option.isSome(configuredIssuer) ? bytesToString(configuredIssuer.value) : input.relayUrl,
     ),
@@ -1143,7 +1143,7 @@ export const pendingServiceUpdateExists = Effect.gen(function* () {
 });
 
 // A pending update alone is not proof a replacement server is coming: an
-// explicit launcher stop (`t3 service uninstall`, `systemctl stop`,
+// explicit launcher stop (`lmcs service uninstall`, `systemctl stop`,
 // `launchctl bootout`) during
 // the pending window also tears this server down. The launcher marks that case
 // just before it signals the child, so pending + no marker is the handoff.
@@ -1387,7 +1387,7 @@ const cloudEnvironmentHealthHandler = Effect.fn("environment.cloud.health")(
       token: request.proof,
       typ: RELAY_HEALTH_REQUEST_TYP,
       issuer: normalizeRelayIssuer(relayIssuer),
-      audience: `t3-env:${environmentId}`,
+      audience: `lmcs-env:${environmentId}`,
       nowEpochSeconds: nowSeconds,
     }).pipe(Effect.flatMap(decodeCloudHealthProof), Effect.option);
     if (
@@ -1420,7 +1420,7 @@ const cloudEnvironmentHealthHandler = Effect.fn("environment.cloud.health")(
     const descriptor = yield* dependencies.environment.getDescriptor;
     const responseExpiresAt = DateTime.add(now, { minutes: 5 });
     const responsePayload = {
-      iss: `t3-env:${environmentId}`,
+      iss: `lmcs-env:${environmentId}`,
       aud: normalizeRelayIssuer(relayIssuer),
       sub: environmentId,
       jti: yield* Crypto.Crypto.pipe(Effect.flatMap((crypto) => crypto.randomUUIDv4)),
@@ -1505,7 +1505,7 @@ const cloudMintCredentialHandler = Effect.fn("environment.cloud.mintCredential")
       token: request.proof,
       typ: RELAY_MINT_REQUEST_TYP,
       issuer: normalizeRelayIssuer(relayIssuer),
-      audience: `t3-env:${environmentId}`,
+      audience: `lmcs-env:${environmentId}`,
       nowEpochSeconds: nowSeconds,
     }).pipe(Effect.flatMap(decodeCloudMintProof), Effect.option);
     if (
@@ -1544,7 +1544,7 @@ const cloudMintCredentialHandler = Effect.fn("environment.cloud.mintCredential")
       proofKeyThumbprint: proof.clientProofKeyThumbprint,
     });
     const responsePayload = {
-      iss: `t3-env:${environmentId}`,
+      iss: `lmcs-env:${environmentId}`,
       aud: normalizeRelayIssuer(relayIssuer),
       sub: environmentId,
       jti: yield* Crypto.Crypto.pipe(Effect.flatMap((crypto) => crypto.randomUUIDv4)),

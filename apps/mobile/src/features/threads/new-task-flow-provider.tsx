@@ -15,7 +15,7 @@ import {
   DEFAULT_RUNTIME_MODE,
   DEFAULT_SERVER_SETTINGS,
   MessageId,
-  T3_PROJECT_FILE_NAME,
+  LMCS_PROJECT_FILE_NAME,
   ThreadId,
 } from "@lmcstools/core";
 import { sanitizeNewRefName } from "@lmcstools/core/git";
@@ -429,7 +429,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
           environmentId: selectedProject.environmentId,
           input: {
             cwd: selectedProject.workspaceRoot,
-            relativePath: T3_PROJECT_FILE_NAME,
+            relativePath: LMCS_PROJECT_FILE_NAME,
           },
         })
       : null,

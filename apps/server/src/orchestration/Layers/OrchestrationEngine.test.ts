@@ -68,7 +68,7 @@ function makeOrchestrationLayer(
     ? makeSqlitePersistenceLive(databasePath)
     : SqlitePersistenceMemory;
   const ServerConfigLayer = ServerConfig.layerTest(process.cwd(), {
-    prefix: "t3-orchestration-engine-test-",
+    prefix: "lmcs-orchestration-engine-test-",
   });
   return Layer.mergeAll(
     OrchestrationEngineLive.pipe(
@@ -134,7 +134,7 @@ describe("OrchestrationEngine", () => {
     "sends async answers with a %s session and rejects old duplicate replies",
     async (status) => {
       const directory = await NodeFSP.mkdtemp(
-        NodePath.join(NodeOS.tmpdir(), "t3-async-questions-"),
+        NodePath.join(NodeOS.tmpdir(), "lmcs-async-questions-"),
       );
       const databasePath = NodePath.join(directory, "state.sqlite");
       let system = await createOrchestrationSystem(databasePath);
@@ -1441,7 +1441,7 @@ describe("OrchestrationEngine", () => {
         threadId: ThreadId.make("thread-turn-diff"),
         turnId: asTurnId("turn-1"),
         completedAt: createdAt,
-        checkpointRef: asCheckpointRef("refs/t3/checkpoints/thread-turn-diff/turn/1"),
+        checkpointRef: asCheckpointRef("refs/lmcs/checkpoints/thread-turn-diff/turn/1"),
         status: "ready",
         files: [],
         checkpointTurnCount: 1,
@@ -1456,7 +1456,7 @@ describe("OrchestrationEngine", () => {
       {
         turnId: asTurnId("turn-1"),
         checkpointTurnCount: 1,
-        checkpointRef: asCheckpointRef("refs/t3/checkpoints/thread-turn-diff/turn/1"),
+        checkpointRef: asCheckpointRef("refs/lmcs/checkpoints/thread-turn-diff/turn/1"),
         status: "ready",
         files: [],
         assistantMessageId: null,
@@ -1506,7 +1506,7 @@ describe("OrchestrationEngine", () => {
     };
 
     const ServerConfigLayer = ServerConfig.layerTest(process.cwd(), {
-      prefix: "t3-orchestration-engine-test-",
+      prefix: "lmcs-orchestration-engine-test-",
     });
 
     const runtime = ManagedRuntime.make(

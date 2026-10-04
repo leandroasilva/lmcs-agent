@@ -146,7 +146,10 @@ export const useQueuedMessageStore = create<QueuedMessageStoreState>()((set, get
     set((state) => {
       const queuesByThreadKey = { ...state.queuesByThreadKey };
       delete queuesByThreadKey[threadKey];
-      return { queuesByThreadKey, drainGeneration: state.drainGeneration + 1 };
+      return {
+        queuesByThreadKey,
+        drainGeneration: state.drainGeneration + 1,
+      };
     });
     return queue;
   },
@@ -181,9 +184,11 @@ export function latestCompletedToolActivityId(
 }
 
 /**
- * A queued message is due mid-turn once a tool call finished after it was
- * queued, and as soon as the turn is over otherwise. "connecting" is the gap
- * between a send and the provider picking it up, so nothing is due there.
+ * A queued message is due only when the current turn has finished.
+ * "connecting" is the gap between a send and the provider picking it up,
+ * so nothing is due there. "running" means a turn is in progress, so we
+ * wait for it to complete before sending the next queued message.
+ * This ensures sequential execution so the user can see each command's progress.
  */
 export function isQueuedMessageDue(input: {
   message: Pick<QueuedComposerMessage, "queuedAfterToolActivityId" | "holdUntilUserAction">;
@@ -191,9 +196,9 @@ export function isQueuedMessageDue(input: {
   latestToolActivityId: string | null;
 }): boolean {
   if (input.message.holdUntilUserAction) return false;
-  if (input.phase === "connecting") return false;
-  if (input.phase !== "running") return true;
-  return input.latestToolActivityId !== input.message.queuedAfterToolActivityId;
+  // Only send queued messages when the turn is not running
+  // This ensures sequential execution: one command at a time
+  return input.phase === "ready" || input.phase === "disconnected";
 }
 
 export function useQueuedMessages(threadKey: string): QueuedComposerMessage[] {

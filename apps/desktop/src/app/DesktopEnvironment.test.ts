@@ -49,7 +49,7 @@ describe("DesktopEnvironment", () => {
           LMCS_COMMIT_HASH: " 0123456789abcdef ",
           LMCS_PORT: "4949",
           VITE_DEV_SERVER_URL: "http://localhost:5173",
-          LMCS_DEV_REMOTE_T3_SERVER_ENTRY_PATH: " /remote/server.mjs ",
+          LMCS_DEV_REMOTE_LMCS_SERVER_ENTRY_PATH: " /remote/server.mjs ",
           LMCS_OTLP_TRACES_URL: " http://127.0.0.1:4318/v1/traces ",
           LMCS_OTLP_METRICS_URL: " http://127.0.0.1:4318/v1/metrics ",
           LMCS_OTLP_LOGS_URL: " http://127.0.0.1:4318/v1/logs ",
@@ -84,7 +84,7 @@ describe("DesktopEnvironment", () => {
         Option.map(environment.devServerUrl, (url) => url.href),
         Option.some("http://localhost:5173/"),
       );
-      assert.deepEqual(environment.devRemoteT3ServerEntryPath, Option.some("/remote/server.mjs"));
+      assert.deepEqual(environment.devRemoteLmcsServerEntryPath, Option.some("/remote/server.mjs"));
       assert.deepEqual(environment.configuredBackendPort, Option.some(4949));
       assert.deepEqual(environment.commitHashOverride, Option.some("0123456789abcdef"));
       assert.deepEqual(environment.otlpTracesUrl, Option.some("http://127.0.0.1:4318/v1/traces"));
@@ -163,8 +163,8 @@ describe("DesktopEnvironment", () => {
       );
       const production = yield* makeEnvironment();
 
-      assert.equal(development.stateDir, "/Users/alice/.t3/dev");
-      assert.equal(production.stateDir, "/Users/alice/.t3/userdata");
+      assert.equal(development.stateDir, "/Users/alice/.lmcs/dev");
+      assert.equal(production.stateDir, "/Users/alice/.lmcs/userdata");
     }),
   );
 
