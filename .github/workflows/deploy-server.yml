@@ -1,0 +1,136 @@
+name: Deploy Server
+
+# Builds the server container image from this repository and pushes it to
+# GHCR. When hcloud secrets are configured, notifies the hcloud platform
+# to pull the new image automatically on every push to main.
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*.*.*"
+      - "!v*-nightly.*"
+      - "!v*-preview.*"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-server-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  HCLOUD_URL: https://hcloud.net.br
+
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      image: ${{ steps.image.outputs.name }}:${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - id: version
+        name: Resolve image version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set image name
+        id: image
+        shell: bash
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=${{ env.REGISTRY }}/${OWNER}/lmcs-agent" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        name: Docker metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' || github.ref_name == github.event.repository.default_branch }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/server/Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to HCloud
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check hcloud configuration
+        id: check
+        shell: bash
+        env:
+          HCLOUD_APP_ID: ${{ secrets.HCLOUD_APP_ID }}
+          HCLOUD_APP_TOKEN: ${{ secrets.HCLOUD_APP_TOKEN }}
+        run: |
+          if [[ -n "$HCLOUD_APP_ID" && -n "$HCLOUD_APP_TOKEN" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping HCloud deployment: HCLOUD_APP_ID and/or HCLOUD_APP_TOKEN secrets are not configured."
+          fi
+
+      - name: Notify HCloud (image-webhook)
+        if: steps.check.outputs.enabled == 'true'
+        shell: bash
+        env:
+          HCLOUD_APP_ID: ${{ secrets.HCLOUD_APP_ID }}
+          HCLOUD_APP_TOKEN: ${{ secrets.HCLOUD_APP_TOKEN }}
+          IMAGE: ${{ needs.build.outputs.image }}
+        run: |
+          set -euo pipefail
+          HTTP_CODE=$(curl -s -o resposta.json -w "%{http_code}" \
+            -X POST "$HCLOUD_URL/api/cloud/apps/$HCLOUD_APP_ID/image-webhook" \
+            -H "Authorization: Bearer $HCLOUD_APP_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"image\":\"$IMAGE\"}")
+          echo "HTTP $HTTP_CODE — resposta da HCloud:"
+          cat resposta.json; echo
+          if [[ "$HTTP_CODE" -lt 200 || "$HTTP_CODE" -ge 300 ]]; then
+            echo "::error::HCloud webhook failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "::notice::Deployed $IMAGE to HCloud (app $HCLOUD_APP_ID)"
