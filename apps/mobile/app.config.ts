@@ -226,7 +226,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: "automatic",
   updates: {
     enabled: repoEnv.LMCS_MOBILE_UPDATES_ENABLED !== "0",
-    url: "https://u.expo.dev/", // Atualizar após eas project:init
+    url: "https://u.expo.dev/12ad5f40-2c52-4902-8370-0a8111faf597",
     checkAutomatically: "ON_LOAD",
     fallbackToCacheTimeout: 0,
   },
@@ -456,7 +456,7 @@ const config: ExpoConfig = {
       tracesToken: repoEnv.EXPO_PUBLIC_OTLP_TRACES_TOKEN ?? null,
     },
     eas: {
-      projectId: "", // Atualizar após eas project:init
+      projectId: "12ad5f40-2c52-4902-8370-0a8111faf597",
     },
   },
   owner: "halklensons-team",
