@@ -168,9 +168,6 @@ importers:
       effect:
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115(patch_hash=0dfc4bb8ebd80fb3e06b91ef61346f5259517ab0f2437644fe95ae531084b1f5)
-      electron:
-        specifier: 44.4.2
-        version: 44.4.2
       electron-store:
         specifier: ^8.2.0
         version: 8.2.0
@@ -199,6 +196,9 @@ importers:
       cross-env:
         specifier: ^10.1.0
         version: 10.1.0
+      electron:
+        specifier: 44.4.2
+        version: 44.4.2
       electron-builder:
         specifier: 26.15.6
         version: 26.15.6(electron-builder-squirrel-windows@26.15.6)
