@@ -164,9 +164,6 @@ jobs:
       - name: Build server bundle
         run: pnpm --filter lmcs-agent run build
 
-      - name: Build desktop app
-        run: pnpm --filter @lmcstools/desktop run build
-
       - name: Package macOS app
         working-directory: apps/desktop
         run: npx electron-builder --mac --arm64 --x64 --publish=never
@@ -214,9 +211,6 @@ jobs:
 
       - name: Build server bundle
         run: pnpm --filter lmcs-agent run build
-
-      - name: Build desktop app
-        run: pnpm --filter @lmcstools/desktop run build
 
       - name: Package Linux app
         working-directory: apps/desktop
@@ -266,9 +260,6 @@ jobs:
 
       - name: Build server bundle
         run: pnpm --filter lmcs-agent run build
-
-      - name: Build desktop app
-        run: pnpm --filter @lmcstools/desktop run build
 
       - name: Package Windows app
         working-directory: apps/desktop
