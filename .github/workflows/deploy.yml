@@ -198,7 +198,7 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.10.0 --activate
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config imagemagick
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config imagemagick squashfs-tools snapd
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
