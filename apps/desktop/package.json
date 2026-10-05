@@ -7,6 +7,7 @@
   "scripts": {
     "ensure:electron": "node scripts/ensure-electron-runtime.mjs",
     "start": "node scripts/start-electron.mjs",
+    "build": "node scripts/build-browser-secret.mjs && node scripts/build-preview-annotation-css.mjs && vp pack",
     "typecheck": "tsc --noEmit",
     "test": "vp test run --passWithNoTests",
     "smoke-test": "node scripts/smoke-test.mjs"
@@ -37,6 +38,11 @@
     "electron-builder": "26.15.6",
     "tailwindcss": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "build": {
+    "linux": {
+      "executableName": "t3code"
+    }
   },
   "productName": "LMCS Code (Alpha)"
 }
