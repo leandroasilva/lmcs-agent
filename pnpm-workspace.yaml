@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - infra/*
+  - "!infra/relay-standalone"
   - oxlint-plugin-lmcscode
   - packages/*
   - scripts
