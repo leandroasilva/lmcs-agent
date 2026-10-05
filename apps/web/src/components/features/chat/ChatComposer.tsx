@@ -6157,9 +6157,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   : selection,
               )
             : null,
-        providerAvailable:
-          multipleModelSelections !== null ||
-          (!noProviderAvailable && providerSendBlockReason === null),
+        providerAvailable: multipleModelSelections !== null || !noProviderAvailable,
         selectedProvider,
         selectedModel,
         selectedProviderModels,
@@ -6215,7 +6213,6 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       setMultipleModelSelections,
       routeKind,
       noProviderAvailable,
-      providerSendBlockReason,
       selectedPromptEffort,
       selectedProvider,
       selectedProviderModels,
