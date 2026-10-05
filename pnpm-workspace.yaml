@@ -1,6 +1,6 @@
 packages:
   - apps/*
-  - infra/*
+  - infra/relay
   - oxlint-plugin-lmcscode
   - packages/*
   - scripts
@@ -12,12 +12,14 @@ storeDir: .pnpm-store
 # where anything outside onlyBuiltDependencies was silently not built.
 allowBuilds:
   "@qoder-ai/qoder-agent-sdk": true
+  bcrypt: true
   browser-tabs-lock: false
   bufferutil: false
   core-js: false
   electron: true
   electron-winstaller: false
   esbuild: true
+  msgpackr-extract: true
   msw: false
   node-pty: true
   sharp: true
