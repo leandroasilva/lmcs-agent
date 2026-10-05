@@ -1,0 +1,36 @@
+{
+  "name": "lmcs-relay-standalone",
+  "version": "1.0.0",
+  "description": "Self-hosted LMCS Connect Relay for Docker deployment",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "migrate": "tsx src/db/migrate.ts",
+    "migrate:rollback": "tsx src/db/migrate.ts rollback"
+  },
+  "dependencies": {
+    "@effect/platform": "^0.72.0",
+    "@effect/platform-node": "^0.65.0",
+    "@effect/sql": "^0.22.0",
+    "@effect/sql-mysql2": "^0.23.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "effect": "^3.12.0",
+    "express": "^4.21.2",
+    "ioredis": "^5.4.2",
+    "jose": "^5.9.6",
+    "mysql2": "^3.11.5",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.1.0",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

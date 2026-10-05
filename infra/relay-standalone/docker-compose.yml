@@ -1,0 +1,138 @@
+version: "3.8"
+
+services:
+  # LMCS Relay Application
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lmcs-relay
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      # Database
+      - DATABASE_URL=mysql://lmcs_relay:${DB_PASSWORD:-password}@db:3306/lmcs_relay
+      - DATABASE_HOST=db
+      - DATABASE_PORT=3306
+      - DATABASE_USER=lmcs_relay
+      - DATABASE_PASSWORD=${DB_PASSWORD:-password}
+      - DATABASE_NAME=lmcs_relay
+      # Redis
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # JWT
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      - JWT_EXPIRES_IN=7d
+      # Relay
+      - RELAY_DOMAIN=${RELAY_DOMAIN:-agent.lmcs.tec.br}
+      - RELAY_TUNNEL_DOMAIN=${TUNNEL_DOMAIN:-tunnels.lmcs.tec.br}
+      # Cloudflare (optional)
+      - CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
+      - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:-}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - lmcs-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: lmcs-relay-db
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=lmcs_relay
+      - MYSQL_USER=lmcs_relay
+      - MYSQL_PASSWORD=${DB_PASSWORD:-password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./migrations/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - lmcs-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD:-rootpassword}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Redis (for queues and cache)
+  redis:
+    image: redis:7-alpine
+    container_name: lmcs-relay-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - lmcs-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # Cloudflared (optional - for managed tunnels)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: lmcs-relay-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
+    networks:
+      - lmcs-network
+    profiles:
+      - tunnel
+    depends_on:
+      - relay
+
+networks:
+  lmcs-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
