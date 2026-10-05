@@ -7,6 +7,7 @@ import { createAuthRouter } from "./http/auth.js";
 import { createEnvironmentRouter } from "./http/environments.js";
 import { createHealthRouter } from "./http/health.js";
 import { createTunnelRouter } from "./http/tunnels.js";
+import { createNotificationRouter } from "./http/notifications.js";
 import { runMigrations } from "./db/migrate.js";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -37,10 +38,12 @@ const runtimeLayer = Layer.mergeAll(
 const authRouter = createAuthRouter(runtimeLayer);
 const environmentRouter = createEnvironmentRouter(runtimeLayer);
 const tunnelRouter = createTunnelRouter(runtimeLayer);
+const notificationRouter = createNotificationRouter(runtimeLayer);
 
 app.use("/auth", authRouter);
 app.use("/environments", environmentRouter);
 app.use("/tunnels", tunnelRouter);
+app.use("/notifications", notificationRouter);
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
