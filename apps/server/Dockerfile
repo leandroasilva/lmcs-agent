@@ -24,12 +24,14 @@ ARG HOSTED_APP_URL=https://lmcs-agent.cloud.hcloud.net.br
 
 # Only the trees the server build needs. This skips the desktop workspace,
 # which keeps the Electron download out of the image build.
+# The relay-standalone is excluded as it's a separate application with its own Dockerfile.
 RUN --mount=type=cache,id=lmcs-pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile \
       --filter lmcs-agent \
       --filter 'lmcs...' \
       --filter '@lmcstools/web...' \
-      --filter '@lmcstools/scripts...'
+      --filter '@lmcstools/scripts...' \
+      --filter '!./infra/relay-standalone...'
 
 RUN VITE_HOSTED_APP_URL="$HOSTED_APP_URL" pnpm --filter @lmcstools/web run build \
     && node apps/server/scripts/cli.ts build
