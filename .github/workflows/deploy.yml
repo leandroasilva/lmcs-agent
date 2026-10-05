@@ -1,11 +1,5 @@
 name: Deploy
 
-# On every push to main:
-#   1. Bump version (date + sha)
-#   2. Build & push Docker image, deploy to HCloud
-#   3. Build desktop apps (macOS, Linux, Windows)
-#   4. Build mobile apps (Android, iOS) via Expo EAS
-
 on:
   push:
     branches: [main]
@@ -32,6 +26,36 @@ env:
   HOSTED_APP_URL: https://lmcs-agent.cloud.hcloud.net.br
 
 jobs:
+  # ─── CI Checks (PR only) ──────────────────────────────────────────
+  ci:
+    name: CI Checks
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Enable corepack
+        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
   # ─── Version ────────────────────────────────────────────────────────
   version:
     name: Resolve version
@@ -55,14 +79,13 @@ jobs:
             echo "tag=v${date_part}.${sha_part}" >> "$GITHUB_OUTPUT"
           fi
 
-  # ─── Server (Docker) ───────────────────────────────────────────────
+  # ─── Server (Docker) ──────────────────────────────────────────────
   server:
     name: Build & push server image
-    needs: version
+    needs: [version, ci]
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    outputs:
-      image: ${{ steps.meta.outputs.tags }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -147,36 +170,11 @@ jobs:
           fi
           echo "::notice::Deployed $IMAGE to HCloud (app $HCLOUD_APP_ID)"
 
-  # ─── Tag release ───────────────────────────────────────────────────
-  tag:
-    name: Create version tag
-    needs: [version, deploy]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && always() && !cancelled()
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Create version tag
-        shell: bash
-        env:
-          TAG: ${{ needs.version.outputs.tag }}
-        run: |
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "::notice::Tag $TAG already exists, skipping."
-          else
-            git tag "$TAG"
-            git push origin "$TAG"
-            echo "::notice::Created tag $TAG"
-          fi
-
-  # ─── Desktop: macOS ────────────────────────────────────────────────
+  # ── Desktop: macOS ────────────────────────────────────────────────
   desktop_macos:
     name: Desktop macOS
-    needs: version
-    if: github.event_name != 'pull_request'
+    needs: [version, ci]
+    if: always() && github.event_name != 'pull_request' && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -223,8 +221,8 @@ jobs:
   # ─── Desktop: Linux ────────────────────────────────────────────────
   desktop_linux:
     name: Desktop Linux
-    needs: version
-    if: github.event_name != 'pull_request'
+    needs: [version, ci]
+    if: always() && github.event_name != 'pull_request' && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -275,8 +273,8 @@ jobs:
   # ─── Desktop: Windows ──────────────────────────────────────────────
   desktop_windows:
     name: Desktop Windows
-    needs: version
-    if: github.event_name != 'pull_request'
+    needs: [version, ci]
+    if: always() && github.event_name != 'pull_request' && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     runs-on: windows-2022
     timeout-minutes: 45
     steps:
@@ -324,51 +322,32 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  # ─── Mobile: Android & iOS ─────────────────────────────────────────
-  mobile:
-    name: Build mobile apps
-    needs: version
-    if: github.event_name != 'pull_request'
+  # ── Tag release ───────────────────────────────────────────────────
+  tag:
+    name: Create version tag
+    needs: [version, deploy, desktop_macos, desktop_linux, desktop_windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && always() && !cancelled()
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version-file: package.json
+          fetch-depth: 0
 
-      - name: Enable corepack
-        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Set version
-        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
-
-      - name: Build Android
-        working-directory: apps/mobile
-        run: eas build --platform android --profile production --non-interactive --no-wait
+      - name: Create version tag
+        shell: bash
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::notice::Tag $TAG already exists, skipping."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "::notice::Created tag $TAG"
+          fi
 
-      - name: Build iOS
-        working-directory: apps/mobile
-        run: eas build --platform ios --profile production --non-interactive --no-wait
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-  # ─── GitHub Release ────────────────────────────────────────────────
+  # ── GitHub Release ────────────────────────────────────────────────
   release:
     name: Create GitHub release
     needs: [version, tag, desktop_macos, desktop_linux, desktop_windows]
