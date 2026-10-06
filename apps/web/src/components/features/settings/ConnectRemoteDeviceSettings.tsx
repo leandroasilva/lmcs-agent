@@ -12,6 +12,16 @@ interface RemoteDeviceFormData {
   deviceName: string;
 }
 
+interface DeviceInfo {
+  deviceId: string;
+  token: string;
+  name: string;
+  platform: string;
+  registeredAt: number;
+  lastSeenAt: number;
+  connected: boolean;
+}
+
 export function ConnectRemoteDeviceSettings() {
   const [formData, setFormData] = useState<RemoteDeviceFormData>({
     serverUrl: "",
@@ -20,12 +30,12 @@ export function ConnectRemoteDeviceSettings() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
+    setSuccess(null);
 
     // Validate inputs
     if (!formData.serverUrl.trim()) {
@@ -38,29 +48,71 @@ export function ConnectRemoteDeviceSettings() {
       return;
     }
 
+    // Validate token format (should be 32 characters)
+    if (formData.deviceToken.trim().length !== 32) {
+      setError("Device token must be exactly 32 characters");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // TODO: Implement actual connection logic
-      // For now, just simulate a successful connection
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Normalize server URL (remove trailing slash)
+      const serverUrl = formData.serverUrl.trim().replace(/\/$/, "");
 
-      // In a real implementation, this would:
-      // 1. Validate the token against the server
-      // 2. Establish a connection to the remote device
-      // 3. Save the connection to the catalog
+      // Step 1: Validate the token by fetching device info
+      const response = await fetch(
+        `${serverUrl}/api/devices/by-token/${formData.deviceToken.trim()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
-      console.log("Connecting to remote device:", {
-        serverUrl: formData.serverUrl,
-        deviceToken: formData.deviceToken,
-        deviceName: formData.deviceName || "Unnamed Device",
-      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(
+            "Device not found. The token may be invalid or the device is not registered.",
+          );
+        }
+        throw new Error(`Server returned error: ${response.status}`);
+      }
 
-      setSuccess(true);
+      const device: DeviceInfo = await response.json();
+
+      // Step 2: Add to connection catalog (via IPC if in desktop, or localStorage for web)
+      const connectionData = {
+        deviceId: device.deviceId,
+        serverUrl,
+        deviceName: formData.deviceName.trim() || device.name || "Unnamed Device",
+        platform: device.platform,
+        connectedAt: Date.now(),
+      };
+
+      // Try to use desktop bridge if available
+      if (typeof window.desktopBridge !== "undefined") {
+        // TODO: Add IPC method to save connection to catalog
+        // For now, just log it
+        console.log("Adding connection to catalog:", connectionData);
+      } else {
+        // Fallback to localStorage for web
+        const existingConnections = JSON.parse(
+          localStorage.getItem("remoteDeviceConnections") || "[]",
+        );
+        existingConnections.push(connectionData);
+        localStorage.setItem("remoteDeviceConnections", JSON.stringify(existingConnections));
+      }
+
+      setSuccess(
+        `Successfully connected to ${device.name || "remote device"} (${device.platform})!`,
+      );
       setFormData({ serverUrl: "", deviceToken: "", deviceName: "" });
     } catch (err) {
-      setError("Failed to connect to remote device");
-      console.error(err);
+      const message = err instanceof Error ? err.message : "Failed to connect to remote device";
+      setError(message);
+      console.error("Connection error:", err);
     } finally {
       setLoading(false);
     }
@@ -90,9 +142,7 @@ export function ConnectRemoteDeviceSettings() {
           {success && (
             <Alert className="border-green-200 bg-green-50">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                Successfully connected to remote device!
-              </AlertDescription>
+              <AlertDescription className="text-green-800">{success}</AlertDescription>
             </Alert>
           )}
 
@@ -103,7 +153,9 @@ export function ConnectRemoteDeviceSettings() {
               type="url"
               placeholder="https://lmcs-agent.cloud.hcloud.net.br"
               value={formData.serverUrl}
-              onChange={(e) => setFormData({ ...formData, serverUrl: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, serverUrl: e.target.value })
+              }
               disabled={loading}
             />
             <p className="text-xs text-muted-foreground">
@@ -118,9 +170,12 @@ export function ConnectRemoteDeviceSettings() {
               type="text"
               placeholder="Enter the 32-character device token"
               value={formData.deviceToken}
-              onChange={(e) => setFormData({ ...formData, deviceToken: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, deviceToken: e.target.value })
+              }
               disabled={loading}
               className="font-mono"
+              maxLength={32}
             />
             <p className="text-xs text-muted-foreground">
               The unique token from the remote device. Find it in Settings → Device Token.
@@ -134,7 +189,9 @@ export function ConnectRemoteDeviceSettings() {
               type="text"
               placeholder="e.g., Work MacBook, Home PC"
               value={formData.deviceName}
-              onChange={(e) => setFormData({ ...formData, deviceName: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, deviceName: e.target.value })
+              }
               disabled={loading}
             />
             <p className="text-xs text-muted-foreground">
