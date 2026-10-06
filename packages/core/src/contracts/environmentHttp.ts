@@ -109,7 +109,9 @@ export class EnvironmentRequestInvalidError extends Schema.TaggedError<Environme
   { httpApiStatus: 400 },
 ) {
   [HttpServerRespondable.symbol]() {
-    return HttpServerResponse.schemaJson(EnvironmentRequestInvalidError)(this, { status: 400 });
+    return HttpServerResponse.schemaJson(EnvironmentRequestInvalidError)(this, {
+      status: 400,
+    });
   }
 
   override get message(): string {
@@ -129,7 +131,9 @@ export class EnvironmentAuthInvalidError extends Schema.TaggedError<EnvironmentA
   { httpApiStatus: 401 },
 ) {
   [HttpServerRespondable.symbol]() {
-    return HttpServerResponse.schemaJson(EnvironmentAuthInvalidError)(this, { status: 401 });
+    return HttpServerResponse.schemaJson(EnvironmentAuthInvalidError)(this, {
+      status: 401,
+    });
   }
 
   override get message(): string {
@@ -147,7 +151,9 @@ export class EnvironmentScopeRequiredError extends Schema.TaggedError<Environmen
   { httpApiStatus: 403 },
 ) {
   [HttpServerRespondable.symbol]() {
-    return HttpServerResponse.schemaJson(EnvironmentScopeRequiredError)(this, { status: 403 });
+    return HttpServerResponse.schemaJson(EnvironmentScopeRequiredError)(this, {
+      status: 403,
+    });
   }
 
   override get message(): string {
@@ -183,7 +189,9 @@ export class EnvironmentInternalError extends Schema.TaggedError<EnvironmentInte
   { httpApiStatus: 500 },
 ) {
   [HttpServerRespondable.symbol]() {
-    return HttpServerResponse.schemaJson(EnvironmentInternalError)(this, { status: 500 });
+    return HttpServerResponse.schemaJson(EnvironmentInternalError)(this, {
+      status: 500,
+    });
   }
 
   override get message(): string {
@@ -235,7 +243,9 @@ export class EnvironmentHttpBadRequestError extends Schema.TaggedError<Environme
   { httpApiStatus: 400 },
 ) {
   [HttpServerRespondable.symbol]() {
-    return HttpServerResponse.schemaJson(EnvironmentHttpBadRequestError)(this, { status: 400 });
+    return HttpServerResponse.schemaJson(EnvironmentHttpBadRequestError)(this, {
+      status: 400,
+    });
   }
 }
 
@@ -259,7 +269,9 @@ export class EnvironmentHttpForbiddenError extends Schema.TaggedError<Environmen
   { httpApiStatus: 403 },
 ) {
   [HttpServerRespondable.symbol]() {
-    return HttpServerResponse.schemaJson(EnvironmentHttpForbiddenError)(this, { status: 403 });
+    return HttpServerResponse.schemaJson(EnvironmentHttpForbiddenError)(this, {
+      status: 403,
+    });
   }
 }
 
@@ -283,7 +295,9 @@ export class EnvironmentHttpConflictError extends Schema.TaggedError<Environment
   { httpApiStatus: 409 },
 ) {
   [HttpServerRespondable.symbol]() {
-    return HttpServerResponse.schemaJson(EnvironmentHttpConflictError)(this, { status: 409 });
+    return HttpServerResponse.schemaJson(EnvironmentHttpConflictError)(this, {
+      status: 409,
+    });
   }
 }
 
