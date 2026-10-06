@@ -1,6 +1,7 @@
 import { SettingsGroup } from "./SettingsGroup";
 import { Spinner } from "~/components/ui/spinner";
 import { NotificationSettings } from "./NotificationSettings";
+import { DeviceTokenSettings } from "./DeviceTokenSettings";
 import { ArchiveIcon, ArchiveX, CheckIcon, ChevronRightIcon, SettingsIcon } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CSSProperties, ReactNode } from "react";
@@ -3507,6 +3508,10 @@ export function GeneralSettingsPanel() {
             )
           }
         />
+      </SettingsSection>
+
+      <SettingsSection id="device-token" title="Device Token">
+        <DeviceTokenSettings />
       </SettingsSection>
 
       <SettingsSection id="about" title={t("settings.general.sections.about")}>

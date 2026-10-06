@@ -116,3 +116,7 @@ export const MAC_PERMISSION_HELPER_CHANNEL = "desktop:mac-permission-helper";
 export const CHECK_SYSTEM_PERMISSION_CHANNEL = "desktop:check-system-permission";
 
 export const PREVIEW_RECORDING_INPUT_CHANNEL = "desktop:preview-recording-input";
+
+// Device token channels
+export const GET_DEVICE_TOKEN_CHANNEL = "desktop:get-device-token";
+export const REGENERATE_DEVICE_TOKEN_CHANNEL = "desktop:regenerate-device-token";
