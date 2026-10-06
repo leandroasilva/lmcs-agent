@@ -166,7 +166,9 @@ jobs:
 
       - name: Package macOS app
         working-directory: apps/desktop
-        run: npx electron-builder --mac --arm64 --x64 --publish=never
+        run: npx electron-builder --mac --arm64 --x64 --publish always
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -228,30 +230,5 @@ jobs:
           fi
 
   # ── GitHub Release ────────────────────────────────────────────────
-  release:
-    name: Create GitHub release
-    needs: [version, tag, desktop_macos]
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Download desktop artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          pattern: desktop-*
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.version.outputs.tag }}
-          name: LMCS Agent v${{ needs.version.outputs.version }}
-          prerelease: false
-          generate_release_notes: true
-          files: |
-            artifacts/desktop-macos/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Release is created automatically by electron-builder with --publish always
+  # No separate release job needed
