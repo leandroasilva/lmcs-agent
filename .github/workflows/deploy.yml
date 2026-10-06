@@ -133,13 +133,13 @@ jobs:
           fi
           echo "::notice::Deployed $IMAGE to HCloud (app $HCLOUD_APP_ID)"
 
-  # ── Desktop: macOS ────────────────────────────────────────────────
+  # ─── Desktop: macOS ────────────────────────────────────────────────
   desktop_macos:
     name: Desktop macOS
     needs: version
     if: github.event.pull_request.merged == true
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -184,7 +184,7 @@ jobs:
     needs: version
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -198,7 +198,7 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.10.0 --activate
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config imagemagick squashfs-tools snapd
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config imagemagick squashfs-tools
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
@@ -214,7 +214,7 @@ jobs:
 
       - name: Package Linux app
         working-directory: apps/desktop
-        run: npx electron-builder --linux --x64 --arm64 --publish=never
+        run: npx electron-builder --linux --x64 --arm64 --publish=never --config.linux.target=AppImage,deb
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -223,7 +223,6 @@ jobs:
           path: |
             apps/desktop/dist/*.AppImage
             apps/desktop/dist/*.deb
-            apps/desktop/dist/*.rpm
           if-no-files-found: warn
           retention-days: 30
 
@@ -233,7 +232,7 @@ jobs:
     needs: version
     if: github.event.pull_request.merged == true
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - name: Checkout
         uses: actions/checkout@v6
