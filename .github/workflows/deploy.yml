@@ -198,7 +198,7 @@ jobs:
         run: node scripts/update-versions-simple.cjs "${{ needs.version.outputs.version }}"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
+        run: pnpm install --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
 
       - name: Build web client
         run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
