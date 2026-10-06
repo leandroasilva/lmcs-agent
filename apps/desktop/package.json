@@ -41,6 +41,12 @@
   "build": {
     "linux": {
       "executableName": "t3code"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "leandroasilva",
+      "repo": "lmcs-agent",
+      "releaseType": "release"
     }
   },
   "productName": "LMCS Code (Alpha)"
