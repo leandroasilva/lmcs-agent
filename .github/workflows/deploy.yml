@@ -195,7 +195,7 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.10.0 --activate
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
+        run: pnpm install --frozen-lockfile
 
       - name: Build web client
         run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
