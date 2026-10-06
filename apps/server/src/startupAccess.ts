@@ -2,10 +2,12 @@ import * as NodeOS from "node:os";
 
 import { QrCode } from "@lmcstools/core/qrCode";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import { HttpServer } from "effect/unstable/http";
 
 import { ServerConfig } from "./config.ts";
 import * as EnvironmentAuth from "./auth/EnvironmentAuth.ts";
+import { hostedAppUrlConfig } from "./cloud/publicConfig.ts";
 
 export interface HeadlessServeAccessInfo {
   readonly connectionString: string;
@@ -134,10 +136,16 @@ export const issueHeadlessServeAccessInfo = Effect.fn("issueHeadlessServeAccessI
   const serverConfig = yield* ServerConfig;
   const httpServer = yield* HttpServer.HttpServer;
   const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
-  const connectionString = resolveHeadlessConnectionString(
-    serverConfig.host,
-    resolveListeningPort(httpServer.address, serverConfig.port),
-  );
+
+  // Try to use LMCS_HOSTED_APP_URL if available, otherwise fall back to detected host
+  const hostedAppUrl = yield* Effect.option(hostedAppUrlConfig);
+  const connectionString = Option.isSome(hostedAppUrl)
+    ? hostedAppUrl.value
+    : resolveHeadlessConnectionString(
+        serverConfig.host,
+        resolveListeningPort(httpServer.address, serverConfig.port),
+      );
+
   const issued = yield* serverAuth.issueStartupPairingCredential();
 
   return {
