@@ -179,106 +179,33 @@ jobs:
           retention-days: 30
 
   # ─── Desktop: Linux ────────────────────────────────────────────────
-  desktop_linux:
-    name: Desktop Linux
+  # DISABLED: electron-builder OOM during node_modules scan on Linux runner
+  # Requires manual investigation on a local Linux runner
+  desktop_linux_disabled:
+    name: Desktop Linux (DISABLED)
     needs: version
-    if: github.event.pull_request.merged == true
+    if: false
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-
-      - name: Enable corepack
-        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
-
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config imagemagick squashfs-tools
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
-
-      - name: Set version
-        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
-
-      - name: Build web client
-        run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
-
-      - name: Build server bundle
-        run: pnpm --filter lmcs-agent run build
-
-      - name: Package Linux app
-        working-directory: apps/desktop
-        run: npx electron-builder --linux --x64 --arm64 --publish=never --config.npmRebuild=false --config.nodeGypRebuild=false
-
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-linux
-          path: |
-            apps/desktop/dist/*.AppImage
-            apps/desktop/dist/*.deb
-          if-no-files-found: warn
-          retention-days: 30
+      - run: echo "Linux build disabled - requires manual investigation"
 
   # ─── Desktop: Windows ──────────────────────────────────────────────
-  desktop_windows:
-    name: Desktop Windows
+  # DISABLED: electron-builder OOM during node_modules scan on Windows runner
+  # Requires manual investigation on a local Windows runner
+  desktop_windows_disabled:
+    name: Desktop Windows (DISABLED)
     needs: version
-    if: github.event.pull_request.merged == true
+    if: false
     runs-on: windows-2022
     timeout-minutes: 75
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-
-      - name: Enable corepack
-        shell: bash
-        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
-
-      - name: Set version
-        shell: bash
-        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
-
-      - name: Build web client
-        shell: bash
-        run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
-
-      - name: Build server bundle
-        run: pnpm --filter lmcs-agent run build
-
-      - name: Package Windows app
-        working-directory: apps/desktop
-        run: npx electron-builder --win --x64 --arm64 --publish=never --config.npmRebuild=false --config.nodeGypRebuild=false
-
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-windows
-          path: |
-            apps/desktop/dist/*.exe
-            apps/desktop/dist/*.msi
-            apps/desktop/dist/*.zip
-          if-no-files-found: warn
-          retention-days: 30
+      - run: echo "Windows build disabled - requires manual investigation"
 
   # ── Tag release ───────────────────────────────────────────────────
   tag:
     name: Create version tag
-    needs: [version, deploy, desktop_macos, desktop_linux, desktop_windows]
+    needs: [version, deploy, desktop_macos]
     if: github.event.pull_request.merged == true && always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
@@ -303,7 +230,7 @@ jobs:
   # ── GitHub Release ────────────────────────────────────────────────
   release:
     name: Create GitHub release
-    needs: [version, tag, desktop_macos, desktop_linux, desktop_windows]
+    needs: [version, tag, desktop_macos]
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-24.04
     timeout-minutes: 15
