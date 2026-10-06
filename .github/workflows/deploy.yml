@@ -195,7 +195,7 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.10.0 --activate
 
       - name: Set version
-        run: node scripts/update-release-package-versions.ts "${{ needs.version.outputs.version }}"
+        run: node scripts/update-versions-simple.js "${{ needs.version.outputs.version }}"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter=lmcs... --filter=@lmcstools/web... --filter=@lmcstools/desktop... --filter=@lmcstools/scripts...
