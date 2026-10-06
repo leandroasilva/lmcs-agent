@@ -39,6 +39,34 @@
     "vite-plus": "catalog:"
   },
   "build": {
+    "appId": "br.net.hcloud.lmcs-agent",
+    "mac": {
+      "icon": "../../assets/prod/icon.icns",
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "sign": false
+    },
     "linux": {
       "executableName": "t3code"
     },
