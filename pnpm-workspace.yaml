@@ -101,6 +101,7 @@ minimumReleaseAgeExclude:
   - "@distilled.cloud/stripe@1.0.0-rc.12"
   - "@shadcn/lint@0.1.5"
   - cn@0.3.2
+  - vite@8.3.3
 
 overrides:
   # Earlier React Navigation declarations create a circular type alias in TypeScript 7.
