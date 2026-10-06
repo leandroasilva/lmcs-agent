@@ -40,6 +40,11 @@
   },
   "build": {
     "appId": "br.net.hcloud.lmcs-agent",
+    "files": [
+      "dist-electron/**/*",
+      "dist/**/*",
+      "!node_modules"
+    ],
     "mac": {
       "icon": "../../assets/prod/icon.icns",
       "category": "public.app-category.developer-tools",
