@@ -30,20 +30,62 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       tag: ${{ steps.resolve.outputs.tag }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - id: resolve
-        name: Resolve version
+        name: Resolve semantic version
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-          else
-            date_part=$(date -u +%Y%m%d)
-            sha_part="${GITHUB_SHA::7}"
-            echo "version=0.0.0-${date_part}.${sha_part}" >> "$GITHUB_OUTPUT"
-            echo "tag=v${date_part}.${sha_part}" >> "$GITHUB_OUTPUT"
+
+          # Get the latest tag or start with 0.0.0
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          latest_version=${latest_tag#v}
+
+          # Parse version components
+          IFS='.' read -r major minor patch <<< "$latest_version"
+
+          # Determine version bump based on PR labels or default to patch
+          bump_type="patch"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            pr_labels=$(gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+            if echo "$pr_labels" | grep -q "breaking"; then
+              bump_type="major"
+            elif echo "$pr_labels" | grep -q "feature"; then
+              bump_type="minor"
+            fi
           fi
+
+          # Bump version
+          case $bump_type in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          new_version="${major}.${minor}.${patch}"
+          new_tag="v${new_version}"
+
+          echo "Bump type: $bump_type"
+          echo "Previous version: $latest_version"
+          echo "New version: $new_version"
+
+          echo "version=${new_version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${new_tag}" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ─── Server (Docker) ──────────────────────────────────────────────
   server:
