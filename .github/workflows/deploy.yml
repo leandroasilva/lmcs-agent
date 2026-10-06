@@ -218,7 +218,7 @@ jobs:
 
       - name: Package macOS app
         working-directory: apps/desktop
-        run: npx electron-builder --mac --arm64 --x64 --publish always
+        run: DEBUG=electron-builder,electron-updater npx electron-builder --mac --arm64 --x64 --publish always
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing (optional - if not set, app will be ad-hoc signed)
@@ -227,6 +227,19 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: List generated artifacts
+        if: always()
+        working-directory: apps/desktop
+        run: |
+          echo "=== Files in dist/ ==="
+          ls -lh dist/ 2>/dev/null || echo "dist/ directory not found"
+          echo ""
+          echo "=== DMG files ==="
+          ls -lh dist/*.dmg 2>/dev/null || echo "No DMG files found"
+          echo ""
+          echo "=== ZIP files ==="
+          ls -lh dist/*.zip 2>/dev/null || echo "No ZIP files found"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v5
@@ -287,6 +300,59 @@ jobs:
             echo "::notice::Created tag $TAG"
           fi
 
-  # ── GitHub Release ────────────────────────────────────────────────
-  # Release is created automatically by electron-builder with --publish always
-  # No separate release job needed
+  # ── GitHub Release (fallback) ─────────────────────────────────────
+  # Creates release if electron-builder didn't publish automatically
+  release:
+    name: Create GitHub Release
+    needs: [version, tag, desktop_macos]
+    if: github.event.pull_request.merged == true && always() && !cancelled()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: desktop-macos
+          path: artifacts/
+
+      - name: Check if release exists
+        id: check_release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release $TAG already exists (created by electron-builder)"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release $TAG does not exist, will create it"
+          fi
+
+      - name: Create release and upload artifacts
+        if: steps.check_release.outputs.exists == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          # List available artifacts
+          echo "=== Available artifacts ==="
+          ls -lh artifacts/
+
+          # Create release
+          gh release create "$TAG" \
+            --title "v$VERSION" \
+            --notes "Release v$VERSION" \
+            --generate-notes \
+            artifacts/*.{dmg,zip} 2>/dev/null || \
+          gh release create "$TAG" \
+            --title "v$VERSION" \
+            --notes "Release v$VERSION" \
+            --generate-notes \
+            artifacts/*
+
+          echo "::notice::Created release $TAG with artifacts"
