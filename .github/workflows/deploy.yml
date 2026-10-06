@@ -204,8 +204,8 @@ jobs:
         with:
           node-version-file: package.json
 
-      - name: Enable corepack
-        run: corepack enable && corepack prepare pnpm@11.10.0 --activate
+      - name: Install pnpm
+        run: npm install -g pnpm@11.10.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
