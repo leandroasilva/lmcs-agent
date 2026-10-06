@@ -223,6 +223,7 @@ export function useGitStackedAction(scope: SourceControlActionScope) {
       filePaths?: string[];
       threadId?: ThreadId;
       modelSelection?: ModelSelection;
+      baseBranch?: string;
       onProgress?: (event: GitActionProgressEvent) => void;
     }) => {
       if (resolveScope(scope) === null) {
@@ -244,6 +245,7 @@ export function useGitStackedAction(scope: SourceControlActionScope) {
         ...(input.filePaths?.length ? { filePaths: input.filePaths } : {}),
         ...(input.threadId !== undefined ? { threadId: input.threadId } : {}),
         ...(input.modelSelection ? { modelSelection: input.modelSelection } : {}),
+        ...(input.baseBranch ? { baseBranch: input.baseBranch } : {}),
         ...(input.onProgress ? { onProgress: input.onProgress } : {}),
       });
     },
