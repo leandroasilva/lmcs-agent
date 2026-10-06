@@ -203,12 +203,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: package.json
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.10.0
-          run_install: false
+          package-manager: pnpm@11.10.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
