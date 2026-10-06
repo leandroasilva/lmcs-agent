@@ -330,7 +330,11 @@ const RepositoryIdentityResolverLayerLive = Layer.effect(
           !remote.ssh && basePath && remote.path.startsWith(`${basePath}/`)
             ? remote.path.slice(basePath.length + 1)
             : remote.path;
-        return { ...identity, provider: "forgejo", webUrl: `${baseUrl}/${path}` };
+        return {
+          ...identity,
+          provider: "forgejo",
+          webUrl: `${baseUrl}/${path}`,
+        };
       }),
     });
   }),
@@ -620,14 +624,18 @@ const makeServerLayer = Layer.unwrap(
             state,
           }).pipe(
             Effect.catchCause((cause) =>
-              Effect.logWarning("Failed to persist server runtime state", { cause }),
+              Effect.logWarning("Failed to persist server runtime state", {
+                cause,
+              }),
             ),
           );
         }),
         () =>
           clearPersistedServerRuntimeState(config.serverRuntimeStatePath).pipe(
             Effect.catchCause((cause) =>
-              Effect.logWarning("Failed to clear server runtime state", { cause }),
+              Effect.logWarning("Failed to clear server runtime state", {
+                cause,
+              }),
             ),
           ),
       ),
@@ -668,7 +676,9 @@ const makeServerLayer = Layer.unwrap(
             }),
             (configured) =>
               configured
-                ? disableTailscaleServe({ servePort: configured.servePort }).pipe(
+                ? disableTailscaleServe({
+                    servePort: configured.servePort,
+                  }).pipe(
                     Effect.tap(() =>
                       Effect.logInfo("Tailscale Serve disabled", {
                         servePort: configured.servePort,
@@ -695,7 +705,9 @@ const makeServerLayer = Layer.unwrap(
           Effect.catchCause((cause) =>
             Effect.logWarning(
               "Failed to release the managed tunnel on shutdown; the next link reuses it",
-              { errors: Cause.prettyErrors(cause).map((error) => error.message) },
+              {
+                errors: Cause.prettyErrors(cause).map((error) => error.message),
+              },
             ),
           ),
           Effect.asVoid,
@@ -860,7 +872,10 @@ const makeServerLayer = Layer.unwrap(
             if (registration.status === "unavailable" && !startedConfirmed) {
               yield* startStoredManagedTunnel;
             }
-            const startupAction = managedTunnelStartupAction({ wantsCliLink, registration });
+            const startupAction = managedTunnelStartupAction({
+              wantsCliLink,
+              registration,
+            });
             if (startupAction.action === "request_recovery") {
               yield* endpointRuntime.requestRecovery(startupAction.config);
             }
