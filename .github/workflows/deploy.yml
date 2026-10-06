@@ -308,6 +308,9 @@ jobs:
     if: github.event.pull_request.merged == true && always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Download macOS artifacts
         uses: actions/download-artifact@v5
         with:
