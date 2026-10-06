@@ -46,7 +46,10 @@ export interface ContextMenuItem<T extends string = string> {
 }
 
 export type QuitShortcutHintEvent =
-  | { readonly state: "down"; readonly mode: Exclude<QuitConfirmationMode, "direct"> }
+  | {
+      readonly state: "down";
+      readonly mode: Exclude<QuitConfirmationMode, "direct">;
+    }
   | { readonly state: "up" };
 
 export interface ContextMenuItemSchemaType {
@@ -204,7 +207,10 @@ export const DesktopSnapShotState = Schema.Struct({
   kdeHelper: Schema.optional(DesktopCaptureHelperState),
   hyprlandHelper: Schema.optional(DesktopCaptureHelperState),
   macPermissions: Schema.optional(
-    Schema.Struct({ screenRecording: Schema.Boolean, accessibility: Schema.Boolean }),
+    Schema.Struct({
+      screenRecording: Schema.Boolean,
+      accessibility: Schema.Boolean,
+    }),
   ),
   shortcutVerified: Schema.optional(Schema.Boolean),
   message: Schema.NullOr(Schema.String),
@@ -228,7 +234,10 @@ export const DesktopSnapShotEvent = Schema.Union([
   Schema.Struct({ type: Schema.Literal("requested"), id: DesktopSnapShotId }),
   Schema.Struct({ type: Schema.Literal("started"), id: DesktopSnapShotId }),
   Schema.Struct({ type: Schema.Literal("ready"), id: DesktopSnapShotId }),
-  Schema.Struct({ type: Schema.Literal("failed"), id: Schema.optional(DesktopSnapShotId) }),
+  Schema.Struct({
+    type: Schema.Literal("failed"),
+    id: Schema.optional(DesktopSnapShotId),
+  }),
   Schema.Struct({ type: Schema.Literal("shortcut-changed") }),
 ]);
 export type DesktopSnapShotEvent = typeof DesktopSnapShotEvent.Type;
@@ -1198,6 +1207,10 @@ export interface DesktopBridge {
   setWslBackendEnabled: (enabled: boolean) => Promise<DesktopWslState>;
   setWslDistro: (distro: string | null) => Promise<DesktopWslState>;
   setWslOnly: (enabled: boolean) => Promise<DesktopWslState>;
+  /** Get the unique device token for this desktop instance. */
+  getDeviceToken?: () => Promise<string>;
+  /** Regenerate the device token, invalidating the previous one. */
+  regenerateDeviceToken?: () => Promise<string>;
   pickFolder: (options?: PickFolderOptions) => Promise<string | null>;
   /** Optional while older desktop shells can host a newer web client. */
   pickProjectFavicon?: (initialPath?: string) => Promise<string | null>;
