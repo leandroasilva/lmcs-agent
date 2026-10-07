@@ -148,7 +148,7 @@ function SettingsContentLayout() {
   return (
     <SidebarInset className="h-dvh min-h-0 overflow-hidden overscroll-y-none isolate">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground">
-        <WorkspacePageHeader electron={isElectron}>
+        <WorkspacePageHeader electron={isElectron()}>
           <div className="flex w-full items-center gap-3">
             <SettingsBreadcrumb pathname={location.pathname} />
             {location.pathname === "/settings/general" ? (
@@ -204,14 +204,7 @@ function SettingsRouteLayout() {
 export const Route = createFileRoute("/settings")({
   validateSearch: validateSettingsRouteSearch,
   search: { middlewares: [retainSettingsScope] },
-  beforeLoad: async ({ context, location }) => {
-    if (
-      context.authGateState.status !== "authenticated" &&
-      context.authGateState.status !== "hosted-static"
-    ) {
-      throw redirect({ to: "/pair", replace: true });
-    }
-
+  beforeLoad: async ({ location }) => {
     if (location.pathname === "/settings") {
       throw redirect({ to: "/settings/general", replace: true });
     }

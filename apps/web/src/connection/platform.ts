@@ -50,7 +50,6 @@ import {
   type PrimaryEnvironmentTarget,
 } from "../environments/primary/target";
 import { clearComposerDraftsEnvironment } from "../composerDraftStore";
-import { isHostedStaticApp } from "../hostedPairing";
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { acknowledgeRpcRequest, trackRpcRequestSent } from "../rpc/requestLatencyState";
@@ -119,7 +118,7 @@ const wakeupsLayer = Wakeups.layer({
 function clientMetadata() {
   return clientPresentationMetadata({
     appVersion: APP_VERSION,
-    hosted: isHostedStaticApp(),
+    hosted: false,
     identity: {
       userAgent: navigator.userAgent,
       platform: navigator.platform,
@@ -326,9 +325,9 @@ const loadSecondaryConnectionRegistration = Effect.fn(
   }
   const httpBaseUrl = entry.httpBaseUrl;
   const wsBaseUrl = entry.wsBaseUrl;
-  const descriptor = yield* fetchRemoteEnvironmentDescriptor({ httpBaseUrl }).pipe(
-    Effect.mapError(mapRemoteEnvironmentError),
-  );
+  const descriptor = yield* fetchRemoteEnvironmentDescriptor({
+    httpBaseUrl,
+  }).pipe(Effect.mapError(mapRemoteEnvironmentError));
   const issuedAtEpochMs = yield* Clock.currentTimeMillis;
   const access = yield* bootstrapRemoteBearerSession({
     httpBaseUrl,
@@ -359,7 +358,9 @@ const loadSecondaryConnectionRegistration = Effect.fn(
         httpBaseUrl,
         wsBaseUrl,
       }),
-      credential: new BearerConnectionCredential({ token: access.access_token }),
+      credential: new BearerConnectionCredential({
+        token: access.access_token,
+      }),
     }),
     expiresAtEpochMs: secondaryBearerExpiresAtEpochMs(issuedAtEpochMs, access.expires_in),
     refreshAtEpochMs: secondaryBearerRefreshAtEpochMs(issuedAtEpochMs, access.expires_in),
@@ -465,7 +466,7 @@ export function secondaryRegistrationsToRetainAfterTopologyRead(
 const platformConnectionSourceLayer = Layer.effect(
   PlatformConnectionSource,
   Effect.gen(function* () {
-    if (isHostedStaticApp() || isLocalEnvironmentDisabled()) {
+    if (isLocalEnvironmentDisabled()) {
       return PlatformConnectionSource.of({
         registrations: Stream.empty,
       });
@@ -509,7 +510,9 @@ const platformConnectionSourceLayer = Layer.effect(
         } else {
           const built = yield* loadPrimaryConnectionRegistration(primaryTarget).pipe(
             Effect.tapError((error) =>
-              Effect.logWarning("Could not discover the primary environment.", { error }),
+              Effect.logWarning("Could not discover the primary environment.", {
+                error,
+              }),
             ),
             Effect.option,
           );

@@ -3356,7 +3356,7 @@ export function GeneralSettingsPanel() {
           }
         />
 
-        {isElectron ? (
+        {isElectron() ? (
           <SettingsRow
             {...searchableSetting("quit-confirmation")}
             description={t("settings.general.quitShortcut.description")}
@@ -3520,7 +3520,7 @@ export function GeneralSettingsPanel() {
       </SettingsSection>
 
       <SettingsSection id="about" title={t("settings.general.sections.about")}>
-        {isElectron || HOSTED_APP_CHANNEL ? (
+        {isElectron() || HOSTED_APP_CHANNEL ? (
           <AboutVersionSection />
         ) : (
           <SettingsRow

@@ -45,6 +45,7 @@ import {
 } from "../components/ui/toast";
 import { resolveAndPersistPreferredEditor } from "../editorPreferences";
 import { isElectron } from "../env";
+import { resolveInitialServerAuthGateState } from "../environments/primary/auth";
 import { applyAppearanceFontVariables } from "~/appearanceFonts";
 import { applyAppearanceContrast } from "~/appearanceContrast";
 import { useClientSettings } from "../hooks/useSettings";
@@ -57,9 +58,6 @@ import {
 import { useUiStateStore } from "../uiStateStore";
 import { syncBrowserChromeTheme } from "../hooks/useTheme";
 import { configureClientTracing } from "../observability/clientTracing";
-import { resolveInitialServerAuthGateState } from "../environments/primary";
-import { hasHostedPairingRequest, isHostedStaticApp } from "../hostedPairing";
-import { isLocalEnvironmentDisabled } from "../localEnvironment";
 import { shellEnvironment } from "../state/shell";
 import { useAtomValue } from "@effect/atom-react";
 import { useAtomCommand } from "../state/use-atom-command";
@@ -81,23 +79,10 @@ import { shouldResumeSnapShotSetupOnStartup } from "../lib/snapShotSetupResume";
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
-    if (location.pathname === "/pair" && hasHostedPairingRequest(new URL(window.location.href))) {
-      return {
-        authGateState: {
-          status: "hosted-pairing",
-        } as const,
-      };
-    }
-
-    if (isLocalEnvironmentDisabled() || isHostedStaticApp(new URL(window.location.href))) {
-      return {
-        authGateState: {
-          status: "hosted-static",
-        } as const,
-      };
-    }
-
+    // Exchange the desktop bootstrap credential for a session cookie.
+    // The cookie is required for WebSocket authentication.
     const authGateState = await resolveInitialServerAuthGateState();
+
     if (
       authGateState.status === "authenticated" &&
       getDesktopSnapShotBridge() &&
@@ -155,15 +140,6 @@ function RootRouteView() {
     };
   }, [pathname]);
 
-  if (pathname === "/pair" || pathname === "/connect") {
-    return (
-      <>
-        <DocumentTitleSync />
-        <Outlet />
-      </>
-    );
-  }
-
   // Show onboarding over the workspace, keeping automatic thread navigation
   // and other startup dialogs suspended until setup finishes.
   if (pathname === "/welcome") {
@@ -183,15 +159,6 @@ function RootRouteView() {
           </CommandPalette>
         </AnchoredToastProvider>
       </ToastProvider>
-    );
-  }
-
-  if (authGateState.status !== "authenticated" && authGateState.status !== "hosted-static") {
-    return (
-      <>
-        <DocumentTitleSync />
-        <Outlet />
-      </>
     );
   }
 
@@ -215,13 +182,10 @@ function RootRouteView() {
         <EnvironmentThemeSync />
         <GlassAppearanceSync />
         <FontAppearanceSync />
-        <FirstRunGate
-          enabled={primaryEnvironmentAuthenticated}
-          hostedStatic={authGateState.status === "hosted-static"}
-        >
+        <FirstRunGate enabled={primaryEnvironmentAuthenticated} hostedStatic={false}>
           {primaryEnvironmentAuthenticated ? <AuthenticatedTracingBootstrap /> : null}
           {primaryEnvironmentAuthenticated ? <DesktopAppActivationCoordinator /> : null}
-          {isElectron ? <RunningThreadKeepAlive /> : null}
+          {isElectron() ? <RunningThreadKeepAlive /> : null}
           <RelayClientInstallDialog />
           <ConnectOnboardingDialog />
           <SshPasswordPromptDialog />
@@ -401,7 +365,9 @@ function RootRouteErrorView({ error }: ErrorComponentProps) {
 
 /** Copies the full error report and swaps to a check mark for a moment as confirmation. */
 function CopyErrorButton({ report }: { report: string }) {
-  const { copyToClipboard, isCopied } = useCopyToClipboard({ target: "error-report" });
+  const { copyToClipboard, isCopied } = useCopyToClipboard({
+    target: "error-report",
+  });
 
   return (
     <Button size="sm" variant="outline" onClick={() => copyToClipboard(report)}>

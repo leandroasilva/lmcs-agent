@@ -206,13 +206,8 @@ function ChatRouteLayout() {
 }
 
 export const Route = createFileRoute("/_chat")({
-  beforeLoad: async ({ context }) => {
-    if (
-      context.authGateState.status !== "authenticated" &&
-      context.authGateState.status !== "hosted-static"
-    ) {
-      throw redirect({ to: "/pair", replace: true });
-    }
+  beforeLoad: async () => {
+    // Local-only mode: always authenticated
   },
   component: ChatRouteLayout,
 });

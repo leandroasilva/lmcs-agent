@@ -7,11 +7,8 @@ import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 
 /** Onboarding overlays the workspace. Visiting /welcome reopens setup. */
 export const Route = createFileRoute("/welcome")({
-  beforeLoad: ({ context }) => {
-    const { authGateState } = context;
-    if (authGateState.status !== "authenticated" && authGateState.status !== "hosted-static") {
-      throw redirect({ to: "/pair", replace: true });
-    }
+  beforeLoad: () => {
+    // Local-only mode: always authenticated
   },
   component: WelcomeRouteView,
 });
@@ -21,7 +18,9 @@ function WelcomeRouteView() {
   const navigate = useNavigate();
   // The root shell can remount this pending outlet after the location changes.
   // Never reopen setup while the destination route is still loading.
-  const isWelcomeRoute = useLocation({ select: (location) => location.pathname === "/welcome" });
+  const isWelcomeRoute = useLocation({
+    select: (location) => location.pathname === "/welcome",
+  });
   const [dismissed, setDismissed] = useState(false);
   const openNewThread = useNewThreadHandler();
   // An authenticated gate means a primary server is serving this app —

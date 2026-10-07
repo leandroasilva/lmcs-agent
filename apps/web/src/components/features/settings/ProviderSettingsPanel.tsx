@@ -478,7 +478,7 @@ function SelectedEnvironmentProviderSettings({
   if (isPrimary) {
     // The desktop app owns its primary server outright; a browser session
     // checks the scopes its cookie session was granted.
-    if (isElectron) {
+    if (isElectron()) {
       return (
         <AccessGatedProviderSettings
           environment={environment}

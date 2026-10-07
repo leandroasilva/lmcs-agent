@@ -1005,7 +1005,7 @@ export function searchSettings(
 
   return items
     .flatMap((item, index) => {
-      if (!isElectron && item.desktopOnly === true) return [];
+      if (!isElectron() && item.desktopOnly === true) return [];
       if (item.macOnly && !isMacPlatform(platform)) return [];
       if (item.windowsOnly && !isWindowsPlatform(platform)) return [];
 

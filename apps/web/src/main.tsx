@@ -16,11 +16,11 @@ import { AppRoot } from "./AppRoot";
 import { clearChunkReloadGuard, reloadOnceForChunkLoadError } from "./lib/chunkReloadGuard";
 
 // Electron loads the app from a file-backed shell, so hash history avoids path resolution issues.
-const history = isElectron ? createHashHistory() : createBrowserHistory();
+const history = isElectron() ? createHashHistory() : createBrowserHistory();
 
 const router = getRouter(history);
 
-if (isElectron) {
+if (isElectron()) {
   syncDocumentElectronPlatformClasses(navigator.platform);
   syncDocumentWindowControlsOverlayClass();
 }
@@ -47,7 +47,7 @@ const app = <AppRoot router={router} />;
 // the bundled clerk-js out of the browser build entirely.
 const managedAuthShellModule =
   clerkPublishableKey && hasCloudPublicConfig()
-    ? isElectron
+    ? isElectron()
       ? import("./components/features/clerk/ElectronManagedAuthShell")
       : import("./components/features/clerk/BrowserManagedAuthShell")
     : null;

@@ -117,7 +117,10 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
   describe("resolveOffset", () => {
     it.effect("uses explicit LMCS_PORT_OFFSET when provided", () =>
       Effect.gen(function* () {
-        const result = yield* resolveOffset({ portOffset: 12, devInstance: undefined });
+        const result = yield* resolveOffset({
+          portOffset: 12,
+          devInstance: undefined,
+        });
         assert.deepStrictEqual(result, {
           offset: 12,
           source: "LMCS_PORT_OFFSET=12",
@@ -138,9 +141,10 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
 
     it.effect("returns structured context for a negative port offset", () =>
       Effect.gen(function* () {
-        const error = yield* resolveOffset({ portOffset: -1, devInstance: undefined }).pipe(
-          Effect.flip,
-        );
+        const error = yield* resolveOffset({
+          portOffset: -1,
+          devInstance: undefined,
+        }).pipe(Effect.flip);
 
         assert.equal(error._tag, "DevRunnerInvalidPortOffsetError");
         assert.equal(error.configKey, "LMCS_PORT_OFFSET");
@@ -155,7 +159,9 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
     it.effect("forwards the reusable auth token to web dev and removes it for desktop", () =>
       Effect.gen(function* () {
         const input = {
-          baseEnv: { LMCS_DEV_AUTH_TOKEN: "reusable-dev-auth-token-that-is-long-enough" },
+          baseEnv: {
+            LMCS_DEV_AUTH_TOKEN: "reusable-dev-auth-token-that-is-long-enough",
+          },
           serverOffset: 0,
           webOffset: 0,
           lmcsHome: undefined,
@@ -167,7 +173,10 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           devUrl: undefined,
         } as const;
         const web = yield* createDevRunnerEnv({ ...input, mode: "dev" });
-        const desktop = yield* createDevRunnerEnv({ ...input, mode: "dev:desktop" });
+        const desktop = yield* createDevRunnerEnv({
+          ...input,
+          mode: "dev:desktop",
+        });
 
         assert.equal(web.LMCS_DEV_AUTH_TOKEN, input.baseEnv.LMCS_DEV_AUTH_TOKEN);
         assert.equal(desktop.LMCS_DEV_AUTH_TOKEN, undefined);
@@ -853,12 +862,17 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
   describe("runDevRunnerWithInput", () => {
     it.effect("preserves invalid configuration as the exact cause", () =>
       Effect.gen(function* () {
-        const error = yield* runDevRunnerWithInput({ ...devServerInput, dryRun: true }).pipe(
+        const error = yield* runDevRunnerWithInput({
+          ...devServerInput,
+          dryRun: true,
+        }).pipe(
           Effect.provide(
             Layer.merge(
               netServiceLayer,
               ConfigProvider.layer(
-                ConfigProvider.fromEnv({ env: { LMCS_PORT_OFFSET: "not-an-integer" } }),
+                ConfigProvider.fromEnv({
+                  env: { LMCS_PORT_OFFSET: "not-an-integer" },
+                }),
               ),
             ),
           ),
@@ -1060,7 +1074,9 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
               const spawned = command as unknown as {
                 readonly command: string;
                 readonly args: ReadonlyArray<string>;
-                readonly options?: { readonly env?: Record<string, string | undefined> };
+                readonly options?: {
+                  readonly env?: Record<string, string | undefined>;
+                };
               };
               if (spawned.command === "vp") {
                 captured = spawned.options?.env;
@@ -1079,7 +1095,9 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
                   stdout: spawned.args.includes("status")
                     ? Stream.make(
                         new TextEncoder().encode(
-                          JSON.stringify({ Self: { DNSName: "host.example.ts.net." } }),
+                          JSON.stringify({
+                            Self: { DNSName: "host.example.ts.net." },
+                          }),
                         ),
                       )
                     : Stream.empty,
@@ -1133,7 +1151,9 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
             ChildProcessSpawner.make((command) => {
               captured = (
                 command as {
-                  readonly options?: { readonly env?: Record<string, string | undefined> };
+                  readonly options?: {
+                    readonly env?: Record<string, string | undefined>;
+                  };
                 }
               ).options?.env;
               return Effect.succeed(mockProcess(0));
@@ -1267,14 +1287,19 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
             ChildProcessSpawner.make((command) => {
               captured = (
                 command as {
-                  readonly options?: { readonly env?: Record<string, string | undefined> };
+                  readonly options?: {
+                    readonly env?: Record<string, string | undefined>;
+                  };
                 }
               ).options?.env;
               return Effect.succeed(mockProcess(0));
             }),
           );
 
-          yield* runDevRunnerWithInput({ ...devServerInput, lmcsHome: input.lmcsHome }).pipe(
+          yield* runDevRunnerWithInput({
+            ...devServerInput,
+            lmcsHome: input.lmcsHome,
+          }).pipe(
             Effect.provide(Layer.mergeAll(emptyConfigLayer, netServiceLayer, spawnerLayer)),
             Effect.provideService(HostProcessPlatform, "linux"),
             Effect.provideService(HostProcessWorkingDirectory, input.cwd),

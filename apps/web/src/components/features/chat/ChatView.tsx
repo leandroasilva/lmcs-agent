@@ -4422,7 +4422,7 @@ export default function ChatView(props: ChatViewProps) {
         command: input.keybindingCommand,
       });
 
-      if (isElectron && keybindingRule) {
+      if (isElectron() && keybindingRule) {
         return mapAtomCommandResult(
           await upsertKeybinding({
             environmentId,
@@ -6756,8 +6756,8 @@ export default function ChatView(props: ChatViewProps) {
       previewOpen: previewPanelOpen,
       editableFocus: isEditableFocused(eventTarget),
       modelPickerOpen: composerRef.current?.isModelPickerOpen() ?? false,
-      isWeb: !isElectron,
-      isDesktop: isElectron,
+      isWeb: !isElectron(),
+      isDesktop: isElectron(),
     }),
     [composerRef, previewPanelOpen, terminalUiState.terminalOpen],
   );
@@ -9936,11 +9936,11 @@ export default function ChatView(props: ChatViewProps) {
         {/* Top bar */}
         <WorkspacePageHeader
           data-chat-header
-          electron={isElectron}
+          electron={isElectron()}
           reserveNativeControls={reserveTitleBarControlInset && !inlineRightPanelOwnsTitleBar}
           className="relative bg-background"
         >
-          {isElectron && rightPanelControlsAtRoot ? (
+          {isElectron() && rightPanelControlsAtRoot ? (
             <span
               aria-hidden
               className="pointer-events-none fixed top-[var(--workspace-controls-top)] right-[var(--workspace-controls-right)] h-[var(--workspace-topbar-height)] w-28 [-webkit-app-region:no-drag]"
