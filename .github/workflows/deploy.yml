@@ -117,6 +117,10 @@ jobs:
       - name: Build web client
         run: pnpm --filter @lmcstools/web run build
 
+      - name: Build desktop app
+        working-directory: apps/desktop
+        run: node scripts/build-browser-secret.mjs && node scripts/build-preview-annotation-css.mjs && vp pack
+
       - name: Package macOS app
         working-directory: apps/desktop
         run: DEBUG=electron-builder,electron-updater pnpm exec electron-builder --mac --arm64 --x64 --publish never --config.extraMetadata.version=${{ needs.version.outputs.version }}
