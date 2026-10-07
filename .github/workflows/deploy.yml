@@ -11,13 +11,8 @@ concurrency:
 
 permissions:
   contents: write
-  packages: write
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  HCLOUD_URL: https://hcloud.net.br
-  HOSTED_APP_URL: https://lmcs-agent.cloud.hcloud.net.br
+env: {}
 
 jobs:
   # ─── Version ────────────────────────────────────────────────────────
@@ -98,50 +93,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ─── Server (Docker) ──────────────────────────────────────────────
-  server:
-    name: Build & push server image
-    needs: version
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - id: meta
-        name: Docker metadata
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/lmcs-agent
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=${{ needs.version.outputs.version }}
-            type=sha,format=short
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' || github.ref_name == github.event.repository.default_branch }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/server/Dockerfile
-          platforms: linux/amd64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            HOSTED_APP_URL=${{ env.HOSTED_APP_URL }}
-
   # ─── Desktop: macOS ────────────────────────────────────────────────
   desktop_macos:
     name: Desktop macOS
@@ -164,10 +115,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web client
-        run: VITE_HOSTED_APP_URL="${{ env.HOSTED_APP_URL }}" pnpm --filter @lmcstools/web run build
-
-      - name: Build server bundle
-        run: pnpm --filter lmcs-agent run build
+        run: pnpm --filter @lmcstools/web run build
 
       - name: Package macOS app
         working-directory: apps/desktop
@@ -342,7 +290,7 @@ jobs:
         run: |
           gh release create "$TAG" \
             --title "v$VERSION" \
-            --notes "Release v$VERSION (server-only, no desktop artifacts)" \
+            --notes "Release v$VERSION (desktop-only)" \
             --generate-notes
 
           echo "::notice::Created release $TAG without desktop artifacts"
