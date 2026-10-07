@@ -298,3 +298,4 @@ jobs:
             --generate-notes
 
           echo "::notice::Created release $TAG without desktop artifacts"
+# Force rebuild
