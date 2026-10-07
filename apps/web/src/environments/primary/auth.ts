@@ -142,6 +142,11 @@ let bootstrapPromise: Promise<ServerAuthGateState> | null = null;
 let resolvedAuthenticatedGateState: ServerAuthGateState | null = null;
 const AUTH_SESSION_ESTABLISH_TIMEOUT_MS = 2_000;
 const AUTH_SESSION_ESTABLISH_STEP_MS = 100;
+// When running in desktop mode, the backend server may still be starting
+// when the renderer loads. Wait for the bootstrap credential to become
+// available before showing the pairing screen.
+const DESKTOP_BOOTSTRAP_WAIT_TIMEOUT_MS = 30_000;
+const DESKTOP_BOOTSTRAP_WAIT_STEP_MS = 500;
 
 export function peekPairingTokenFromUrl(): string | null {
   return getPairingTokenFromUrl(new URL(window.location.href));
@@ -174,6 +179,36 @@ function getDesktopBootstrapCredential(): string | null {
   return typeof primary?.bootstrapToken === "string" && primary.bootstrapToken.length > 0
     ? primary.bootstrapToken
     : null;
+}
+
+// Check if we're running in desktop mode with a local backend expected.
+function isDesktopWithLocalBackend(): boolean {
+  return window.desktopBridge?.getLocalEnvironmentEnabled?.() !== false;
+}
+
+// Wait for the desktop bootstrap credential to become available.
+// The backend server may still be starting when the renderer loads,
+// so we poll for a reasonable timeout before giving up.
+async function waitForDesktopBootstrapCredential(): Promise<string | null> {
+  // If not in desktop mode, return immediately.
+  if (!isDesktopWithLocalBackend()) {
+    return getDesktopBootstrapCredential();
+  }
+
+  const startedAt = Date.now();
+  while (true) {
+    const credential = getDesktopBootstrapCredential();
+    if (credential) {
+      return credential;
+    }
+
+    const elapsedMs = Date.now() - startedAt;
+    if (elapsedMs >= DESKTOP_BOOTSTRAP_WAIT_TIMEOUT_MS) {
+      return null;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, DESKTOP_BOOTSTRAP_WAIT_STEP_MS));
+  }
 }
 
 export async function fetchSessionState(): Promise<AuthSessionState> {
@@ -313,7 +348,9 @@ async function bootstrapServerAuth(urlCredential: string | null): Promise<Server
     return { status: "authenticated" };
   }
 
-  const bootstrapCredential = urlCredential ?? getDesktopBootstrapCredential();
+  // Use URL credential if provided, otherwise wait for desktop bootstrap
+  // credential (which may take time if the backend is still starting).
+  const bootstrapCredential = urlCredential ?? (await waitForDesktopBootstrapCredential());
   if (!bootstrapCredential) {
     return {
       status: "requires-auth",
