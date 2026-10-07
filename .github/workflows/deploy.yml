@@ -151,7 +151,7 @@ jobs:
   deploy:
     name: Deploy to HCloud
     needs: [version, server]
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -195,7 +195,7 @@ jobs:
   desktop_macos:
     name: Desktop macOS
     needs: version
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: macos-15
     timeout-minutes: 75
     steps:
