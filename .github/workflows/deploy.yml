@@ -214,7 +214,7 @@ jobs:
 
       - name: Package macOS app
         working-directory: apps/desktop
-        run: DEBUG=electron-builder,electron-updater npx electron-builder --mac --arm64 --x64 --publish always
+        run: DEBUG=electron-builder,electron-updater npx electron-builder --mac --arm64 --x64 --publish always --config.extraMetadata.version=${{ needs.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing (optional - if not set, app will be ad-hoc signed)
