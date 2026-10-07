@@ -228,6 +228,9 @@ jobs:
         if: always()
         working-directory: apps/desktop
         run: |
+          echo "=== builder-debug.yml ==="
+          cat dist/builder-debug.yml 2>/dev/null || echo "builder-debug.yml not found"
+          echo ""
           echo "=== Files in dist/ ==="
           ls -lh dist/ 2>/dev/null || echo "dist/ directory not found"
           echo ""
