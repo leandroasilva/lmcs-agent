@@ -11,6 +11,7 @@ infra/*/dist
 packages/*/dist
 .env
 .env.local
+.certs/
 build/
 .logs/
 release/

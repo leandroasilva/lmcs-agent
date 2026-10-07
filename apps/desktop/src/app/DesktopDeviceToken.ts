@@ -58,10 +58,10 @@ export const make = Effect.gen(function* () {
   const path = yield* Path.Path;
   const tokenCache = yield* Ref.make<string | null>(null);
 
-  const userDataPath = yield* Effect.tryPromise({
-    try: () => electronApp.getPath("userData"),
-    catch: (cause) => new DeviceTokenStorageError({ cause }),
-  });
+  // Wait for the Electron app to be ready before accessing paths
+  yield* electronApp.whenReady;
+
+  const userDataPath = yield* electronApp.getPath("userData");
 
   const tokenFilePath = path.join(userDataPath, TOKEN_FILE_NAME);
 

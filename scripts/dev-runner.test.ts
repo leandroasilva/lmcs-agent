@@ -104,7 +104,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       Effect.sync(() => {
         assert.deepStrictEqual(getDevRunnerModeArgs("dev"), [
           "run",
-          "--filter=@lmcstools/contracts",
+          "--filter=@lmcstools/core",
           "--filter=@lmcstools/web",
           "--filter=t3",
           "--parallel",

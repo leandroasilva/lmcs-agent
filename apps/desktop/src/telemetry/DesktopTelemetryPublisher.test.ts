@@ -32,6 +32,7 @@ function makeElectronAppLayer(
     exit: () => Effect.void,
     relaunch: () => Effect.void,
     setPath: () => Effect.void,
+    getPath: () => Effect.succeed("/tmp/test-user-data"),
     setName: () => Effect.void,
     setAboutPanelOptions: () => Effect.void,
     setAppUserModelId: () => Effect.void,
