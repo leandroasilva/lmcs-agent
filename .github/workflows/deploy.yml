@@ -278,7 +278,7 @@ jobs:
   tag:
     name: Create version tag
     needs: [version, deploy, desktop_macos]
-    if: github.event.pull_request.merged == true && always() && !cancelled()
+    if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -304,7 +304,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [version, tag, desktop_macos]
-    if: github.event.pull_request.merged == true && always() && !cancelled()
+    if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
