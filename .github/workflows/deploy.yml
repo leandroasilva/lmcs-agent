@@ -311,7 +311,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Check if macOS build succeeded
+        id: check_artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if desktop_macos job succeeded
+          if [[ "${{ needs.desktop_macos.result }}" == "success" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::macOS build succeeded, will download artifacts"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::macOS build did not succeed (result: ${{ needs.desktop_macos.result }}), skipping artifact download"
+          fi
+
       - name: Download macOS artifacts
+        if: steps.check_artifact.outputs.available == 'true'
         uses: actions/download-artifact@v5
         with:
           name: desktop-macos
@@ -333,7 +349,7 @@ jobs:
           fi
 
       - name: Create release and upload artifacts
-        if: steps.check_release.outputs.exists == 'false'
+        if: steps.check_release.outputs.exists == 'false' && steps.check_artifact.outputs.available == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -359,3 +375,18 @@ jobs:
             artifacts/*
 
           echo "::notice::Created release $TAG with artifacts"
+
+      - name: Create release without artifacts
+        if: steps.check_release.outputs.exists == 'false' && steps.check_artifact.outputs.available == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          gh release create "$TAG" \
+            --title "v$VERSION" \
+            --notes "Release v$VERSION (server-only, no desktop artifacts)" \
+            --generate-notes
+
+          echo "::notice::Created release $TAG without desktop artifacts"
