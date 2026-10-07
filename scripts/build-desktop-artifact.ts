@@ -303,9 +303,21 @@ export class BuildCommandFailedError extends Schema.TaggedError<BuildCommandFail
 }
 
 export const LINUX_DESKTOP_BUILD_PREREQUISITES = [
-  { id: "cargo", description: "Rust compiler and Cargo", packages: ["cargo", "rustc"] },
-  { id: "rust-target", description: "Requested Rust standard library", packages: [] },
-  { id: "cc", description: "C/C++ build toolchain", packages: ["build-essential"] },
+  {
+    id: "cargo",
+    description: "Rust compiler and Cargo",
+    packages: ["cargo", "rustc"],
+  },
+  {
+    id: "rust-target",
+    description: "Requested Rust standard library",
+    packages: [],
+  },
+  {
+    id: "cc",
+    description: "C/C++ build toolchain",
+    packages: ["build-essential"],
+  },
   { id: "make", description: "Make", packages: ["build-essential"] },
   {
     id: "libsecret",
@@ -934,9 +946,7 @@ interface StagePackageJson {
   readonly main: string;
   readonly build: Record<string, unknown>;
   readonly dependencies: Record<string, unknown>;
-  readonly devDependencies: {
-    readonly electron: string;
-  };
+  readonly devDependencies?: Record<string, unknown>;
 }
 
 export const STAGE_INSTALL_ARGS = ["install", "--prod"] as const;
@@ -1200,7 +1210,11 @@ function normalizePasskeyRpDomain(value: string): string {
   try {
     parsed = new URL(`https://${normalized}`);
   } catch (cause) {
-    throw new InvalidMacPasskeyRpDomainError({ reason: "parse-failed", inputLength, cause });
+    throw new InvalidMacPasskeyRpDomainError({
+      reason: "parse-failed",
+      inputLength,
+      cause,
+    });
   }
 
   let reason: InvalidMacPasskeyRpDomainReason | undefined;
@@ -1752,7 +1766,10 @@ export const preflightLinuxDesktopBuild = Effect.fn("preflightLinuxDesktopBuild"
   ).map((requirement) => requirement.id);
 
   if (missing.length > 0) {
-    return yield* new LinuxDesktopBuildPrerequisitesMissingError({ missing, rustTarget });
+    return yield* new LinuxDesktopBuildPrerequisitesMissingError({
+      missing,
+      rustTarget,
+    });
   }
 });
 
@@ -1791,7 +1808,10 @@ export const preflightMacDesktopBuild = Effect.fn("preflightMacDesktopBuild")(fu
     (requirement) => !checks[requirement.id],
   ).map((requirement) => requirement.id);
   if (missing.length > 0) {
-    return yield* new MacDesktopBuildPrerequisitesMissingError({ missing, rustTargets });
+    return yield* new MacDesktopBuildPrerequisitesMissingError({
+      missing,
+      rustTargets,
+    });
   }
 });
 
@@ -1852,7 +1872,10 @@ export const preflightWindowsDesktopBuild = Effect.fn("preflightWindowsDesktopBu
       (requirement) => !checks[requirement.id],
     ).map((requirement) => requirement.id);
     if (missing.length > 0) {
-      return yield* new WindowsDesktopBuildPrerequisitesMissingError({ missing, rustTarget });
+      return yield* new WindowsDesktopBuildPrerequisitesMissingError({
+        missing,
+        rustTarget,
+      });
     }
   },
 );
@@ -1964,9 +1987,10 @@ const hasNativeLoaderMarkers = Effect.fn("hasNativeLoaderMarkers")(function* (pa
     Effect.orElseSucceed(() => null),
   );
   if (manifest === null) return false;
-  return Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).some(
-    (dependency) => dependency.startsWith("node-gyp-build"),
-  );
+  return Object.keys({
+    ...manifest.dependencies,
+    ...manifest.optionalDependencies,
+  }).some((dependency) => dependency.startsWith("node-gyp-build"));
 });
 
 export const copyDirectoryPreservingSymlinks = Effect.fn("copyDirectoryPreservingSymlinks")(
@@ -2378,7 +2402,10 @@ export const stageDesktopDmgBackground = Effect.fn("stageDesktopDmgBackground")(
   const path = yield* Path.Path;
   const sourcePath = path.join(stageResourcesDir, "dmg", `dmg-background-${channel}.svg`);
   if (!(yield* fs.exists(sourcePath))) {
-    return yield* new DesktopDmgBackgroundSourceMissingError({ channel, sourcePath });
+    return yield* new DesktopDmgBackgroundSourceMissingError({
+      channel,
+      sourcePath,
+    });
   }
 
   for (const output of [
@@ -2658,7 +2685,10 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
     // metadata. Windows keeps those files archived so native dependencies do
     // not inflate the loose-file count and slow NSIS installation.
     ...(platform === "win"
-      ? { asar: { smartUnpack: false }, asarUnpack: [WINDOWS_NATIVE_ASAR_UNPACK_GLOB] }
+      ? {
+          asar: { smartUnpack: false },
+          asarUnpack: [WINDOWS_NATIVE_ASAR_UNPACK_GLOB],
+        }
       : {}),
     extraResources: [
       ...DESKTOP_EXTRA_RESOURCES,
@@ -2838,9 +2868,13 @@ export const stageWslRuntimeArchive = Effect.fn("stageWslRuntimeArchive")(functi
     .exists(input.sourceArchivePath)
     .pipe(Effect.orElseSucceed(() => false));
   if (!sourceExists) {
-    return yield* new WslRuntimeArchiveMissingError({ archivePath: input.sourceArchivePath });
+    return yield* new WslRuntimeArchiveMissingError({
+      archivePath: input.sourceArchivePath,
+    });
   }
-  yield* fs.makeDirectory(path.dirname(input.archivePath), { recursive: true });
+  yield* fs.makeDirectory(path.dirname(input.archivePath), {
+    recursive: true,
+  });
   yield* fs.copyFile(input.sourceArchivePath, input.archivePath);
   const hash = NodeCrypto.createHash("sha256");
   yield* fs
@@ -2917,7 +2951,9 @@ export const stageWindowsServerSidecar = Effect.fn("stageWindowsServerSidecar")(
   const path = yield* Path.Path;
 
   const serverStageDir = path.join(input.stageRoot, "server");
-  yield* fs.makeDirectory(path.join(serverStageDir, "apps/server"), { recursive: true });
+  yield* fs.makeDirectory(path.join(serverStageDir, "apps/server"), {
+    recursive: true,
+  });
   yield* fs.copy(input.serverDistDir, path.join(serverStageDir, "apps/server/dist"));
 
   const sidecarDependencies = {
@@ -3379,7 +3415,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     });
   }
 
-  const electronVersion = desktopPackageJson.dependencies.electron;
+  const electronVersion = (desktopPackageJson as any).devDependencies.electron;
 
   const serverDependencies = serverPackageJson.dependencies;
   if (!serverDependencies || Object.keys(serverDependencies).length === 0) {
@@ -3539,9 +3575,13 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   yield* Effect.log(`[desktop-artifact] Applied ${webAssetBrand} web client branding.`);
   yield* validateBundledClientAssets(path.dirname(bundledClientEntry));
 
-  yield* fs.makeDirectory(path.join(stageAppDir, "apps/desktop"), { recursive: true });
+  yield* fs.makeDirectory(path.join(stageAppDir, "apps/desktop"), {
+    recursive: true,
+  });
   if (options.platform !== "win") {
-    yield* fs.makeDirectory(path.join(stageAppDir, "apps/server"), { recursive: true });
+    yield* fs.makeDirectory(path.join(stageAppDir, "apps/server"), {
+      recursive: true,
+    });
   }
 
   yield* Effect.log("[desktop-artifact] Staging release app...");
@@ -3684,7 +3724,10 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
             provisioningProfilePath: macPasskeySigning.provisioningProfilePath,
           }
         : undefined,
-      bundlesWslRuntime({ platform: options.platform, runtimeArchivePath: options.wslRuntime }),
+      bundlesWslRuntime({
+        platform: options.platform,
+        runtimeArchivePath: options.wslRuntime,
+      }),
       options.arch,
     ),
     dependencies: stageDependencies,
@@ -3721,6 +3764,23 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     }),
     { label: "vp install --prod", verbose: options.verbose },
   );
+
+  // electron-builder requires electron to be installed to compute the version,
+  // but --prod excludes devDependencies. Install electron separately.
+  yield* Effect.log("[desktop-artifact] Installing electron for electron-builder...");
+  const electronInstallCommand = yield* resolveSpawnCommand("vp", [
+    "add",
+    "--save-dev",
+    `electron@${electronVersion}`,
+  ]);
+  yield* runCommand(
+    ChildProcess.make(electronInstallCommand.command, electronInstallCommand.args, {
+      cwd: stageAppDir,
+      shell: electronInstallCommand.shell,
+    }),
+    { label: "vp add electron", verbose: options.verbose },
+  );
+
   yield* stageClerkPasskeyNativeBinaries(stageAppDir, options.platform, options.arch);
   yield* stageKeyringNativeBinaries(stageAppDir, options.platform, options.arch);
 
@@ -3744,7 +3804,10 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   }
   if (
     options.wslRuntime !== undefined &&
-    bundlesWslRuntime({ platform: options.platform, runtimeArchivePath: options.wslRuntime })
+    bundlesWslRuntime({
+      platform: options.platform,
+      runtimeArchivePath: options.wslRuntime,
+    })
   ) {
     yield* stageWslRuntimeArchive({
       sourceArchivePath: options.wslRuntime,
@@ -3813,7 +3876,9 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     "--publish",
     "never",
   ];
-  const builderCommand = yield* resolveSpawnCommand("vp", builderArgs, { env: buildEnv });
+  const builderCommand = yield* resolveSpawnCommand("vp", builderArgs, {
+    env: buildEnv,
+  });
   yield* runCommand(
     ChildProcess.make(builderCommand.command, builderCommand.args, {
       cwd: repoRoot,
