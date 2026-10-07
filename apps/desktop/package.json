@@ -69,9 +69,6 @@
         }
       ]
     },
-    "dmg": {
-      "sign": false
-    },
     "linux": {
       "executableName": "t3code"
     },
