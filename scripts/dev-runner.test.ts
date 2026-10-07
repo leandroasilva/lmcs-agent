@@ -156,7 +156,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
   });
 
   describe("createDevRunnerEnv", () => {
-    it.effect("forwards the reusable auth token to web dev and removes it for desktop", () =>
+    it.effect("forwards the reusable auth token to web dev and desktop dev", () =>
       Effect.gen(function* () {
         const input = {
           baseEnv: {
@@ -179,7 +179,8 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
         });
 
         assert.equal(web.LMCS_DEV_AUTH_TOKEN, input.baseEnv.LMCS_DEV_AUTH_TOKEN);
-        assert.equal(desktop.LMCS_DEV_AUTH_TOKEN, undefined);
+        assert.equal(desktop.LMCS_DEV_AUTH_TOKEN, input.baseEnv.LMCS_DEV_AUTH_TOKEN);
+        assert.equal(desktop.VITE_DEV_AUTH_TOKEN, input.baseEnv.LMCS_DEV_AUTH_TOKEN);
       }),
     );
     it.effect("leaves the shared home implicit and disables browser auto-open", () =>

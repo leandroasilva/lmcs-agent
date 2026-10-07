@@ -176,9 +176,17 @@ function getDesktopBootstrapCredential(): string | null {
   // primary entry is fine even when the WSL backend is also registered.
   const bootstraps = window.desktopBridge?.getLocalEnvironmentBootstraps() ?? [];
   const primary = bootstraps.find((entry) => entry.id === PRIMARY_LOCAL_ENVIRONMENT_ID);
-  return typeof primary?.bootstrapToken === "string" && primary.bootstrapToken.length > 0
-    ? primary.bootstrapToken
-    : null;
+  if (typeof primary?.bootstrapToken === "string" && primary.bootstrapToken.length > 0) {
+    return primary.bootstrapToken;
+  }
+  // Fallback: in desktop dev mode the desktop bridge IPC may return an empty
+  // bootstrap list (e.g. timing race before the backend pool is ready). Use
+  // the dev auth token forwarded by the dev-runner via Vite define instead.
+  const devAuthToken = (import.meta.env.VITE_DEV_AUTH_TOKEN as string | undefined)?.trim();
+  if (devAuthToken && devAuthToken.length > 0) {
+    return devAuthToken;
+  }
+  return null;
 }
 
 // Check if we're running in desktop mode with a local backend expected.
