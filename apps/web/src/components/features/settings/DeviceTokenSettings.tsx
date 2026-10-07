@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
+import { Alert, AlertDescription } from "../../ui/alert";
 import { Copy, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
 export function DeviceTokenSettings() {
@@ -72,38 +71,37 @@ export function DeviceTokenSettings() {
 
   if (!isDesktop) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Device Token</CardTitle>
-          <CardDescription>Device tokens are only available in the desktop app.</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="rounded-xl border px-3.5 py-3 text-sm">
+        <div className="font-medium">Device Token</div>
+        <div className="text-muted-foreground text-sm">
+          Device tokens are only available in the desktop app.
+        </div>
+      </div>
     );
   }
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Device Token</CardTitle>
-          <CardDescription>Loading...</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="rounded-xl border px-3.5 py-3 text-sm">
+        <div className="font-medium">Device Token</div>
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Device Token</CardTitle>
-        <CardDescription>
+    <div className="space-y-3">
+      <div>
+        <div className="font-medium">Device Token</div>
+        <div className="text-muted-foreground text-sm">
           Share this token with other users to allow them to connect to this device. The token
           uniquely identifies this desktop instance.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </div>
+      </div>
+
+      <div className="space-y-2">
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="error">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -149,7 +147,7 @@ export function DeviceTokenSettings() {
             device using this token and the server URL.
           </AlertDescription>
         </Alert>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

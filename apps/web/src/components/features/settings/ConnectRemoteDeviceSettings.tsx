@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
+import { Alert, AlertDescription } from "../../ui/alert";
 import { Loader2, Link as LinkIcon, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface RemoteDeviceFormData {
@@ -30,198 +29,156 @@ export function ConnectRemoteDeviceSettings() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    // Validate inputs
-    if (!formData.serverUrl.trim()) {
-      setError("Server URL is required");
-      return;
-    }
-
-    if (!formData.deviceToken.trim()) {
-      setError("Device token is required");
-      return;
-    }
-
-    // Validate token format (should be 32 characters)
-    if (formData.deviceToken.trim().length !== 32) {
-      setError("Device token must be exactly 32 characters");
-      return;
-    }
-
     setLoading(true);
+    setError(null);
+    setSuccess(false);
 
     try {
-      // Normalize server URL (remove trailing slash)
-      const serverUrl = formData.serverUrl.trim().replace(/\/$/, "");
-
-      // Step 1: Validate the token by fetching device info
-      const response = await fetch(
-        `${serverUrl}/api/devices/by-token/${formData.deviceToken.trim()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      // Validate the token by checking if the device exists
+      const response = await fetch(`/api/devices/by-token/${formData.deviceToken}`);
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error(
-            "Device not found. The token may be invalid or the device is not registered.",
-          );
+          throw new Error("Device not found. Please check the token and try again.");
         }
-        throw new Error(`Server returned error: ${response.status}`);
+        throw new Error("Failed to validate device token");
       }
 
       const device: DeviceInfo = await response.json();
 
-      // Step 2: Add to connection catalog (via IPC if in desktop, or localStorage for web)
-      const connectionData = {
+      // Save the connection to localStorage
+      const connections = JSON.parse(localStorage.getItem("remoteDeviceConnections") || "[]");
+      const newConnection = {
         deviceId: device.deviceId,
-        serverUrl,
-        deviceName: formData.deviceName.trim() || device.name || "Unnamed Device",
+        serverUrl: formData.serverUrl.replace(/\/$/, ""),
+        deviceToken: formData.deviceToken,
+        deviceName: formData.deviceName || device.name,
         platform: device.platform,
-        connectedAt: Date.now(),
+        addedAt: Date.now(),
       };
 
-      // Try to use desktop bridge if available
-      if (typeof window.desktopBridge !== "undefined") {
-        // TODO: Add IPC method to save connection to catalog
-        // For now, just log it
-        console.log("Adding connection to catalog:", connectionData);
+      // Check if connection already exists
+      const existingIndex = connections.findIndex(
+        (c: { deviceId: string }) => c.deviceId === device.deviceId,
+      );
+
+      if (existingIndex >= 0) {
+        connections[existingIndex] = newConnection;
       } else {
-        // Fallback to localStorage for web
-        const existingConnections = JSON.parse(
-          localStorage.getItem("remoteDeviceConnections") || "[]",
-        );
-        existingConnections.push(connectionData);
-        localStorage.setItem("remoteDeviceConnections", JSON.stringify(existingConnections));
+        connections.push(newConnection);
       }
 
-      setSuccess(
-        `Successfully connected to ${device.name || "remote device"} (${device.platform})!`,
-      );
+      localStorage.setItem("remoteDeviceConnections", JSON.stringify(connections));
+      setSuccess(true);
+
+      // Reset form
       setFormData({ serverUrl: "", deviceToken: "", deviceName: "" });
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to connect to remote device";
-      setError(message);
-      console.error("Connection error:", err);
+      console.error("Failed to connect to device:", err);
+      setError(err instanceof Error ? err.message : "Failed to connect to device");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <LinkIcon className="h-5 w-5" />
-          Connect to Remote Device
-        </CardTitle>
-        <CardDescription>
-          Connect to another desktop instance using its device token. You'll need the token from the
-          remote device's Settings → Device Token page.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+    <div className="space-y-3">
+      <div>
+        <div className="font-medium">Connect to Remote Device</div>
+        <div className="text-muted-foreground text-sm">
+          Add a remote device using its token. You'll be able to connect to it and collaborate.
+        </div>
+      </div>
 
-          {success && (
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">{success}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="server-url">Server URL</Label>
-            <Input
-              id="server-url"
-              type="url"
-              placeholder="https://lmcs-agent.cloud.hcloud.net.br"
-              value={formData.serverUrl}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setFormData({ ...formData, serverUrl: e.target.value })
-              }
-              disabled={loading}
-            />
-            <p className="text-xs text-muted-foreground">
-              The URL of the LMCS Code server where the remote device is registered.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="device-token">Device Token</Label>
-            <Input
-              id="device-token"
-              type="text"
-              placeholder="Enter the 32-character device token"
-              value={formData.deviceToken}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setFormData({ ...formData, deviceToken: e.target.value })
-              }
-              disabled={loading}
-              className="font-mono"
-              maxLength={32}
-            />
-            <p className="text-xs text-muted-foreground">
-              The unique token from the remote device. Find it in Settings → Device Token.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="device-name">Device Name (Optional)</Label>
-            <Input
-              id="device-name"
-              type="text"
-              placeholder="e.g., Work MacBook, Home PC"
-              value={formData.deviceName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setFormData({ ...formData, deviceName: e.target.value })
-              }
-              disabled={loading}
-            />
-            <p className="text-xs text-muted-foreground">
-              A friendly name to identify this remote device.
-            </p>
-          </div>
-
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              <>
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Connect to Device
-              </>
-            )}
-          </Button>
-
-          <Alert>
-            <AlertDescription>
-              <strong>How to get the token:</strong> On the remote device, open Settings → Device
-              Token, copy the token, and paste it here. The token is unique to each device and can
-              be regenerated if compromised.
-            </AlertDescription>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {error && (
+          <Alert variant="error">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
-        </form>
-      </CardContent>
-    </Card>
+        )}
+
+        {success && (
+          <Alert variant="success">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertDescription>Device connected successfully!</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="server-url">Server URL</Label>
+          <Input
+            id="server-url"
+            type="url"
+            placeholder="https://your-server.example.com"
+            value={formData.serverUrl}
+            onChange={(e) => setFormData({ ...formData, serverUrl: e.target.value })}
+            required
+          />
+          <p className="text-xs text-muted-foreground">
+            The URL of the LMCS Code server where the device is registered.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="device-token">Device Token</Label>
+          <Input
+            id="device-token"
+            type="text"
+            placeholder="Enter the 32-character device token"
+            value={formData.deviceToken}
+            onChange={(e) => setFormData({ ...formData, deviceToken: e.target.value })}
+            required
+            maxLength={32}
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            The unique token from the device you want to connect to.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="device-name">Device Name (optional)</Label>
+          <Input
+            id="device-name"
+            type="text"
+            placeholder="e.g., John's MacBook Pro"
+            value={formData.deviceName}
+            onChange={(e) => setFormData({ ...formData, deviceName: e.target.value })}
+          />
+          <p className="text-xs text-muted-foreground">
+            A friendly name to identify this device in your connections list.
+          </p>
+        </div>
+
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Connecting...
+            </>
+          ) : (
+            <>
+              <LinkIcon className="mr-2 h-4 w-4" />
+              Connect Device
+            </>
+          )}
+        </Button>
+
+        <Alert>
+          <AlertDescription>
+            <strong>Note:</strong> The device token is valid until regenerated. Make sure the remote
+            device is online and registered with the server.
+          </AlertDescription>
+        </Alert>
+      </form>
+    </div>
   );
 }
