@@ -309,7 +309,7 @@ export const resolveServerConfig = (
       () => undefined,
     );
     const devAuthToken =
-      devUrl !== undefined || mode === "desktop" ? yield* DevAuthTokenConfig : undefined;
+      mode === "web" && devUrl !== undefined ? yield* DevAuthTokenConfig : undefined;
     const explicitBaseDir = resolveOptionPrecedence(
       normalizedFlags.baseDir,
       Option.fromUndefinedOr(env.lmcsHome),

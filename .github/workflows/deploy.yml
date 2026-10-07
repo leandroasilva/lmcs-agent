@@ -142,49 +142,6 @@ jobs:
           build-args: |
             HOSTED_APP_URL=${{ env.HOSTED_APP_URL }}
 
-  # ─── Deploy to HCloud ──────────────────────────────────────────────
-  deploy:
-    name: Deploy to HCloud
-    needs: [version, server]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - name: Check hcloud configuration
-        id: check
-        shell: bash
-        env:
-          HCLOUD_APP_ID: ${{ secrets.HCLOUD_APP_ID }}
-          HCLOUD_APP_TOKEN: ${{ secrets.HCLOUD_APP_TOKEN }}
-        run: |
-          if [[ -n "$HCLOUD_APP_ID" && -n "$HCLOUD_APP_TOKEN" ]]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping HCloud deployment: HCLOUD_APP_ID and/or HCLOUD_APP_TOKEN secrets are not configured."
-          fi
-
-      - name: Notify HCloud (image-webhook)
-        if: steps.check.outputs.enabled == 'true'
-        shell: bash
-        env:
-          HCLOUD_APP_ID: ${{ secrets.HCLOUD_APP_ID }}
-          HCLOUD_APP_TOKEN: ${{ secrets.HCLOUD_APP_TOKEN }}
-          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/lmcs-agent:${{ needs.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          HTTP_CODE=$(curl -s -o resposta.json -w "%{http_code}" \
-            -X POST "$HCLOUD_URL/api/cloud/apps/$HCLOUD_APP_ID/image-webhook" \
-            -H "Authorization: Bearer $HCLOUD_APP_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"image\":\"$IMAGE\"}")
-          echo "HTTP $HTTP_CODE — resposta da HCloud:"
-          cat resposta.json; echo
-          if [[ "$HTTP_CODE" -lt 200 || "$HTTP_CODE" -ge 300 ]]; then
-            echo "::error::HCloud webhook failed with HTTP $HTTP_CODE"
-            exit 1
-          fi
-          echo "::notice::Deployed $IMAGE to HCloud (app $HCLOUD_APP_ID)"
-
   # ─── Desktop: macOS ────────────────────────────────────────────────
   desktop_macos:
     name: Desktop macOS
@@ -277,7 +234,7 @@ jobs:
   # ── Tag release ───────────────────────────────────────────────────
   tag:
     name: Create version tag
-    needs: [version, deploy, desktop_macos]
+    needs: [version, desktop_macos]
     if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:

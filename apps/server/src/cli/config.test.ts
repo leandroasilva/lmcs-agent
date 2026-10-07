@@ -63,10 +63,7 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
 
   const openBootstrapFd = Effect.fn(function* (payload: DesktopBackendBootstrapValue) {
     const fs = yield* FileSystem.FileSystem;
-    const filePath = yield* fs.makeTempFileScoped({
-      prefix: "lmcs-bootstrap-",
-      suffix: ".ndjson",
-    });
+    const filePath = yield* fs.makeTempFileScoped({ prefix: "lmcs-bootstrap-", suffix: ".ndjson" });
     const encoded = yield* encodeDesktopBootstrap(payload);
     yield* fs.writeFileString(filePath, `${encoded}\n`);
     return yield* Effect.acquireRelease(
@@ -123,8 +120,7 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
         return yield* Effect.die("Expected reusable dev auth token.");
       }
       expect(Redacted.value(web.devAuthToken)).toBe("reusable-dev-auth-token-that-is-long-enough");
-      // Desktop mode also resolves the dev auth token when LMCS_DEV_AUTH_TOKEN is set.
-      expect(desktop.devAuthToken).toBeDefined();
+      expect(desktop.devAuthToken).toBeUndefined();
     }),
   );
 
@@ -479,9 +475,7 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const baseDir = yield* fs.makeTempDirectoryScoped({
-        prefix: "lmcs-cli-config-dirs-",
-      });
+      const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-cli-config-dirs-" });
       const customCwd = path.join(baseDir, "nested", "project");
 
       const resolved = yield* resolveServerConfig(
@@ -608,13 +602,9 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const baseDir = yield* fs.makeTempDirectoryScoped({
-        prefix: "lmcs-cli-config-settings-",
-      });
+      const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-cli-config-settings-" });
       const derivedPaths = yield* deriveExplicitServerPaths(baseDir, undefined);
-      yield* fs.makeDirectory(path.dirname(derivedPaths.settingsPath), {
-        recursive: true,
-      });
+      yield* fs.makeDirectory(path.dirname(derivedPaths.settingsPath), { recursive: true });
       yield* fs.writeFileString(
         derivedPaths.settingsPath,
         // @effect-diagnostics-next-line preferSchemaOverJson:off
@@ -684,13 +674,9 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const baseDir = yield* fs.makeTempDirectoryScoped({
-        prefix: "lmcs-cli-config-otel-off-",
-      });
+      const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-cli-config-otel-off-" });
       const derivedPaths = yield* deriveExplicitServerPaths(baseDir, undefined);
-      yield* fs.makeDirectory(path.dirname(derivedPaths.settingsPath), {
-        recursive: true,
-      });
+      yield* fs.makeDirectory(path.dirname(derivedPaths.settingsPath), { recursive: true });
       yield* fs.writeFileString(
         derivedPaths.settingsPath,
         // @effect-diagnostics-next-line preferSchemaOverJson:off
@@ -740,13 +726,9 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const baseDir = yield* fs.makeTempDirectoryScoped({
-        prefix: "lmcs-cli-config-otel-on-",
-      });
+      const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-cli-config-otel-on-" });
       const derivedPaths = yield* deriveExplicitServerPaths(baseDir, undefined);
-      yield* fs.makeDirectory(path.dirname(derivedPaths.settingsPath), {
-        recursive: true,
-      });
+      yield* fs.makeDirectory(path.dirname(derivedPaths.settingsPath), { recursive: true });
       yield* fs.writeFileString(
         derivedPaths.settingsPath,
         // @effect-diagnostics-next-line preferSchemaOverJson:off
@@ -778,10 +760,7 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
           Layer.mergeAll(
             ConfigProvider.layer(
               ConfigProvider.fromEnv({
-                env: {
-                  LMCS_OTEL_SDK_DISABLED: "false",
-                  OTEL_SDK_DISABLED: "true",
-                },
+                env: { LMCS_OTEL_SDK_DISABLED: "false", OTEL_SDK_DISABLED: "true" },
               }),
             ),
             NetService.layer,
@@ -970,9 +949,7 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
         Effect.provide(
           Layer.mergeAll(
             ConfigProvider.layer(
-              ConfigProvider.fromEnv({
-                env: { LMCS_OTLP_PROTOCOL: "http/protobuf" },
-              }),
+              ConfigProvider.fromEnv({ env: { LMCS_OTLP_PROTOCOL: "http/protobuf" } }),
             ),
             NetService.layer,
           ),
@@ -1013,9 +990,7 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
           Layer.mergeAll(
             ConfigProvider.layer(
               ConfigProvider.fromEnv({
-                env: {
-                  LMCS_OTLP_LOGS_URL: "http://collector.internal:4318/v1/logs",
-                },
+                env: { LMCS_OTLP_LOGS_URL: "http://collector.internal:4318/v1/logs" },
               }),
             ),
             NetService.layer,
