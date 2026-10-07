@@ -12,7 +12,7 @@ export const REUSABLE_DEV_SESSION_EXPIRES_AT = DateTime.makeUnsafe("9999-12-31T2
 export function resolveReusableDevAuth(
   config: Pick<ServerConfig["Service"], "mode" | "devUrl" | "devAuthToken">,
 ) {
-  if (config.mode !== "web" || config.devUrl === undefined || config.devAuthToken === undefined) {
+  if (config.devAuthToken === undefined) {
     return undefined;
   }
   const token = config.devAuthToken;

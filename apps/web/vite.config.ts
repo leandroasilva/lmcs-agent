@@ -163,8 +163,14 @@ export default defineConfig(() => {
         configFile: new URL("../../third-party-licenses.config.json", import.meta.url),
         packageManifests: [
           { bundle: "web", path: new URL("./package.json", import.meta.url) },
-          { bundle: "server", path: new URL("../server/package.json", import.meta.url) },
-          { bundle: "desktop", path: new URL("../desktop/package.json", import.meta.url) },
+          {
+            bundle: "server",
+            path: new URL("../server/package.json", import.meta.url),
+          },
+          {
+            bundle: "desktop",
+            path: new URL("../desktop/package.json", import.meta.url),
+          },
         ],
       }),
       // Route components load as split chunks so settings, pull-request, and
@@ -202,6 +208,11 @@ export default defineConfig(() => {
       // under single-origin dev this must stay empty even when a `.env`
       // supplies it, so the client falls back to window.location.origin.
       "import.meta.env.VITE_HTTP_URL": JSON.stringify(configuredHttpUrl ?? ""),
+      // Dev auth token for desktop dev mode: forwarded by dev-runner from
+      // LMCS_DEV_AUTH_TOKEN so the renderer can use it as a bootstrap credential.
+      "import.meta.env.VITE_DEV_AUTH_TOKEN": JSON.stringify(
+        process.env.VITE_DEV_AUTH_TOKEN?.trim() ?? "",
+      ),
       "import.meta.env.VITE_LMCS_RELAY_URL": JSON.stringify(configuredRelayUrl),
       "import.meta.env.VITE_CLERK_PUBLISHABLE_KEY": JSON.stringify(configuredClerkPublishableKey),
       "import.meta.env.VITE_CLERK_JWT_TEMPLATE": JSON.stringify(configuredClerkJwtTemplate),

@@ -415,9 +415,13 @@ export function createDevRunnerEnv({
     if (isDesktopMode) {
       output.HOST = DESKTOP_DEV_LOOPBACK_HOST;
       delete output.LMCS_DESKTOP_WS_URL;
-      // Desktop uses its own bootstrap token from the desktop bridge, so the
-      // reusable web dev token must not leak into the desktop process.
-      delete output.LMCS_DEV_AUTH_TOKEN;
+      // Forward LMCS_DEV_AUTH_TOKEN to the Vite renderer so the web app can
+      // use it as a bootstrap credential when the desktop bridge IPC is
+      // unavailable. The server also reads it (via extendEnv) to create a
+      // reusable dev session.
+      if (output.LMCS_DEV_AUTH_TOKEN) {
+        output.VITE_DEV_AUTH_TOKEN = output.LMCS_DEV_AUTH_TOKEN;
+      }
     }
 
     return output;
