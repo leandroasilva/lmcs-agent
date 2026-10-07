@@ -235,6 +235,23 @@ function resolveWindowOriginPrimaryTarget(): PrimaryEnvironmentTarget {
     url.protocol = "ws:";
   } else if (url.protocol === "https:") {
     url.protocol = "wss:";
+  } else if (url.protocol === "t3code:" || url.protocol === "t3code-dev:") {
+    // Desktop custom protocol - fall back to localhost dev server
+    const devServerUrl = import.meta.env.VITE_DEV_SERVER_URL?.trim();
+    if (devServerUrl) {
+      const devUrl = new URL(devServerUrl);
+      return {
+        source: "window-origin",
+        target: {
+          httpBaseUrl: devUrl.toString().replace(/\/$/, ""),
+          wsBaseUrl: devUrl.toString().replace(/^http/, "ws").replace(/\/$/, ""),
+        },
+      };
+    }
+    throw new PrimaryEnvironmentProtocolUnsupportedError({
+      source: "window-origin",
+      protocol: url.protocol,
+    });
   } else {
     throw new PrimaryEnvironmentProtocolUnsupportedError({
       source: "window-origin",

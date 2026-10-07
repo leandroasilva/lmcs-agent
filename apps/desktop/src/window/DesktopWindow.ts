@@ -415,7 +415,7 @@ export const make = Effect.gen(function* () {
         backgroundThrottling: false,
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: true,
+        sandbox: false, // Disabled due to @clerk/electron/preload requiring child_process
         webviewTag: true,
       },
     });
@@ -918,7 +918,9 @@ export const make = Effect.gen(function* () {
   }).pipe(
     // The splash is best-effort UX — never let it fail startup.
     Effect.catch((error) =>
-      logWindowWarning("failed to show connecting splash", { message: error.message }),
+      logWindowWarning("failed to show connecting splash", {
+        message: error.message,
+      }),
     ),
     Effect.withSpan("desktop.window.showConnectingSplash"),
   );
@@ -982,7 +984,10 @@ export const make = Effect.gen(function* () {
     showConnectingSplash,
     handleBackendReady: Effect.fn("desktop.window.handleBackendReady")(function* (httpBaseUrl) {
       yield* Ref.set(backendReadyRef, true);
-      yield* logWindowInfo("backend ready", { source: "http", url: httpBaseUrl.href });
+      yield* logWindowInfo("backend ready", {
+        source: "http",
+        url: httpBaseUrl.href,
+      });
       yield* createMainIfBackendReady;
     }),
     handleBackendNotReady: Ref.set(backendReadyRef, false).pipe(

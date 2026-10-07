@@ -47,6 +47,7 @@ const makeElectronAppLayer = (calls: ElectronAppCalls) =>
     exit: () => Effect.void,
     relaunch: () => Effect.void,
     setPath: () => Effect.void,
+    getPath: () => Effect.succeed("/tmp/test-user-data"),
     setName: (name) =>
       Effect.sync(() => {
         calls.setName.push(name);

@@ -249,7 +249,10 @@ export function resolveOffset(config: {
     }
 
     const offset = ((Hash.string(seed) >>> 0) % MAX_HASH_OFFSET) + 1;
-    return Effect.succeed({ offset, source: `hashed LMCS_DEV_INSTANCE=${seed}` });
+    return Effect.succeed({
+      offset,
+      source: `hashed LMCS_DEV_INSTANCE=${seed}`,
+    });
   }
 
   // Worktrees get ports derived from their path so each one is stable across
@@ -377,7 +380,6 @@ export function createDevRunnerEnv({
       delete output.LMCS_MODE;
       delete output.LMCS_NO_BROWSER;
       delete output.LMCS_HOST;
-      delete output.LMCS_DEV_AUTH_TOKEN;
     }
 
     if (!isDesktopMode && host !== undefined) {
@@ -413,6 +415,9 @@ export function createDevRunnerEnv({
     if (isDesktopMode) {
       output.HOST = DESKTOP_DEV_LOOPBACK_HOST;
       delete output.LMCS_DESKTOP_WS_URL;
+      // Desktop uses its own bootstrap token from the desktop bridge, so the
+      // reusable web dev token must not leak into the desktop process.
+      delete output.LMCS_DEV_AUTH_TOKEN;
     }
 
     return output;
@@ -642,7 +647,10 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
       input.host !== undefined &&
       !isProxiableBindHost(input.host)
     ) {
-      return yield* new DevRunnerHostNotProxiableError({ mode: input.mode, host: input.host });
+      return yield* new DevRunnerHostNotProxiableError({
+        mode: input.mode,
+        host: input.host,
+      });
     }
 
     const worktreePath = yield* resolveGitWorktreePath(yield* HostProcessWorkingDirectory);

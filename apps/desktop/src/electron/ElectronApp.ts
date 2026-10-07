@@ -58,6 +58,7 @@ export class ElectronApp extends Context.Service<
       name: Parameters<Electron.App["setPath"]>[0],
       path: string,
     ) => Effect.Effect<void>;
+    readonly getPath: (name: Parameters<Electron.App["getPath"]>[0]) => Effect.Effect<string>;
     readonly setName: (name: string) => Effect.Effect<void>;
     readonly setAboutPanelOptions: (
       options: Electron.AboutPanelOptionsOptions,
@@ -151,6 +152,10 @@ export const make = ElectronApp.of({
   setPath: (name, path) =>
     Effect.sync(() => {
       Electron.app.setPath(name, path);
+    }),
+  getPath: (name) =>
+    Effect.sync(() => {
+      return Electron.app.getPath(name);
     }),
   setName: (name) =>
     Effect.sync(() => {
