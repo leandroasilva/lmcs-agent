@@ -40,6 +40,7 @@
   },
   "build": {
     "appId": "br.net.hcloud.lmcs-agent",
+    "artifactName": "LMCS-Code-${version}-${arch}-${os}.${ext}",
     "files": [
       "dist-electron/**/*",
       "dist/**/*",
