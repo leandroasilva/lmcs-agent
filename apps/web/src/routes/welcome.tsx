@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { isElectron } from "../env";
 import { NoProjectsHero } from "../components/layout/NoProjectsHero";
 import { WelcomeWizard } from "../components/features/onboarding/WelcomeWizard";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
@@ -9,7 +10,10 @@ import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 export const Route = createFileRoute("/welcome")({
   beforeLoad: ({ context }) => {
     const { authGateState } = context;
-    if (authGateState.status !== "authenticated" && authGateState.status !== "hosted-static") {
+    // Pairing is optional in desktop mode - allow access without authentication.
+    const isUnauthenticated =
+      authGateState.status !== "authenticated" && authGateState.status !== "hosted-static";
+    if (isUnauthenticated && !isElectron()) {
       throw redirect({ to: "/pair", replace: true });
     }
   },

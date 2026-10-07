@@ -18,6 +18,7 @@ import { isPreviewFocused } from "../lib/previewFocus";
 import { isTerminalFocused } from "../lib/terminalFocus";
 import { isEditableFocused } from "../lib/editableFocus";
 import { isModelPickerOpen } from "../modelPickerVisibility";
+import { isElectron } from "../env";
 import { undoLatestThreadAction } from "../hooks/showThreadUndoNotice";
 import { resolveShortcutCommand } from "../keybindings";
 import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
@@ -207,10 +208,11 @@ function ChatRouteLayout() {
 
 export const Route = createFileRoute("/_chat")({
   beforeLoad: async ({ context }) => {
-    if (
+    // Pairing is optional in desktop mode - allow access without authentication.
+    const isUnauthenticated =
       context.authGateState.status !== "authenticated" &&
-      context.authGateState.status !== "hosted-static"
-    ) {
+      context.authGateState.status !== "hosted-static";
+    if (isUnauthenticated && !isElectron()) {
       throw redirect({ to: "/pair", replace: true });
     }
   },

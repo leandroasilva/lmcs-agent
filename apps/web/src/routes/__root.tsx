@@ -186,7 +186,12 @@ function RootRouteView() {
     );
   }
 
-  if (authGateState.status !== "authenticated" && authGateState.status !== "hosted-static") {
+  // Pairing is optional - allow the app to load even without authentication.
+  // Users can configure pairing later via Settings.
+  const isUnauthenticated = authGateState.status === "requires-auth";
+  const shouldShowPairing = isUnauthenticated && !isElectron();
+
+  if (shouldShowPairing) {
     return (
       <>
         <DocumentTitleSync />
@@ -221,7 +226,7 @@ function RootRouteView() {
         >
           {primaryEnvironmentAuthenticated ? <AuthenticatedTracingBootstrap /> : null}
           {primaryEnvironmentAuthenticated ? <DesktopAppActivationCoordinator /> : null}
-          {isElectron ? <RunningThreadKeepAlive /> : null}
+          {isElectron() ? <RunningThreadKeepAlive /> : null}
           <RelayClientInstallDialog />
           <ConnectOnboardingDialog />
           <SshPasswordPromptDialog />

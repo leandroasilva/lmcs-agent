@@ -166,8 +166,8 @@ function getShortcutContext() {
     previewFocus: false,
     previewOpen: false,
     modelPickerOpen: false,
-    isWeb: !isElectron,
-    isDesktop: isElectron,
+    isWeb: !isElectron(),
+    isDesktop: isElectron(),
   };
 }
 
@@ -2467,7 +2467,7 @@ function PullRequestsColumn({
           the route level, whose box spans the panel too, so the toggle keeps one
           fixed top-right anchor. */}
       <WorkspacePageHeader
-        electron={isElectron}
+        electron={isElectron()}
         reserveNativeControls={!rightPanelOpen}
         className="relative bg-background"
       >
