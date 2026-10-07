@@ -2769,7 +2769,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       // resources/package-type into the .deb only, so electron-updater updates
       // each install in its own format.
       target: target === "AppImage" ? [target, "deb"] : [target],
-      executableName: "t3code",
+      executableName: "lmcs-code",
       icon: "icons",
       category: "Development",
       synopsis: "Desktop GUI for coding agents",
