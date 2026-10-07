@@ -70,7 +70,7 @@
       ]
     },
     "linux": {
-      "executableName": "t3code"
+      "executableName": "lmcs-code"
     },
     "publish": {
       "provider": "github",
