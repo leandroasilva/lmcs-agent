@@ -204,15 +204,7 @@ function SettingsRouteLayout() {
 export const Route = createFileRoute("/settings")({
   validateSearch: validateSettingsRouteSearch,
   search: { middlewares: [retainSettingsScope] },
-  beforeLoad: async ({ context, location }) => {
-    // Pairing is optional in desktop mode - allow access without authentication.
-    const isUnauthenticated =
-      context.authGateState.status !== "authenticated" &&
-      context.authGateState.status !== "hosted-static";
-    if (isUnauthenticated && !isElectron()) {
-      throw redirect({ to: "/pair", replace: true });
-    }
-
+  beforeLoad: async ({ location }) => {
     if (location.pathname === "/settings") {
       throw redirect({ to: "/settings/general", replace: true });
     }

@@ -1,21 +1,14 @@
 import { createFileRoute, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { isElectron } from "../env";
 import { NoProjectsHero } from "../components/layout/NoProjectsHero";
 import { WelcomeWizard } from "../components/features/onboarding/WelcomeWizard";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 
 /** Onboarding overlays the workspace. Visiting /welcome reopens setup. */
 export const Route = createFileRoute("/welcome")({
-  beforeLoad: ({ context }) => {
-    const { authGateState } = context;
-    // Pairing is optional in desktop mode - allow access without authentication.
-    const isUnauthenticated =
-      authGateState.status !== "authenticated" && authGateState.status !== "hosted-static";
-    if (isUnauthenticated && !isElectron()) {
-      throw redirect({ to: "/pair", replace: true });
-    }
+  beforeLoad: () => {
+    // Local-only mode: always authenticated
   },
   component: WelcomeRouteView,
 });
@@ -25,7 +18,9 @@ function WelcomeRouteView() {
   const navigate = useNavigate();
   // The root shell can remount this pending outlet after the location changes.
   // Never reopen setup while the destination route is still loading.
-  const isWelcomeRoute = useLocation({ select: (location) => location.pathname === "/welcome" });
+  const isWelcomeRoute = useLocation({
+    select: (location) => location.pathname === "/welcome",
+  });
   const [dismissed, setDismissed] = useState(false);
   const openNewThread = useNewThreadHandler();
   // An authenticated gate means a primary server is serving this app —

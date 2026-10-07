@@ -270,7 +270,10 @@ const EMPTY_PENDING_SURFACES = new Set<string>();
 const MAX_SEARCH_LABEL_CANDIDATES = 100;
 
 const pullRequestListEntryId = (target: Parameters<typeof pullRequestSurfaceId>[0]) =>
-  pullRequestSurfaceId({ ...target, repository: target.repository.toLowerCase() });
+  pullRequestSurfaceId({
+    ...target,
+    repository: target.repository.toLowerCase(),
+  });
 
 function pullRequestSearchLabels(raw: unknown): Partial<Pick<PullRequestsSearch, "labels">> {
   const values = (Array.isArray(raw) ? raw : typeof raw === "string" ? [raw] : []).slice(
@@ -636,7 +639,9 @@ function PullRequestsRouteView() {
     readonly environmentId: EnvironmentId;
     readonly projectIds?: ReadonlyArray<ProjectId>;
   }> => {
-    const plain = queryEnvironmentIds.map((environmentId) => ({ environmentId }));
+    const plain = queryEnvironmentIds.map((environmentId) => ({
+      environmentId,
+    }));
     if (!projectsKnown || scopedProjectId !== undefined) return plain;
     const assignment = assignProjectsToEnvironments(
       projects,
@@ -674,7 +679,10 @@ function PullRequestsRouteView() {
   // Page size is view state, not a URL concern: a shared link should open the first page.
   const scopeKey = `${environmentKey}:${assignmentKey}:${search.state}:${search.involvement}:${scopedProjectId ?? ""}:${search.host ?? ""}:${search.draft ?? ""}:${search.review ?? ""}:${search.checks ?? ""}:${search.author ?? ""}:${search.labels?.join("\u0000") ?? ""}`;
   const filterKey = `${scopeKey}:${sentQuery}`;
-  const statsScopeRef = useRef<PullRequestStatsScope>({ key: filterKey, policy: statsPolicy });
+  const statsScopeRef = useRef<PullRequestStatsScope>({
+    key: filterKey,
+    policy: statsPolicy,
+  });
   statsScopeRef.current = { key: filterKey, policy: statsPolicy };
   // Where the next slice carries on from, per repository within each environment, as that
   // environment handed it back. Sending it is what makes a second page cost a second page rather
@@ -834,7 +842,10 @@ function PullRequestsRouteView() {
           ...(menuFiltered ? { filters: menuFilters } : {}),
         } satisfies PullRequestListInput,
       }));
-    return { authored: targetsFor("authored"), reviewing: targetsFor("reviewing") };
+    return {
+      authored: targetsFor("authored"),
+      reviewing: targetsFor("reviewing"),
+    };
   }, [
     menuFiltered,
     menuFilters,
@@ -849,7 +860,9 @@ function PullRequestsRouteView() {
   const reviewingQuery = usePullRequestList(partitionTargets.reviewing);
   // The header's refresh punches through the server's cache before re-reading; the error and
   // empty states retry plainly, because a failure is never cached.
-  const invalidate = useAtomCommand(pullRequestEnvironment.invalidate, { reportFailure: false });
+  const invalidate = useAtomCommand(pullRequestEnvironment.invalidate, {
+    reportFailure: false,
+  });
   // What the reader pressed refresh for is everything they can see, not the one query that
   // happens to be theirs: the list, the counts beside its rows, and whatever the panel is
   // showing. The panel owns its own reads, so it is told to redo them rather than reached into.
@@ -989,7 +1002,10 @@ function PullRequestsRouteView() {
       // merely settled first.
       const partitions =
         partitionsWanted && authoredQuery.data !== null && reviewingQuery.data !== null
-          ? { authored: authoredQuery.data.entries, reviewing: reviewingQuery.data.entries }
+          ? {
+              authored: authoredQuery.data.entries,
+              reviewing: reviewingQuery.data.entries,
+            }
           : current !== null &&
               current.environmentKey === environmentKey &&
               current.scope === scopeKey
@@ -1025,7 +1041,10 @@ function PullRequestsRouteView() {
         environmentKey,
         scope: scopeKey,
         query: sentQuery,
-        data: { ...data, entries: ordered?.key === filterKey ? ordered.entries : data.entries },
+        data: {
+          ...data,
+          entries: ordered?.key === filterKey ? ordered.entries : data.entries,
+        },
         ...(partitions === undefined ? {} : { partitions }),
       };
     });
@@ -1375,7 +1394,10 @@ function PullRequestsRouteView() {
       group.entries.map((entry) => [pullRequestEntryKey(entry), entry] as const),
     ),
   );
-  const visibleStatsKeys = useRef({ key: filterKey, values: new Set<string>() });
+  const visibleStatsKeys = useRef({
+    key: filterKey,
+    values: new Set<string>(),
+  });
   const [statsByRow, setStatsByRow] = useState<PullRequestDiffStats>(() => new Map());
   const statsByRowRef = useRef(statsByRow);
   statsByRowRef.current = statsByRow;
@@ -1623,7 +1645,9 @@ function PullRequestsRouteView() {
             selectedHost: surface.host,
             ...(surface.environmentId === undefined
               ? {}
-              : { selectedEnvironmentId: surface.environmentId as EnvironmentId }),
+              : {
+                  selectedEnvironmentId: surface.environmentId as EnvironmentId,
+                }),
           },
     );
 
@@ -1674,7 +1698,10 @@ function PullRequestsRouteView() {
         listErrors.map(
           (error) =>
             [
-              pullRequestProjectKey({ id: error.projectId, environmentId: error.environmentId }),
+              pullRequestProjectKey({
+                id: error.projectId,
+                environmentId: error.environmentId,
+              }),
               error.message,
             ] as const,
         ),
@@ -1795,7 +1822,9 @@ function PullRequestsRouteView() {
                     showProvider={showProvider}
                     {...(capableEnvironments.length > 1 &&
                     environmentLabels.get(entry.environmentId) !== undefined
-                      ? { environmentLabel: environmentLabels.get(entry.environmentId)! }
+                      ? {
+                          environmentLabel: environmentLabels.get(entry.environmentId)!,
+                        }
                       : {})}
                     // Ten is the floor the ranking gives a row whose own fields say nothing
                     // about the search: the host matched something this row cannot show.
@@ -2030,7 +2059,11 @@ function PullRequestsRouteView() {
     void writeTextToClipboard(url, "pull request link").then(
       (didCopy) => {
         if (didCopy)
-          toastManager.add({ type: "success", title: "PR link copied", description: url });
+          toastManager.add({
+            type: "success",
+            title: "PR link copied",
+            description: url,
+          });
       },
       (error) => {
         toastManager.add({

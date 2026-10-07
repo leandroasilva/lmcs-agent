@@ -465,41 +465,10 @@ export async function revokeOtherServerClientSessions(): Promise<number> {
 }
 
 export async function resolveInitialServerAuthGateState(): Promise<ServerAuthGateState> {
+  // Exchange the desktop bootstrap credential for a browser session cookie.
+  // The cookie is required for WebSocket authentication on the primary connection.
   const urlCredential = takePairingTokenFromUrl();
-  const previousPromise = bootstrapPromise;
-  if (urlCredential) {
-    resolvedAuthenticatedGateState = null;
-  } else {
-    if (previousPromise) {
-      return previousPromise;
-    }
-
-    if (resolvedAuthenticatedGateState?.status === "authenticated") {
-      return resolvedAuthenticatedGateState;
-    }
-  }
-
-  const nextPromise = previousPromise
-    ? previousPromise
-        .catch(() => undefined)
-        .then(() => {
-          resolvedAuthenticatedGateState = null;
-          return bootstrapServerAuth(urlCredential);
-        })
-    : bootstrapServerAuth(urlCredential);
-  bootstrapPromise = nextPromise;
-  return nextPromise
-    .then((result) => {
-      if (bootstrapPromise === nextPromise && result.status === "authenticated") {
-        resolvedAuthenticatedGateState = result;
-      }
-      return result;
-    })
-    .finally(() => {
-      if (bootstrapPromise === nextPromise) {
-        bootstrapPromise = null;
-      }
-    });
+  return bootstrapServerAuth(urlCredential);
 }
 
 export function __resetServerAuthBootstrapForTests() {

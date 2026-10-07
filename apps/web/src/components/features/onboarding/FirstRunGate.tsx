@@ -95,11 +95,9 @@ export function FirstRunGate({
   const workspaceEvidenceLive = useAtomValue(workspaceEvidenceLiveAtom);
   // Within a session settings stay hydrated, so remounts (e.g. returning from
   // the wizard) resolve synchronously instead of blanking a frame.
+  // Local-only mode: always resolve to "app" immediately, no server confirmation needed.
   const [gateState, setGateState] = useState<FirstRunGateState>(() => ({
-    decision:
-      (!enabled && !hostedStatic) || (hydrated && onboardingCompletedAt !== null)
-        ? "app"
-        : "pending",
+    decision: !hostedStatic ? "app" : "pending",
     stalled: false,
   }));
   const { decision, stalled } = gateState;
@@ -159,7 +157,10 @@ export function FirstRunGate({
     }
 
     setGateState((state) =>
-      transitionFirstRunGateState(state, { type: "evidence", decision: nextDecision }),
+      transitionFirstRunGateState(state, {
+        type: "evidence",
+        decision: nextDecision,
+      }),
     );
   }, [
     completeOnboarding,
