@@ -76,7 +76,7 @@ const MODE_ARGS = {
     "run",
     "--filter=@lmcstools/core",
     "--filter=@lmcstools/web",
-    "--filter=t3",
+    "--filter=lmcs",
     "--parallel",
     "dev",
   ],
@@ -333,9 +333,9 @@ export function createDevRunnerEnv({
     }
 
     // A dev-runner server is never launcher-managed. When the shell that runs
-    // this script was itself spawned by the machine's managed t3 service (an
+    // this script was itself spawned by the machine's managed lmcs service (an
     // agent working inside LMCS Code), these leak through and the child server
-    // fails startup with "The service launcher started a different t3 version"
+    // fails startup with "The service launcher started a different lmcs version"
     // (serviceLauncherClient.ts resolveStartup).
     delete output.LMCS_SERVICE_LAUNCHER_CONTEXT;
     delete output.LMCS_BOOT_SERVICE_UNIT;

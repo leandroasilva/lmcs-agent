@@ -555,7 +555,7 @@ it.effect("accepts bootstrap metadata in thread.turn.start", () =>
         prepareWorktree: {
           projectCwd: "/tmp/workspace",
           baseBranch: "main",
-          branch: "t3code/example",
+          branch: "lmcs/example",
           startFromOrigin: true,
           requireWorktree: true,
         },

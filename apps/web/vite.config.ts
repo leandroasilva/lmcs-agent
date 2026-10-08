@@ -129,7 +129,7 @@ const devProxyTarget = resolveDevProxyTarget(process.env.LMCS_PORT, configuredWs
 // (quality 11) would trade the transfer stall for an equally long encode stall.
 function devCompressionPlugin(): Plugin {
   return {
-    name: "t3code:dev-compression",
+    name: "lmcs:dev-compression",
     apply: "serve",
     configureServer(server) {
       // compression() is typed against Express's req/res, which extend the
@@ -163,8 +163,14 @@ export default defineConfig(() => {
         configFile: new URL("../../third-party-licenses.config.json", import.meta.url),
         packageManifests: [
           { bundle: "web", path: new URL("./package.json", import.meta.url) },
-          { bundle: "server", path: new URL("../server/package.json", import.meta.url) },
-          { bundle: "desktop", path: new URL("../desktop/package.json", import.meta.url) },
+          {
+            bundle: "server",
+            path: new URL("../server/package.json", import.meta.url),
+          },
+          {
+            bundle: "desktop",
+            path: new URL("../desktop/package.json", import.meta.url),
+          },
         ],
       }),
       // Route components load as split chunks so settings, pull-request, and
