@@ -122,6 +122,8 @@ jobs:
       - name: Build macOS desktop artifact (arm64)
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
+          # Clean any stale dist directories before build
+          rm -rf apps/server/dist apps/desktop/dist-electron apps/desktop/resources apps/web/dist
           node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
