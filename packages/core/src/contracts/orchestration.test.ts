@@ -381,12 +381,21 @@ it.effect("rejects malformed known attachment types instead of tolerating them",
       });
 
     const oversizedFile = yield* Effect.exit(
-      decode({ ...base, type: "file", sizeBytes: PROVIDER_SEND_TURN_MAX_FILE_BYTES + 1 }),
+      decode({
+        ...base,
+        type: "file",
+        sizeBytes: PROVIDER_SEND_TURN_MAX_FILE_BYTES + 1,
+      }),
     );
     assert.strictEqual(Exit.isFailure(oversizedFile), true);
 
     const badMimeImage = yield* Effect.exit(
-      decode({ ...base, type: "image", mimeType: "application/pdf", sizeBytes: 12 }),
+      decode({
+        ...base,
+        type: "image",
+        mimeType: "application/pdf",
+        sizeBytes: 12,
+      }),
     );
     assert.strictEqual(Exit.isFailure(badMimeImage), true);
   }),
@@ -1080,7 +1089,10 @@ it.effect("decodes active reorder commands through client and orchestration boun
 
 it.effect("decodes active placement on existing metadata events while accepting old payloads", () =>
   Effect.gen(function* () {
-    const payload = { threadId: "thread-1", updatedAt: "2026-01-01T00:00:00.000Z" };
+    const payload = {
+      threadId: "thread-1",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
     const oldPayload = yield* decodeThreadMetaUpdatedPayload(payload);
     assert.strictEqual(oldPayload.activeOrderKey, undefined);
     const resetPayload = yield* decodeThreadMetaUpdatedPayload({
@@ -1534,7 +1546,11 @@ it.effect("project icon overrides accept Lucide icons, colors, and emoji", () =>
         type: "project.meta.update",
         commandId: "cmd-project-invalid-icon",
         projectId: "project-1",
-        projectIcon: { kind: "lucide", name: "Alarm Clock", color: "ultraviolet" },
+        projectIcon: {
+          kind: "lucide",
+          name: "Alarm Clock",
+          color: "ultraviolet",
+        },
       }),
     );
     assert.strictEqual(invalid._tag, "Failure");
@@ -1557,7 +1573,11 @@ it.effect("project monograms validate text and palette colors", () =>
       });
       assert.strictEqual(command.type, "project.meta.update");
       if (command.type === "project.meta.update")
-        assert.deepEqual(command.projectIcon, { kind: "monogram", text, color: "violet" });
+        assert.deepEqual(command.projectIcon, {
+          kind: "monogram",
+          text,
+          color: "violet",
+        });
     }
     for (const projectIcon of [
       { kind: "monogram", text: "", color: "blue" },
@@ -1606,7 +1626,11 @@ const encodeProjectIcon = Schema.encodeEffect(ProjectIconOverride);
 // Pre-monogram clients reject unknown variants; nightly clients additionally validate monogram.
 const decodeOldIcon = Schema.decodeUnknownEffect(
   Schema.Union([
-    Schema.Struct({ kind: Schema.Literal("lucide"), name: Schema.String, color: Schema.String }),
+    Schema.Struct({
+      kind: Schema.Literal("lucide"),
+      name: Schema.String,
+      color: Schema.String,
+    }),
     Schema.Struct({ kind: Schema.Literal("emoji"), emoji: Schema.String }),
   ]),
 );
@@ -1625,7 +1649,11 @@ const decodeNightlyIcon = Schema.decodeUnknownEffect(
 
 it.effect("sends monograms as fallback icons that old and nightly clients can decode", () =>
   Effect.gen(function* () {
-    const fallback = { kind: "lucide", name: "folder-code", color: "violet" } as const;
+    const fallback = {
+      kind: "lucide",
+      name: "folder-code",
+      color: "violet",
+    } as const;
     for (const text of ["LM", "क्ष्म", "e\u0301"]) {
       const monogram = { kind: "monogram", text, color: "violet" } as const;
       const wire = yield* encodeProjectIcon(monogram);
@@ -1665,7 +1693,11 @@ const decodeLegacyShell = Schema.decodeUnknownEffect(
 
 it.effect("encodes compatible icons inside snapshots and client commands", () =>
   Effect.gen(function* () {
-    const projectIcon = { kind: "monogram", text: "क्ष्म", color: "violet" } as const;
+    const projectIcon = {
+      kind: "monogram",
+      text: "क्ष्म",
+      color: "violet",
+    } as const;
     const shell = yield* encodeProjectShell({
       id: ProjectId.make("monogram"),
       title: "Monogram",
@@ -1676,7 +1708,11 @@ it.effect("encodes compatible icons inside snapshots and client commands", () =>
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    const fallback = { kind: "lucide", name: "folder-code", color: "violet" } as const;
+    const fallback = {
+      kind: "lucide",
+      name: "folder-code",
+      color: "violet",
+    } as const;
     assert.deepEqual((yield* decodeLegacyShell(shell)).projectIcon, fallback);
     const command = yield* encodeClientCommand({
       type: "project.meta.update",

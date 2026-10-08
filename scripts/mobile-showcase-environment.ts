@@ -33,7 +33,10 @@ const PROJECTOR_NAMES = [
   "projection.pending-approvals",
 ] as const;
 
-const MODEL_SELECTION = JSON.stringify({ instanceId: "codex", model: "gpt-5.4" });
+const MODEL_SELECTION = JSON.stringify({
+  instanceId: "codex",
+  model: "gpt-5.4",
+});
 const PROJECT_SCRIPTS = JSON.stringify([
   {
     id: "dev",

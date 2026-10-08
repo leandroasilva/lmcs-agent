@@ -494,7 +494,7 @@ function withDescription(title: string, description: string | undefined) {
 }
 
 function summarizeGitActionResult(
-  result: Pick<GitRunStackedActionResult, "commit" | "push" | "pr">,
+  result: Pick<GitRunStackedActionResult, "commit" | "push" | "pr" | "sync">,
   terms: ChangeRequestTerminology,
 ): {
   title: string;
@@ -515,6 +515,14 @@ function summarizeGitActionResult(
       `Pushed${pushedCommitPart}${branchPart}`,
       truncateText(result.commit.subject),
     );
+  }
+
+  if (result.sync?.status === "pulled") {
+    return { title: "Rebased onto upstream" };
+  }
+
+  if (result.sync?.status === "skipped_up_to_date") {
+    return { title: "Already up to date" };
   }
 
   if (result.commit.status === "created") {
@@ -1688,7 +1696,10 @@ export const make = Effect.gen(function* () {
   });
   const buildCompletionToast = Effect.fn("buildCompletionToast")(function* (
     cwd: string,
-    result: Pick<GitRunStackedActionResult, "action" | "branch" | "commit" | "push" | "pr">,
+    result: Pick<
+      GitRunStackedActionResult,
+      "action" | "branch" | "commit" | "push" | "pr" | "sync"
+    >,
   ) {
     const terms = yield* sourceControlProvider(cwd).pipe(
       Effect.map((provider) => getChangeRequestTerminologyForKind(provider.kind)),
@@ -2680,6 +2691,7 @@ export const make = Effect.gen(function* () {
           (input.action === "create_pr" &&
             (!initialStatus.hasUpstream || initialStatus.aheadCount > 0));
         const wantsPr = input.action === "create_pr" || input.action === "commit_push_pr";
+        const wantsSync = input.action === "sync_ref";
 
         if (input.featureBranch && !wantsCommit) {
           return yield* new GitManagerError({
@@ -2699,6 +2711,7 @@ export const make = Effect.gen(function* () {
         const phases: GitActionProgressPhase[] = [
           ...(input.featureBranch ? (["branch"] as const) : []),
           ...(wantsCommit ? (["commit"] as const) : []),
+          ...(wantsSync ? (["push"] as const) : []),
           ...(wantsPush ? (["push"] as const) : []),
           ...(wantsPr ? (["pr"] as const) : []),
         ];
@@ -2816,6 +2829,19 @@ export const make = Effect.gen(function* () {
             )
           : { status: "skipped_not_requested" as const };
 
+        const sync = wantsSync
+          ? yield* progress
+              .emit({
+                kind: "phase_started",
+                phase: "push",
+                label: "Rebasing onto upstream...",
+              })
+              .pipe(
+                Effect.tap(() => Ref.set(currentPhase, Option.some("push"))),
+                Effect.flatMap(() => gitCore.rebaseCurrentBranch(input.cwd)),
+              )
+          : { status: "skipped_not_requested" as const };
+
         const push = wantsPush
           ? yield* progress
               .emit({
@@ -2856,6 +2882,7 @@ export const make = Effect.gen(function* () {
           commit,
           push,
           pr,
+          sync,
         });
 
         const result = {
@@ -2864,6 +2891,7 @@ export const make = Effect.gen(function* () {
           commit,
           push,
           pr,
+          sync,
           toast,
         };
         yield* progress.emit({

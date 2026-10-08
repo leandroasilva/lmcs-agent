@@ -486,7 +486,12 @@ async function commandOutput(
     NodeChildProcess.execFile(
       command,
       [...args],
-      { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 10 * 1024 * 1024, ...options },
+      {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+        maxBuffer: 10 * 1024 * 1024,
+        ...options,
+      },
       (error, stdout) => {
         if (error) reject(error);
         else resolve(String(stdout));
@@ -598,7 +603,9 @@ exit 1
 `;
   await Promise.all(
     ["scutil", "hostnamectl"].map((executable) =>
-      NodeFSP.writeFile(NodePath.join(binDirectory, executable), probeScript, { mode: 0o755 }),
+      NodeFSP.writeFile(NodePath.join(binDirectory, executable), probeScript, {
+        mode: 0o755,
+      }),
     ),
   );
   return binDirectory;
@@ -1020,7 +1027,10 @@ async function presentIosLockScreen(udid: string): Promise<void> {
     );
     child.stdin?.end(
       JSON.stringify({
-        aps: { alert: { title: alert.title, body: alert.body }, sound: "default" },
+        aps: {
+          alert: { title: alert.title, body: alert.body },
+          sound: "default",
+        },
       }),
     );
   });
@@ -1069,7 +1079,10 @@ async function unlockIosSimulator(udid: string): Promise<void> {
 }
 
 /** Mirrors the app's staged hero row (showcaseAgentActivity.ts). */
-function showcaseAgentAlert(): { readonly title: string; readonly body: string } {
+function showcaseAgentAlert(): {
+  readonly title: string;
+  readonly body: string;
+} {
   const thread = SHOWCASE_THREADS.find((candidate) => candidate.id === "pocket-command-center");
   const project = SHOWCASE_PROJECTS.find((candidate) => candidate.id === thread?.projectId);
   if (!thread || !project) throw new Error("The showcase fixture lost its agent-activity thread.");
@@ -1562,14 +1575,22 @@ async function main(): Promise<void> {
       );
       showcaseServers.push(server);
       await waitForPort(port, `${environment.label} server`);
-      await seedShowcaseEnvironment({ baseDir, projectIds: environment.projectIds });
+      await seedShowcaseEnvironment({
+        baseDir,
+        projectIds: environment.projectIds,
+      });
       // The server begins listening before the ServerEnvironment layer
       // persists the environment id, so poll rather than read once.
       const environmentId = await waitForFileContent(
         NodePath.join(baseDir, "userdata", "environment-id"),
         `${environment.label} environment id`,
       );
-      showcaseEnvironments.push({ baseDir, environmentId, label: environment.label, port });
+      showcaseEnvironments.push({
+        baseDir,
+        environmentId,
+        label: environment.label,
+        port,
+      });
     }
 
     if (!options.skipMetro) {
@@ -1615,7 +1636,9 @@ async function main(): Promise<void> {
         );
       } else {
         await captureAndroid(
-          capture as ShowcaseCapture & { readonly device: ShowcaseAndroidDevice },
+          capture as ShowcaseCapture & {
+            readonly device: ShowcaseAndroidDevice;
+          },
           androidApkPath,
           outputDirectory,
           showcaseConfig,

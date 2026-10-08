@@ -2299,6 +2299,55 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     };
   });
 
+  const rebaseCurrentBranch: GitVcsDriver.GitVcsDriver["Service"]["rebaseCurrentBranch"] =
+    Effect.fn("rebaseCurrentBranch")(function* (cwd) {
+      const details = yield* statusDetails(cwd);
+      const refName = details.branch;
+      if (!refName) {
+        return yield* new GitCommandError({
+          ...gitCommandContext({
+            operation: "GitVcsDriver.rebaseCurrentBranch",
+            cwd,
+            args: ["pull", "--rebase"],
+          }),
+          detail: "Cannot rebase from detached HEAD.",
+        });
+      }
+      if (!details.hasUpstream) {
+        return yield* new GitCommandError({
+          ...gitCommandContext({
+            operation: "GitVcsDriver.rebaseCurrentBranch",
+            cwd,
+            args: ["pull", "--rebase"],
+          }),
+          detail: "Current branch has no upstream configured. Push with upstream first.",
+        });
+      }
+      const beforeSha = yield* runGitStdout(
+        "GitVcsDriver.rebaseCurrentBranch.beforeSha",
+        cwd,
+        ["rev-parse", "HEAD"],
+        true,
+      ).pipe(Effect.map((stdout) => stdout.trim()));
+      yield* executeGit("GitVcsDriver.rebaseCurrentBranch.rebase", cwd, ["pull", "--rebase"], {
+        timeoutMs: 60_000,
+        fallbackErrorDetail: "git pull --rebase failed",
+      });
+      const afterSha = yield* runGitStdout(
+        "GitVcsDriver.rebaseCurrentBranch.afterSha",
+        cwd,
+        ["rev-parse", "HEAD"],
+        true,
+      ).pipe(Effect.map((stdout) => stdout.trim()));
+
+      const refreshed = yield* statusDetails(cwd);
+      return {
+        status: beforeSha.length > 0 && beforeSha === afterSha ? "skipped_up_to_date" : "pulled",
+        refName,
+        upstreamRef: refreshed.upstreamRef,
+      };
+    });
+
   const readRangeContext: GitVcsDriver.GitVcsDriver["Service"]["readRangeContext"] = Effect.fn(
     "readRangeContext",
   )(function* (cwd, baseRef) {
@@ -3731,6 +3780,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     pushCurrentBranch: (cwd, fallbackBranch, options) =>
       withListRefsInvalidation(cwd, pushCurrentBranch(cwd, fallbackBranch, options)),
     pullCurrentBranch: (cwd) => withListRefsInvalidation(cwd, pullCurrentBranch(cwd)),
+    rebaseCurrentBranch: (cwd) => withListRefsInvalidation(cwd, rebaseCurrentBranch(cwd)),
     readRangeContext,
     getReviewDiffPreview,
     getReviewDiffFileContents,

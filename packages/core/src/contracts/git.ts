@@ -17,6 +17,7 @@ export const GitStackedAction = Schema.Literals([
   "create_pr",
   "commit_push",
   "commit_push_pr",
+  "sync_ref",
 ]);
 export type GitStackedAction = typeof GitStackedAction.Type;
 export const GitActionProgressPhase = Schema.Literals(["branch", "commit", "push", "pr"]);
@@ -337,6 +338,11 @@ export const GitRunStackedActionResult = Schema.Struct({
     baseBranch: Schema.optional(TrimmedNonEmptyStringSchema),
     headBranch: Schema.optional(TrimmedNonEmptyStringSchema),
     title: Schema.optional(TrimmedNonEmptyStringSchema),
+  }),
+  sync: Schema.Struct({
+    status: GitPushStepStatus,
+    refName: Schema.optional(TrimmedNonEmptyStringSchema),
+    upstreamRef: Schema.optional(TrimmedNonEmptyStringSchema),
   }),
   toast: GitRunStackedActionToast,
 });

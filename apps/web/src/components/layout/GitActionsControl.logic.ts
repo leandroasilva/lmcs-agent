@@ -253,9 +253,9 @@ export function resolveQuickAction(
   if (isDiverged) {
     return {
       label: "Sync ref",
-      disabled: true,
-      kind: "show_hint",
-      hint: "Branch has diverged from upstream. Rebase/merge first.",
+      disabled: false,
+      kind: "run_action",
+      action: "sync_ref",
     };
   }
 
