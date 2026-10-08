@@ -121,10 +121,10 @@ jobs:
 
       - name: Build macOS desktop artifacts (arm64 + x64)
         run: |
+          export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
           node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }} --signed
           node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch x64 --build-version ${{ needs.version.outputs.version }} --signed
         env:
-          PATH: ${{ github.workspace }}/node_modules/.bin:$PATH
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing (optional - if not set, app will be ad-hoc signed)
           CSC_LINK: ${{ secrets.CSC_LINK }}
