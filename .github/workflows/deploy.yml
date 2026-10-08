@@ -138,24 +138,24 @@ jobs:
         working-directory: apps/desktop
         run: |
           echo "=== builder-debug.yml ==="
-          cat dist/builder-debug.yml 2>/dev/null || echo "builder-debug.yml not found"
+          cat release/builder-debug.yml 2>/dev/null || echo "builder-debug.yml not found"
           echo ""
-          echo "=== Files in dist/ ==="
-          ls -lh dist/ 2>/dev/null || echo "dist/ directory not found"
+          echo "=== Files in release/ ==="
+          ls -lh release/ 2>/dev/null || echo "release/ directory not found"
           echo ""
           echo "=== DMG files ==="
-          ls -lh dist/*.dmg 2>/dev/null || echo "No DMG files found"
+          ls -lh release/*.dmg 2>/dev/null || echo "No DMG files found"
           echo ""
           echo "=== ZIP files ==="
-          ls -lh dist/*.zip 2>/dev/null || echo "No ZIP files found"
+          ls -lh release/*.zip 2>/dev/null || echo "No ZIP files found"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v5
         with:
           name: desktop-macos
           path: |
-            apps/desktop/dist/*.dmg
-            apps/desktop/dist/*.zip
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
           if-no-files-found: warn
           retention-days: 30
 
@@ -298,4 +298,3 @@ jobs:
             --generate-notes
 
           echo "::notice::Created release $TAG without desktop artifacts"
-# Force rebuild

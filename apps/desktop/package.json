@@ -43,9 +43,11 @@
     "artifactName": "LMCS-Code-${version}-${arch}-${os}.${ext}",
     "files": [
       "dist-electron/**/*",
-      "dist/**/*",
       "!node_modules"
     ],
+    "directories": {
+      "output": "release"
+    },
     "mac": {
       "icon": "../../assets/prod/icon.icns",
       "category": "public.app-category.developer-tools",
