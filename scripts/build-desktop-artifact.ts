@@ -3854,9 +3854,9 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     buildEnv.XZ_DEFAULTS = "-T0";
   }
   if (!options.signed) {
+    // Disable automatic identity discovery when not using passkey signing.
+    // Keep CSC_LINK and CSC_KEY_PASSWORD for standard Developer ID signing.
     buildEnv.CSC_IDENTITY_AUTO_DISCOVERY = "false";
-    delete buildEnv.CSC_LINK;
-    delete buildEnv.CSC_KEY_PASSWORD;
     delete buildEnv.APPLE_API_KEY;
     delete buildEnv.APPLE_API_KEY_ID;
     delete buildEnv.APPLE_API_ISSUER;
