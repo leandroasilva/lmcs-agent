@@ -122,18 +122,15 @@ jobs:
       - name: Build macOS desktop artifacts (arm64 + x64)
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
-          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }} --signed
+          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }}
           # Clean dist directories before x64 build to avoid EEXIST errors
           rm -rf apps/server/dist apps/desktop/dist-electron apps/desktop/resources
-          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch x64 --build-version ${{ needs.version.outputs.version }} --signed
+          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch x64 --build-version ${{ needs.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing (optional - if not set, app will be ad-hoc signed)
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: List generated artifacts
         if: always()
