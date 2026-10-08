@@ -93,6 +93,8 @@ const buildCmd = Command.make(
       const clientTarget = path.join(serverDir, "dist/client");
 
       if (yield* fs.exists(webDist)) {
+        // Remove existing client target to avoid EEXIST errors on rebuild
+        yield* fs.remove(clientTarget, { recursive: true, force: true }).pipe(Effect.ignore);
         yield* fs.copy(webDist, clientTarget);
         yield* applyDevelopmentIconOverrides(repoRoot, serverDir);
         yield* Effect.log("[cli] Bundled web app into dist/client");
