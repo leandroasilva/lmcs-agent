@@ -111,6 +111,9 @@ export default defineConfig({
         // from inside the packaged ASAR. Bundle Clerk's preload bridge into the
         // preload artifact instead of leaving a runtime require() behind.
         alwaysBundle: (id) => id === "@clerk/electron" || id.startsWith("@clerk/electron/"),
+        // The `electron` module must remain external — it's provided by the
+        // Electron runtime, not by node_modules inside the ASAR.
+        neverBundle: (id) => id === "electron" || id.startsWith("electron/"),
       },
     },
     {
