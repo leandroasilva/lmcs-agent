@@ -3781,6 +3781,26 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     { label: "vp add electron", verbose: options.verbose },
   );
 
+  // Install electron-builder in the staged dir so we can run it directly
+  // from the staged directory. Running through `vp exec --filter` would
+  // resolve electron-builder in the desktop package context, causing it to
+  // pick up the desktop's own `build` config instead of the staged one.
+  yield* Effect.log("[desktop-artifact] Installing electron-builder in staged dir...");
+  const electronBuilderVersion =
+    desktopPackageJson.devDependencies?.["electron-builder"] ?? "latest";
+  const builderInstallCommand = yield* resolveSpawnCommand("vp", [
+    "add",
+    "--save-dev",
+    `electron-builder@${electronBuilderVersion}`,
+  ]);
+  yield* runCommand(
+    ChildProcess.make(builderInstallCommand.command, builderInstallCommand.args, {
+      cwd: stageAppDir,
+      shell: builderInstallCommand.shell,
+    }),
+    { label: "vp add electron-builder", verbose: options.verbose },
+  );
+
   yield* stageClerkPasskeyNativeBinaries(stageAppDir, options.platform, options.arch);
   yield* stageKeyringNativeBinaries(stageAppDir, options.platform, options.arch);
 
@@ -3863,12 +3883,12 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   yield* Effect.log(
     `[desktop-artifact] Building ${options.platform}/${options.target} (arch=${options.arch}, version=${appVersion})...`,
   );
-  const builderArgs = [
-    "exec",
-    "--filter",
-    "@lmcstools/desktop",
-    "--",
-    "electron-builder",
+  // Run electron-builder directly from the staged directory so it picks up
+  // the staged package.json's `build` config (which includes the server
+  // bundle) instead of the desktop package's own `build` config.
+  const builderCliEntry = path.join(stageAppDir, "node_modules", "electron-builder", "cli.js");
+  const builderCliArgs = [
+    builderCliEntry,
     "--projectDir",
     stageAppDir,
     platformConfig.cliFlag,
@@ -3876,17 +3896,13 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     "--publish",
     "never",
   ];
-  const builderCommand = yield* resolveSpawnCommand("vp", builderArgs, {
-    env: buildEnv,
-  });
   yield* runCommand(
-    ChildProcess.make(builderCommand.command, builderCommand.args, {
-      cwd: repoRoot,
+    ChildProcess.make("node", builderCliArgs, {
+      cwd: stageAppDir,
       env: buildEnv,
-      shell: builderCommand.shell,
     }),
     {
-      label: `vp exec --filter @lmcstools/desktop -- electron-builder --projectDir ${stageAppDir} ${platformConfig.cliFlag} --${options.arch} --publish never`,
+      label: `electron-builder --projectDir ${stageAppDir} ${platformConfig.cliFlag} --${options.arch} --publish never`,
       verbose: options.verbose,
     },
   );
