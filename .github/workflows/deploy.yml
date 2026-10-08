@@ -114,16 +114,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build web client
-        run: pnpm --filter @lmcstools/web run build
-
-      - name: Build desktop app
-        working-directory: apps/desktop
-        run: node scripts/build-browser-secret.mjs && node scripts/build-preview-annotation-css.mjs && pnpm exec vp pack
-
-      - name: Package macOS app
-        working-directory: apps/desktop
-        run: DEBUG=electron-builder,electron-updater pnpm exec electron-builder --mac --arm64 --x64 --publish never --config.extraMetadata.version=${{ needs.version.outputs.version }}
+      - name: Build macOS desktop artifacts (arm64 + x64)
+        run: |
+          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }} --signed
+          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch x64 --build-version ${{ needs.version.outputs.version }} --signed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing (optional - if not set, app will be ad-hoc signed)
@@ -135,11 +129,7 @@ jobs:
 
       - name: List generated artifacts
         if: always()
-        working-directory: apps/desktop
         run: |
-          echo "=== builder-debug.yml ==="
-          cat release/builder-debug.yml 2>/dev/null || echo "builder-debug.yml not found"
-          echo ""
           echo "=== Files in release/ ==="
           ls -lh release/ 2>/dev/null || echo "release/ directory not found"
           echo ""
@@ -154,8 +144,8 @@ jobs:
         with:
           name: desktop-macos
           path: |
-            apps/desktop/release/*.dmg
-            apps/desktop/release/*.zip
+            release/*.dmg
+            release/*.zip
           if-no-files-found: warn
           retention-days: 30
 
