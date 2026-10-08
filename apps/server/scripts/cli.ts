@@ -94,14 +94,33 @@ const buildCmd = Command.make(
       const clientTarget = path.join(serverDir, "dist/client");
 
       if (yield* fs.exists(webDist)) {
-        // Remove existing client target to avoid EEXIST errors on rebuild.
-        // Use Node's fs directly since Effect's FileSystem.remove may silently
-        // fail with Effect.ignore on certain platform/filesystem combinations.
+        // Remove existing client target then copy web dist into place.
+        // The server build may be triggered multiple times in a single
+        // `vp run build:desktop` (once from the desktop's lmcs-agent#build
+        // dependency and once from the --filter lmcs direct filter), so the
+        // copy must tolerate concurrent runs. Node's fs.cp with force:true
+        // overwrites existing files but can still race on mkdir, so we
+        // remove first and tolerate EEXIST as a concurrent-build signal.
         yield* Effect.tryPromise({
           try: () => NodeFSP.rm(clientTarget, { recursive: true, force: true }),
           catch: () => new Error(`failed to remove ${clientTarget}`),
         }).pipe(Effect.ignore);
-        yield* fs.copy(webDist, clientTarget);
+        yield* Effect.tryPromise({
+          try: () => NodeFSP.cp(webDist, clientTarget, { recursive: true, force: true }),
+          catch: (cause) => {
+            // EEXIST from a concurrent build is not fatal — the other
+            // process is writing the same files.
+            if (
+              cause &&
+              typeof cause === "object" &&
+              "code" in cause &&
+              (cause as { code: string }).code === "EEXIST"
+            ) {
+              return new Error("concurrent build detected — skipping copy");
+            }
+            return new Error(`failed to copy web dist to ${clientTarget}`);
+          },
+        }).pipe(Effect.ignore);
         yield* applyDevelopmentIconOverrides(repoRoot, serverDir);
         yield* Effect.log("[cli] Bundled web app into dist/client");
       } else {
