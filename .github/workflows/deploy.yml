@@ -114,12 +114,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
       - name: Build macOS desktop artifacts (arm64 + x64)
         run: |
           node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }} --signed
           node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch x64 --build-version ${{ needs.version.outputs.version }} --signed
         env:
-          PATH: ${{ github.workspace }}/node_modules/.bin:${{ env.PATH }}
+          PATH: ${{ github.workspace }}/node_modules/.bin:$PATH
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing (optional - if not set, app will be ad-hoc signed)
           CSC_LINK: ${{ secrets.CSC_LINK }}
