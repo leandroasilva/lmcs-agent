@@ -119,13 +119,10 @@ jobs:
         with:
           targets: aarch64-apple-darwin, x86_64-apple-darwin
 
-      - name: Build macOS desktop artifacts (arm64 + x64)
+      - name: Build macOS desktop artifact (arm64)
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
           node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }}
-          # Clean dist directories before x64 build to avoid EEXIST errors
-          rm -rf apps/server/dist apps/desktop/dist-electron apps/desktop/resources
-          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch x64 --build-version ${{ needs.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing (optional - if not set, app will be ad-hoc signed)
