@@ -52,10 +52,14 @@ const applyDevelopmentIconOverrides = Effect.fn("applyDevelopmentIconOverrides")
     const targetPath = path.join(serverDir, override.targetRelativePath);
 
     if (!(yield* fs.exists(sourcePath))) {
-      return yield* new ServerCliDevelopmentIconSourceMissingError({ sourcePath });
+      return yield* new ServerCliDevelopmentIconSourceMissingError({
+        sourcePath,
+      });
     }
     if (!(yield* fs.exists(targetPath))) {
-      return yield* new ServerCliDevelopmentIconTargetMissingError({ targetPath });
+      return yield* new ServerCliDevelopmentIconTargetMissingError({
+        targetPath,
+      });
     }
 
     yield* fs.copyFile(sourcePath, targetPath);
@@ -176,7 +180,10 @@ const buildExeCmd = Command.make(
       const bundlePath = path.join(serverDir, "dist-exe/bin.mjs");
       const specifiers = findEsmImportsOfExternalPackages(yield* fs.readFileString(bundlePath));
       if (specifiers.length > 0) {
-        return yield* new ServerCliExecutableImportError({ bundlePath, specifiers });
+        return yield* new ServerCliExecutableImportError({
+          bundlePath,
+          specifiers,
+        });
       }
       yield* Effect.log(
         "[cli] Built dist-exe/lmcs (expects client/, resource-monitor/, and the runtime-external node_modules beside it; scripts/build-cli-archive.ts assembles that tree)",
@@ -232,7 +239,9 @@ const publishCmd = Command.make(
         });
       }
       if (!(yield* fs.exists(launcherTarball))) {
-        return yield* new ServerCliBuildAssetMissingError({ assetPath: launcherTarball });
+        return yield* new ServerCliBuildAssetMissingError({
+          assetPath: launcherTarball,
+        });
       }
 
       const args = ["publish", "--access", config.access, "--tag", config.tag];
