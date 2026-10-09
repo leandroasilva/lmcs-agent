@@ -3963,6 +3963,43 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     });
   }
 
+  // Notarize macOS DMG if Apple API credentials are available
+  if (options.platform === "mac" && options.signed) {
+    const dmgPath = copiedArtifacts.find((p) => p.endsWith(".dmg"));
+    if (dmgPath) {
+      const apiKey = buildEnv.APPLE_API_KEY;
+      const apiKeyId = buildEnv.APPLE_API_KEY_ID;
+      const apiIssuer = buildEnv.APPLE_API_ISSUER;
+
+      if (apiKey && apiKeyId && apiIssuer) {
+        yield* Effect.log("[desktop-artifact] Notarizing macOS DMG...");
+        yield* runCommand(
+          ChildProcess.make("xcrun", [
+            "notarytool",
+            "submit",
+            dmgPath,
+            "--key",
+            apiKey,
+            "--key-id",
+            apiKeyId,
+            "--issuer",
+            apiIssuer,
+            "--wait",
+          ]),
+          {
+            label: "notarytool submit (macOS DMG)",
+            verbose: options.verbose,
+          },
+        );
+        yield* Effect.log("[desktop-artifact] macOS DMG notarized successfully.");
+      } else {
+        yield* Effect.logWarning(
+          "[desktop-artifact] Skipping notarization: missing APPLE_API_KEY, APPLE_API_KEY_ID, or APPLE_API_ISSUER",
+        );
+      }
+    }
+  }
+
   yield* Effect.log("[desktop-artifact] Done. Artifacts:").pipe(
     Effect.annotateLogs({ artifacts: copiedArtifacts }),
   );

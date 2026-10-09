@@ -127,12 +127,16 @@ jobs:
       - name: Build macOS desktop artifact (arm64)
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
-          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }}
+          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }} --signed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Code signing credentials for Developer ID signing
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # Apple notarization credentials
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
 
       - name: List generated artifacts
         if: always()
@@ -153,6 +157,8 @@ jobs:
           path: |
             release/*.dmg
             release/*.zip
+            release/latest*.yml
+            release/latest*.yml.blockmap
           if-no-files-found: warn
           retention-days: 30
 
@@ -272,7 +278,7 @@ jobs:
             --title "v$VERSION" \
             --notes "Release v$VERSION" \
             --generate-notes \
-            artifacts/*.{dmg,zip} 2>/dev/null || \
+            artifacts/*.{dmg,zip,yml,blockmap} 2>/dev/null || \
           gh release create "$TAG" \
             --title "v$VERSION" \
             --notes "Release v$VERSION" \
