@@ -85,7 +85,7 @@ describe("branding logic", () => {
     expect(
       resolveServerBackedAppDisplayName({
         baseName: "LMCS Code",
-        fallbackDisplayName: "LMCS Code (Alpha)",
+        fallbackDisplayName: "LMCS Code",
         fallbackStageLabel: "Alpha",
         primaryServerVersion: "0.0.28-nightly.20260616.12",
       }),
@@ -96,21 +96,21 @@ describe("branding logic", () => {
     expect(
       resolveServerBackedAppDisplayName({
         baseName: "LMCS Code",
-        fallbackDisplayName: "LMCS Code (Alpha)",
+        fallbackDisplayName: "LMCS Code",
         fallbackStageLabel: "Alpha",
         primaryServerVersion: "0.0.27",
       }),
-    ).toBe("LMCS Code (Alpha)");
+    ).toBe("LMCS Code");
   });
 
   it("keeps the fallback display name for malformed nightly primary server versions", () => {
     expect(
       resolveServerBackedAppDisplayName({
         baseName: "LMCS Code",
-        fallbackDisplayName: "LMCS Code (Alpha)",
+        fallbackDisplayName: "LMCS Code",
         fallbackStageLabel: "Alpha",
         primaryServerVersion: "0.0.28-nightly.20260616",
       }),
-    ).toBe("LMCS Code (Alpha)");
+    ).toBe("LMCS Code");
   });
 });

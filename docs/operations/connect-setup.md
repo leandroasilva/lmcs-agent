@@ -119,15 +119,15 @@ actual web and server ports. For example, with the default ports:
 ```sh
 VITE_DEV_SERVER_URL=http://127.0.0.1:5733 \
 LMCS_PORT=13773 \
-  "/Applications/LMCS Code (Alpha).app/Contents/MacOS/LMCS Code (Alpha)"
+  "/Applications/LMCS Code.app/Contents/MacOS/LMCS Code"
 ```
 
 Rebuild the signed app after native dependency, main-process, preload, entitlement, provisioning,
 or signing changes. Renderer edits can reuse it. Verify the installed bundle before testing:
 
 ```sh
-codesign --verify --deep --strict "/Applications/LMCS Code (Alpha).app"
-codesign -d --entitlements :- "/Applications/LMCS Code (Alpha).app"
+codesign --verify --deep --strict "/Applications/LMCS Code.app"
+codesign -d --entitlements :- "/Applications/LMCS Code.app"
 ```
 
 ## Restricting sign-ups
