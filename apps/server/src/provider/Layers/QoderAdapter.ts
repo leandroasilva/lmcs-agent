@@ -298,6 +298,8 @@ export function makeQoderAdapter(
                   cwd,
                   shell: spawnCommand.shell,
                   stdin: "ignore",
+                  stdout: "pipe",
+                  stderr: "pipe",
                 }),
               )
               .pipe(

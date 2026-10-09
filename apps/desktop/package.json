@@ -43,6 +43,9 @@
     "artifactName": "LMCS-Code-${version}-${arch}-${os}.${ext}",
     "files": [
       "dist-electron/**/*",
+      "app-update.yml",
+      "latest*.yml",
+      "latest*.yml.blockmap",
       "!node_modules"
     ],
     "directories": {
