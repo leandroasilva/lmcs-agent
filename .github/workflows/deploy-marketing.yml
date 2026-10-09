@@ -46,4 +46,5 @@ jobs:
           password: ${{ secrets.MARKETING_SFTP_PASSWORD }}
           local_path: "./apps/marketing/dist/*"
           remote_path: "/home/hcs_codelmcste_d6z9/code.lmcs.tec.br"
+          sftp_only: true
           args: "-o ConnectTimeout=5"
