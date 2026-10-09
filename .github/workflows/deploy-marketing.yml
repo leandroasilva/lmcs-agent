@@ -46,6 +46,7 @@ jobs:
           lftp -c "
             set sftp:auto-confirm yes;
             open sftp://${{ secrets.MARKETING_SFTP_USER }}:${{ secrets.MARKETING_SFTP_PASSWORD }}@${{ secrets.MARKETING_SFTP_HOST }}:${{ secrets.MARKETING_SFTP_PORT }};
+            mkdir -p /home/${{ secrets.MARKETING_SFTP_USER }}/code.lmcs.tec.br;
             mirror -R --delete ./apps/marketing/dist/ /home/${{ secrets.MARKETING_SFTP_USER }}/code.lmcs.tec.br/;
             bye;
           "
