@@ -5,11 +5,9 @@ import desktopScreenshot from "../assets/app-desktop.webp";
 import dmSansLatinUrl from "../assets/fonts/dm-sans-latin.woff2?url";
 import "../styles/fonts.css";
 import {
-  ANDROID_PLAY_STORE_URL,
   GITHUB_REPOSITORY_URL,
-  IOS_APP_STORE_URL,
-  MARKETING_STATS,
   SITE_URL,
+  fetchGitHubStars,
 } from "../lib/site";
 
 interface Props {
@@ -20,9 +18,11 @@ interface Props {
 
 const {
   title = "LMCS Code",
-  description = "LMCS Code. AI-powered code editor for teams who ship.",
+  description = "LMCS Code. Editor de código com IA para times que entregam.",
   pageClass,
 } = Astro.props;
+
+const githubStars = await fetchGitHubStars();
 
 // Social preview card. Link unfurlers (Instagram, iMessage, X, Slack) want a
 // 1200x630 jpg or png at an absolute URL. Built from the hero screenshot so it
@@ -40,7 +40,7 @@ const socialImageUrl = new URL(socialImage.src, Astro.site);
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
 ---
 
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -54,12 +54,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:image" content={socialImageUrl} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="The LMCS Code desktop app with a thread open." />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lmcscode" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={socialImageUrl} />
+    <meta property="og:image:alt" content="O app desktop LMCS Code com uma thread aberta." />
     <link
       rel="preload"
       href={dmSansLatinUrl}
@@ -77,7 +72,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
     <div class:list={["page", pageClass]}>
       <nav class="nav">
         <div class="nav-inner">
-          <a href="/" class="nav-brand" aria-label="LMCS Code home">
+          <a href="/" class="nav-brand" aria-label="Início — LMCS Code">
             <span class="nav-brand-name">LMCS Code</span>
           </a>
           <div class="nav-right">
@@ -87,12 +82,12 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
               href={GITHUB_REPOSITORY_URL}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Star LMCS Code on GitHub — ${MARKETING_STATS.githubStars} stars`}
+              aria-label={`Dar estrela ao LMCS Code no GitHub — ${githubStars} estrelas`}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 2.3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.12l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.3z"/>
               </svg>
-              <span><strong>{MARKETING_STATS.githubStars}</strong> GitHub stars</span>
+              <span><strong>{githubStars}</strong> estrelas</span>
             </a>
           </div>
         </div>
@@ -121,11 +116,9 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
           <div class="footer-links">
             <a href={GITHUB_REPOSITORY_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
             <a href="/download">Download</a>
-            <a href={IOS_APP_STORE_URL} target="_blank" rel="noopener noreferrer">iOS app</a>
-            <a href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">Android app</a>
-            <a href="/terms-of-service">Terms</a>
-            <a href="/privacy-policy">Privacy</a>
-            <a href="/security-policy">Security</a>
+            <a href="/terms-of-service">Termos</a>
+            <a href="/privacy-policy">Privacidade</a>
+            <a href="/security-policy">Segurança</a>
           </div>
         </div>
       </footer>
@@ -463,9 +456,9 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
   }
 
   .footer-brand img {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
   }
 
   .footer-links {
