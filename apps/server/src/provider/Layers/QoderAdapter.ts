@@ -10,7 +10,7 @@
  *
  * @module QoderAdapter
  */
-import { createHash } from "node:crypto";
+import * as NodeCrypto from "node:crypto";
 import {
   type QoderSettings,
   DEFAULT_RUNTIME_MODE,
@@ -70,7 +70,7 @@ interface QoderSessionContext {
  * `qoder --resume <id>`. The CLI rejects non-UUID session ids.
  */
 const deterministicQoderSessionId = (seed: string): string => {
-  const digest = createHash("sha256").update(seed).digest("hex");
+  const digest = NodeCrypto.createHash("sha256").update(seed).digest("hex");
   return [
     digest.slice(0, 8),
     digest.slice(8, 12),
@@ -437,18 +437,22 @@ export function makeQoderAdapter(
                 }
               });
 
-            const [, stderr, exitCode] = yield* Effect.all(
+            const [stdout, stderr, exitCode] = yield* Effect.all(
               [
-                handle.stdout.pipe(
-                  Stream.decodeText(),
-                  Stream.splitLines(),
-                  Stream.runForEach(processLine),
-                ),
+                collectStreamAsString(handle.stdout),
                 collectStreamAsString(handle.stderr),
                 handle.exitCode,
               ],
               { concurrency: "unbounded" },
             );
+
+            // Process stdout lines after collection to avoid Stream.splitLines issues
+            const lines = stdout.split("\n");
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              yield* processLine(trimmed).pipe(Effect.orElseSucceed(() => undefined));
+            }
 
             context.activeProcess = undefined;
 
