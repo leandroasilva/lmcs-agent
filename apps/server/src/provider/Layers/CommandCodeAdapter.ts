@@ -255,32 +255,53 @@ export function makeCommandCodeAdapter(
 
           const eventType = parsed.type as string | undefined;
 
-          if (eventType === "result" && parsed.subtype === "success") {
-            const resultText = parsed.result as string | undefined;
-            if (resultText) {
+          if (eventType === "result") {
+            if (parsed.subtype === "success") {
+              const resultText = parsed.result as string | undefined;
+              if (resultText) {
+                yield* emit({
+                  eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                  provider: PROVIDER,
+                  threadId: input.threadId,
+                  turnId,
+                  createdAt: yield* nowIso(),
+                  type: "content.delta",
+                  payload: {
+                    streamKind: "assistant_text",
+                    delta: resultText,
+                  },
+                });
+              }
               yield* emit({
-                eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                eventId: asEventId(`turn-completed-${String(turnId)}`),
                 provider: PROVIDER,
                 threadId: input.threadId,
                 turnId,
                 createdAt: yield* nowIso(),
-                type: "content.delta",
+                type: "turn.completed",
+                payload: { state: "completed" },
+              });
+              hasEmittedCompletion = true;
+            } else {
+              // Handle error results (subtype === "error" or other non-success)
+              const errorMessage =
+                (parsed.error as string | undefined) ||
+                (parsed.result as string | undefined) ||
+                "Command Code turn failed";
+              yield* emit({
+                eventId: asEventId(`turn-completed-error-${String(turnId)}`),
+                provider: PROVIDER,
+                threadId: input.threadId,
+                turnId,
+                createdAt: yield* nowIso(),
+                type: "turn.completed",
                 payload: {
-                  streamKind: "assistant_text",
-                  delta: resultText,
+                  state: "failed",
+                  errorMessage,
                 },
               });
+              hasEmittedCompletion = true;
             }
-            yield* emit({
-              eventId: asEventId(`turn-completed-${String(turnId)}`),
-              provider: PROVIDER,
-              threadId: input.threadId,
-              turnId,
-              createdAt: yield* nowIso(),
-              type: "turn.completed",
-              payload: { state: "completed" },
-            });
-            hasEmittedCompletion = true;
           } else if (eventType === "assistant") {
             const message = parsed.message as Record<string, unknown> | undefined;
             if (message?.content) {
@@ -321,20 +342,12 @@ export function makeCommandCodeAdapter(
           }
         }
 
-        // Fallback completion if no result message was found
-        if (!hasEmittedCompletion && result.code === 0) {
-          yield* emit({
-            eventId: asEventId(`turn-completed-fallback-${String(turnId)}`),
-            provider: PROVIDER,
-            threadId: input.threadId,
-            turnId,
-            createdAt: yield* nowIso(),
-            type: "turn.completed",
-            payload: { state: "completed" },
-          });
-        }
-
-        if (result.code !== 0) {
+        // Fallback: if no result message was found, treat as error
+        if (!hasEmittedCompletion) {
+          const errorMessage =
+            result.code !== 0
+              ? `Command Code CLI exited with code ${result.code}${result.stderr ? `: ${result.stderr.slice(-500)}` : ""}`
+              : "Command Code CLI returned no result";
           yield* emit({
             eventId: asEventId(`turn-completed-error-${String(turnId)}`),
             provider: PROVIDER,
@@ -342,7 +355,10 @@ export function makeCommandCodeAdapter(
             turnId,
             createdAt: yield* nowIso(),
             type: "turn.completed",
-            payload: { state: "failed" },
+            payload: {
+              state: "failed",
+              errorMessage,
+            },
           });
         }
 
