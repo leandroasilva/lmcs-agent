@@ -40,6 +40,7 @@ import { CommandResolutionError, resolveSpawnCommand } from "@lmcstools/core/she
 import { ProviderAdapterRequestError, ProviderAdapterSessionNotFoundError } from "../Errors.ts";
 import { BUNDLED_QODER_MODEL_CATALOG, resolveQoderCliModelName } from "../QoderModelCatalog.ts";
 import { collectStreamAsString } from "../providerSnapshot.ts";
+import { buildQoderAuthEnv } from "../qoderRuntime.ts";
 import type { QoderAdapterShape } from "../Services/QoderAdapter.ts";
 
 const PROVIDER = ProviderDriverKind.make("qoder");
@@ -83,18 +84,6 @@ const deterministicQoderSessionId = (seed: string): string => {
 };
 
 const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
-
-function buildQoderAuthEnv(
-  config: QoderSettings,
-  environment?: NodeJS.ProcessEnv,
-): Record<string, string | undefined> {
-  const pat =
-    config.personalAccessToken?.trim() || environment?.QODER_PERSONAL_ACCESS_TOKEN?.trim();
-  if (pat) {
-    return { QODER_PERSONAL_ACCESS_TOKEN: pat };
-  }
-  return {};
-}
 
 /**
  * Normalise a model selection into the spelling `qoder -m` accepts.
