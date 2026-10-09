@@ -241,6 +241,8 @@ export function makeCommandCodeAdapter(
             env: { ...process.env, ...authEnv },
             cwd,
             shell: spawnCommand.shell,
+            stdout: "pipe",
+            stderr: "pipe",
           }),
         ).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner));
 
