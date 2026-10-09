@@ -88,12 +88,17 @@ function fetchQoderModels(
       return scopeQoderModelCatalog(catalog, qoderSettings.customModels);
     }
 
-    // Build models list from CLI output, matching against catalog for metadata
+    // Build models list from CLI output, matching against catalog for metadata.
+    // The match is case-insensitive so a catalog slug keeps supplying pricing and
+    // context window even if the CLI respells the model, while the slug pushed to
+    // the UI stays the CLI's own spelling (which is what `qoder -m` requires).
     const models: ServerProviderModel[] = [];
     for (const slug of modelSlugs) {
-      const catalogEntry = catalog.models.find((m) => m.model.slug === slug);
+      const catalogEntry = catalog.models.find(
+        (m) => m.model.slug.toLowerCase() === slug.toLowerCase(),
+      );
       if (catalogEntry) {
-        models.push(catalogEntry.model);
+        models.push({ ...catalogEntry.model, slug });
       } else {
         // Unknown model from CLI - add with default capabilities
         models.push({
