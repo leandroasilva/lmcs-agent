@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "apps/marketing/**"
+  workflow_dispatch:
 
 concurrency:
   group: deploy-marketing-${{ github.ref }}
