@@ -286,7 +286,9 @@ export function makeQoderAdapter(
               ...(context.currentModel ? ["-m", context.currentModel] : []),
             ];
 
-            const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, { env });
+            const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, {
+              env,
+            });
 
             const turnScope = yield* Scope.make();
             const handle = yield* spawner
@@ -366,7 +368,10 @@ export function makeQoderAdapter(
                     } else if (block.type === "tool_use") {
                       const toolUseId = asNonEmptyString(block.id) ?? `tool-${String(blockIndex)}`;
                       const toolName = asNonEmptyString(block.name) ?? "tool_call";
-                      toolsInFlight.set(toolUseId, { name: toolName, input: block.input });
+                      toolsInFlight.set(toolUseId, {
+                        name: toolName,
+                        input: block.input,
+                      });
                       yield* emit({
                         eventId: asEventId(`item-started-${String(turnId)}-${toolUseId}`),
                         provider: PROVIDER,
