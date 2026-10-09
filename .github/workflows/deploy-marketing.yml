@@ -1,0 +1,48 @@
+name: Deploy Marketing Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/marketing/**"
+
+concurrency:
+  group: deploy-marketing-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and Deploy Marketing Site
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install pnpm
+        run: npm install -g pnpm@11.10.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build marketing site
+        run: pnpm --filter @lmcstools/marketing build
+
+      - name: Deploy via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          username: ${{ secrets.MARKETING_SFTP_USER }}
+          server: ${{ secrets.MARKETING_SFTP_HOST }}
+          port: ${{ secrets.MARKETING_SFTP_PORT }}
+          password: ${{ secrets.MARKETING_SFTP_PASSWORD }}
+          local_path: "./apps/marketing/dist/*"
+          remote_path: "/home/hcs_codelmcste_d6z9/code.lmcs.tec.br"
+          args: "-o ConnectTimeout=5"
