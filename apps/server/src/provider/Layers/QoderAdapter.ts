@@ -25,6 +25,7 @@ import {
   type ThreadId,
   TurnId,
 } from "@lmcstools/core";
+import * as Cause from "effect/Cause";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -440,18 +441,33 @@ export function makeQoderAdapter(
                 }
               });
 
-            const [stdout, stderr, exitCode] = yield* Effect.all(
+            // Collect each stream independently: a single failing pipe must not
+            // discard the other outputs (the previous catchTag over Effect.all
+            // zeroed stdout/stderr and hid the real failure cause).
+            const [stdoutExit, stderrExit, exitCodeExit] = yield* Effect.all(
               [
-                collectStreamAsString(handle.stdout),
-                collectStreamAsString(handle.stderr),
-                handle.exitCode,
+                Effect.exit(collectStreamAsString(handle.stdout)),
+                Effect.exit(collectStreamAsString(handle.stderr)),
+                Effect.exit(handle.exitCode),
               ],
               { concurrency: "unbounded" },
-            ).pipe(
-              Effect.catchTag("PlatformError", () =>
-                Effect.succeed(["", "", -1] as [string, string, number]),
-              ),
             );
+
+            const describeFailure = (exit: Exit.Exit<unknown, unknown>) =>
+              Exit.isFailure(exit) ? String(Cause.squash(exit.cause)) : undefined;
+            const stdoutFailure = describeFailure(stdoutExit);
+            const stderrFailure = describeFailure(stderrExit);
+            const exitCodeFailure = describeFailure(exitCodeExit);
+            if (stdoutFailure || stderrFailure || exitCodeFailure) {
+              yield* Effect.logWarning(
+                "Qoder CLI output collection degraded; continuing with partial output",
+                { stdoutFailure, stderrFailure, exitCodeFailure },
+              );
+            }
+
+            const stdout = Exit.isSuccess(stdoutExit) ? stdoutExit.value : "";
+            const stderr = Exit.isSuccess(stderrExit) ? stderrExit.value : "";
+            const exitCode = Exit.isSuccess(exitCodeExit) ? Number(exitCodeExit.value) : -1;
 
             // Process stdout lines after collection to avoid Stream.splitLines issues
             const lines = stdout.split("\n");
@@ -470,7 +486,7 @@ export function makeQoderAdapter(
             return {
               terminal,
               stderrTail,
-              exitCode: exitCode !== undefined ? Number(exitCode) : -1,
+              exitCode,
               sessionIdInUse: stderrTail.includes("is already in use"),
             } satisfies TurnAttemptOutcome;
           });
