@@ -14,7 +14,10 @@ import * as DesktopLinuxUrlHandler from "./DesktopLinuxUrlHandler.ts";
 interface RecordedRegistration {
   readonly directories: string[];
   readonly files: Array<{ readonly path: string; readonly content: string }>;
-  readonly commands: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }>;
+  readonly commands: Array<{
+    readonly command: string;
+    readonly args: ReadonlyArray<string>;
+  }>;
 }
 
 const makeEnvironment = (overrides: Record<string, unknown> = {}) =>
@@ -184,7 +187,9 @@ describe("DesktopLinuxUrlHandler", () => {
     const recorded = emptyRecording();
 
     return Effect.gen(function* () {
-      yield* runRegister(recorded, { environment: { appImagePath: Option.none() } });
+      yield* runRegister(recorded, {
+        environment: { appImagePath: Option.none() },
+      });
 
       assert.include(
         recorded.files[0]?.content,

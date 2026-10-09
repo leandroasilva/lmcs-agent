@@ -94,7 +94,10 @@ describe("DesktopPreReadyPlatform", () => {
 
         return Effect.scoped(
           Effect.gen(function* () {
-            const portalIdentity = Promise.resolve().then(() => ({ desktopName, desktopEntry }));
+            const portalIdentity = Promise.resolve().then(() => ({
+              desktopName,
+              desktopEntry,
+            }));
             yield* Layer.build(
               DesktopPreReadyPlatform.layer.pipe(
                 Layer.provide(Layer.succeed(HostProcessPlatform, "linux")),

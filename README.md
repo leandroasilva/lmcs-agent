@@ -148,13 +148,13 @@ curl -fsSL https://raw.githubusercontent.com/leandroasilva/lmcs-agent/main/scrip
 irm https://raw.githubusercontent.com/leandroasilva/lmcs-agent/main/scripts/install.ps1 | iex
 ```
 
-| Task                                             | Command              |
-| ------------------------------------------------ | -------------------- |
-| Start the server and open the web app            | `t3`                 |
-| Start the server without a browser               | `t3 serve`           |
-| Keep it running in the background (macOS, Linux) | `t3 service install` |
-| Move to the newest release                       | `t3 update`          |
-| Remove it again                                  | `t3 uninstall`       |
+| Task                                             | Command                |
+| ------------------------------------------------ | ---------------------- |
+| Start the server and open the web app            | `lmcs`                 |
+| Start the server without a browser               | `lmcs serve`           |
+| Keep it running in the background (macOS, Linux) | `lmcs service install` |
+| Move to the newest release                       | `lmcs update`          |
+| Remove it again                                  | `lmcs uninstall`       |
 
 ### Desktop app
 

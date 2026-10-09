@@ -3861,10 +3861,13 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   }
   if (!options.signed) {
     // Keep CSC_LINK and CSC_KEY_PASSWORD for standard Developer ID signing.
-    // Only delete passkey signing variables which are not needed.
+    // Only delete passkey signing and notarization variables which are not needed.
     delete buildEnv.APPLE_API_KEY;
     delete buildEnv.APPLE_API_KEY_ID;
     delete buildEnv.APPLE_API_ISSUER;
+    delete buildEnv.APPLE_ID;
+    delete buildEnv.APPLE_APP_SPECIFIC_PASSWORD;
+    delete buildEnv.APPLE_TEAM_ID;
   }
 
   if (hostPlatform === "win32") {
@@ -3969,27 +3972,27 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     });
   }
 
-  // Notarize macOS DMG if Apple API credentials are available
+  // Notarize macOS DMG if Apple credentials are available
   if (options.platform === "mac" && options.signed) {
     const dmgPath = copiedArtifacts.find((p) => p.endsWith(".dmg"));
     if (dmgPath) {
-      const apiKey = buildEnv.APPLE_API_KEY;
-      const apiKeyId = buildEnv.APPLE_API_KEY_ID;
-      const apiIssuer = buildEnv.APPLE_API_ISSUER;
+      const appleId = buildEnv.APPLE_ID;
+      const applePassword = buildEnv.APPLE_APP_SPECIFIC_PASSWORD;
+      const appleTeamId = buildEnv.APPLE_TEAM_ID;
 
-      if (apiKey && apiKeyId && apiIssuer) {
+      if (appleId && applePassword && appleTeamId) {
         yield* Effect.log("[desktop-artifact] Notarizing macOS DMG...");
         yield* runCommand(
           ChildProcess.make("xcrun", [
             "notarytool",
             "submit",
             dmgPath,
-            "--key",
-            apiKey,
-            "--key-id",
-            apiKeyId,
-            "--issuer",
-            apiIssuer,
+            "--apple-id",
+            appleId,
+            "--password",
+            applePassword,
+            "--team-id",
+            appleTeamId,
             "--wait",
           ]),
           {
@@ -4000,7 +4003,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
         yield* Effect.log("[desktop-artifact] macOS DMG notarized successfully.");
       } else {
         yield* Effect.logWarning(
-          "[desktop-artifact] Skipping notarization: missing APPLE_API_KEY, APPLE_API_KEY_ID, or APPLE_API_ISSUER",
+          "[desktop-artifact] Skipping notarization: missing APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, or APPLE_TEAM_ID",
         );
       }
     }

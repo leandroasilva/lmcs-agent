@@ -27,7 +27,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { isBrowserPreviewFile, openFileInPreview } from "~/browser/openFileInPreview";
 import { useAssetUrlRefresh, useAssetUrlState } from "~/assets/assetUrls";
-import { OpenInPicker } from "~/components/features/chat/OpenInPicker";
 import { MediaVideoPlayer } from "~/components/features/media/MediaVideoPlayer";
 import { MediaActions, type MediaActionSource } from "~/components/features/media/MediaActions";
 import { useRemoteOpenState } from "~/remoteOpen";
@@ -482,8 +481,12 @@ function useFileLineReveal(
           window.removeEventListener("keydown", cancelGuard, true);
           if (state.cancelGuard === cancelGuard) state.cancelGuard = null;
         };
-        scrollContainer.addEventListener("wheel", cancelGuard, { passive: true });
-        scrollContainer.addEventListener("touchstart", cancelGuard, { passive: true });
+        scrollContainer.addEventListener("wheel", cancelGuard, {
+          passive: true,
+        });
+        scrollContainer.addEventListener("touchstart", cancelGuard, {
+          passive: true,
+        });
         // Pierre stops gutter pointer events from bubbling. Listen in capture
         // so starting a comment cancels the reveal guard before the row expands.
         scrollContainer.addEventListener("pointerdown", cancelGuard, {
@@ -724,7 +727,9 @@ function EditableFileSurface({
           index === existingIndex
             ? {
                 ...annotation,
-                metadata: { entries: [...annotation.metadata.entries, draftEntry] },
+                metadata: {
+                  entries: [...annotation.metadata.entries, draftEntry],
+                },
               }
             : annotation,
         );
@@ -980,9 +985,10 @@ export default function FilePreviewPanel({
   // Paired with the path on purpose: each file surface counts its reveals from
   // one, so a bare id would let a dismissed reveal on one file swallow the first
   // reveal on the next.
-  const [handledReveal, setHandledReveal] = useState<{ path: string; requestId: number } | null>(
-    null,
-  );
+  const [handledReveal, setHandledReveal] = useState<{
+    path: string;
+    requestId: number;
+  } | null>(null);
   const breadcrumbRef = useRef<HTMLDivElement>(null);
   const isMarkdown = previewPath ? isMarkdownPreviewFile(previewPath) : false;
   const tableDelimiter =

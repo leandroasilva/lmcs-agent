@@ -169,17 +169,11 @@ export function UsagePage() {
     [breakdown, merged.models, metric],
   );
   const activeProviders = useMemo(() => providersWithUsage(merged.providers), [merged.providers]);
-  const summaryRows: Array<
-    | { readonly kind: "usage"; readonly provider: UsageProviderKind }
-    | { readonly kind: "enable"; readonly environment: EnvironmentUsageStatus }
-  > = activeProviders.map((provider) => ({ kind: "usage", provider }));
-  const cursorInsertAt =
-    Math.max(activeProviders.indexOf("codex"), activeProviders.indexOf("claude")) + 1;
-  summaryRows.splice(
-    cursorInsertAt,
-    0,
-    ...cursorAccessEnvironments.map((environment) => ({ kind: "enable" as const, environment })),
-  );
+  // Only show enabled and configured providers with actual usage
+  const summaryRows = activeProviders.map((provider) => ({
+    kind: "usage" as const,
+    provider,
+  }));
   const timeValueColumnWidth = `${60 / (activeProviders.length + 2)}%`;
 
   const selectWindow = (days: number) => {
@@ -401,7 +395,7 @@ export function UsagePage() {
   return (
     <SidebarInset className="h-dvh min-h-0 overflow-hidden overscroll-y-none isolate">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground">
-        <WorkspacePageHeader electron={isElectron} className="h-auto">
+        <WorkspacePageHeader electron={isElectron()} className="h-auto">
           {topbarContent}
         </WorkspacePageHeader>
 
@@ -458,22 +452,14 @@ export function UsagePage() {
                     </div>
 
                     {summaryRows.map((row) => {
-                      if (row.kind === "enable") {
-                        return (
-                          <CursorEnableRow
-                            key={`enable:${row.environment.environmentId}`}
-                            environmentId={row.environment.environmentId}
-                            label={row.environment.label}
-                            showEnvironment={selectedEnvironments.length > 1}
-                            onEnabled={() => {
-                              void refresh();
-                              void refreshLimits(false, true);
-                            }}
-                          />
-                        );
-                      }
                       const provider = row.provider;
                       const totals = merged.providers.find((entry) => entry.provider === provider);
+
+                      // Hide providers with zero cost when analyzing costs
+                      if (metric === "cost" && (totals?.costUsd ?? 0) <= 0) {
+                        return null;
+                      }
+
                       const share =
                         metric === "cost" ? (totals?.costShare ?? 0) : (totals?.tokenShare ?? 0);
                       const providerSessions = totals?.sessions ?? 0;
@@ -568,7 +554,10 @@ export function UsagePage() {
                       {(
                         [
                           { value: "model", label: "Model" },
-                          { value: "time", label: isPast24Hours ? "Hour" : "Day" },
+                          {
+                            value: "time",
+                            label: isPast24Hours ? "Hour" : "Day",
+                          },
                         ] as const
                       ).map((option) => (
                         <Toggle key={option.value} value={option.value}>
@@ -762,38 +751,6 @@ function CursorEnableButton({
       <TooltipTrigger render={button} />
       <TooltipPopup>{CURSOR_KEYCHAIN_COPY}</TooltipPopup>
     </Tooltip>
-  );
-}
-
-function CursorEnableRow({
-  environmentId,
-  label,
-  showEnvironment,
-  onEnabled,
-}: {
-  readonly environmentId: EnvironmentId;
-  readonly label: string;
-  readonly showEnvironment: boolean;
-  readonly onEnabled: () => void;
-}) {
-  return (
-    <div className="flex min-w-0 items-baseline justify-between gap-4 text-sm">
-      <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
-        <span
-          aria-hidden
-          className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: PROVIDER_PRESENTATION.cursor.color }}
-        />
-        <ProviderMark provider="cursor" className="size-4" />
-        <span className="truncate">Cursor{showEnvironment ? ` · ${label}` : ""}</span>
-      </span>
-      <CursorEnableButton
-        environmentId={environmentId}
-        label={label}
-        onEnabled={onEnabled}
-        tooltip
-      />
-    </div>
   );
 }
 
