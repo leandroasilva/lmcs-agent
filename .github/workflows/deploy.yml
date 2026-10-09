@@ -56,8 +56,13 @@ jobs:
 
           # Determine version bump based on PR labels or default to patch
           bump_type="patch"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            pr_labels=$(gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+
+          # Get the PR that was merged to trigger this push
+          # GitHub provides the PR number in the commit message for merge commits
+          pr_number=$(git log -1 --pretty=%B | grep -oP 'Merge pull request #(\d+)' | grep -oP '\d+' || echo "")
+
+          if [[ -n "$pr_number" ]]; then
+            pr_labels=$(gh pr view "$pr_number" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
             if echo "$pr_labels" | grep -q "breaking"; then
               bump_type="major"
             elif echo "$pr_labels" | grep -q "feature"; then
