@@ -73,6 +73,17 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
       <nav class="nav">
         <div class="nav-inner">
           <a href="/" class="nav-brand" aria-label="Início — LMCS Code">
+            <Image
+              src={appIcon}
+              alt=""
+              width={24}
+              height={24}
+              densities={[1, 2, 3]}
+              format="webp"
+              quality={90}
+              loading="eager"
+              decoding="async"
+            />
             <span class="nav-brand-name">LMCS Code</span>
           </a>
           <div class="nav-right">
@@ -358,6 +369,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
   .nav-brand {
     display: inline-flex;
     align-items: center;
+    gap: 8px;
     color: var(--fg);
     transition: color 0.2s ease;
   }
