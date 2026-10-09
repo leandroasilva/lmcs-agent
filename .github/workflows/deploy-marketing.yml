@@ -38,12 +38,14 @@ jobs:
         run: pnpm --filter @lmcstools/marketing build
 
       - name: Deploy via SFTP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.MARKETING_SFTP_HOST }}
-          username: ${{ secrets.MARKETING_SFTP_USER }}
-          password: ${{ secrets.MARKETING_SFTP_PASSWORD }}
-          port: ${{ secrets.MARKETING_SFTP_PORT }}
-          source: "./apps/marketing/dist/*"
-          target: "/home/hcs_codelmcste_d6z9/code.lmcs.tec.br"
-          overwrite: true
+        run: |
+          # Install lftp for SFTP deployment
+          sudo apt-get update && sudo apt-get install -y lftp
+                
+          # Deploy using lftp
+          lftp -c "
+            set sftp:auto-confirm yes;
+            open sftp://${{ secrets.MARKETING_SFTP_USER }}:${{ secrets.MARKETING_SFTP_PASSWORD }}@${{ secrets.MARKETING_SFTP_HOST }}:${{ secrets.MARKETING_SFTP_PORT }};
+            mirror -R --delete ./apps/marketing/dist/ /home/${{ secrets.MARKETING_SFTP_USER }}/code.lmcs.tec.br/;
+            bye;
+          "
