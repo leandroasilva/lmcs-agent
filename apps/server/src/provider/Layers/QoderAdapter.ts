@@ -451,6 +451,10 @@ export function makeQoderAdapter(
                 handle.exitCode,
               ],
               { concurrency: "unbounded" },
+            ).pipe(
+              Effect.catchTag("PlatformError", () =>
+                Effect.succeed(["", "", -1] as [string, string, number]),
+              ),
             );
 
             // Process stdout lines after collection to avoid Stream.splitLines issues
@@ -467,7 +471,7 @@ export function makeQoderAdapter(
             return {
               terminal,
               stderrTail,
-              exitCode: Number(exitCode),
+              exitCode: exitCode !== undefined ? Number(exitCode) : -1,
               sessionIdInUse: stderrTail.includes("is already in use"),
             } satisfies TurnAttemptOutcome;
           });
