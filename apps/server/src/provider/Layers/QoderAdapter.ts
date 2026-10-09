@@ -154,11 +154,10 @@ export function makeQoderAdapter(
       Effect.gen(function* () {
         const allSessions = yield* Ref.get(sessions);
         if (allSessions.has(input.threadId)) {
-          return yield* new ProviderAdapterRequestError({
-            provider: PROVIDER,
-            method: "startSession",
-            detail: `Session already exists for thread ${input.threadId}`,
-          });
+          // Session already exists — reuse it instead of failing.
+          // This can happen when a previous turn failed but the session was not cleaned up.
+          const existingContext = allSessions.get(input.threadId)!;
+          return existingContext.session;
         }
 
         const now = yield* nowIso();
