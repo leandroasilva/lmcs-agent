@@ -138,6 +138,34 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
+      # Each electron-builder run overwrites release/latest-mac.yml with a
+      # single-arch feed, so park the arm64 manifest outside release/ before
+      # the x64 build clobbers it. feed-staging/ is never uploaded.
+      - name: Stage arm64 update feed
+        run: |
+          mkdir -p feed-staging
+          mv release/latest-mac.yml feed-staging/latest-mac-arm64.yml
+
+      - name: Build macOS desktop artifact (x64)
+        run: |
+          export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
+          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch x64 --build-version ${{ needs.version.outputs.version }} --signed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # Combine the per-arch manifests into one latest-mac.yml whose files[]
+      # entries carry an explicit arch, so electron-updater serves the right
+      # artifact to Intel and Apple Silicon hosts from the same release.
+      - name: Merge macOS update feeds (arm64 + x64)
+        run: |
+          export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
+          node scripts/merge-latest-mac-yml.ts feed-staging/latest-mac-arm64.yml release/latest-mac.yml release/latest-mac.yml
+
       - name: List generated artifacts
         if: always()
         run: |
