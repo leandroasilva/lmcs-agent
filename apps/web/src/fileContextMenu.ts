@@ -79,12 +79,10 @@ export function buildFileContextMenuItems(input: {
   // Without a resolvable absolute path nothing here can act on the file.
   if (!input.hasAbsolutePath) return [];
   const items: ContextMenuItem<FileContextMenuAction>[] = [];
-  if (input.capabilities.canOpenDefault) {
-    items.push({ id: "open", label: "Open", icon: "pencil" });
-  }
+  // "Open" now opens the internal editor by default
   items.push({
     id: "open-in-internal-editor",
-    label: "Open in Internal Editor",
+    label: "Open",
     icon: "code",
   });
   if (input.capabilities.revealLabel !== undefined) {
