@@ -3,10 +3,8 @@ import { getImage } from "astro:assets";
 import desktopScreenshot from "../assets/app-desktop-real.png";
 import Layout from "../layouts/Layout.astro";
 import {
-  ANDROID_PLAY_STORE_URL,
   DOWNLOAD_URL,
   GITHUB_REPOSITORY_URL,
-  IOS_APP_STORE_URL,
 } from "../lib/site";
 
 const screenshot = await getImage({
@@ -26,28 +24,22 @@ const screenshot = await getImage({
           <span class="hero-title-gradient">LMCS Code</span>
         </h1>
         <p class="hero-subtitle">
-          AI-powered code editor for teams who ship. Write, debug, and deploy faster with intelligent code assistance.
+          Editor de código com inteligência artificial para times que entregam. Escreva, depure e implante mais rápido com assistência inteligente.
         </p>
         <div class="hero-actions">
           <a href={DOWNLOAD_URL} class="btn btn-primary btn-lg">
             <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 2.3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.12l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.3z"/>
             </svg>
-            Download for macOS
+            Download para macOS
           </a>
           <a href={GITHUB_REPOSITORY_URL} class="btn btn-secondary btn-lg" target="_blank" rel="noopener noreferrer">
             <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.86 10.93c.58.1.79-.25.79-.56v-2c-3.2.69-3.88-1.37-3.88-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.18a10.96 10.96 0 015.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.57.23 2.73.11 3.02.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.66.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/>
             </svg>
-            View on GitHub
+            Ver no GitHub
           </a>
         </div>
-        <p class="hero-platforms">
-          Also available on:
-          <a href={IOS_APP_STORE_URL} target="_blank" rel="noopener noreferrer">iOS</a>
-          <span class="separator">·</span>
-          <a href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">Android</a>
-        </p>
       </div>
 
       <div class="hero-preview">
@@ -62,7 +54,7 @@ const screenshot = await getImage({
               src={desktopScreenshot.src}
               srcset={`${screenshot.srcSet.attribute}, ${desktopScreenshot.src} ${desktopScreenshot.width}w`}
               sizes="(max-width: 960px) min(864px, calc(100vw - 20px)), min(1180px, calc(100vw - 60px))"
-              alt="LMCS Code - AI-powered code editor interface"
+              alt="LMCS Code - Interface do editor de código com IA"
               width={desktopScreenshot.width}
               height={desktopScreenshot.height}
               loading="eager"
@@ -78,9 +70,9 @@ const screenshot = await getImage({
   <section class="features" id="features">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Everything you need to ship faster</h2>
+        <h2 class="section-title">Tudo que você precisa para entregar mais rápido</h2>
         <p class="section-subtitle">
-          A complete development environment with AI-powered assistance built in.
+          Um ambiente completo de desenvolvimento com assistência de inteligência artificial integrada.
         </p>
       </div>
 
@@ -92,9 +84,9 @@ const screenshot = await getImage({
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <h3 class="feature-title">AI-Powered Chat</h3>
+          <h3 class="feature-title">Chat com IA</h3>
           <p class="feature-description">
-            Ask questions, get code suggestions, and debug issues with natural language. Multiple AI providers supported.
+            Faça perguntas, receba sugestões de código e depure problemas com linguagem natural. Múltiplos provedores de IA suportados.
           </p>
         </div>
 
@@ -106,9 +98,9 @@ const screenshot = await getImage({
               <polyline points="8 6 2 12 8 18"/>
             </svg>
           </div>
-          <h3 class="feature-title">Internal Code Editor</h3>
+          <h3 class="feature-title">Editor de Código Integrado</h3>
           <p class="feature-description">
-            Monaco editor built-in. Edit files directly in the app with syntax highlighting and IntelliSense.
+            Editor Monaco integrado. Edite arquivos diretamente no app com destaque de sintaxe e IntelliSense.
           </p>
         </div>
 
@@ -119,9 +111,9 @@ const screenshot = await getImage({
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <h3 class="feature-title">File Explorer</h3>
+          <h3 class="feature-title">Explorador de Arquivos</h3>
           <p class="feature-description">
-            Navigate your project structure with ease. Open, edit, and manage files directly from the interface.
+            Navegue pela estrutura do seu projeto com facilidade. Abra, edite e gerencie arquivos diretamente pela interface.
           </p>
         </div>
 
@@ -133,9 +125,9 @@ const screenshot = await getImage({
               <line x1="12" y1="19" x2="20" y2="19"/>
             </svg>
           </div>
-          <h3 class="feature-title">Integrated Terminal</h3>
+          <h3 class="feature-title">Terminal Integrado</h3>
           <p class="feature-description">
-            Run commands, scripts, and build processes without leaving the editor. Full terminal emulation.
+            Execute comandos, scripts e processos de build sem sair do editor. Emulação completa de terminal.
           </p>
         </div>
 
@@ -148,9 +140,9 @@ const screenshot = await getImage({
               <line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
           </div>
-          <h3 class="feature-title">Browser Preview</h3>
+          <h3 class="feature-title">Preview no Browser</h3>
           <p class="feature-description">
-            Preview web applications directly in the app. Test and debug your frontend code in real-time.
+            Visualize aplicações web diretamente no app. Teste e depure seu código frontend em tempo real.
           </p>
         </div>
 
@@ -163,9 +155,9 @@ const screenshot = await getImage({
               <path d="M6 21V9a9 9 0 0 0 9 9"/>
             </svg>
           </div>
-          <h3 class="feature-title">Git Integration</h3>
+          <h3 class="feature-title">Integração Git</h3>
           <p class="feature-description">
-            Create commits, branches, and pull requests directly from the editor. Full GitHub integration.
+            Crie commits, branches e pull requests diretamente do editor. Integração completa com GitHub.
           </p>
         </div>
       </div>
@@ -176,40 +168,40 @@ const screenshot = await getImage({
   <section class="providers" id="providers">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Your AI, your choice</h2>
+        <h2 class="section-title">Sua IA, sua escolha</h2>
         <p class="section-subtitle">
-          Connect your favorite AI providers. Bring your own API keys and subscriptions.
+          Conecte seus provedores de IA favoritos. Traga suas próprias chaves de API e assinaturas.
         </p>
       </div>
 
       <div class="providers-grid">
         <div class="provider-card">
           <h3 class="provider-name">Qoder</h3>
-          <p class="provider-description">AI-powered coding assistant with advanced code understanding and generation</p>
+          <p class="provider-description">Assistente de código com IA com compreensão avançada de código e geração automatizada</p>
         </div>
         <div class="provider-card">
           <h3 class="provider-name">CommandCode</h3>
-          <p class="provider-description">Intelligent code analysis and automated refactoring capabilities</p>
+          <p class="provider-description">Análise inteligente de código e capacidades de refatoração automatizada</p>
         </div>
         <div class="provider-card">
           <h3 class="provider-name">Claude Code</h3>
-          <p class="provider-description">Anthropic's Claude for sophisticated code understanding and generation</p>
+          <p class="provider-description">Claude da Anthropic para compreensão e geração de código sofisticadas</p>
         </div>
         <div class="provider-card">
           <h3 class="provider-name">Codex</h3>
-          <p class="provider-description">OpenAI's Codex for versatile coding assistance and automation</p>
+          <p class="provider-description">Codex da OpenAI para assistência e automação versátil de código</p>
         </div>
         <div class="provider-card">
           <h3 class="provider-name">Cursor</h3>
-          <p class="provider-description">AI-first code editor with intelligent autocomplete and chat</p>
+          <p class="provider-description">Editor de código AI-first com autocomplete inteligente e chat</p>
         </div>
         <div class="provider-card">
           <h3 class="provider-name">Grok</h3>
-          <p class="provider-description">xAI's Grok for real-time code assistance and analysis</p>
+          <p class="provider-description">Grok da xAI para assistência e análise de código em tempo real</p>
         </div>
         <div class="provider-card">
           <h3 class="provider-name">OpenCode</h3>
-          <p class="provider-description">Open-source coding assistant with customizable workflows</p>
+          <p class="provider-description">Assistente de código open-source com fluxos de trabalho personalizáveis</p>
         </div>
       </div>
     </div>
@@ -219,30 +211,24 @@ const screenshot = await getImage({
   <section class="download" id="download">
     <div class="container">
       <div class="download-content">
-        <h2 class="download-title">Ready to ship faster?</h2>
+        <h2 class="download-title">Pronto para entregar mais rápido?</h2>
         <p class="download-subtitle">
-          Download LMCS Code and start building with AI-powered assistance today.
+          Baixe o LMCS Code e comece a construir com assistência de IA hoje mesmo.
         </p>
         <div class="download-actions">
           <a href={DOWNLOAD_URL} class="btn btn-primary btn-lg">
             <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 2.3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.12l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.3z"/>
             </svg>
-            Download for macOS
+            Download para macOS
           </a>
           <a href={GITHUB_REPOSITORY_URL} class="btn btn-secondary btn-lg" target="_blank" rel="noopener noreferrer">
             <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.86 10.93c.58.1.79-.25.79-.56v-2c-3.2.69-3.88-1.37-3.88-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.18a10.96 10.96 0 015.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.57.23 2.73.11 3.02.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.66.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/>
             </svg>
-            View on GitHub
+            Ver no GitHub
           </a>
         </div>
-        <p class="download-platforms">
-          Also available on:
-          <a href={IOS_APP_STORE_URL} target="_blank" rel="noopener noreferrer">iOS App Store</a>
-          <span class="separator">·</span>
-          <a href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">Google Play</a>
-        </p>
       </div>
     </div>
   </section>
@@ -254,36 +240,35 @@ const screenshot = await getImage({
         <div class="footer-brand">
           <h3 class="footer-brand-name">LMCS Code</h3>
           <p class="footer-brand-description">
-            AI-powered code editor for teams who ship.
+            Editor de código com IA para times que entregam.
           </p>
         </div>
         <div class="footer-links">
-          <h4 class="footer-links-title">Product</h4>
+          <h4 class="footer-links-title">Produto</h4>
           <ul class="footer-links-list">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#providers">Providers</a></li>
+            <li><a href="#features">Recursos</a></li>
+            <li><a href="#providers">Provedores</a></li>
             <li><a href={DOWNLOAD_URL}>Download</a></li>
           </ul>
         </div>
         <div class="footer-links">
-          <h4 class="footer-links-title">Resources</h4>
+          <h4 class="footer-links-title">Recursos</h4>
           <ul class="footer-links-list">
             <li><a href={GITHUB_REPOSITORY_URL} target="_blank" rel="noopener noreferrer">GitHub</a></li>
-            <li><a href="/privacy-policy">Privacy Policy</a></li>
-            <li><a href="/terms-of-service">Terms of Service</a></li>
+            <li><a href="/privacy-policy">Política de Privacidade</a></li>
+            <li><a href="/terms-of-service">Termos de Serviço</a></li>
           </ul>
         </div>
         <div class="footer-links">
-          <h4 class="footer-links-title">Connect</h4>
+          <h4 class="footer-links-title">Conecte-se</h4>
           <ul class="footer-links-list">
             <li><a href={GITHUB_REPOSITORY_URL} target="_blank" rel="noopener noreferrer">GitHub</a></li>
-            <li><a href="https://twitter.com/lmcscode" target="_blank" rel="noopener noreferrer">Twitter</a></li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
         <p class="footer-copyright">
-          © 2026 LMCS Tools. All rights reserved.
+          © 2026 LMCS Tools. Todos os direitos reservados.
         </p>
       </div>
     </div>

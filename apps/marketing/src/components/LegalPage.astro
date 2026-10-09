@@ -16,18 +16,18 @@ const { title, description, heading, lede, effectiveDate, lastUpdated, sections 
 
 <Layout title={title} description={description} pageClass="legal-document-page">
   <div class="legal-page">
-    <a class="legal-index-link" href="/legal"><span aria-hidden="true">&#8592;</span> All legal documents</a>
+    <a class="legal-index-link" href="/legal"><span aria-hidden="true">&#8592;</span> Todos os documentos legais</a>
     <header class="legal-hero">
       <p class="eyebrow">LMCS Tools / Legal</p>
       <h1>{heading}</h1>
       <p class="legal-lede">{lede}</p>
-      <dl class="legal-dates" aria-label="Document dates">
+      <dl class="legal-dates" aria-label="Datas do documento">
         <div>
-          <dt>Effective Date</dt>
+          <dt>Data de Vigência</dt>
           <dd>{effectiveDate}</dd>
         </div>
         <div>
-          <dt>Last Updated</dt>
+          <dt>Última Atualização</dt>
           <dd>{lastUpdated}</dd>
         </div>
       </dl>
@@ -36,8 +36,8 @@ const { title, description, heading, lede, effectiveDate, lastUpdated, sections 
     <div class="legal-rule" aria-hidden="true"></div>
 
     <div class="legal-layout">
-      <aside class="legal-nav" aria-label="On this page">
-        <p class="legal-nav-label">On this page</p>
+      <aside class="legal-nav" aria-label="Nesta página">
+        <p class="legal-nav-label">Nesta página</p>
         <ol>
           {sections.map(([id, label], index) => (
             <li>
