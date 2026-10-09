@@ -38,13 +38,12 @@ jobs:
         run: pnpm --filter @lmcstools/marketing build
 
       - name: Deploy via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        uses: appleboy/scp-action@v0.1.7
         with:
+          host: ${{ secrets.MARKETING_SFTP_HOST }}
           username: ${{ secrets.MARKETING_SFTP_USER }}
-          server: ${{ secrets.MARKETING_SFTP_HOST }}
-          port: ${{ secrets.MARKETING_SFTP_PORT }}
           password: ${{ secrets.MARKETING_SFTP_PASSWORD }}
-          local_path: "./apps/marketing/dist/*"
-          remote_path: "/home/hcs_codelmcste_d6z9/code.lmcs.tec.br"
-          sftp_only: true
-          args: "-o ConnectTimeout=5"
+          port: ${{ secrets.MARKETING_SFTP_PORT }}
+          source: "./apps/marketing/dist/*"
+          target: "/home/hcs_codelmcste_d6z9/code.lmcs.tec.br"
+          overwrite: true
