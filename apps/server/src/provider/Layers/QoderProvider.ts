@@ -32,11 +32,16 @@ import {
   type ServerProviderDraft,
 } from "../providerSnapshot.ts";
 import { makeUnavailableUsageLimits } from "../providerUsageLimits.ts";
+import {
+  mergeQoderEnv,
+  QODER_AUTH_FILE,
+  QODER_PAT_ENV,
+  qoderPatRejectionDetail,
+  resolveQoderPat,
+} from "../qoderRuntime.ts";
 
 const VERSION_PROBE_TIMEOUT_MS = 4_000;
 const MODELS_PROBE_TIMEOUT_MS = 15_000;
-const QODER_PAT_ENV = "QODER_PERSONAL_ACCESS_TOKEN";
-const QODER_AUTH_FILE = ".qoder/.auth/user";
 
 const QODER_PRESENTATION = {
   displayName: "Qoder",
@@ -50,20 +55,28 @@ const EMPTY_CAPABILITIES: ModelCapabilities = createModelCapabilities({
   optionDescriptors: [],
 });
 
+/** Outcome of the `qoder --list-models` probe: models plus any PAT verdict. */
+interface QoderModelProbe {
+  readonly models: ReadonlyArray<ServerProviderModel>;
+  /** The CLI's own explanation of a rejected PAT, or null. */
+  readonly patRejection: string | null;
+}
+
 /**
  * Fetch available models from Qoder CLI via `qoder --list-models`.
  * Falls back to built-in catalog on failure.
+ *
+ * Also reports whether the CLI refused a configured PAT: `--list-models` is the
+ * cheapest Qoder command that actually authenticates, and the models are needed
+ * anyway, so one call settles both model discovery and credential validation.
  */
 function fetchQoderModels(
   qoderSettings: QoderSettings,
   environment: NodeJS.ProcessEnv,
   catalog: QoderModelCatalog,
-): Effect.Effect<
-  ReadonlyArray<ServerProviderModel>,
-  never,
-  ChildProcessSpawner.ChildProcessSpawner
-> {
+): Effect.Effect<QoderModelProbe, never, ChildProcessSpawner.ChildProcessSpawner> {
   return Effect.gen(function* () {
+    const fallback = scopeQoderModelCatalog(catalog, qoderSettings.customModels);
     const modelsResult = yield* runQoderCliCommand(
       qoderSettings,
       ["--list-models"],
@@ -72,7 +85,7 @@ function fetchQoderModels(
 
     if (Result.isFailure(modelsResult) || Option.isNone(modelsResult.success)) {
       yield* Effect.logWarning("Failed to fetch Qoder models from CLI, using built-in catalog.");
-      return scopeQoderModelCatalog(catalog, qoderSettings.customModels);
+      return { models: fallback, patRejection: null };
     }
 
     const output = modelsResult.success.value;
@@ -80,20 +93,28 @@ function fetchQoderModels(
       yield* Effect.logWarning("Qoder --list-models exited with non-zero status.", {
         exitCode: output.code,
       });
-      return scopeQoderModelCatalog(catalog, qoderSettings.customModels);
+      return {
+        models: fallback,
+        patRejection: qoderPatRejectionDetail(`${output.stdout}\n${output.stderr}`),
+      };
     }
 
     const modelSlugs = parseQoderModelsOutput(output.stdout);
     if (modelSlugs.length === 0) {
-      return scopeQoderModelCatalog(catalog, qoderSettings.customModels);
+      return { models: fallback, patRejection: null };
     }
 
-    // Build models list from CLI output, matching against catalog for metadata
+    // Build models list from CLI output, matching against catalog for metadata.
+    // The match is case-insensitive so a catalog slug keeps supplying pricing and
+    // context window even if the CLI respells the model, while the slug pushed to
+    // the UI stays the CLI's own spelling (which is what `qoder -m` requires).
     const models: ServerProviderModel[] = [];
     for (const slug of modelSlugs) {
-      const catalogEntry = catalog.models.find((m) => m.model.slug === slug);
+      const catalogEntry = catalog.models.find(
+        (m) => m.model.slug.toLowerCase() === slug.toLowerCase(),
+      );
       if (catalogEntry) {
-        models.push(catalogEntry.model);
+        models.push({ ...catalogEntry.model, slug });
       } else {
         // Unknown model from CLI - add with default capabilities
         models.push({
@@ -105,7 +126,10 @@ function fetchQoderModels(
       }
     }
 
-    return providerModelsFromSettings(models, qoderSettings.customModels, EMPTY_CAPABILITIES);
+    return {
+      models: providerModelsFromSettings(models, qoderSettings.customModels, EMPTY_CAPABILITIES),
+      patRejection: null,
+    };
   });
 }
 
@@ -157,12 +181,14 @@ export function buildInitialQoderProviderSnapshot(
       Effect.orElseSucceed(() => false),
     );
 
-    const authStatus = qoderSettings.personalAccessToken
-      ? {
-          status: "authenticated" as const,
-          type: "api_key" as const,
-          label: "Qoder PAT",
-        }
+    // Nothing here can validate a credential without spawning the CLI, which
+    // the initial snapshot deliberately avoids. A configured PAT is therefore
+    // reported as unverified rather than authenticated: a rejected PAT overrides
+    // a working browser login, so claiming "authenticated" from its mere presence
+    // is what let a broken configuration look healthy until a turn failed.
+    // checkQoderProviderStatus resolves it right after.
+    const authStatus = resolveQoderPat(qoderSettings, environment)
+      ? { status: "unknown" as const }
       : hasCliAuth
         ? {
             status: "authenticated" as const,
@@ -179,12 +205,14 @@ export function buildInitialQoderProviderSnapshot(
       probe: {
         installed: true,
         version: null,
-        status: authStatus.status === "authenticated" ? "ready" : "error",
+        status: authStatus.status === "unauthenticated" ? "error" : "ready",
         auth: authStatus,
         message:
           authStatus.status === "authenticated"
             ? "Qoder is ready."
-            : "Qoder CLI is installed but not authenticated. Run `qoder login` or set personalAccessToken in settings.",
+            : authStatus.status === "unknown"
+              ? "Qoder credentials are being verified."
+              : "Qoder CLI is installed but not authenticated. Run `qoder login` or set personalAccessToken in settings.",
       },
     });
   });
@@ -197,13 +225,16 @@ const runQoderCliCommand = (
 ) =>
   Effect.gen(function* () {
     const command = qoderSettings.binaryPath || "qoder";
+    // Probes must run with the same credential the turns use, otherwise the
+    // health check validates one identity while `sendTurn` runs with another.
+    const env = mergeQoderEnv(environment, qoderSettings);
     const spawnCommand = yield* resolveSpawnCommand(command, args, {
-      env: environment,
+      env,
     });
     return yield* spawnAndCollect(
       command,
       ChildProcess.make(spawnCommand.command, spawnCommand.args, {
-        env: environment,
+        env,
         shell: spawnCommand.shell,
       }),
     );
@@ -315,10 +346,27 @@ export const checkQoderProviderStatus = Effect.fn("checkQoderProviderStatus")(fu
     Effect.orElseSucceed(() => false),
   );
 
-  const auth: ServerProviderAuth = environment[QODER_PAT_ENV]?.trim()
-    ? { status: "authenticated", type: "api_key", label: "Qoder PAT (env)" }
-    : qoderSettings.personalAccessToken
-      ? { status: "authenticated", type: "api_key", label: "Qoder PAT" }
+  const configuredPat = resolveQoderPat(qoderSettings, environment);
+
+  // A configured PAT has to be validated, not merely noticed. `qoder --version`
+  // succeeds whatever the token says, and a rejected PAT *overrides* a working
+  // browser login, so the old presence check reported "Qoder PAT" and "ready"
+  // for a configuration that failed every turn with QoderAuthError.
+  // `--list-models` is the cheapest command that authenticates, and its models
+  // are needed anyway, so one call settles both.
+  const patProbe = configuredPat
+    ? yield* fetchQoderModels(qoderSettings, environment, BUNDLED_QODER_MODEL_CATALOG)
+    : null;
+  const patRejection = patProbe?.patRejection ?? null;
+
+  const auth: ServerProviderAuth = patRejection
+    ? { status: "unauthenticated" }
+    : configuredPat
+      ? {
+          status: "authenticated",
+          type: "api_key",
+          label: environment[QODER_PAT_ENV]?.trim() ? "Qoder PAT (env)" : "Qoder PAT",
+        }
       : hasCliAuth
         ? {
             status: "authenticated",
@@ -327,8 +375,10 @@ export const checkQoderProviderStatus = Effect.fn("checkQoderProviderStatus")(fu
           }
         : { status: "unauthenticated" };
 
-  if (auth.status === "unauthenticated") {
-    const models = scopeQoderModelCatalog(BUNDLED_QODER_MODEL_CATALOG, qoderSettings.customModels);
+  if (auth.status !== "authenticated") {
+    const models =
+      patProbe?.models ??
+      scopeQoderModelCatalog(BUNDLED_QODER_MODEL_CATALOG, qoderSettings.customModels);
     return buildServerProvider({
       presentation: QODER_PRESENTATION,
       enabled: qoderSettings.enabled,
@@ -339,14 +389,20 @@ export const checkQoderProviderStatus = Effect.fn("checkQoderProviderStatus")(fu
         version,
         status: "error",
         auth,
-        message:
-          "Qoder CLI is installed but not authenticated. Set personalAccessToken in settings or QODER_PERSONAL_ACCESS_TOKEN env.",
+        // The CLI's own wording already says how to recover, so do not paraphrase
+        // it into something longer and less precise.
+        message: patRejection
+          ? `Qoder refused the configured personal access token, so every turn would fail: ${patRejection}`
+          : "Qoder CLI is installed but not authenticated. Run `qoder login` in a terminal, or set personalAccessToken in settings.",
       },
     });
   }
 
-  // Fetch models from CLI (this is the key change - real model discovery)
-  const models = yield* fetchQoderModels(qoderSettings, environment, BUNDLED_QODER_MODEL_CATALOG);
+  // Authenticated. Models were already fetched when a PAT needed validating;
+  // only the browser-login path has to ask the CLI now.
+  const models =
+    patProbe?.models ??
+    (yield* fetchQoderModels(qoderSettings, environment, BUNDLED_QODER_MODEL_CATALOG)).models;
 
   // Usage limits will be populated when SDK integration is complete
   const usageLimits = makeUnavailableUsageLimits({

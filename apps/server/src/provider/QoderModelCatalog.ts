@@ -25,7 +25,7 @@ export interface QoderCatalogModel {
 const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   {
     model: {
-      slug: "auto",
+      slug: "Auto",
       name: "Auto",
       isCustom: false,
       isDefault: true,
@@ -37,7 +37,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "ultimate",
+      slug: "Ultimate",
       name: "Ultimate",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -48,7 +48,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "performance",
+      slug: "Performance",
       name: "Performance",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -59,7 +59,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "efficient",
+      slug: "Efficient",
       name: "Efficient",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -70,7 +70,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "sonus",
+      slug: "Sonus",
       name: "Sonus",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -81,7 +81,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "cantus",
+      slug: "Cantus",
       name: "Cantus",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -92,7 +92,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "qwen3.8-max",
+      slug: "Qwen3.8-Max",
       name: "Qwen 3.8 Max",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -103,7 +103,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "qwen3.8-flash",
+      slug: "Qwen3.8-Flash",
       name: "Qwen 3.8 Flash",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -114,7 +114,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "qwen3.7-max",
+      slug: "Qwen3.7-Max",
       name: "Qwen 3.7 Max",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -125,7 +125,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "qwen3.7-plus",
+      slug: "Qwen3.7-Plus",
       name: "Qwen 3.7 Plus",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -136,7 +136,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "kimi-k3",
+      slug: "Kimi-K3",
       name: "Kimi K3",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -147,7 +147,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "kimi-k2.8-preview",
+      slug: "Kimi-K2.8-Preview",
       name: "Kimi K2.8 Preview",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -158,7 +158,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "glm-5.3",
+      slug: "GLM-5.3",
       name: "GLM 5.3",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -169,7 +169,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "glm-5.3-flash",
+      slug: "GLM-5.3-Flash",
       name: "GLM 5.3 Flash",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -180,7 +180,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "deepseek-v4-pro",
+      slug: "DeepSeek-V4-Pro",
       name: "DeepSeek V4 Pro",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -191,7 +191,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "deepseek-flash",
+      slug: "DeepSeek-Flash",
       name: "DeepSeek Flash",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -202,7 +202,7 @@ const QODER_BUILT_IN_MODELS: ReadonlyArray<QoderCatalogModel> = [
   },
   {
     model: {
-      slug: "minimax-m3",
+      slug: "MiniMax-M3",
       name: "MiniMax M3",
       isCustom: false,
       capabilities: EMPTY_CAPABILITIES,
@@ -224,15 +224,36 @@ export const BUNDLED_QODER_MODEL_CATALOG: QoderModelCatalog = {
 /**
  * Parse model names from `qoder --list-models` output.
  * Output format is one model name per line, prefixed with "MODEL" header.
+ *
+ * The CLI spelling is preserved verbatim: `qoder -m` is case-sensitive and
+ * silently falls back to Auto for a name it does not recognise, so lowercasing
+ * here would make every selected model unusable.
  */
 export function parseQoderModelsOutput(output: string): ReadonlyArray<string> {
   const models: string[] = [];
   for (const line of output.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.toUpperCase() === "MODEL") continue;
-    models.push(trimmed.toLowerCase());
+    models.push(trimmed);
   }
   return models;
+}
+
+/**
+ * Map a stored model slug back to the spelling `qoder -m` accepts.
+ *
+ * Slugs persisted before the catalog carried canonical casing (and any custom
+ * model the user typed) may not match what the CLI expects, so look the slug up
+ * case-insensitively and return the catalog spelling. Unknown slugs are passed
+ * through untouched: the CLI knows models this bundled catalog does not.
+ */
+export function resolveQoderCliModelName(catalog: QoderModelCatalog, slug: string): string {
+  const trimmed = slug.trim();
+  if (trimmed.length === 0) {
+    return slug;
+  }
+  const match = catalog.models.find((m) => m.model.slug.toLowerCase() === trimmed.toLowerCase());
+  return match ? match.model.slug : trimmed;
 }
 
 /**
@@ -244,11 +265,7 @@ export function scopeQoderModelCatalog(
   customModels: ReadonlyArray<CustomModelSetting>,
 ): ReadonlyArray<ServerProviderModel> {
   const builtInModels = catalog.models.map((entry) => entry.model);
-  return providerModelsFromSettings(
-    builtInModels,
-    customModels,
-    EMPTY_CAPABILITIES,
-  );
+  return providerModelsFromSettings(builtInModels, customModels, EMPTY_CAPABILITIES);
 }
 
 /**
@@ -258,7 +275,7 @@ export function getQoderModelPricing(
   catalog: QoderModelCatalog,
   slug: string,
 ): { inputPricePerMTokens: number; outputPricePerMTokens: number } | null {
-  const entry = catalog.models.find((m) => m.model.slug === slug.toLowerCase());
+  const entry = catalog.models.find((m) => m.model.slug.toLowerCase() === slug.toLowerCase());
   if (!entry) return null;
   return {
     inputPricePerMTokens: entry.inputPricePerMTokens,

@@ -38,7 +38,9 @@ import type * as PlatformError from "effect/PlatformError";
 import { CommandResolutionError, resolveSpawnCommand } from "@lmcstools/core/shell";
 
 import { ProviderAdapterRequestError, ProviderAdapterSessionNotFoundError } from "../Errors.ts";
+import { BUNDLED_QODER_MODEL_CATALOG, resolveQoderCliModelName } from "../QoderModelCatalog.ts";
 import { collectStreamAsString } from "../providerSnapshot.ts";
+import { buildQoderAuthEnv } from "../qoderRuntime.ts";
 import type { QoderAdapterShape } from "../Services/QoderAdapter.ts";
 
 const PROVIDER = ProviderDriverKind.make("qoder");
@@ -83,16 +85,46 @@ const deterministicQoderSessionId = (seed: string): string => {
 
 const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
 
-function buildQoderAuthEnv(
-  config: QoderSettings,
-  environment?: NodeJS.ProcessEnv,
-): Record<string, string | undefined> {
-  const pat =
-    config.personalAccessToken?.trim() || environment?.QODER_PERSONAL_ACCESS_TOKEN?.trim();
-  if (pat) {
-    return { QODER_PERSONAL_ACCESS_TOKEN: pat };
+/**
+ * Normalise a model selection into the spelling `qoder -m` accepts.
+ *
+ * The flag is case-sensitive and the CLI does not fail loudly on a name it does
+ * not recognise — it prints "Model ... is not available right now; using auto
+ * instead" on stderr and answers with Auto, so an unnormalised slug silently
+ * ignores the user's choice. Values persisted before the catalog carried the
+ * canonical casing still resolve through the bundled catalog here.
+ */
+const toCliModelName = (model: string | undefined): string | undefined => {
+  const trimmed = model?.trim();
+  if (!trimmed) {
+    return undefined;
   }
-  return {};
+  return resolveQoderCliModelName(BUNDLED_QODER_MODEL_CATALOG, trimmed);
+};
+
+/** stderr markers that decide whether the other session mode can recover the turn. */
+const SESSION_IN_USE_MARKER = "is already in use";
+const RESUME_SESSION_MISSING_MARKER = "Invalid session identifier";
+
+const STDERR_SUMMARY_LIMIT = 500;
+const STDERR_HEAD_LIMIT = 380;
+
+/**
+ * Reduce stderr to something worth showing the user.
+ *
+ * The CLI reports a failure as a message followed by a Bun stack trace, so the
+ * cause is at the head; slicing the tail instead surfaced nothing but
+ * "/$bunfs/root/chunk-*.js" frames starting mid-word and hid what actually went
+ * wrong. Keep the head, and append the last lines so a trailing summary written
+ * after a long stack is not lost either.
+ */
+function summarizeStderr(stderr: string): string {
+  if (stderr.length <= STDERR_SUMMARY_LIMIT) {
+    return stderr;
+  }
+  const head = stderr.slice(0, STDERR_HEAD_LIMIT);
+  const tail = stderr.slice(stderr.length - (STDERR_SUMMARY_LIMIT - STDERR_HEAD_LIMIT));
+  return `${head}\n…\n${tail}`;
 }
 
 /**
@@ -128,9 +160,10 @@ interface TurnTerminal {
 
 interface TurnAttemptOutcome {
   readonly terminal: TurnTerminal | null;
-  readonly stderrTail: string;
+  readonly stderrSummary: string;
   readonly exitCode: number;
   readonly sessionIdInUse: boolean;
+  readonly resumeSessionMissing: boolean;
 }
 
 export function makeQoderAdapter(
@@ -180,7 +213,7 @@ export function makeQoderAdapter(
           threadId: input.threadId,
           session,
           turns: [],
-          currentModel: config.favoriteModel?.trim() || undefined,
+          currentModel: toCliModelName(config.favoriteModel),
           activeTurnId: undefined,
           stopped: false,
           qoderSessionId: deterministicQoderSessionId(
@@ -226,7 +259,7 @@ export function makeQoderAdapter(
         context.activeTurnId = turnId;
         context.turnInterrupted = false;
 
-        const selectedModel = input.modelSelection?.model || context.currentModel;
+        const selectedModel = toCliModelName(input.modelSelection?.model) ?? context.currentModel;
         if (selectedModel) {
           context.currentModel = selectedModel;
         }
@@ -482,21 +515,28 @@ export function makeQoderAdapter(
             // Close the turn scope to clean up the child process
             yield* Scope.close(turnScope, Exit.void).pipe(Effect.ignore);
 
-            const stderrTail = stderr.trim().slice(-500);
+            const trimmedStderr = stderr.trim();
             return {
               terminal,
-              stderrTail,
+              stderrSummary: summarizeStderr(trimmedStderr),
               exitCode,
-              sessionIdInUse: stderrTail.includes("is already in use"),
+              // Matched against the full stderr, never the summary: a stack trace
+              // appended after the message pushes it out of any fixed-size window,
+              // which used to disable session recovery without a trace.
+              sessionIdInUse: trimmedStderr.includes(SESSION_IN_USE_MARKER),
+              resumeSessionMissing: trimmedStderr.includes(RESUME_SESSION_MISSING_MARKER),
             } satisfies TurnAttemptOutcome;
           });
 
         // The session is created on the first turn with `--session-id`; later
-        // turns continue it with `--resume`. When the server restarts mid-thread
-        // the in-memory flag is lost while the Qoder session still exists on
-        // disk — the "already in use" error recovers by switching to `--resume`.
+        // turns continue it with `--resume`. Both modes fail recoverably: after a
+        // server restart the in-memory flag is lost while the session still exists
+        // on disk ("is already in use"), and a session created under a different
+        // working directory is not resumable from here — the CLI exits 42 with
+        // "Invalid session identifier" and emits no stream output at all. Each mode
+        // therefore falls back to the other.
         const attempts: Array<"session-id" | "resume"> = context.qoderSessionCreated
-          ? ["resume"]
+          ? ["resume", "session-id"]
           : ["session-id", "resume"];
 
         let outcome: TurnAttemptOutcome | null = null;
@@ -507,10 +547,21 @@ export function makeQoderAdapter(
             context.qoderSessionCreated = true;
             break;
           }
-          if (context.turnInterrupted || !attemptOutcome.sessionIdInUse) {
+          if (context.turnInterrupted) {
             break;
           }
-          context.qoderSessionCreated = true;
+          if (attempt === "session-id" && attemptOutcome.sessionIdInUse) {
+            context.qoderSessionCreated = true;
+            continue;
+          }
+          if (attempt === "resume" && attemptOutcome.resumeSessionMissing) {
+            // Recreating starts a fresh Qoder conversation for this thread, so the
+            // CLI-side history is lost. The alternative is a thread that can never
+            // run another turn, which is worse.
+            context.qoderSessionCreated = false;
+            continue;
+          }
+          break;
         }
 
         const finalOutcome = outcome;
@@ -546,8 +597,8 @@ export function makeQoderAdapter(
               state: "failed",
               errorMessage:
                 finalOutcome?.terminal?.errorMessage ??
-                (finalOutcome && finalOutcome.stderrTail.length > 0
-                  ? finalOutcome.stderrTail
+                (finalOutcome && finalOutcome.stderrSummary.length > 0
+                  ? finalOutcome.stderrSummary
                   : `Qoder CLI exited with code ${finalOutcome?.exitCode ?? "unknown"} without a result`),
             },
           });

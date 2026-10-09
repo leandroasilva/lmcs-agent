@@ -14,6 +14,7 @@ import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as P from "effect/Predicate";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
@@ -98,6 +99,133 @@ export const runCommandCodeCommand = (input: {
     );
     return result;
   }).pipe(Effect.withSpan("commandcode.runCommand"));
+
+/** Environment variable the Command Code CLI reads for an API key. */
+export const COMMAND_CODE_API_KEY_ENV = "COMMAND_CODE_API_KEY";
+
+/**
+ * Credential to hand the Command Code CLI, if any.
+ *
+ * Single source of truth on purpose: the adapter and every status probe must
+ * spawn `cmd` with the same environment, otherwise the probe validates one
+ * credential while turns run with another and the UI reports a healthy
+ * provider whose every turn fails.
+ */
+export function buildCommandCodeAuthEnv(
+  config: CommandCodeSettings,
+  environment?: NodeJS.ProcessEnv,
+): Record<string, string | undefined> {
+  const apiKey = config.apiKey?.trim() || environment?.[COMMAND_CODE_API_KEY_ENV]?.trim();
+  if (apiKey) {
+    return { [COMMAND_CODE_API_KEY_ENV]: apiKey };
+  }
+  return {};
+}
+
+/** Ambient environment plus the configured credential, for spawning `cmd`. */
+export function mergeCommandCodeEnv(
+  environment: NodeJS.ProcessEnv,
+  config: CommandCodeSettings,
+): NodeJS.ProcessEnv {
+  return { ...environment, ...buildCommandCodeAuthEnv(config, environment) };
+}
+
+/**
+ * Outcome of validating Command Code credentials.
+ *
+ * - `authenticated`: the CLI accepted them and returned the current user.
+ * - `rejected`: credentials were supplied but the API refused them (401).
+ * - `missing`: no credentials at all, locally or in the environment.
+ * - `unknown`: the probe could not run, so nothing can be concluded.
+ */
+export type CommandCodeAuthProbe =
+  | { readonly status: "authenticated" }
+  | { readonly status: "rejected"; readonly detail: string }
+  | { readonly status: "missing"; readonly detail: string }
+  | { readonly status: "unknown"; readonly detail: string };
+
+const COMMAND_CODE_WHOAMI_MISSING_MARKER = "Not authenticated";
+const COMMAND_CODE_WHOAMI_REJECTED_MARKER = "Invalid 'Authorization'";
+
+/**
+ * `cmd whoami` is the only trustworthy credential check this CLI offers.
+ *
+ * `cmd status` (and `cmd status --json`) report `authenticated: true` /
+ * "Authentication verified" for a key the API rejects with 401 — they only
+ * assert that a credential is present, never that it works. `cmd --list-models`
+ * is no help either: it succeeds with no credentials at all. `cmd whoami`
+ * actually calls the API, costs well under a second, and distinguishes a
+ * rejected credential from an absent one.
+ */
+export const probeCommandCodeAuth = (input: {
+  readonly settings: CommandCodeSettings;
+  readonly environment?: NodeJS.ProcessEnv;
+}): Effect.Effect<CommandCodeAuthProbe, never, ChildProcessSpawner.ChildProcessSpawner> =>
+  Effect.gen(function* () {
+    const environment = input.environment ?? process.env;
+    const runResult = yield* runCommandCodeCommand({
+      binaryPath: input.settings.binaryPath || "cmd",
+      args: ["whoami"],
+      environment: mergeCommandCodeEnv(environment, input.settings),
+    }).pipe(Effect.result);
+
+    if (Result.isFailure(runResult)) {
+      return {
+        status: "unknown" as const,
+        detail: commandCodeRuntimeErrorDetail(runResult.failure),
+      };
+    }
+
+    const result = runResult.success;
+    if (result.code === 0) {
+      return { status: "authenticated" as const };
+    }
+
+    // Both streams: the CLI writes its verdict to stderr, but a future version
+    // may not, and the message is what the user needs to see either way.
+    const output = `${result.stdout}\n${result.stderr}`.trim();
+    if (isCommandCodeCredentialRejected(output)) {
+      return {
+        status: "rejected" as const,
+        detail: commandCodeAuthDetail(output, "Command Code rejected the configured API key."),
+      };
+    }
+    if (output.includes(COMMAND_CODE_WHOAMI_MISSING_MARKER)) {
+      return {
+        status: "missing" as const,
+        detail: commandCodeAuthDetail(output, "Command Code has no credentials."),
+      };
+    }
+    return {
+      status: "unknown" as const,
+      detail: commandCodeAuthDetail(output, `cmd whoami exited with code ${result.code}.`),
+    };
+  }).pipe(Effect.withSpan("commandcode.probeAuth"));
+
+/** True when the CLI reported the credential itself was refused. */
+export function isCommandCodeCredentialRejected(output: string): boolean {
+  return output.includes(COMMAND_CODE_WHOAMI_REJECTED_MARKER) || /\b40[13]\b/.test(output);
+}
+
+/**
+ * Keep the CLI's own wording, which is more useful than a generic label.
+ *
+ * One correction: `cmd whoami` tells the user to run `cmd auth login`, but
+ * there is no `auth` subcommand — `cmd auth --help` just prints the generic
+ * help. The real command is `cmd login`, which is also what the headless
+ * error message recommends, so pass that through instead of advice that
+ * cannot be followed.
+ */
+function commandCodeAuthDetail(output: string, fallback: string): string {
+  const line = output
+    .split("\n")
+    .map((candidate) => candidate.trim())
+    .find((candidate) => candidate.length > 0 && !candidate.startsWith("-"));
+  if (!line) {
+    return fallback;
+  }
+  return line.replace(/^[^A-Za-z0-9]+/, "").replace(/cmd auth login/g, "cmd login");
+}
 
 /**
  * Parse the version from `cmd --version` output.
@@ -231,7 +359,10 @@ export type CommandCodeEventPayload =
   | { readonly type: "text_delta"; readonly delta: string }
   | {
       readonly type: "message_update";
-      readonly content: ReadonlyArray<{ readonly type: string; readonly [key: string]: unknown }>;
+      readonly content: ReadonlyArray<{
+        readonly type: string;
+        readonly [key: string]: unknown;
+      }>;
     }
   | {
       readonly type: "model_request_end";
@@ -241,7 +372,10 @@ export type CommandCodeEventPayload =
     }
   | {
       readonly type: "message_end";
-      readonly content: ReadonlyArray<{ readonly type: string; readonly [key: string]: unknown }>;
+      readonly content: ReadonlyArray<{
+        readonly type: string;
+        readonly [key: string]: unknown;
+      }>;
     }
   | {
       readonly type: "turn_end";

@@ -35,6 +35,7 @@ import {
   ProviderAdapterSessionNotFoundError,
   ProviderAdapterValidationError,
 } from "../Errors.ts";
+import { buildCommandCodeAuthEnv } from "../commandCodeRuntime.ts";
 import { spawnAndCollect } from "../providerSnapshot.ts";
 import type { CommandCodeAdapterShape } from "../Services/CommandCodeAdapter.ts";
 
@@ -56,17 +57,6 @@ interface CommandCodeSessionContext {
 }
 
 const nowIso = () => Effect.map(DateTime.now, DateTime.formatIso);
-
-function buildCmdAuthEnv(
-  config: CommandCodeSettings,
-  environment?: NodeJS.ProcessEnv,
-): Record<string, string | undefined> {
-  const apiKey = config.apiKey?.trim() || environment?.COMMAND_CODE_API_KEY?.trim();
-  if (apiKey) {
-    return { COMMAND_CODE_API_KEY: apiKey };
-  }
-  return {};
-}
 
 /**
  * Parse a single JSON line from CommandCode's `--output-format json` output.
@@ -216,7 +206,7 @@ export function makeCommandCodeAdapter(
 
         const cwd = context.session.cwd ?? process.cwd();
         const binaryPath = config.binaryPath?.trim() || "cmd";
-        const authEnv = buildCmdAuthEnv(config, options.environment);
+        const authEnv = buildCommandCodeAuthEnv(config, options.environment);
 
         const args = [
           "-p",

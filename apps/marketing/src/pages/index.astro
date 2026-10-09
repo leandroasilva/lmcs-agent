@@ -2,10 +2,7 @@
 import { getImage } from "astro:assets";
 import desktopScreenshot from "../assets/app-desktop-real.png";
 import Layout from "../layouts/Layout.astro";
-import {
-  DOWNLOAD_URL,
-  GITHUB_REPOSITORY_URL,
-} from "../lib/site";
+import { DOWNLOAD_URL, GITHUB_REPOSITORY_URL } from "../lib/site";
 
 const screenshot = await getImage({
   src: desktopScreenshot,
@@ -13,689 +10,705 @@ const screenshot = await getImage({
   format: "webp",
   quality: 90,
 });
+
+const providers = [
+  {
+    name: "Claude Code",
+    description: "O agente da Anthropic para compreensão e geração de código.",
+  },
+  {
+    name: "Codex",
+    description: "O agente da OpenAI para automação e edição de código.",
+  },
+  {
+    name: "Cursor",
+    description: "Agente AI-first com compreensão profunda do editor.",
+  },
+  {
+    name: "Grok",
+    description: "O agente da xAI para análise de código em tempo real.",
+  },
+  {
+    name: "OpenCode",
+    description: "Agente open-source com fluxos de trabalho customizáveis.",
+  },
+  {
+    name: "Qoder",
+    description: "Autocomplete e geração de código com contexto do projeto.",
+  },
+  {
+    name: "CommandCode",
+    description: "Execução de agentes por linha de comando, com login próprio.",
+  },
+];
+
+const featureGroups = [
+  {
+    number: "01",
+    title: "Orquestração de agentes",
+    features: [
+      {
+        icon: "layers",
+        title: "Multi-provedor",
+        description:
+          "Conecte Claude Code, Codex, Cursor, Grok, OpenCode, Qoder e CommandCode com as suas próprias credenciais. Crie instâncias separadas por conta, cada uma com variáveis de ambiente e URLs próprias.",
+      },
+      {
+        icon: "branch",
+        title: "Threads e worktrees",
+        description:
+          "Um histórico durável por projeto e por tarefa. Isole cada tarefa em um worktree Git, e pinne, sone, arquive ou reordene threads conforme o trabalho avança.",
+      },
+      {
+        icon: "history",
+        title: "Checkpoints",
+        description:
+          "A cada turno, um ref Git oculto captura o estado do workspace. Compare o que mudou e restaure um ponto anterior sem poluir o histórico da branch.",
+      },
+      {
+        icon: "shield",
+        title: "Modos de permissão",
+        description:
+          "Supervised, Auto-accept edits, Auto e Full access definem quando o agente pausa para pedir aprovação antes de executar comandos ou editar arquivos.",
+      },
+    ],
+  },
+  {
+    number: "02",
+    title: "Trabalho diário",
+    features: [
+      {
+        icon: "message",
+        title: "Compositor e contexto",
+        description:
+          "Anexe até 100 arquivos por mensagem, além de imagens, vídeos, trechos de terminal e citações. Use comandos e skills, e enfileire ou priorize mensagens enquanto o agente trabalha.",
+      },
+      {
+        icon: "terminal",
+        title: "Terminal integrado",
+        description:
+          "Um terminal completo ao lado da conversa. Capture a saída e envie para o agente como contexto da próxima mensagem.",
+      },
+      {
+        icon: "camera",
+        title: "SnapShots",
+        description:
+          "Capture a janela ativa do desktop com os dados de acessibilidade — texto e controles — e anexe ao rascunho, para o agente enxergar o que você vê.",
+      },
+      {
+        icon: "models",
+        title: "Vários modelos de uma vez",
+        description:
+          "Shift-clique nos modelos para disparar o mesmo prompt em várias threads e worktrees em paralelo, e compare as respostas lado a lado.",
+      },
+    ],
+  },
+  {
+    number: "03",
+    title: "Entregar software",
+    features: [
+      {
+        icon: "commit",
+        title: "Controle de versão",
+        description:
+          "Integre com GitHub, GitLab, Forgejo, Gitea, Bitbucket e Azure DevOps. Clone e publique projetos, e gere mensagens de commit e descrições de pull request com a IA da thread.",
+      },
+      {
+        icon: "pull-request",
+        title: "Pull requests e stacks",
+        description:
+          "Revise diffs, marque arquivos como lidos, aprove e faça merge. Suporte a stacks do GitHub, com merge e rebase em fila respeitando as regras do repositório.",
+      },
+    ],
+  },
+  {
+    number: "04",
+    title: "Acesso e operação",
+    features: [
+      {
+        icon: "globe",
+        title: "Acesso remoto",
+        description:
+          "Web e desktop conectam ao seu servidor pela rede local, Tailscale, túnel (LMCS Connect) ou SSH. Os agentes continuam rodando na máquina que você escolher.",
+      },
+      {
+        icon: "usage",
+        title: "Uso e limites",
+        description:
+          "Um painel unificado com tokens, economia de cache, custos estimados e limites de assinatura por provedor, para você ver onde o trabalho está indo.",
+      },
+      {
+        icon: "palette",
+        title: "Personalização",
+        description:
+          "Temas claro e escuro, atalhos de teclado configuráveis e envio por Enter ou Cmd+Enter — do seu jeito.",
+      },
+      {
+        icon: "code",
+        title: "Código aberto, self-hosted",
+        description:
+          "Licença MIT, rodando no seu hardware. Projetos, credenciais e histórico não saem da máquina onde o servidor roda.",
+      },
+    ],
+  },
+] as const;
 ---
 
-<Layout>
-  <!-- ── Hero Section ──────────────────────────────────────────── -->
+<Layout
+  title="LMCS Code — Todos os seus agentes de código em uma única janela"
+  description="LMCS Code é um controlador open-source para agentes de código. Conecte Claude Code, Codex, Cursor, Grok, OpenCode, Qoder e CommandCode na sua própria máquina."
+>
+  <!-- ── Hero ───────────────────────────────────────────────────── -->
   <section class="hero">
-    <div class="hero-container">
-      <div class="hero-content">
-        <h1 class="hero-title">
-          <span class="hero-title-gradient">LMCS Code</span>
-        </h1>
-        <p class="hero-subtitle">
-          Editor de código com inteligência artificial para times que entregam. Escreva, depure e implante mais rápido com assistência inteligente.
+    <div class="container hero-copy">
+      <p class="eyebrow hero-eyebrow" data-rise>Open source · Traga a sua própria assinatura</p>
+      <h1 class="hero-title display" data-rise style="--d:80ms">
+        Todos os seus <span class="hero-accent">agentes de código</span>, em uma única janela.
+      </h1>
+      <p class="hero-subtitle" data-rise style="--d:160ms">
+        O LMCS Code controla agentes de IA que rodam na sua máquina. Conecte Claude Code, Codex,
+        Cursor, Grok, OpenCode, Qoder e CommandCode sem colocar uma nuvem no meio do caminho.
+      </p>
+      <div class="hero-actions" data-rise style="--d:240ms">
+        <a href={DOWNLOAD_URL} class="btn btn-primary btn-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+          Download para macOS
+        </a>
+        <a href={GITHUB_REPOSITORY_URL} class="btn btn-ghost btn-lg" target="_blank" rel="noopener noreferrer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.86 10.93c.58.1.79-.25.79-.56v-2c-3.2.69-3.88-1.37-3.88-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.18a10.96 10.96 0 015.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.57.23 2.73.11 3.02.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.66.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z" />
+          </svg>
+          Ver no GitHub
+        </a>
+      </div>
+      <p class="hero-note" data-rise style="--d:300ms">Gratuito e open source · MIT</p>
+    </div>
+
+    <div class="container hero-preview" data-rise style="--d:360ms">
+      <figure class="hero-frame tile">
+        <span class="hero-frame-bar" aria-hidden="true"><i></i><i></i><i></i></span>
+        <picture>
+          <img
+            src={desktopScreenshot.src}
+            srcset={`${screenshot.srcSet.attribute}, ${desktopScreenshot.src} ${desktopScreenshot.width}w`}
+            sizes="(max-width: 960px) min(864px, calc(100vw - 40px)), min(1180px, calc(100vw - 64px))"
+            alt="O app desktop do LMCS Code com uma thread de agente aberta"
+            width={desktopScreenshot.width}
+            height={desktopScreenshot.height}
+            loading="eager"
+            decoding="async"
+          />
+        </picture>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ── Providers ──────────────────────────────────────────────── -->
+  <section class="section providers" id="provedores">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow" data-rise>Bring your own subscription</p>
+        <h2 class="section-title display" data-rise style="--d:80ms">Sua IA, sua escolha.</h2>
+        <p class="section-subtitle" data-rise style="--d:140ms">
+          Instale os agentes que você já usa na sua máquina e configure as credenciais. O LMCS Code
+          opera todos eles por uma única interface.
         </p>
-        <div class="hero-actions">
+      </div>
+
+      <ul class="provider-list">
+        {
+          providers.map((provider, index) => (
+            <li class="provider-card" data-rise style={`--d:${180 + index * 40}ms`}>
+              <h3 class="provider-name">{provider.name}</h3>
+              <p class="provider-description">{provider.description}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── Funcionalidades ────────────────────────────────────────── -->
+  <section class="section features" id="funcionalidades">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow" data-rise>Funcionalidades</p>
+        <h2 class="section-title display" data-rise style="--d:80ms">
+          Construído para quem vive no terminal e entrega software.
+        </h2>
+        <p class="section-subtitle" data-rise style="--d:140ms">
+          O que o LMCS Code faz, do primeiro prompt ao merge.
+        </p>
+      </div>
+
+      {
+        featureGroups.map((group) => (
+          <div class="feature-group">
+            <div class="feature-group-head">
+              <span class="feature-group-number">{group.number}</span>
+              <h3 class="feature-group-title">{group.title}</h3>
+            </div>
+            <div class="feature-grid">
+              {group.features.map((feature) => (
+                <article class="feature-card tile">
+                  <span class="feature-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      {feature.icon === "layers" && (
+                        <>
+                          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                          <polyline points="2 17 12 22 22 17" />
+                          <polyline points="2 12 12 17 22 12" />
+                        </>
+                      )}
+                      {feature.icon === "branch" && (
+                        <>
+                          <line x1="6" y1="3" x2="6" y2="15" />
+                          <circle cx="18" cy="6" r="3" />
+                          <circle cx="6" cy="18" r="3" />
+                          <path d="M18 9a9 9 0 0 1-9 9" />
+                        </>
+                      )}
+                      {feature.icon === "history" && (
+                        <>
+                          <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                          <path d="M3 3v5h5" />
+                          <path d="M12 7v5l4 2" />
+                        </>
+                      )}
+                      {feature.icon === "shield" && (
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      )}
+                      {feature.icon === "message" && (
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      )}
+                      {feature.icon === "terminal" && (
+                        <>
+                          <polyline points="4 17 10 11 4 5" />
+                          <line x1="12" y1="19" x2="20" y2="19" />
+                        </>
+                      )}
+                      {feature.icon === "camera" && (
+                        <>
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                          <circle cx="12" cy="13" r="4" />
+                        </>
+                      )}
+                      {feature.icon === "models" && (
+                        <>
+                          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                        </>
+                      )}
+                      {feature.icon === "commit" && (
+                        <>
+                          <circle cx="12" cy="12" r="3" />
+                          <line x1="3" y1="12" x2="9" y2="12" />
+                          <line x1="15" y1="12" x2="21" y2="12" />
+                        </>
+                      )}
+                      {feature.icon === "pull-request" && (
+                        <>
+                          <circle cx="6" cy="6" r="3" />
+                          <circle cx="6" cy="18" r="3" />
+                          <path d="M6 9v6" />
+                          <circle cx="18" cy="18" r="3" />
+                          <path d="M18 15V9a3 3 0 0 0-3-3h-3" />
+                          <polyline points="14 3 11 6 14 9" />
+                        </>
+                      )}
+                      {feature.icon === "globe" && (
+                        <>
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="2" y1="12" x2="22" y2="12" />
+                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </>
+                      )}
+                      {feature.icon === "usage" && (
+                        <>
+                          <line x1="3" y1="21" x2="21" y2="21" />
+                          <rect x="5" y="11" width="3" height="7" rx="1" />
+                          <rect x="10.5" y="6" width="3" height="12" rx="1" />
+                          <rect x="16" y="14" width="3" height="4" rx="1" />
+                        </>
+                      )}
+                      {feature.icon === "palette" && (
+                        <>
+                          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.83-.44-1.12-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.66h2c3.05 0 5.56-2.5 5.56-5.55C22 6.01 17.46 2 12 2z" />
+                          <circle cx="13.5" cy="6.5" r=".75" fill="currentColor" />
+                          <circle cx="17.5" cy="10.5" r=".75" fill="currentColor" />
+                          <circle cx="8.5" cy="7.5" r=".75" fill="currentColor" />
+                          <circle cx="6.5" cy="12.5" r=".75" fill="currentColor" />
+                        </>
+                      )}
+                      {feature.icon === "code" && (
+                        <>
+                          <polyline points="16 18 22 12 16 6" />
+                          <polyline points="8 6 2 12 8 18" />
+                        </>
+                      )}
+                    </svg>
+                  </span>
+                  <h4 class="feature-title">{feature.title}</h4>
+                  <p class="feature-description">{feature.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── Download ───────────────────────────────────────────────── -->
+  <section class="section cta" id="download">
+    <div class="container">
+      <div class="cta-panel tile" data-rise>
+        <h2 class="cta-title display">Pronto para dirigir seus agentes de um só lugar?</h2>
+        <p class="cta-subtitle">
+          Baixe o LMCS Code, conecte seus provedores e comece a construir com os agentes que você já
+          assina.
+        </p>
+        <div class="cta-actions">
           <a href={DOWNLOAD_URL} class="btn btn-primary btn-lg">
-            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2.3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.12l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.3z"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12" />
+              <path d="m7 10 5 5 5-5" />
+              <path d="M5 21h14" />
             </svg>
             Download para macOS
           </a>
-          <a href={GITHUB_REPOSITORY_URL} class="btn btn-secondary btn-lg" target="_blank" rel="noopener noreferrer">
-            <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.86 10.93c.58.1.79-.25.79-.56v-2c-3.2.69-3.88-1.37-3.88-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.18a10.96 10.96 0 015.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.57.23 2.73.11 3.02.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.66.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/>
-            </svg>
+          <a href={GITHUB_REPOSITORY_URL} class="btn btn-ghost btn-lg" target="_blank" rel="noopener noreferrer">
             Ver no GitHub
           </a>
         </div>
-      </div>
-
-      <div class="hero-preview">
-        <div class="hero-screenshot-frame">
-          <div class="screenshot-overlay" aria-hidden="true"></div>
-          <picture>
-            <source
-              media="(max-width: 820px)"
-              srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-            />
-            <img
-              src={desktopScreenshot.src}
-              srcset={`${screenshot.srcSet.attribute}, ${desktopScreenshot.src} ${desktopScreenshot.width}w`}
-              sizes="(max-width: 960px) min(864px, calc(100vw - 20px)), min(1180px, calc(100vw - 60px))"
-              alt="LMCS Code - Interface do editor de código com IA"
-              width={desktopScreenshot.width}
-              height={desktopScreenshot.height}
-              loading="eager"
-              decoding="async"
-            />
-          </picture>
-        </div>
+        <p class="cta-note">Gratuito e open source · MIT</p>
       </div>
     </div>
   </section>
-
-  <!-- ── Features Section ─────────────────────────────────────── -->
-  <section class="features" id="features">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Tudo que você precisa para entregar mais rápido</h2>
-        <p class="section-subtitle">
-          Um ambiente completo de desenvolvimento com assistência de inteligência artificial integrada.
-        </p>
-      </div>
-
-      <div class="features-grid">
-        <!-- Feature 1: AI Chat -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Chat com IA</h3>
-          <p class="feature-description">
-            Faça perguntas, receba sugestões de código e depure problemas com linguagem natural. Múltiplos provedores de IA suportados.
-          </p>
-        </div>
-
-        <!-- Feature 2: Code Editor -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="16 18 22 12 16 6"/>
-              <polyline points="8 6 2 12 8 18"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Editor de Código Integrado</h3>
-          <p class="feature-description">
-            Editor Monaco integrado. Edite arquivos diretamente no app com destaque de sintaxe e IntelliSense.
-          </p>
-        </div>
-
-        <!-- Feature 3: File Explorer -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Explorador de Arquivos</h3>
-          <p class="feature-description">
-            Navegue pela estrutura do seu projeto com facilidade. Abra, edite e gerencie arquivos diretamente pela interface.
-          </p>
-        </div>
-
-        <!-- Feature 4: Terminal -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4 17 10 11 4 5"/>
-              <line x1="12" y1="19" x2="20" y2="19"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Terminal Integrado</h3>
-          <p class="feature-description">
-            Execute comandos, scripts e processos de build sem sair do editor. Emulação completa de terminal.
-          </p>
-        </div>
-
-        <!-- Feature 5: Browser Preview -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Preview no Browser</h3>
-          <p class="feature-description">
-            Visualize aplicações web diretamente no app. Teste e depure seu código frontend em tempo real.
-          </p>
-        </div>
-
-        <!-- Feature 6: Git Integration -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="18" r="3"/>
-              <circle cx="6" cy="6" r="3"/>
-              <path d="M6 21V9a9 9 0 0 0 9 9"/>
-            </svg>
-          </div>
-          <h3 class="feature-title">Integração Git</h3>
-          <p class="feature-description">
-            Crie commits, branches e pull requests diretamente do editor. Integração completa com GitHub.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Multi-Provider Section ────────────────────────────────── -->
-  <section class="providers" id="providers">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Sua IA, sua escolha</h2>
-        <p class="section-subtitle">
-          Conecte seus provedores de IA favoritos. Traga suas próprias chaves de API e assinaturas.
-        </p>
-      </div>
-
-      <div class="providers-grid">
-        <div class="provider-card">
-          <h3 class="provider-name">Qoder</h3>
-          <p class="provider-description">Assistente de código com IA com compreensão avançada de código e geração automatizada</p>
-        </div>
-        <div class="provider-card">
-          <h3 class="provider-name">CommandCode</h3>
-          <p class="provider-description">Análise inteligente de código e capacidades de refatoração automatizada</p>
-        </div>
-        <div class="provider-card">
-          <h3 class="provider-name">Claude Code</h3>
-          <p class="provider-description">Claude da Anthropic para compreensão e geração de código sofisticadas</p>
-        </div>
-        <div class="provider-card">
-          <h3 class="provider-name">Codex</h3>
-          <p class="provider-description">Codex da OpenAI para assistência e automação versátil de código</p>
-        </div>
-        <div class="provider-card">
-          <h3 class="provider-name">Cursor</h3>
-          <p class="provider-description">Editor de código AI-first com autocomplete inteligente e chat</p>
-        </div>
-        <div class="provider-card">
-          <h3 class="provider-name">Grok</h3>
-          <p class="provider-description">Grok da xAI para assistência e análise de código em tempo real</p>
-        </div>
-        <div class="provider-card">
-          <h3 class="provider-name">OpenCode</h3>
-          <p class="provider-description">Assistente de código open-source com fluxos de trabalho personalizáveis</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Download Section ──────────────────────────────────────── -->
-  <section class="download" id="download">
-    <div class="container">
-      <div class="download-content">
-        <h2 class="download-title">Pronto para entregar mais rápido?</h2>
-        <p class="download-subtitle">
-          Baixe o LMCS Code e comece a construir com assistência de IA hoje mesmo.
-        </p>
-        <div class="download-actions">
-          <a href={DOWNLOAD_URL} class="btn btn-primary btn-lg">
-            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2.3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.12l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.3z"/>
-            </svg>
-            Download para macOS
-          </a>
-          <a href={GITHUB_REPOSITORY_URL} class="btn btn-secondary btn-lg" target="_blank" rel="noopener noreferrer">
-            <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 007.86 10.93c.58.1.79-.25.79-.56v-2c-3.2.69-3.88-1.37-3.88-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.67 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.45.11-3.02 0 0 .96-.31 3.15 1.18a10.96 10.96 0 015.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.57.23 2.73.11 3.02.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.66.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/>
-            </svg>
-            Ver no GitHub
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Footer ────────────────────────────────────────────────── -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <h3 class="footer-brand-name">LMCS Code</h3>
-          <p class="footer-brand-description">
-            Editor de código com IA para times que entregam.
-          </p>
-        </div>
-        <div class="footer-links">
-          <h4 class="footer-links-title">Produto</h4>
-          <ul class="footer-links-list">
-            <li><a href="#features">Recursos</a></li>
-            <li><a href="#providers">Provedores</a></li>
-            <li><a href={DOWNLOAD_URL}>Download</a></li>
-          </ul>
-        </div>
-        <div class="footer-links">
-          <h4 class="footer-links-title">Recursos</h4>
-          <ul class="footer-links-list">
-            <li><a href={GITHUB_REPOSITORY_URL} target="_blank" rel="noopener noreferrer">GitHub</a></li>
-            <li><a href="/privacy-policy">Política de Privacidade</a></li>
-            <li><a href="/terms-of-service">Termos de Serviço</a></li>
-          </ul>
-        </div>
-        <div class="footer-links">
-          <h4 class="footer-links-title">Conecte-se</h4>
-          <ul class="footer-links-list">
-            <li><a href={GITHUB_REPOSITORY_URL} target="_blank" rel="noopener noreferrer">GitHub</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p class="footer-copyright">
-          © 2026 LMCS Tools. Todos os direitos reservados.
-        </p>
-      </div>
-    </div>
-  </footer>
 </Layout>
 
 <style>
-  /* ── Hero Section ─────────────────────────────────────────── */
+  /* ── Hero ──────────────────────────────────────────────────────── */
   .hero {
-    padding: 8rem 0 4rem;
-    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
-    overflow: hidden;
+    position: relative;
+    padding: clamp(72px, 11vw, 132px) 0 clamp(48px, 8vw, 88px);
   }
 
-  .hero-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-    text-align: center;
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -220px;
+    left: 50%;
+    width: min(900px, 90vw);
+    height: 520px;
+    transform: translateX(-50%);
+    background: radial-gradient(
+      50% 50% at 50% 50%,
+      oklch(0.68 0.17 250 / 0.18),
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: -1;
   }
 
-  .hero-content {
-    max-width: 800px;
-    margin: 0 auto 4rem;
+  .hero-copy {
+    max-width: 860px;
+  }
+
+  .hero-eyebrow {
+    color: var(--fg-dim);
   }
 
   .hero-title {
-    font-size: clamp(3rem, 8vw, 5rem);
-    font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 1.5rem;
-    letter-spacing: -0.02em;
+    margin-top: 20px;
+    font-size: clamp(2.8rem, 7.5vw, 5.6rem);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 0.98;
+    text-wrap: balance;
   }
 
-  .hero-title-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .hero-accent {
+    color: var(--accent);
   }
 
   .hero-subtitle {
-    font-size: clamp(1.125rem, 2vw, 1.5rem);
-    color: #a0a0a0;
-    line-height: 1.6;
-    margin-bottom: 2.5rem;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 640px;
+    margin-top: 30px;
+    color: var(--fg-muted);
+    font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+    line-height: 1.62;
+    letter-spacing: -0.012em;
   }
 
   .hero-actions {
     display: flex;
-    gap: 1rem;
-    justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 1.5rem;
+    gap: 12px;
+    margin-top: 34px;
   }
 
-  .hero-platforms {
-    color: #666;
-    font-size: 0.875rem;
-  }
-
-  .hero-platforms a {
-    color: #667eea;
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .hero-platforms a:hover {
-    color: #764ba2;
-  }
-
-  .hero-platforms .separator {
-    margin: 0 0.5rem;
-    color: #444;
+  .hero-note {
+    margin-top: 18px;
+    color: var(--fg-faint);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .hero-preview {
-    margin-top: 4rem;
+    margin-top: clamp(48px, 7vw, 80px);
   }
 
-  .hero-screenshot-frame {
-    border-radius: 12px;
+  .hero-frame {
+    margin: 0;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
+    border-color: var(--border-strong);
+    box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.9);
   }
 
-  .screenshot-overlay {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent 0%, rgba(10, 10, 10, 0.85) 30%);
-    pointer-events: none;
-    z-index: 1;
+  .hero-frame-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 38px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
   }
 
-  .hero-screenshot-frame img {
+  .hero-frame-bar i {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .hero-frame img {
+    display: block;
     width: 100%;
     height: auto;
-    display: block;
   }
 
-  /* ── Buttons ──────────────────────────────────────────────── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.875rem 1.75rem;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 1rem;
-    text-decoration: none;
-    transition: all 0.2s;
-    cursor: pointer;
-    border: none;
+  /* ── Sections ──────────────────────────────────────────────────── */
+  .section {
+    padding: clamp(64px, 9vw, 112px) 0;
   }
 
-  .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-  }
-
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(102, 126, 234, 0.4);
-  }
-
-  .btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  .btn-lg {
-    padding: 1rem 2rem;
-    font-size: 1.125rem;
-  }
-
-  .btn-icon {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* ── Features Section ─────────────────────────────────────── */
-  .features {
-    padding: 6rem 0;
-    background: #0a0a0a;
-  }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-
-  .section-header {
-    text-align: center;
-    margin-bottom: 4rem;
+  .section-head {
+    max-width: 720px;
+    margin-bottom: clamp(44px, 6vw, 68px);
   }
 
   .section-title {
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 700;
-    color: white;
-    margin-bottom: 1rem;
-    letter-spacing: -0.02em;
+    margin-top: 16px;
+    font-size: clamp(2rem, 4.6vw, 3.6rem);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+    text-wrap: balance;
   }
 
   .section-subtitle {
-    font-size: 1.25rem;
-    color: #a0a0a0;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-  }
-
-  .feature-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 2rem;
-    transition: all 0.3s;
-  }
-
-  .feature-card:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(102, 126, 234, 0.3);
-    transform: translateY(-4px);
-  }
-
-  .feature-icon {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1.5rem;
-  }
-
-  .feature-icon svg {
-    width: 24px;
-    height: 24px;
-    color: white;
-  }
-
-  .feature-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: white;
-    margin-bottom: 0.75rem;
-  }
-
-  .feature-description {
-    color: #a0a0a0;
+    max-width: 620px;
+    margin-top: 22px;
+    color: var(--fg-muted);
+    font-size: clamp(1rem, 1.5vw, 1.15rem);
     line-height: 1.6;
-    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
   }
 
-  /* ── Providers Section ────────────────────────────────────── */
+  /* ── Providers ─────────────────────────────────────────────────── */
   .providers {
-    padding: 6rem 0;
-    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+    border-top: 1px solid var(--border);
   }
 
-  .providers-grid {
+  .provider-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .provider-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 1.5rem;
-    transition: all 0.3s;
-  }
-
-  .provider-card:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(102, 126, 234, 0.3);
-  }
-
-  .provider-name {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: white;
-    margin-bottom: 0.5rem;
-  }
-
-  .provider-description {
-    color: #a0a0a0;
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-
-  /* ── Download Section ─────────────────────────────────────── */
-  .download {
-    padding: 6rem 0;
-    background: #0a0a0a;
-    text-align: center;
-  }
-
-  .download-content {
-    max-width: 700px;
-    margin: 0 auto;
-  }
-
-  .download-title {
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 700;
-    color: white;
-    margin-bottom: 1rem;
-  }
-
-  .download-subtitle {
-    font-size: 1.25rem;
-    color: #a0a0a0;
-    margin-bottom: 2.5rem;
-  }
-
-  .download-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 1.5rem;
-  }
-
-  .download-platforms {
-    color: #666;
-    font-size: 0.875rem;
-  }
-
-  .download-platforms a {
-    color: #667eea;
-    text-decoration: none;
-  }
-
-  .download-platforms a:hover {
-    color: #764ba2;
-  }
-
-  .download-platforms .separator {
-    margin: 0 0.5rem;
-    color: #444;
-  }
-
-  /* ── Footer ───────────────────────────────────────────────── */
-  .footer {
-    padding: 4rem 0 2rem;
-    background: #050505;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .footer-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 3rem;
-    margin-bottom: 3rem;
-  }
-
-  .footer-brand-name {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 1rem;
-  }
-
-  .footer-brand-description {
-    color: #a0a0a0;
-    line-height: 1.6;
-    max-width: 300px;
-  }
-
-  .footer-links-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: white;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 1rem;
-  }
-
-  .footer-links-list {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
     list-style: none;
     padding: 0;
     margin: 0;
   }
 
-  .footer-links-list li {
-    margin-bottom: 0.75rem;
+  .provider-card {
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+    transition: border-color 0.2s ease, background 0.2s ease;
   }
 
-  .footer-links-list a {
-    color: #a0a0a0;
-    text-decoration: none;
-    font-size: 0.9375rem;
-    transition: color 0.2s;
+  .provider-card:hover {
+    border-color: var(--border-strong);
+    background: rgba(255, 255, 255, 0.03);
   }
 
-  .footer-links-list a:hover {
-    color: #667eea;
+  .provider-name {
+    color: var(--fg);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
 
-  .footer-bottom {
-    padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  .provider-description {
+    margin-top: 8px;
+    color: var(--fg-dim);
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+
+  /* ── Features ──────────────────────────────────────────────────── */
+  .features {
+    border-top: 1px solid var(--border);
+  }
+
+  .feature-group + .feature-group {
+    margin-top: clamp(56px, 7vw, 88px);
+  }
+
+  .feature-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 26px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .feature-group-number {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+  }
+
+  .feature-group-title {
+    color: var(--fg);
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 14px;
+  }
+
+  .feature-card {
+    padding: 26px;
+    border-radius: var(--radius);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .feature-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+  }
+
+  .feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--accent);
+  }
+
+  .feature-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .feature-title {
+    margin-top: 18px;
+    color: var(--fg);
+    font-size: 1.08rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .feature-description {
+    margin-top: 10px;
+    color: var(--fg-muted);
+    font-size: 0.9rem;
+    line-height: 1.62;
+  }
+
+  /* ── CTA ───────────────────────────────────────────────────────── */
+  .cta {
+    border-top: 1px solid var(--border);
+  }
+
+  .cta-panel {
+    padding: clamp(40px, 7vw, 72px);
+    border-radius: var(--radius-lg);
+    border-color: var(--border-strong);
     text-align: center;
+    background:
+      radial-gradient(60% 120% at 50% 0%, oklch(0.68 0.17 250 / 0.12), transparent 70%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
   }
 
-  .footer-copyright {
-    color: #666;
-    font-size: 0.875rem;
+  .cta-title {
+    max-width: 620px;
+    margin: 0 auto;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    text-wrap: balance;
   }
 
-  /* ── Responsive ──────────────────────────────────────────── */
-  @media (max-width: 768px) {
-    .hero {
-      padding: 4rem 0 2rem;
-    }
+  .cta-subtitle {
+    max-width: 520px;
+    margin: 20px auto 0;
+    color: var(--fg-muted);
+    font-size: clamp(1rem, 1.5vw, 1.12rem);
+    line-height: 1.6;
+  }
 
-    .hero-actions {
+  .cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .cta-note {
+    margin-top: 18px;
+    color: var(--fg-faint);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── Responsive ────────────────────────────────────────────────── */
+  @media (max-width: 560px) {
+    .hero-actions,
+    .cta-actions {
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
     }
 
-    .btn-lg {
+    .hero-actions .btn,
+    .cta-actions .btn {
       width: 100%;
-      max-width: 300px;
-      justify-content: center;
-    }
-
-    .features-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .providers-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .footer-grid {
-      grid-template-columns: 1fr;
-      gap: 2rem;
-    }
-
-    .download-actions {
-      flex-direction: column;
-      align-items: center;
     }
   }
 </style>

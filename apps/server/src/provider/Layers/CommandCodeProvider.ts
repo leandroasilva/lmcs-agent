@@ -1,8 +1,9 @@
 /**
  * CommandCodeProvider — snapshot/probe layer for the Command Code provider.
  *
- * Probes `cmd --version` to verify CLI availability and checks auth
- * via COMMAND_CODE_API_KEY env or settings.
+ * Probes `cmd --version` to verify CLI availability and validates the
+ * configured credential with `cmd whoami`, the only Command Code check that
+ * actually reaches the API.
  *
  * @module CommandCodeProvider
  */
@@ -24,6 +25,12 @@ import { createModelCapabilities } from "@lmcstools/core/model";
 import { resolveSpawnCommand } from "@lmcstools/core/shell";
 
 import {
+  COMMAND_CODE_API_KEY_ENV,
+  type CommandCodeAuthProbe,
+  mergeCommandCodeEnv,
+  probeCommandCodeAuth,
+} from "../commandCodeRuntime.ts";
+import {
   buildServerProvider,
   isCommandMissingCause,
   parseGenericCliVersion,
@@ -35,7 +42,7 @@ import { makeUnavailableUsageLimits } from "../providerUsageLimits.ts";
 
 const VERSION_PROBE_TIMEOUT_MS = 4_000;
 const MODELS_PROBE_TIMEOUT_MS = 8_000;
-const COMMAND_CODE_API_KEY_ENV = "COMMAND_CODE_API_KEY";
+const AUTH_PROBE_TIMEOUT_MS = 10_000;
 
 /** Section headers in `cmd --list-models` output — not model lines. */
 const COMMANDCODE_SECTION_HEADERS = new Set([
@@ -204,13 +211,16 @@ const runCmdCliCommand = (
 ) =>
   Effect.gen(function* () {
     const binaryPath = cmdSettings.binaryPath || "cmd";
+    // Probes must run with the same credential the turns use, otherwise the
+    // health check validates one identity while `sendTurn` runs with another.
+    const env = mergeCommandCodeEnv(environment, cmdSettings);
     const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, {
-      env: environment,
+      env,
     });
     return yield* spawnAndCollect(
       binaryPath,
       ChildProcess.make(spawnCommand.command, spawnCommand.args, {
-        env: environment,
+        env,
         shell: spawnCommand.shell,
       }),
     );
@@ -254,6 +264,25 @@ export function buildInitialCommandCodeProviderSnapshot(
       },
     });
   });
+}
+
+/**
+ * User-facing reason an authentication probe did not succeed.
+ *
+ * An exhaustive switch keeps the union narrowed per branch, so `detail` is only
+ * read where the CLI actually supplied one.
+ */
+function commandCodeAuthFailureMessage(probe: CommandCodeAuthProbe): string {
+  switch (probe.status) {
+    case "rejected":
+      return `Command Code rejected the configured API key (${probe.detail}). Clear apiKey in settings, or run \`cmd login\` in a terminal.`;
+    case "missing":
+      return "Command Code is not signed in. Run `cmd login` in a terminal, or set apiKey in settings.";
+    case "unknown":
+      return `Could not verify Command Code authentication: ${probe.detail}`;
+    case "authenticated":
+      return "Command Code is ready.";
+  }
 }
 
 export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProviderStatus")(
@@ -353,21 +382,45 @@ export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProvide
       });
     }
 
-    const auth: ServerProviderAuth = environment[COMMAND_CODE_API_KEY_ENV]?.trim()
-      ? {
-          status: "authenticated",
-          type: "api_key",
-          label: "Command Code API Key (env)",
-        }
-      : cmdSettings.apiKey
-        ? {
-            status: "authenticated",
-            type: "api_key",
-            label: "Command Code API Key",
-          }
-        : { status: "unauthenticated" };
+    // Having a credential proves nothing. `cmd status` answers "Authentication
+    // verified" for a key the API rejects with 401, and `cmd --list-models`
+    // succeeds with no credentials at all, so both used to report a healthy
+    // provider whose every turn failed with "Authentication failed". Only
+    // `cmd whoami` asks the server whether the credential is actually accepted.
+    const authProbe = yield* probeCommandCodeAuth({
+      settings: cmdSettings,
+      environment,
+    }).pipe(Effect.timeoutOption(AUTH_PROBE_TIMEOUT_MS));
+    const probe: CommandCodeAuthProbe = Option.isSome(authProbe)
+      ? authProbe.value
+      : { status: "unknown", detail: "`cmd whoami` timed out." };
 
-    if (auth.status === "unauthenticated") {
+    const auth: ServerProviderAuth =
+      probe.status === "authenticated"
+        ? environment[COMMAND_CODE_API_KEY_ENV]?.trim()
+          ? {
+              status: "authenticated",
+              type: "api_key",
+              label: "Command Code API Key (env)",
+            }
+          : cmdSettings.apiKey?.trim()
+            ? {
+                status: "authenticated",
+                type: "api_key",
+                label: "Command Code API Key",
+              }
+            : {
+                // Signed in through `cmd login`; the credential lives in the
+                // CLI's own auth file and no API key is configured here.
+                status: "authenticated",
+                type: "cached_token",
+                label: "Command Code account",
+              }
+        : probe.status === "unknown"
+          ? { status: "unknown" }
+          : { status: "unauthenticated" };
+
+    if (auth.status !== "authenticated") {
       const models = scopeCommandCodeModelCatalog(cmdSettings.customModels);
       return buildServerProvider({
         presentation: COMMANDCODE_PRESENTATION,
@@ -377,10 +430,11 @@ export const checkCommandCodeProviderStatus = Effect.fn("checkCommandCodeProvide
         probe: {
           installed: true,
           version,
-          status: "error",
+          // A refused credential is a hard error. An unverifiable one is not
+          // the user's fault and must not read as a broken installation.
+          status: probe.status === "unknown" ? "warning" : "error",
           auth,
-          message:
-            "Command Code CLI is installed but not authenticated. Set apiKey in settings or COMMAND_CODE_API_KEY env.",
+          message: commandCodeAuthFailureMessage(probe),
         },
       });
     }

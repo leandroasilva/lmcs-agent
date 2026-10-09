@@ -52,10 +52,17 @@ const imageProps = {
               <span class="card-format">.dmg</span>
             </span>
           </a>
+          <a class="download-card" data-asset="x64.dmg" href={RELEASES_URL}>
+            <span class="card-icon">
+              <Image class="card-icon--stable" src={iconSystem} width={28} height={28} loading="lazy" {...imageProps} />
+              <Image class="card-icon--nightly" src={iconNightly} width={28} height={28} loading="lazy" {...imageProps} />
+            </span>
+            <span class="card-text">
+              <span class="card-arch">Intel (x64)</span>
+              <span class="card-format">.dmg</span>
+            </span>
+          </a>
         </div>
-        <!-- <p class="intel-note">
-          On um Mac Intel? <a data-asset="x64.dmg" href={RELEASES_URL}>Baixe a versão x64</a>.
-        </p> -->
       </section>
     </div>
 
@@ -441,12 +448,6 @@ const imageProps = {
     color: #b6b0ff;
   }
 
-  .intel-note {
-    font-size: 0.8rem;
-    color: var(--fg-dim);
-  }
-
-  .intel-note a,
   .releases-link a {
     color: var(--fg-muted);
     text-decoration: underline;
@@ -455,7 +456,6 @@ const imageProps = {
     transition: color 0.3s ease, text-decoration-color 0.3s ease;
   }
 
-  .intel-note a:hover,
   .releases-link a:hover {
     color: var(--fg);
     text-decoration-color: var(--fg);
