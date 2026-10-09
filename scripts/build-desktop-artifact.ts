@@ -3649,13 +3649,19 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   const stageProdResourcesDir = path.join(stageAppDir, "apps/desktop/prod-resources");
   yield* fs.copy(stageResourcesDir, stageProdResourcesDir);
 
-  const configuredMacPasskeySigning =
-    options.platform === "mac" && options.signed
-      ? yield* Effect.try({
-          try: () => resolveMacPasskeySigningConfiguration(loadRepoEnv({ repoRoot })),
-          catch: MacPasskeySigningConfigurationResolutionError.fromCause,
-        })
-      : undefined;
+  let configuredMacPasskeySigning: MacPasskeySigningConfiguration | undefined;
+  if (options.platform === "mac" && options.signed) {
+    try {
+      configuredMacPasskeySigning = resolveMacPasskeySigningConfiguration(
+        loadRepoEnv({ repoRoot }),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      yield* Effect.logWarning(
+        `[desktop-artifact] Passkey signing configuration not available: ${message}. Falling back to Developer ID signing.`,
+      );
+    }
+  }
   const macPasskeySigning = configuredMacPasskeySigning
     ? {
         ...configuredMacPasskeySigning,
