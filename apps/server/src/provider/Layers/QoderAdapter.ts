@@ -301,10 +301,7 @@ export function makeQoderAdapter(
                   stderr: "pipe",
                 }),
               )
-              .pipe(
-                Effect.provideService(Scope.Scope, turnScope),
-                Effect.ensuring(Scope.close(turnScope, Exit.void)),
-              );
+              .pipe(Effect.provideService(Scope.Scope, turnScope));
 
             context.activeProcess = handle;
 
@@ -465,6 +462,9 @@ export function makeQoderAdapter(
             }
 
             context.activeProcess = undefined;
+
+            // Close the turn scope to clean up the child process
+            yield* Scope.close(turnScope, Exit.void).pipe(Effect.ignore);
 
             const stderrTail = stderr.trim().slice(-500);
             return {

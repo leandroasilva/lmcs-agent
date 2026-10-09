@@ -34,7 +34,7 @@ import {
 import { makeUnavailableUsageLimits } from "../providerUsageLimits.ts";
 
 const VERSION_PROBE_TIMEOUT_MS = 4_000;
-const MODELS_PROBE_TIMEOUT_MS = 5_000;
+const MODELS_PROBE_TIMEOUT_MS = 15_000;
 const QODER_PAT_ENV = "QODER_PERSONAL_ACCESS_TOKEN";
 const QODER_AUTH_FILE = ".qoder/.auth/user";
 
