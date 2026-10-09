@@ -42,11 +42,10 @@ jobs:
           # Install lftp for SFTP deployment
           sudo apt-get update && sudo apt-get install -y lftp
                 
-          # Debug: list remote directory
+          # Deploy using lftp
           lftp -c "
             set sftp:auto-confirm yes;
             open sftp://${{ secrets.MARKETING_SFTP_USER }}:${{ secrets.MARKETING_SFTP_PASSWORD }}@${{ secrets.MARKETING_SFTP_HOST }}:${{ secrets.MARKETING_SFTP_PORT }};
-            pwd;
-            ls -la;
+            mirror -R --delete ./apps/marketing/dist/ code-lmcs-tec-br/;
             bye;
           "
