@@ -35,6 +35,7 @@ import {
   CloudUploadIcon,
   GitBranchPlusIcon,
   GitCommitIcon,
+  GitMergeIcon,
   InfoIcon,
   LockIcon,
   GlobeIcon,
@@ -117,6 +118,7 @@ import { randomUUID } from "~/lib/utils";
 import { resolvePathLinkTarget } from "~/terminal-links";
 import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
 import { getSourceControlPresentation } from "~/sourceControlPresentation";
+import { MergeBranchDialog } from "./MergeBranchDialog";
 import { useOpenLink } from "~/browser/useOpenLink";
 import { useOpenPrLink } from "~/lib/openPullRequestLink";
 
@@ -179,6 +181,10 @@ interface RunGitActionWithToastInput {
   filePaths?: string[];
   /** User-selected target branch for PR creation. */
   baseBranch?: string;
+  /** Source branch for merge action. */
+  sourceBranch?: string;
+  /** Target branch for merge action. */
+  targetBranch?: string;
 }
 
 const GIT_STATUS_WINDOW_REFRESH_DEBOUNCE_MS = 250;
@@ -392,6 +398,7 @@ function GitActionItemIcon({
 }) {
   if (icon === "commit") return <GitCommitIcon />;
   if (icon === "push") return <CloudUploadIcon />;
+  if (icon === "merge") return <GitMergeIcon />;
   return <SourceControlIcon />;
 }
 
@@ -1000,6 +1007,7 @@ export default function GitActionsControl({
     useState<PendingDefaultBranchAction | null>(null);
   const [pendingPrAction, setPendingPrAction] = useState<PendingPrAction | null>(null);
   const [selectedPrBaseBranch, setSelectedPrBaseBranch] = useState<string>("");
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const activeGitActionProgressRef = useRef<ActiveGitActionProgress | null>(null);
   const sourceControlScope = useMemo(
     () => ({ environmentId: activeEnvironmentId, cwd: gitCwd }),
@@ -1336,6 +1344,8 @@ export default function GitActionsControl({
       progressToastId,
       filePaths,
       baseBranch,
+      sourceBranch,
+      targetBranch,
     }: RunGitActionWithToastInput) => {
       const actionStatus = statusOverride ?? gitStatusForActions;
       const actionBranch = actionStatus?.refName ?? null;
@@ -1480,6 +1490,8 @@ export default function GitActionsControl({
         // have no server thread yet, so there is nothing to link to.
         ...(activeServerThread ? { threadId: activeServerThread.id } : {}),
         ...(baseBranch ? { baseBranch } : {}),
+        ...(sourceBranch ? { sourceBranch } : {}),
+        ...(targetBranch ? { targetBranch } : {}),
         // Use the thread's model for commit/PR text generation when available.
         ...(activeServerThread?.modelSelection
           ? { modelSelection: activeServerThread.modelSelection }
@@ -1734,6 +1746,10 @@ export default function GitActionsControl({
       // Show base branch selector dialog
       setSelectedPrBaseBranch("");
       setPendingPrAction({ action: "create_pr" });
+      return;
+    }
+    if (item.dialogAction === "merge") {
+      setIsMergeDialogOpen(true);
       return;
     }
     setExcludedFiles(new Set());
@@ -2350,6 +2366,23 @@ export default function GitActionsControl({
           </DialogFooter>
         </DialogPopup>
       </Dialog>
+
+      <MergeBranchDialog
+        open={isMergeDialogOpen}
+        branches={[]}
+        currentBranch={gitStatus?.refName ?? null}
+        environmentId={activeEnvironmentId}
+        cwd={gitCwd}
+        onMerge={(sourceBranch, targetBranch) => {
+          runGitActionWithToast({
+            action: "merge",
+            sourceBranch,
+            targetBranch,
+          });
+          setIsMergeDialogOpen(false);
+        }}
+        onOpenChange={setIsMergeDialogOpen}
+      />
     </>
   );
 }

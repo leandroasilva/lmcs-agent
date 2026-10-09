@@ -6,12 +6,12 @@ import {
   type ChangeRequestTerminology,
 } from "../../sourceControlPresentation";
 
-export type GitActionIconName = "commit" | "push" | "pr";
+export type GitActionIconName = "commit" | "push" | "pr" | "merge";
 
-export type GitDialogAction = "commit" | "push" | "create_pr";
+export type GitDialogAction = "commit" | "push" | "create_pr" | "merge";
 
 export interface GitActionMenuItem {
-  id: "commit" | "push" | "pr";
+  id: "commit" | "push" | "pr" | "merge";
   label: string;
   disabled: boolean;
   icon: GitActionIconName;
@@ -157,6 +157,14 @@ export function buildMenuItems(
           kind: "open_dialog",
           dialogAction: "create_pr",
         },
+    {
+      id: "merge",
+      label: "Merge Branch",
+      disabled: isBusy || !hasBranch,
+      icon: "merge",
+      kind: "open_dialog",
+      dialogAction: "merge",
+    },
   ];
 }
 
@@ -167,7 +175,12 @@ export function resolveQuickAction(
   hasPrimaryRemote = true,
 ): GitQuickAction {
   if (isBusy) {
-    return { label: "Commit", disabled: true, kind: "show_hint", hint: "Git action in progress." };
+    return {
+      label: "Commit",
+      disabled: true,
+      kind: "show_hint",
+      hint: "Git action in progress.",
+    };
   }
 
   if (!gitStatus) {
@@ -199,10 +212,20 @@ export function resolveQuickAction(
 
   if (hasChanges) {
     if (!gitStatus.hasUpstream && !hasPrimaryRemote) {
-      return { label: "Commit", disabled: false, kind: "run_action", action: "commit" };
+      return {
+        label: "Commit",
+        disabled: false,
+        kind: "run_action",
+        action: "commit",
+      };
     }
     if (hasOpenPr || isDefaultRef) {
-      return { label: "Commit & push", disabled: false, kind: "run_action", action: "commit_push" };
+      return {
+        label: "Commit & push",
+        disabled: false,
+        kind: "run_action",
+        action: "commit_push",
+      };
     }
     return {
       label: `Commit, push & ${terminology.shortLabel}`,
@@ -215,7 +238,11 @@ export function resolveQuickAction(
   if (!gitStatus.hasUpstream) {
     if (!hasPrimaryRemote) {
       if (hasOpenPr && !isAhead) {
-        return { label: `View ${terminology.shortLabel}`, disabled: false, kind: "open_pr" };
+        return {
+          label: `View ${terminology.shortLabel}`,
+          disabled: false,
+          kind: "open_pr",
+        };
       }
       return {
         label: "Publish repository",
@@ -225,7 +252,11 @@ export function resolveQuickAction(
     }
     if (!isAhead) {
       if (hasOpenPr) {
-        return { label: `View ${terminology.shortLabel}`, disabled: false, kind: "open_pr" };
+        return {
+          label: `View ${terminology.shortLabel}`,
+          disabled: false,
+          kind: "open_pr",
+        };
       }
       return {
         label: "Push",
@@ -285,7 +316,11 @@ export function resolveQuickAction(
   }
 
   if (hasOpenPr && gitStatus.hasUpstream) {
-    return { label: `View ${terminology.shortLabel}`, disabled: false, kind: "open_pr" };
+    return {
+      label: `View ${terminology.shortLabel}`,
+      disabled: false,
+      kind: "open_pr",
+    };
   }
 
   if (hasDefaultBranchDelta && !isDefaultRef) {

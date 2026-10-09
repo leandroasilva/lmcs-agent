@@ -17,6 +17,8 @@ import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import * as NodePath from "node:path";
+import * as NodeFSP from "node:fs/promises";
 
 import {
   GitCommandError,
@@ -26,6 +28,7 @@ import {
   type ReviewDiffFileStat,
   type ReviewDiffPreviewSource,
   type VcsRef,
+  type GitConflict,
 } from "@lmcstools/core";
 import { dedupeRemoteBranchesWithLocalMatches, normalizeGitRemoteUrl } from "@lmcstools/core/git";
 import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
@@ -2299,6 +2302,213 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     };
   });
 
+  const mergeBranch: GitVcsDriver.GitVcsDriver["Service"]["mergeBranch"] = Effect.fn("mergeBranch")(
+    function* (input) {
+      const { cwd, sourceBranch, targetBranch } = input;
+      // Checkout target branch first
+      yield* executeGit("GitVcsDriver.mergeBranch.checkout", cwd, ["checkout", targetBranch], {
+        timeoutMs: 30_000,
+        fallbackErrorDetail: `Failed to checkout ${targetBranch}`,
+      });
+
+      const beforeSha = yield* runGitStdout(
+        "GitVcsDriver.mergeBranch.beforeSha",
+        cwd,
+        ["rev-parse", "HEAD"],
+        true,
+      ).pipe(Effect.map((stdout) => stdout.trim()));
+
+      // Try merge
+      const mergeResult = yield* executeGit(
+        "GitVcsDriver.mergeBranch.merge",
+        cwd,
+        ["merge", sourceBranch, "--no-edit"],
+        {
+          timeoutMs: 120_000,
+          fallbackErrorDetail: `Failed to merge ${sourceBranch} into ${targetBranch}`,
+          allowNonZeroExit: true,
+        },
+      );
+
+      const afterSha = yield* runGitStdout(
+        "GitVcsDriver.mergeBranch.afterSha",
+        cwd,
+        ["rev-parse", "HEAD"],
+        true,
+      ).pipe(Effect.map((stdout) => stdout.trim()));
+
+      // Check if merge succeeded or has conflicts
+      if (mergeResult.exitCode === 0) {
+        return {
+          status: "merged" as const,
+          sourceBranch,
+          targetBranch,
+          conflicts: [],
+          commitSha: afterSha,
+        };
+      }
+
+      // Check if already up to date
+      if (beforeSha === afterSha) {
+        return {
+          status: "already_up_to_date" as const,
+          sourceBranch,
+          targetBranch,
+          conflicts: [],
+          commitSha: beforeSha,
+        };
+      }
+
+      // Has conflicts - parse them
+      const conflicts = yield* getConflicts(cwd);
+      return {
+        status: "conflicts" as const,
+        sourceBranch,
+        targetBranch,
+        conflicts,
+        commitSha: undefined,
+      };
+    },
+  );
+
+  const getConflicts: GitVcsDriver.GitVcsDriver["Service"]["getConflicts"] = Effect.fn(
+    "getConflicts",
+  )(function* (cwd) {
+    // Get list of conflicted files
+    const conflictedFiles = yield* runGitStdout(
+      "GitVcsDriver.getConflicts.diff",
+      cwd,
+      ["diff", "--name-only", "--diff-filter=U"],
+      true,
+    ).pipe(
+      Effect.map((stdout) =>
+        stdout
+          .trim()
+          .split("\n")
+          .filter((f) => f.length > 0),
+      ),
+    );
+
+    const conflicts: GitConflict[] = [];
+    for (const filePath of conflictedFiles) {
+      const fullPath = NodePath.join(cwd, filePath);
+      const content = yield* Effect.tryPromise({
+        try: () => NodeFSP.readFile(fullPath, "utf8"),
+        catch: (cause) =>
+          new GitCommandError({
+            operation: "GitVcsDriver.getConflicts.readFile",
+            command: `read ${filePath}`,
+            cwd,
+            detail: `Failed to read ${filePath}`,
+            cause,
+          }),
+      });
+
+      // Parse conflict markers
+      const ours: string[] = [];
+      const theirs: string[] = [];
+      const base: string[] = [];
+      let section: "ours" | "theirs" | "base" | "other" = "other";
+
+      for (const line of content.split("\n")) {
+        if (line.startsWith("<<<<<<<")) {
+          section = "ours";
+        } else if (line.startsWith("|||||||")) {
+          section = "base";
+        } else if (line.startsWith("=======")) {
+          section = "theirs";
+        } else if (line.startsWith(">>>>>>>")) {
+          section = "other";
+        } else {
+          if (section === "ours") ours.push(line);
+          else if (section === "theirs") theirs.push(line);
+          else if (section === "base") base.push(line);
+        }
+      }
+
+      conflicts.push({
+        path: filePath,
+        ours: ours.join("\n"),
+        theirs: theirs.join("\n"),
+        base: base.join("\n"),
+      });
+    }
+
+    return conflicts;
+  });
+
+  const resolveConflict: GitVcsDriver.GitVcsDriver["Service"]["resolveConflict"] = Effect.fn(
+    "resolveConflict",
+  )(function* (input) {
+    const { cwd, path: filePath, resolution, manualContent } = input;
+    const fullPath = NodePath.join(cwd, filePath);
+
+    let content: string;
+    if (resolution === "manual" && manualContent) {
+      content = manualContent;
+    } else {
+      // Read current content and extract the appropriate version
+      const currentContent = yield* Effect.tryPromise({
+        try: () => NodeFSP.readFile(fullPath, "utf8"),
+        catch: (cause) =>
+          new GitCommandError({
+            operation: "GitVcsDriver.resolveConflict.readFile",
+            command: `read ${filePath}`,
+            cwd,
+            detail: `Failed to read ${filePath}`,
+            cause,
+          }),
+      });
+      const lines = currentContent.split("\n");
+      const result: string[] = [];
+      let section: "ours" | "theirs" | "base" | "other" = "other";
+
+      for (const line of lines) {
+        if (line.startsWith("<<<<<<<")) {
+          section = "ours";
+        } else if (line.startsWith("|||||||")) {
+          section = "base";
+        } else if (line.startsWith("=======")) {
+          section = "theirs";
+        } else if (line.startsWith(">>>>>>>")) {
+          section = "other";
+        } else {
+          if (resolution === "ours" && section === "ours") result.push(line);
+          else if (resolution === "theirs" && section === "theirs") result.push(line);
+          else if (resolution === "ours" && section === "other") result.push(line);
+          else if (resolution === "theirs" && section === "other") result.push(line);
+          else if (section === "other") result.push(line);
+        }
+      }
+      content = result.join("\n");
+    }
+
+    yield* Effect.tryPromise({
+      try: () => NodeFSP.writeFile(fullPath, content),
+      catch: (cause) =>
+        new GitCommandError({
+          operation: "GitVcsDriver.resolveConflict.writeFile",
+          command: `write ${filePath}`,
+          cwd,
+          detail: `Failed to write ${filePath}`,
+          cause,
+        }),
+    });
+    yield* executeGit("GitVcsDriver.resolveConflict.add", cwd, ["add", filePath], {
+      timeoutMs: 30_000,
+      fallbackErrorDetail: `Failed to stage ${filePath}`,
+    });
+  });
+
+  const abortMerge: GitVcsDriver.GitVcsDriver["Service"]["abortMerge"] = Effect.fn("abortMerge")(
+    function* (cwd) {
+      yield* executeGit("GitVcsDriver.abortMerge", cwd, ["merge", "--abort"], {
+        timeoutMs: 30_000,
+        fallbackErrorDetail: "Failed to abort merge",
+      });
+    },
+  );
+
   const rebaseCurrentBranch: GitVcsDriver.GitVcsDriver["Service"]["rebaseCurrentBranch"] =
     Effect.fn("rebaseCurrentBranch")(function* (cwd) {
       const details = yield* statusDetails(cwd);
@@ -3781,6 +3991,10 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       withListRefsInvalidation(cwd, pushCurrentBranch(cwd, fallbackBranch, options)),
     pullCurrentBranch: (cwd) => withListRefsInvalidation(cwd, pullCurrentBranch(cwd)),
     rebaseCurrentBranch: (cwd) => withListRefsInvalidation(cwd, rebaseCurrentBranch(cwd)),
+    mergeBranch: (input) => withListRefsInvalidation(input.cwd, mergeBranch(input)),
+    getConflicts: (cwd) => getConflicts(cwd),
+    resolveConflict: (input) => withListRefsInvalidation(input.cwd, resolveConflict(input)),
+    abortMerge: (cwd) => withListRefsInvalidation(cwd, abortMerge(cwd)),
     readRangeContext,
     getReviewDiffPreview,
     getReviewDiffFileContents,

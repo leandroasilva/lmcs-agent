@@ -31,6 +31,10 @@ import {
   type VcsStatusInput,
   type VcsStatusResult,
   type WorktreeSubmodules,
+  type GitMergeBranchInput,
+  type GitMergeResult,
+  type GitConflict,
+  type GitResolveConflictInput,
 } from "@lmcstools/core";
 import {
   makeGitVcsDriverCore,
@@ -328,6 +332,16 @@ export class GitVcsDriver extends Context.Service<
     ) => Effect.Effect<VcsListRefsResult, GitCommandError>;
     readonly pullCurrentBranch: (cwd: string) => Effect.Effect<VcsPullResult, GitCommandError>;
     readonly rebaseCurrentBranch: (cwd: string) => Effect.Effect<VcsPullResult, GitCommandError>;
+    readonly mergeBranch: (
+      input: GitMergeBranchInput,
+    ) => Effect.Effect<GitMergeResult, GitCommandError>;
+    readonly getConflicts: (
+      cwd: string,
+    ) => Effect.Effect<ReadonlyArray<GitConflict>, GitCommandError>;
+    readonly resolveConflict: (
+      input: GitResolveConflictInput,
+    ) => Effect.Effect<void, GitCommandError>;
+    readonly abortMerge: (cwd: string) => Effect.Effect<void, GitCommandError>;
     readonly createWorktree: (
       input: VcsCreateWorktreeInput,
       options?: CreateWorktreeOptions,

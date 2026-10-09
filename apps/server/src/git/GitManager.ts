@@ -1698,7 +1698,7 @@ export const make = Effect.gen(function* () {
     cwd: string,
     result: Pick<
       GitRunStackedActionResult,
-      "action" | "branch" | "commit" | "push" | "pr" | "sync"
+      "action" | "branch" | "commit" | "push" | "pr" | "sync" | "merge"
     >,
   ) {
     const terms = yield* sourceControlProvider(cwd).pipe(
@@ -2692,6 +2692,7 @@ export const make = Effect.gen(function* () {
             (!initialStatus.hasUpstream || initialStatus.aheadCount > 0));
         const wantsPr = input.action === "create_pr" || input.action === "commit_push_pr";
         const wantsSync = input.action === "sync_ref";
+        const wantsMerge = input.action === "merge";
 
         if (input.featureBranch && !wantsCommit) {
           return yield* new GitManagerError({
@@ -2713,6 +2714,7 @@ export const make = Effect.gen(function* () {
           ...(wantsCommit ? (["commit"] as const) : []),
           ...(wantsSync ? (["push"] as const) : []),
           ...(wantsPush ? (["push"] as const) : []),
+          ...(wantsMerge ? (["push"] as const) : []),
           ...(wantsPr ? (["pr"] as const) : []),
         ];
 
@@ -2839,6 +2841,11 @@ export const make = Effect.gen(function* () {
               .pipe(
                 Effect.tap(() => Ref.set(currentPhase, Option.some("push"))),
                 Effect.flatMap(() => gitCore.rebaseCurrentBranch(input.cwd)),
+                Effect.map((result) => ({
+                  status: result.status,
+                  refName: result.refName,
+                  upstreamRef: result.upstreamRef ?? undefined,
+                })),
               )
           : { status: "skipped_not_requested" as const };
 
@@ -2854,6 +2861,31 @@ export const make = Effect.gen(function* () {
                 Effect.flatMap(() => gitCore.pushCurrentBranch(input.cwd, currentBranch)),
               )
           : { status: "skipped_not_requested" as const };
+
+        const merge = wantsMerge
+          ? yield* progress
+              .emit({
+                kind: "phase_started",
+                phase: "push",
+                label: "Merging branches...",
+              })
+              .pipe(
+                Effect.tap(() => Ref.set(currentPhase, Option.some("push"))),
+                Effect.flatMap(() =>
+                  gitCore.mergeBranch({
+                    cwd: input.cwd,
+                    sourceBranch: input.sourceBranch!,
+                    targetBranch: input.targetBranch!,
+                  }),
+                ),
+              )
+          : {
+              status: "skipped_not_requested" as const,
+              sourceBranch: undefined,
+              targetBranch: undefined,
+              conflicts: [],
+              commitSha: undefined,
+            };
 
         const pr = wantsPr
           ? yield* progress
@@ -2883,6 +2915,7 @@ export const make = Effect.gen(function* () {
           push,
           pr,
           sync,
+          merge,
         });
 
         const result = {
@@ -2892,6 +2925,7 @@ export const make = Effect.gen(function* () {
           push,
           pr,
           sync,
+          merge,
           toast,
         };
         yield* progress.emit({
