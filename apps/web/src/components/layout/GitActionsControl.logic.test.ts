@@ -47,7 +47,11 @@ describe("when: ref is clean and has an open PR", () => {
       }),
       false,
     );
-    assert.deepInclude(quick, { kind: "open_pr", label: "View PR", disabled: false });
+    assert.deepInclude(quick, {
+      kind: "open_pr",
+      label: "View PR",
+      disabled: false,
+    });
   });
 
   it("buildMenuItems disables commit/push and enables open PR", () => {
@@ -167,7 +171,11 @@ describe("when: ref is clean, ahead, and has an open PR", () => {
       }),
       false,
     );
-    assert.deepInclude(quick, { kind: "run_action", action: "push", label: "Push" });
+    assert.deepInclude(quick, {
+      kind: "run_action",
+      action: "push",
+      label: "Push",
+    });
   });
 
   it("buildMenuItems enables push and keeps open PR available", () => {
@@ -303,10 +311,19 @@ describe("when: ref is clean, up to date, and has no open PR", () => {
 
   it("resolveQuickAction returns disabled no-action state", () => {
     const quick = resolveQuickAction(
-      status({ aheadCount: 0, behindCount: 0, hasWorkingTreeChanges: false, pr: null }),
+      status({
+        aheadCount: 0,
+        behindCount: 0,
+        hasWorkingTreeChanges: false,
+        pr: null,
+      }),
       false,
     );
-    assert.deepInclude(quick, { kind: "show_hint", label: "Commit", disabled: true });
+    assert.deepInclude(quick, {
+      kind: "show_hint",
+      label: "Commit",
+      disabled: true,
+    });
   });
 
   it("buildMenuItems disables commit, push, and create PR", () => {
@@ -343,7 +360,11 @@ describe("when: ref is clean, up to date, and has no open PR", () => {
 describe("when: ref is behind upstream", () => {
   it("resolveQuickAction returns pull", () => {
     const quick = resolveQuickAction(status({ behindCount: 2 }), false);
-    assert.deepInclude(quick, { kind: "run_pull", label: "Pull", disabled: false });
+    assert.deepInclude(quick, {
+      kind: "run_pull",
+      label: "Pull",
+      disabled: false,
+    });
   });
 
   it("buildMenuItems disables push and create PR", () => {
@@ -586,10 +607,18 @@ describe("when: working tree has local changes and ref is behind upstream", () =
 describe("when: HEAD is detached and there are no local changes", () => {
   it("resolveQuickAction shows detached head hint", () => {
     const quick = resolveQuickAction(
-      status({ refName: null, hasWorkingTreeChanges: false, hasUpstream: false }),
+      status({
+        refName: null,
+        hasWorkingTreeChanges: false,
+        hasUpstream: false,
+      }),
       false,
     );
-    assert.deepInclude(quick, { kind: "show_hint", label: "Commit", disabled: true });
+    assert.deepInclude(quick, {
+      kind: "show_hint",
+      label: "Commit",
+      disabled: true,
+    });
   });
 
   it("buildMenuItems keeps commit, push, and PR disabled", () => {
@@ -1020,6 +1049,8 @@ describe("resolveThreadBranchUpdate", () => {
       },
       push: { status: "pushed", branch: "feature/fix-toast-copy" },
       pr: { status: "skipped_not_requested" },
+      sync: { status: "skipped_not_requested" },
+      merge: { status: "skipped_not_requested" },
       toast: {
         title: "Pushed 89abcde to origin/feature/fix-toast-copy",
         cta: { kind: "none" },
@@ -1044,6 +1075,8 @@ describe("resolveThreadBranchUpdate", () => {
       },
       push: { status: "pushed", branch: "feature/fix-toast-copy" },
       pr: { status: "skipped_not_requested" },
+      sync: { status: "skipped_not_requested" },
+      merge: { status: "skipped_not_requested" },
       toast: {
         title: "Pushed 89abcde to origin/feature/fix-toast-copy",
         cta: { kind: "none" },

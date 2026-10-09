@@ -17,6 +17,8 @@ export const GitStackedAction = Schema.Literals([
   "create_pr",
   "commit_push",
   "commit_push_pr",
+  "sync_ref",
+  "merge",
 ]);
 export type GitStackedAction = typeof GitStackedAction.Type;
 export const GitActionProgressPhase = Schema.Literals(["branch", "commit", "push", "pr"]);
@@ -43,8 +45,19 @@ const GitPushStepStatus = Schema.Literals([
   "skipped_not_requested",
   "skipped_up_to_date",
 ]);
+const GitSyncStepStatus = Schema.Literals([
+  "pulled",
+  "skipped_not_requested",
+  "skipped_up_to_date",
+]);
 const GitBranchStepStatus = Schema.Literals(["created", "skipped_not_requested"]);
 const GitPrStepStatus = Schema.Literals(["created", "opened_existing", "skipped_not_requested"]);
+const GitMergeStepStatus = Schema.Literals([
+  "merged",
+  "conflicts",
+  "already_up_to_date",
+  "skipped_not_requested",
+]);
 const VcsStatusChangeRequestState = Schema.Literals(["open", "closed", "merged"]);
 const GitPullRequestReference = TrimmedNonEmptyStringSchema;
 const GitPullRequestState = Schema.Literals(["open", "closed", "merged"]);
@@ -100,6 +113,38 @@ const GitResolvedPullRequest = Schema.Struct({
 });
 export type GitResolvedPullRequest = typeof GitResolvedPullRequest.Type;
 
+export const GitConflict = Schema.Struct({
+  path: TrimmedNonEmptyStringSchema,
+  ours: TrimmedNonEmptyStringSchema,
+  theirs: TrimmedNonEmptyStringSchema,
+  base: TrimmedNonEmptyStringSchema,
+});
+export type GitConflict = typeof GitConflict.Type;
+
+export const GitMergeResult = Schema.Struct({
+  status: GitMergeStepStatus,
+  sourceBranch: TrimmedNonEmptyStringSchema,
+  targetBranch: TrimmedNonEmptyStringSchema,
+  conflicts: Schema.Array(GitConflict),
+  commitSha: Schema.optional(TrimmedNonEmptyStringSchema),
+});
+export type GitMergeResult = typeof GitMergeResult.Type;
+
+export const GitResolveConflictInput = Schema.Struct({
+  cwd: TrimmedNonEmptyStringSchema,
+  path: TrimmedNonEmptyStringSchema,
+  resolution: Schema.Literals(["ours", "theirs", "manual"]),
+  manualContent: Schema.optional(TrimmedNonEmptyStringSchema),
+});
+export type GitResolveConflictInput = typeof GitResolveConflictInput.Type;
+
+export const GitMergeBranchInput = Schema.Struct({
+  cwd: TrimmedNonEmptyStringSchema,
+  sourceBranch: TrimmedNonEmptyStringSchema,
+  targetBranch: TrimmedNonEmptyStringSchema,
+});
+export type GitMergeBranchInput = typeof GitMergeBranchInput.Type;
+
 // RPC Inputs
 
 export const VcsStatusInput = Schema.Struct({
@@ -133,6 +178,16 @@ export const GitRunStackedActionInput = Schema.Struct({
    * When provided, takes precedence over the server settings model.
    */
   modelSelection: Schema.optional(ModelSelection),
+  /**
+   * Source branch for merge action.
+   * When provided, the branch to merge from.
+   */
+  sourceBranch: Schema.optional(TrimmedNonEmptyStringSchema),
+  /**
+   * Target branch for merge action.
+   * When provided, the branch to merge into.
+   */
+  targetBranch: Schema.optional(TrimmedNonEmptyStringSchema),
 });
 export type GitRunStackedActionInput = typeof GitRunStackedActionInput.Type;
 
@@ -337,6 +392,18 @@ export const GitRunStackedActionResult = Schema.Struct({
     baseBranch: Schema.optional(TrimmedNonEmptyStringSchema),
     headBranch: Schema.optional(TrimmedNonEmptyStringSchema),
     title: Schema.optional(TrimmedNonEmptyStringSchema),
+  }),
+  sync: Schema.Struct({
+    status: GitSyncStepStatus,
+    refName: Schema.optional(TrimmedNonEmptyStringSchema),
+    upstreamRef: Schema.optional(TrimmedNonEmptyStringSchema),
+  }),
+  merge: Schema.Struct({
+    status: GitMergeStepStatus,
+    sourceBranch: Schema.optional(TrimmedNonEmptyStringSchema),
+    targetBranch: Schema.optional(TrimmedNonEmptyStringSchema),
+    conflicts: Schema.optional(Schema.Array(GitConflict)),
+    commitSha: Schema.optional(TrimmedNonEmptyStringSchema),
   }),
   toast: GitRunStackedActionToast,
 });

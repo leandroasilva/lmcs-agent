@@ -2,7 +2,7 @@ import { assert, describe } from "@effect/vitest";
 
 import { createOxlintRuleHarness } from "../test/utils.ts";
 
-const rule = createOxlintRuleHarness("t3code/no-hermes-unsupported-apis", {
+const rule = createOxlintRuleHarness("lmcscode/no-hermes-unsupported-apis", {
   filename: "fixture.ts",
 });
 

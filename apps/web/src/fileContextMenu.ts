@@ -24,6 +24,7 @@ import { useAtomValue } from "@effect/atom-react";
 export type FileContextMenuAction =
   | "reveal-in-folder"
   | "open"
+  | "open-in-internal-editor"
   /** Submenu parent; never the activated id. */
   | "open-with"
   | `editor:${EditorId}`;
@@ -81,6 +82,11 @@ export function buildFileContextMenuItems(input: {
   if (input.capabilities.canOpenDefault) {
     items.push({ id: "open", label: "Open", icon: "pencil" });
   }
+  items.push({
+    id: "open-in-internal-editor",
+    label: "Open in Internal Editor",
+    icon: "code",
+  });
   if (input.capabilities.revealLabel !== undefined) {
     items.push({
       id: "reveal-in-folder",
@@ -109,7 +115,9 @@ export function buildFileContextMenuItems(input: {
  */
 /** Builds and dispatches the file context menu for one environment's files. */
 export function useFileContextMenu(environmentId: EnvironmentId | null) {
-  const openInEditor = useAtomCommand(shellEnvironment.openInEditor, { reportFailure: false });
+  const openInEditor = useAtomCommand(shellEnvironment.openInEditor, {
+    reportFailure: false,
+  });
   const serverConfig = useAtomValue(serverEnvironment.configValueAtom(environmentId));
 
   return useMemo(() => {
@@ -136,6 +144,61 @@ export function useFileContextMenu(environmentId: EnvironmentId | null) {
       const absolutePath = resolveFileContextMenuAbsolutePath(target);
       if (absolutePath === null || environmentId === null) return;
 
+      // Handle internal editor opening
+      if (action === "open-in-internal-editor") {
+        // Import dynamically to avoid circular dependencies
+        const { openFileInEditor } = await import("./components/features/editor/EditorPanel");
+        const { projectEnvironment } = await import("./state/projects");
+        const { executeAtomQuery } = await import("@lmcstools/client/state/runtime");
+        const { appAtomRegistry } = await import("./rpc/atomRegistry");
+
+        const cwd = target.workspaceRoot ?? target.repositoryRoot;
+        if (!cwd) {
+          toastManager.add({
+            type: "error",
+            title: "Could not open file",
+            description: "No workspace root available",
+          });
+          return;
+        }
+
+        const relativePath = absolutePath.startsWith(cwd)
+          ? absolutePath.slice(cwd.length).replace(/^\//, "")
+          : absolutePath;
+
+        try {
+          const queryAtom = projectEnvironment.readFile({
+            environmentId,
+            input: { cwd, relativePath },
+          });
+
+          const result = await executeAtomQuery(appAtomRegistry, queryAtom, {
+            reportDefect: false,
+            reportFailure: false,
+          });
+
+          if (result._tag === "Success") {
+            openFileInEditor({
+              path: absolutePath,
+              content: result.value.contents,
+            });
+          } else {
+            toastManager.add({
+              type: "error",
+              title: "Could not open file",
+              description: absolutePath,
+            });
+          }
+        } catch (error) {
+          toastManager.add({
+            type: "error",
+            title: "Could not open file",
+            description: absolutePath,
+          });
+        }
+        return;
+      }
+
       const reveal = action === "reveal-in-folder";
       const editor =
         action === "open" || reveal
@@ -145,7 +208,11 @@ export function useFileContextMenu(environmentId: EnvironmentId | null) {
 
       const result = await openInEditor({
         environmentId,
-        input: { cwd: absolutePath, editor, ...(reveal ? { reveal: true } : {}) },
+        input: {
+          cwd: absolutePath,
+          editor,
+          ...(reveal ? { reveal: true } : {}),
+        },
       });
       if (result._tag !== "Failure") return;
       toastManager.add({

@@ -61,7 +61,7 @@ function mockProcess(exit: number | PlatformError.PlatformError) {
 
 const devServerInput = {
   mode: "dev:server",
-  lmcsHome: "/tmp/t3code-dev-runner",
+  lmcsHome: "/tmp/lmcs-dev-runner",
   browser: undefined,
   autoBootstrapProjectFromCwd: undefined,
   logWebSocketEvents: undefined,
@@ -106,7 +106,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           "run",
           "--filter=@lmcstools/core",
           "--filter=@lmcstools/web",
-          "--filter=t3",
+          "--filter=lmcs",
           "--parallel",
           "dev",
         ]);
@@ -251,7 +251,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          lmcsHome: "/tmp/custom-t3",
+          lmcsHome: "/tmp/custom-lmcs",
           browser: false,
           autoBootstrapProjectFromCwd: false,
           logWebSocketEvents: true,
@@ -260,7 +260,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           devUrl: new URL("http://localhost:7331"),
         });
 
-        assert.equal(env.LMCS_HOME, path.resolve("/tmp/custom-t3"));
+        assert.equal(env.LMCS_HOME, path.resolve("/tmp/custom-lmcs"));
         assert.equal(env.LMCS_PORT, "4222");
         assert.equal(env.VITE_HTTP_URL, "http://localhost:4222");
         assert.equal(env.VITE_WS_URL, "ws://localhost:4222");
@@ -278,7 +278,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           mode: "dev",
           baseEnv: {
             LMCS_SERVICE_LAUNCHER_CONTEXT: '{"childVersion":"9.9.9"}',
-            LMCS_BOOT_SERVICE_UNIT: "t3code.service",
+            LMCS_BOOT_SERVICE_UNIT: "lmcs.service",
           },
           serverOffset: 0,
           webOffset: 0,
@@ -349,7 +349,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
-          lmcsHome: "/tmp/my-t3",
+          lmcsHome: "/tmp/my-lmcs",
           browser: undefined,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -358,7 +358,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           devUrl: undefined,
         });
 
-        assert.equal(env.LMCS_HOME, path.resolve("/tmp/my-t3"));
+        assert.equal(env.LMCS_HOME, path.resolve("/tmp/my-lmcs"));
       }),
     );
 
@@ -377,7 +377,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           },
           serverOffset: 0,
           webOffset: 0,
-          lmcsHome: "/tmp/my-t3",
+          lmcsHome: "/tmp/my-lmcs",
           browser: true,
           autoBootstrapProjectFromCwd: undefined,
           logWebSocketEvents: undefined,
@@ -386,7 +386,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           devUrl: undefined,
         });
 
-        assert.equal(env.LMCS_HOME, path.resolve("/tmp/my-t3"));
+        assert.equal(env.LMCS_HOME, path.resolve("/tmp/my-lmcs"));
         assert.equal(env.PORT, "5733");
         assert.equal(env.VITE_DEV_SERVER_URL, "http://127.0.0.1:5733");
         assert.equal(env.HOST, "127.0.0.1");
@@ -1262,10 +1262,10 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       });
     });
 
-    describe("t3 home precedence", () => {
+    describe("lmcs home precedence", () => {
       const makeWorktree = Effect.acquireRelease(
         Effect.sync(() => {
-          const root = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-devrunner-"));
+          const root = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "lmcs-devrunner-"));
           NodeFS.writeFileSync(
             NodePath.join(root, ".git"),
             "gitdir: /elsewhere/.git/worktrees/x\n",

@@ -17,9 +17,9 @@ const workspaceFiles = [
   "apps/desktop/package.json",
   "apps/web/package.json",
   "apps/mobile/package.json",
-  "apps/mobile/modules/t3-markdown-text/package.json",
-  "apps/mobile/modules/t3-review-diff/package.json",
-  "apps/mobile/modules/t3-terminal/package.json",
+  "apps/mobile/modules/lmcs-markdown-text/package.json",
+  "apps/mobile/modules/lmcs-review-diff/package.json",
+  "apps/mobile/modules/lmcs-terminal/package.json",
   "apps/marketing/package.json",
   "infra/relay/package.json",
   "oxlint-plugin-lmcscode/package.json",
@@ -186,7 +186,7 @@ function assertMissing(path: string, message: string): void {
   }
 }
 
-const tempRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-release-smoke-"));
+const tempRoot = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "lmcs-release-smoke-"));
 
 try {
   NodeChildProcess.execFileSync(

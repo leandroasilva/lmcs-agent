@@ -29,6 +29,7 @@ const RIGHT_PANEL_KINDS = [
   "pull-request",
   "pull-requests",
   "agents",
+  "editor",
 ] as const;
 export type RightPanelKind = (typeof RIGHT_PANEL_KINDS)[number];
 
@@ -42,7 +43,12 @@ export interface DeviceTabTarget {
 export type RightPanelSurface =
   | { id: `browser:${string}`; kind: "preview"; resourceId: string }
   | { id: "browser:new"; kind: "preview"; resourceId: null }
-  | { id: "device" | `device:${string}`; kind: "device"; target?: DeviceTabTarget; title?: string }
+  | {
+      id: "device" | `device:${string}`;
+      kind: "device";
+      target?: DeviceTabTarget;
+      title?: string;
+    }
   | {
       id: `terminal:${string}`;
       kind: "terminal";
@@ -53,6 +59,7 @@ export type RightPanelSurface =
     }
   | { id: "diff"; kind: "diff" }
   | { id: "files"; kind: "files" }
+  | { id: "editor"; kind: "editor" }
   | {
       id: `file:${string}` | `attachment:${string}`;
       kind: "file";
@@ -193,6 +200,8 @@ const singletonSurface = (
       return { id: "agents", kind };
     case "device":
       return { id: "device", kind };
+    case "editor":
+      return { id: "editor", kind };
   }
 };
 
@@ -545,7 +554,10 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             ...current,
             surfaces: current.surfaces.map((surface) =>
               surface.id === surfaceId && surface.kind === "device"
-                ? { ...surface, title: title.trim() || surface.target?.name || "Device" }
+                ? {
+                    ...surface,
+                    title: title.trim() || surface.target?.name || "Device",
+                  }
                 : surface,
             ),
           })),
@@ -712,7 +724,11 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             if (index < 0) return current;
             const surfaces = current.surfaces.filter((surface) => surface.id !== surfaceId);
             if (current.activeSurfaceId !== surfaceId) {
-              return { ...current, isOpen: surfaces.length > 0 && current.isOpen, surfaces };
+              return {
+                ...current,
+                isOpen: surfaces.length > 0 && current.isOpen,
+                surfaces,
+              };
             }
             const fallback = surfaces[Math.min(index, surfaces.length - 1)] ?? null;
             return {
@@ -757,7 +773,12 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
           userAction(state, scopedThreadKey(ref), (current) =>
             current.surfaces.length === 0
               ? current
-              : { ...current, isOpen: false, surfaces: [], activeSurfaceId: null },
+              : {
+                  ...current,
+                  isOpen: false,
+                  surfaces: [],
+                  activeSurfaceId: null,
+                },
           ),
         ),
       reconcileBrowserSurfaces: (ref, tabIds) =>

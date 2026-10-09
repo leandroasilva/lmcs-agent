@@ -9,10 +9,10 @@ it("batches codesign calls without changing existing signing options", async () 
   const options = {
     app: "/tmp/LMCS Code.app",
     identity: "Developer ID Application: LMCS Tools, Inc.",
-    keychain: "/tmp/t3code.keychain",
-    provisioningProfile: "/tmp/t3code.provisionprofile",
+    keychain: "/tmp/lmcs.keychain",
+    provisioningProfile: "/tmp/lmcs.provisionprofile",
     optionsForFile: () => ({
-      entitlements: "/tmp/t3code.entitlements.plist",
+      entitlements: "/tmp/lmcs.entitlements.plist",
       hardenedRuntime: true,
     }),
   } satisfies SignOptions;

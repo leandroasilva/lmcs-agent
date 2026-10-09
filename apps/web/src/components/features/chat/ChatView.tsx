@@ -624,6 +624,11 @@ const DevicePanel = lazy(() =>
   })),
 );
 const FilePreviewPanel = lazy(() => import("../files/FilePreviewPanel"));
+const EditorPanel = lazy(() =>
+  import("../editor/EditorPanel").then((module) => ({
+    default: module.EditorPanel,
+  })),
+);
 const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
 const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
   "input",
@@ -9890,6 +9895,10 @@ export default function ChatView(props: ChatViewProps) {
           }
           workspaceMutationId={workspaceMutationId}
         />
+      </Suspense>
+    ) : renderedRightPanelSurface?.kind === "editor" ? (
+      <Suspense fallback={null}>
+        <EditorPanel />
       </Suspense>
     ) : null
   ) : null;
