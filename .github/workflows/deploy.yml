@@ -122,13 +122,12 @@ jobs:
       - name: Build macOS desktop artifact (arm64)
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
-          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }} --signed
+          node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64 --build-version ${{ needs.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Code signing credentials
+          # Code signing credentials for Developer ID signing
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          LMCS_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: List generated artifacts
         if: always()
