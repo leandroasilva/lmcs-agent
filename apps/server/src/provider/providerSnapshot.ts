@@ -90,7 +90,10 @@ export const spawnAndCollect = (binaryPath: string, command: ChildProcess.Comman
       [
         collectStreamAsString(child.stdout),
         collectStreamAsString(child.stderr),
-        child.exitCode.pipe(Effect.map(Number)),
+        child.exitCode.pipe(
+          Effect.map(Number),
+          Effect.catchTag("PlatformError", () => Effect.succeed(-1)),
+        ),
       ],
       { concurrency: "unbounded" },
     );
