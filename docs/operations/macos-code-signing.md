@@ -6,7 +6,7 @@ Este documento explica como configurar a assinatura de código para o app macOS 
 
 Sem code signing válido, o macOS Gatekeeper bloqueia o app com a mensagem:
 
-> "LMCS Code (Alpha).app" está danificado e não pode ser aberto.
+> "LMCS Code.app" está danificado e não pode ser aberto.
 
 ## Solução
 
@@ -68,7 +68,7 @@ Para testar localmente sem code signing:
 
 ```bash
 # Remover quarentena do app baixado
-xattr -cr /Applications/LMCS\ Code\ \(Alpha\).app
+xattr -cr /Applications/LMCS\ Code.app
 
 # Ou desabilitar Gatekeeper temporariamente (não recomendado)
 sudo spctl --master-disable
@@ -80,7 +80,7 @@ sudo spctl --master-disable
 
 - Verifique se os secrets estão configurados corretamente
 - Confirme que o certificado não expirou
-- Tente remover a quarentena: `xattr -cr /Applications/LMCS\ Code\ \(Alpha\).app`
+- Tente remover a quarentena: `xattr -cr /Applications/LMCS Code.app`
 
 ### "No identity found"
 

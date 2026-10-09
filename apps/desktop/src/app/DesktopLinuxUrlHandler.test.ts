@@ -22,7 +22,7 @@ const makeEnvironment = (overrides: Record<string, unknown> = {}) =>
     platform: "linux",
     isPackaged: true,
     isDevelopment: false,
-    displayName: "LMCS Code (Alpha)",
+    displayName: "LMCS Code",
     linuxDesktopEntryName: "com.t3tools.T3Code.desktop",
     linuxWmClass: "t3code",
     linuxApplicationsDir: "/home/alice/.local/share/applications",
@@ -199,7 +199,7 @@ describe("DesktopLinuxUrlHandler", () => {
     return Effect.gen(function* () {
       yield* runRegister(recorded, {
         existingEntry: DesktopLinuxUrlHandler.renderUrlHandlerDesktopEntry({
-          displayName: "LMCS Code (Alpha)",
+          displayName: "LMCS Code",
           execTarget: "/home/alice/Applications/LMCS-Code.AppImage",
           scheme: "t3code",
         }),
