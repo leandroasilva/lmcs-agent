@@ -474,12 +474,38 @@ export function makeQoderAdapter(
                 }
               });
 
+            // Stream stdout incrementally as it arrives. The previous approach
+            // collected the whole stream before parsing, so the UI saw nothing
+            // until the CLI exited — a multi-tool turn looked frozen and then
+            // dumped every event in one burst at the end. We decode chunks and
+            // split lines by hand instead of piping through Stream.splitLines,
+            // which can hit an undefined channel on a child-process stream in
+            // this Effect RC and kill the turn.
+            let stdoutLineBuffer = "";
+            const processStdoutChunk = (chunk: string): Effect.Effect<void> =>
+              Effect.gen(function* () {
+                stdoutLineBuffer += chunk;
+                let newlineIndex = stdoutLineBuffer.indexOf("\n");
+                while (newlineIndex >= 0) {
+                  const line = stdoutLineBuffer.slice(0, newlineIndex).trim();
+                  stdoutLineBuffer = stdoutLineBuffer.slice(newlineIndex + 1);
+                  if (line) {
+                    yield* processLine(line).pipe(Effect.orElseSucceed(() => undefined));
+                  }
+                  newlineIndex = stdoutLineBuffer.indexOf("\n");
+                }
+              });
+            const processStdout = handle.stdout.pipe(
+              Stream.decodeText(),
+              Stream.runForEach(processStdoutChunk),
+            );
+
             // Collect each stream independently: a single failing pipe must not
             // discard the other outputs (the previous catchTag over Effect.all
             // zeroed stdout/stderr and hid the real failure cause).
             const [stdoutExit, stderrExit, exitCodeExit] = yield* Effect.all(
               [
-                Effect.exit(collectStreamAsString(handle.stdout)),
+                Effect.exit(processStdout),
                 Effect.exit(collectStreamAsString(handle.stderr)),
                 Effect.exit(handle.exitCode),
               ],
@@ -498,16 +524,14 @@ export function makeQoderAdapter(
               );
             }
 
-            const stdout = Exit.isSuccess(stdoutExit) ? stdoutExit.value : "";
             const stderr = Exit.isSuccess(stderrExit) ? stderrExit.value : "";
             const exitCode = Exit.isSuccess(exitCodeExit) ? Number(exitCodeExit.value) : -1;
 
-            // Process stdout lines after collection to avoid Stream.splitLines issues
-            const lines = stdout.split("\n");
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed) continue;
-              yield* processLine(trimmed).pipe(Effect.orElseSucceed(() => undefined));
+            // Flush a trailing line that the CLI never terminated with a newline.
+            const trailingLine = stdoutLineBuffer.trim();
+            stdoutLineBuffer = "";
+            if (trailingLine) {
+              yield* processLine(trailingLine).pipe(Effect.orElseSucceed(() => undefined));
             }
 
             context.activeProcess = undefined;
