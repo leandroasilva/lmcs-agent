@@ -18,6 +18,7 @@ import {
   type ProviderUserInputAnswers,
   ProviderDriverKind,
   ProviderInstanceId,
+  RuntimeItemId,
   type ThreadId,
   TurnId,
 } from "@lmcstools/core";
@@ -77,6 +78,14 @@ function parseCmdJsonLine(line: string): Record<string, unknown> | null {
   }
   return null;
 }
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+
+const asNonEmptyString = (value: unknown): string | undefined =>
+  typeof value === "string" && value.length > 0 ? value : undefined;
 
 export function makeCommandCodeAdapter(
   config: CommandCodeSettings,
@@ -234,20 +243,27 @@ export function makeCommandCodeAdapter(
         // instead of piping through Stream.splitLines, which can hit an undefined
         // channel on a child-process stream in this Effect RC and kill the turn.
         let hasEmittedCompletion = false;
+        let contentSeq = 0;
+        // text_delta streams the reply live; finalText on the result line would
+        // duplicate it, so only fall back to finalText when nothing streamed.
+        let emittedAssistantText = false;
+        const toolsInFlight = new Map<string, { name: string; input: unknown }>();
 
         const processLine = (line: string): Effect.Effect<void> =>
           Effect.gen(function* () {
             const parsed = parseCmdJsonLine(line);
             if (!parsed) return;
 
-            const eventType = parsed.type as string | undefined;
+            const topType = parsed.type as string | undefined;
 
-            if (eventType === "result") {
+            // The final line terminates the turn: {"type":"result",...}.
+            if (topType === "result") {
               if (parsed.subtype === "success") {
-                const resultText = parsed.result as string | undefined;
-                if (resultText) {
+                const finalText = asNonEmptyString(parsed.finalText);
+                if (finalText && !emittedAssistantText) {
+                  contentSeq += 1;
                   yield* emit({
-                    eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                    eventId: asEventId(`content-delta-${String(turnId)}-${contentSeq}`),
                     provider: PROVIDER,
                     threadId: input.threadId,
                     turnId,
@@ -255,7 +271,7 @@ export function makeCommandCodeAdapter(
                     type: "content.delta",
                     payload: {
                       streamKind: "assistant_text",
-                      delta: resultText,
+                      delta: finalText,
                     },
                   });
                 }
@@ -272,8 +288,9 @@ export function makeCommandCodeAdapter(
               } else {
                 // Handle error results (subtype === "error" or other non-success)
                 const errorMessage =
-                  (parsed.error as string | undefined) ||
-                  (parsed.result as string | undefined) ||
+                  asNonEmptyString(parsed.error) ||
+                  asNonEmptyString(parsed.result) ||
+                  asNonEmptyString(parsed.finalText) ||
                   "Command Code turn failed";
                 yield* emit({
                   eventId: asEventId(`turn-completed-error-${String(turnId)}`),
@@ -289,44 +306,122 @@ export function makeCommandCodeAdapter(
                 });
                 hasEmittedCompletion = true;
               }
-            } else if (eventType === "assistant") {
-              const message = parsed.message as Record<string, unknown> | undefined;
-              if (message?.content) {
-                const content = message.content as Array<Record<string, unknown>> | undefined;
-                if (Array.isArray(content)) {
-                  for (const block of content) {
-                    if (block.type === "text" && typeof block.text === "string") {
-                      yield* emit({
-                        eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
-                        provider: PROVIDER,
-                        threadId: input.threadId,
-                        turnId,
-                        createdAt: yield* nowIso(),
-                        type: "content.delta",
-                        payload: {
-                          streamKind: "assistant_text",
-                          delta: block.text,
-                        },
-                      });
-                    } else if (block.type === "tool_use") {
-                      yield* emit({
-                        eventId: asEventId(`item-started-${String(turnId)}-${Date.now()}`),
-                        provider: PROVIDER,
-                        threadId: input.threadId,
-                        turnId,
-                        createdAt: yield* nowIso(),
-                        type: "item.started",
-                        payload: {
-                          itemType: "dynamic_tool_call",
-                          title: (block.name as string) ?? "tool_call",
-                          data: { toolName: block.name, toolInput: block.input },
-                        },
-                      });
-                    }
-                  }
-                }
-              }
+              return;
             }
+
+            // Everything else arrives wrapped as {"type":"event","event":{...}}.
+            // cmd 1.79 streams these frames live; the previous parser only looked
+            // for top-level "assistant"/"result" and silently dropped all of them,
+            // so the UI showed no progress until the final result line.
+            if (topType !== "event") return;
+            const event = asRecord(parsed.event);
+            if (!event) return;
+            const eventType = event.type as string | undefined;
+
+            if (eventType === "text_delta") {
+              const delta = asNonEmptyString(event.delta);
+              if (!delta) return;
+              emittedAssistantText = true;
+              contentSeq += 1;
+              yield* emit({
+                eventId: asEventId(`content-delta-${String(turnId)}-${contentSeq}`),
+                provider: PROVIDER,
+                threadId: input.threadId,
+                turnId,
+                createdAt: yield* nowIso(),
+                type: "content.delta",
+                payload: {
+                  streamKind: "assistant_text",
+                  delta,
+                },
+              });
+              return;
+            }
+
+            if (eventType === "thinking_delta") {
+              const delta = asNonEmptyString(event.delta);
+              if (!delta) return;
+              contentSeq += 1;
+              yield* emit({
+                eventId: asEventId(`content-delta-${String(turnId)}-${contentSeq}`),
+                provider: PROVIDER,
+                threadId: input.threadId,
+                turnId,
+                createdAt: yield* nowIso(),
+                type: "content.delta",
+                payload: {
+                  streamKind: "reasoning_text",
+                  delta,
+                },
+              });
+              return;
+            }
+
+            if (eventType === "tool_queued" || eventType === "tool_running") {
+              const toolCallId = asNonEmptyString(event.toolCallId);
+              if (!toolCallId) return;
+              // tool_queued carries the input, tool_running does not. Register the
+              // call once and emit item.started once (on the first frame seen).
+              const existing = toolsInFlight.get(toolCallId);
+              const toolName = asNonEmptyString(event.toolName) ?? existing?.name ?? "tool_call";
+              if (existing) {
+                existing.name = toolName;
+                if (event.input !== undefined) existing.input = event.input;
+                return;
+              }
+              const toolInput = event.input;
+              toolsInFlight.set(toolCallId, {
+                name: toolName,
+                input: toolInput,
+              });
+              yield* emit({
+                eventId: asEventId(`item-started-${String(turnId)}-${toolCallId}`),
+                provider: PROVIDER,
+                threadId: input.threadId,
+                turnId,
+                itemId: RuntimeItemId.make(toolCallId),
+                createdAt: yield* nowIso(),
+                type: "item.started",
+                payload: {
+                  itemType: "dynamic_tool_call",
+                  status: "inProgress",
+                  title: toolName,
+                  data: { toolName, toolInput },
+                },
+              });
+              return;
+            }
+
+            if (eventType === "tool_completed") {
+              const toolCallId = asNonEmptyString(event.toolCallId);
+              if (!toolCallId) return;
+              const tool = toolsInFlight.get(toolCallId);
+              const toolName = asNonEmptyString(event.toolName) ?? tool?.name ?? "tool_call";
+              toolsInFlight.delete(toolCallId);
+              const failed = event.isError === true || event.error !== undefined;
+              yield* emit({
+                eventId: asEventId(`item-finished-${String(turnId)}-${toolCallId}`),
+                provider: PROVIDER,
+                threadId: input.threadId,
+                turnId,
+                itemId: RuntimeItemId.make(toolCallId),
+                createdAt: yield* nowIso(),
+                type: "item.updated",
+                payload: {
+                  itemType: "dynamic_tool_call",
+                  status: failed ? "failed" : "completed",
+                  title: toolName,
+                  data: {
+                    toolName,
+                    toolInput: tool?.input,
+                    toolResult: event.result,
+                  },
+                },
+              });
+              return;
+            }
+            // Remaining frames (run_start, turn_start/end, message_*, model_*,
+            // api_retry, tool_update, run_end) carry no canonical runtime event.
           });
 
         const turnScope = yield* Scope.make();
