@@ -1,8 +1,8 @@
 /**
  * QoderTextGeneration — Text generation layer using the Qoder CLI.
  *
- * Spawns `qoder -p "prompt" --output-format json` for each generation request,
- * parses the JSON result, and decodes it against the caller-supplied schema.
+ * Spawns `qoder -p "prompt" --output-format stream-json` for each generation request,
+ * parses the NDJSON result, and decodes it against the caller-supplied schema.
  *
  * @module QoderTextGeneration
  */
@@ -15,6 +15,10 @@ import { type ModelSelection, type QoderSettings, TextGenerationError } from "@l
 import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
 import { extractJsonObject } from "@lmcstools/core/schemaJson";
 
+import {
+  BUNDLED_QODER_MODEL_CATALOG,
+  resolveQoderCliModelName,
+} from "../provider/QoderModelCatalog.ts";
 import * as TextGeneration from "./TextGeneration.ts";
 import {
   buildBranchNamePrompt,
@@ -65,18 +69,20 @@ export const makeQoderTextGeneration = Effect.fn("makeQoderTextGeneration")(func
     Effect.gen(function* () {
       const binaryPath = qoderSettings.binaryPath?.trim() || "qoder";
       const authEnv = buildQoderAuthEnv(qoderSettings, environment);
+      const resolvedModel = params.modelSelection.model
+        ? resolveQoderCliModelName(BUNDLED_QODER_MODEL_CATALOG, params.modelSelection.model)
+        : undefined;
 
       const args = [
         "-p",
         params.prompt,
         "--output-format",
-        "json",
+        "stream-json",
         "--permission-mode",
         "bypass_permissions",
-        "--no-session-persistence",
         "--max-turns",
         "1",
-        ...(params.modelSelection.model ? ["-m", params.modelSelection.model] : []),
+        ...(resolvedModel ? ["-m", resolvedModel] : []),
       ];
 
       const spawnCommand = yield* resolveSpawnCommand(binaryPath, args, {

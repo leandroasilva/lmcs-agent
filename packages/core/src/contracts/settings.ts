@@ -55,7 +55,7 @@ const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
 export const SUPPORTED_LOCALES = ["en-US", "pt-BR"] as const;
 export const Locale = Schema.Literals(SUPPORTED_LOCALES);
 export type Locale = typeof Locale.Type;
-export const DEFAULT_LOCALE: Locale = "en-US";
+export const DEFAULT_LOCALE: Locale = "pt-BR";
 
 export const DiffLayout = Schema.Literals(["stacked", "split"]);
 export type DiffLayout = typeof DiffLayout.Type;
