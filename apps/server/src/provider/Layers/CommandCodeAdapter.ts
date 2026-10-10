@@ -23,6 +23,7 @@ import {
 } from "@lmcstools/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Ref from "effect/Ref";
 import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
@@ -36,7 +37,8 @@ import {
   ProviderAdapterValidationError,
 } from "../Errors.ts";
 import { buildCommandCodeAuthEnv } from "../commandCodeRuntime.ts";
-import { spawnAndCollect } from "../providerSnapshot.ts";
+import { collectStreamAsString, ProviderCommandNotFoundError } from "../providerSnapshot.ts";
+import { isWindowsCommandNotFound } from "../../processRunner.ts";
 import type { CommandCodeAdapterShape } from "../Services/CommandCodeAdapter.ts";
 
 const PROVIDER = ProviderDriverKind.make("commandCode");
@@ -224,119 +226,188 @@ export function makeCommandCodeAdapter(
           env: { ...process.env, ...authEnv },
         });
 
-        const result = yield* spawnAndCollect(
-          binaryPath,
-          ChildProcess.make(spawnCommand.command, spawnCommand.args, {
-            env: { ...process.env, ...authEnv },
-            cwd,
-            shell: spawnCommand.shell,
-            stdout: "pipe",
-            stderr: "pipe",
-          }),
-        ).pipe(Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner));
-
-        // Parse JSON output and emit events
-        const lines = result.stdout.split("\n");
+        // Spawn the CLI and stream its stdout incrementally. The previous
+        // spawnAndCollect buffered the entire output before parsing, so with
+        // `--output-format json` (an NDJSON event stream) the UI saw nothing
+        // until the process exited and then received every event in one burst —
+        // a multi-tool turn looked frozen. Decode chunks and split lines by hand
+        // instead of piping through Stream.splitLines, which can hit an undefined
+        // channel on a child-process stream in this Effect RC and kill the turn.
         let hasEmittedCompletion = false;
 
-        for (const line of lines) {
-          const parsed = parseCmdJsonLine(line);
-          if (!parsed) continue;
+        const processLine = (line: string): Effect.Effect<void> =>
+          Effect.gen(function* () {
+            const parsed = parseCmdJsonLine(line);
+            if (!parsed) return;
 
-          const eventType = parsed.type as string | undefined;
+            const eventType = parsed.type as string | undefined;
 
-          if (eventType === "result") {
-            if (parsed.subtype === "success") {
-              const resultText = parsed.result as string | undefined;
-              if (resultText) {
+            if (eventType === "result") {
+              if (parsed.subtype === "success") {
+                const resultText = parsed.result as string | undefined;
+                if (resultText) {
+                  yield* emit({
+                    eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                    provider: PROVIDER,
+                    threadId: input.threadId,
+                    turnId,
+                    createdAt: yield* nowIso(),
+                    type: "content.delta",
+                    payload: {
+                      streamKind: "assistant_text",
+                      delta: resultText,
+                    },
+                  });
+                }
                 yield* emit({
-                  eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                  eventId: asEventId(`turn-completed-${String(turnId)}`),
                   provider: PROVIDER,
                   threadId: input.threadId,
                   turnId,
                   createdAt: yield* nowIso(),
-                  type: "content.delta",
+                  type: "turn.completed",
+                  payload: { state: "completed" },
+                });
+                hasEmittedCompletion = true;
+              } else {
+                // Handle error results (subtype === "error" or other non-success)
+                const errorMessage =
+                  (parsed.error as string | undefined) ||
+                  (parsed.result as string | undefined) ||
+                  "Command Code turn failed";
+                yield* emit({
+                  eventId: asEventId(`turn-completed-error-${String(turnId)}`),
+                  provider: PROVIDER,
+                  threadId: input.threadId,
+                  turnId,
+                  createdAt: yield* nowIso(),
+                  type: "turn.completed",
                   payload: {
-                    streamKind: "assistant_text",
-                    delta: resultText,
+                    state: "failed",
+                    errorMessage,
                   },
                 });
+                hasEmittedCompletion = true;
               }
-              yield* emit({
-                eventId: asEventId(`turn-completed-${String(turnId)}`),
-                provider: PROVIDER,
-                threadId: input.threadId,
-                turnId,
-                createdAt: yield* nowIso(),
-                type: "turn.completed",
-                payload: { state: "completed" },
-              });
-              hasEmittedCompletion = true;
-            } else {
-              // Handle error results (subtype === "error" or other non-success)
-              const errorMessage =
-                (parsed.error as string | undefined) ||
-                (parsed.result as string | undefined) ||
-                "Command Code turn failed";
-              yield* emit({
-                eventId: asEventId(`turn-completed-error-${String(turnId)}`),
-                provider: PROVIDER,
-                threadId: input.threadId,
-                turnId,
-                createdAt: yield* nowIso(),
-                type: "turn.completed",
-                payload: {
-                  state: "failed",
-                  errorMessage,
-                },
-              });
-              hasEmittedCompletion = true;
-            }
-          } else if (eventType === "assistant") {
-            const message = parsed.message as Record<string, unknown> | undefined;
-            if (message?.content) {
-              const content = message.content as Array<Record<string, unknown>> | undefined;
-              if (Array.isArray(content)) {
-                for (const block of content) {
-                  if (block.type === "text" && typeof block.text === "string") {
-                    yield* emit({
-                      eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
-                      provider: PROVIDER,
-                      threadId: input.threadId,
-                      turnId,
-                      createdAt: yield* nowIso(),
-                      type: "content.delta",
-                      payload: {
-                        streamKind: "assistant_text",
-                        delta: block.text,
-                      },
-                    });
-                  } else if (block.type === "tool_use") {
-                    yield* emit({
-                      eventId: asEventId(`item-started-${String(turnId)}-${Date.now()}`),
-                      provider: PROVIDER,
-                      threadId: input.threadId,
-                      turnId,
-                      createdAt: yield* nowIso(),
-                      type: "item.started",
-                      payload: {
-                        itemType: "dynamic_tool_call",
-                        title: (block.name as string) ?? "tool_call",
-                        data: { toolName: block.name, toolInput: block.input },
-                      },
-                    });
+            } else if (eventType === "assistant") {
+              const message = parsed.message as Record<string, unknown> | undefined;
+              if (message?.content) {
+                const content = message.content as Array<Record<string, unknown>> | undefined;
+                if (Array.isArray(content)) {
+                  for (const block of content) {
+                    if (block.type === "text" && typeof block.text === "string") {
+                      yield* emit({
+                        eventId: asEventId(`content-delta-${String(turnId)}-${Date.now()}`),
+                        provider: PROVIDER,
+                        threadId: input.threadId,
+                        turnId,
+                        createdAt: yield* nowIso(),
+                        type: "content.delta",
+                        payload: {
+                          streamKind: "assistant_text",
+                          delta: block.text,
+                        },
+                      });
+                    } else if (block.type === "tool_use") {
+                      yield* emit({
+                        eventId: asEventId(`item-started-${String(turnId)}-${Date.now()}`),
+                        provider: PROVIDER,
+                        threadId: input.threadId,
+                        turnId,
+                        createdAt: yield* nowIso(),
+                        type: "item.started",
+                        payload: {
+                          itemType: "dynamic_tool_call",
+                          title: (block.name as string) ?? "tool_call",
+                          data: { toolName: block.name, toolInput: block.input },
+                        },
+                      });
+                    }
                   }
                 }
               }
             }
-          }
+          });
+
+        const turnScope = yield* Scope.make();
+        const handle = yield* spawner
+          .spawn(
+            ChildProcess.make(spawnCommand.command, spawnCommand.args, {
+              env: { ...process.env, ...authEnv },
+              cwd,
+              shell: spawnCommand.shell,
+              stdout: "pipe",
+              stderr: "pipe",
+            }),
+          )
+          .pipe(Effect.provideService(Scope.Scope, turnScope));
+
+        let stdoutLineBuffer = "";
+        const processStdoutChunk = (chunk: string): Effect.Effect<void> =>
+          Effect.gen(function* () {
+            stdoutLineBuffer += chunk;
+            let newlineIndex = stdoutLineBuffer.indexOf("\n");
+            while (newlineIndex >= 0) {
+              const line = stdoutLineBuffer.slice(0, newlineIndex).trim();
+              stdoutLineBuffer = stdoutLineBuffer.slice(newlineIndex + 1);
+              if (line) {
+                yield* processLine(line).pipe(Effect.orElseSucceed(() => undefined));
+              }
+              newlineIndex = stdoutLineBuffer.indexOf("\n");
+            }
+          });
+
+        const [stdoutExit, stderrExit, exitCodeExit] = yield* Effect.all(
+          [
+            Effect.exit(
+              handle.stdout.pipe(Stream.decodeText(), Stream.runForEach(processStdoutChunk)),
+            ),
+            Effect.exit(collectStreamAsString(handle.stderr)),
+            Effect.exit(
+              handle.exitCode.pipe(
+                Effect.map(Number),
+                Effect.catchTag("PlatformError", () => Effect.succeed(-1)),
+              ),
+            ),
+          ],
+          { concurrency: "unbounded" },
+        );
+
+        // Close the turn scope to clean up the child process.
+        yield* Scope.close(turnScope, Exit.void).pipe(Effect.ignore);
+
+        if (Exit.isFailure(stdoutExit)) {
+          yield* Effect.logWarning(
+            "Command Code CLI stdout collection degraded; continuing with partial output",
+          );
+        }
+
+        // Flush a trailing line that the CLI never terminated with a newline.
+        const trailingLine = stdoutLineBuffer.trim();
+        stdoutLineBuffer = "";
+        if (trailingLine) {
+          yield* processLine(trailingLine).pipe(Effect.orElseSucceed(() => undefined));
+        }
+
+        const stderr = Exit.isSuccess(stderrExit) ? stderrExit.value : "";
+        const exitCode = Exit.isSuccess(exitCodeExit) ? exitCodeExit.value : -1;
+
+        // Preserve spawnAndCollect's Windows "command not found" detection so the
+        // outer catchTag still maps it to a ProviderAdapterRequestError.
+        if (yield* isWindowsCommandNotFound(exitCode, stderr)) {
+          return yield* new ProviderCommandNotFoundError({
+            binaryPath,
+            exitCode,
+            stdoutLength: 0,
+            stderrLength: stderr.length,
+          });
         }
 
         // Fallback: if no result message was found, treat as error
         if (!hasEmittedCompletion) {
           const errorMessage =
-            result.code !== 0
-              ? `Command Code CLI exited with code ${result.code}${result.stderr ? `: ${result.stderr.slice(-500)}` : ""}`
+            exitCode !== 0
+              ? `Command Code CLI exited with code ${exitCode}${stderr ? `: ${stderr.slice(-500)}` : ""}`
               : "Command Code CLI returned no result";
           yield* emit({
             eventId: asEventId(`turn-completed-error-${String(turnId)}`),
