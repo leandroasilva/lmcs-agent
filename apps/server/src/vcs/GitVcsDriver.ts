@@ -790,6 +790,8 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
     "core.fsyncMethod=fsync",
   ] as const;
 
+  const CHECKPOINT_TIMEOUT_MS = 120_000;
+
   const checkpoints: VcsDriver.VcsCheckpointOps = {
     captureCheckpoint: Effect.fn("GitVcsDriver.checkpoints.captureCheckpoint")(function* (input) {
       const operation = VcsProcess.CHECKPOINT_CAPTURE_OPERATION;
@@ -857,6 +859,7 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
               cwd: input.cwd,
               args: [...indexConfig, "read-tree", "--reset", "HEAD"],
               env: commitEnv,
+              timeoutMs: CHECKPOINT_TIMEOUT_MS,
             });
             // read-tree can rewrite the index, so restore its racy timestamp afterward.
             yield* fileSystem.utimes(tempIndexPath, indexTime, indexTime);
@@ -942,6 +945,7 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
                 ? [...indexConfig, "-c", "index.sparse=true", "read-tree", "--reset", "HEAD"]
                 : ["read-tree", "HEAD"],
               env: commitEnv,
+              timeoutMs: CHECKPOINT_TIMEOUT_MS,
             });
           }
         }
@@ -962,6 +966,7 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
               ...exclusions,
             ],
             env: commitEnv,
+            timeoutMs: CHECKPOINT_TIMEOUT_MS,
           });
         yield* stageFiles([]).pipe(
           Effect.catchTags({
