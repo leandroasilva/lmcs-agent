@@ -1002,6 +1002,7 @@ export default function GitActionsControl({
   const activeServerThread = useThreadShell(activeThreadRef);
   const setDraftThreadContext = useComposerDraftStore((store) => store.setDraftThreadContext);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
+  const [commitDialogPushAfter, setCommitDialogPushAfter] = useState(false);
   const [dialogCommitMessage, setDialogCommitMessage] = useState("");
   const [excludedFiles, setExcludedFiles] = useState<ReadonlySet<string>>(new Set());
   const [isEditingFiles, setIsEditingFiles] = useState(false);
@@ -1734,6 +1735,14 @@ export default function GitActionsControl({
         setPendingPrAction({ action: quickAction.action });
         return;
       }
+      // Open commit dialog for commit actions so user can write message or use AI generation
+      if (quickAction.action === "commit" || quickAction.action === "commit_push") {
+        setExcludedFiles(new Set());
+        setIsEditingFiles(false);
+        setCommitDialogPushAfter(quickAction.action === "commit_push");
+        setIsCommitDialogOpen(true);
+        return;
+      }
       void runGitActionWithToast({ action: quickAction.action });
     }
   };
@@ -1760,6 +1769,7 @@ export default function GitActionsControl({
     }
     setExcludedFiles(new Set());
     setIsEditingFiles(false);
+    setCommitDialogPushAfter(false);
     setIsCommitDialogOpen(true);
   };
 
@@ -1770,8 +1780,10 @@ export default function GitActionsControl({
     setDialogCommitMessage("");
     setExcludedFiles(new Set());
     setIsEditingFiles(false);
+    const shouldPushAfter = commitDialogPushAfter;
+    setCommitDialogPushAfter(false);
     void runGitActionWithToast({
-      action: "commit",
+      action: shouldPushAfter ? "commit_push" : "commit",
       ...(commitMessage ? { commitMessage } : {}),
       ...(!allSelected ? { filePaths: selectedFiles.map((f) => f.path) } : {}),
     });
@@ -2027,6 +2039,7 @@ export default function GitActionsControl({
             setDialogCommitMessage("");
             setExcludedFiles(new Set());
             setIsEditingFiles(false);
+            setCommitDialogPushAfter(false);
           }
         }}
       >
@@ -2245,7 +2258,7 @@ export default function GitActionsControl({
               Commit on new branch
             </Button>
             <Button size="sm" disabled={noneSelected} onClick={runDialogAction}>
-              Commit
+              {commitDialogPushAfter ? "Commit & push" : "Commit"}
             </Button>
           </DialogFooter>
         </DialogPopup>
