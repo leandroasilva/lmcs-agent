@@ -118,6 +118,9 @@
       "emptyCreateFolderHint": "Press Enter to create this folder and add it as a project.",
       "relativePathRequiresProject": "Relative paths require an active project."
     },
+    "browse": {
+      "createFolder": "Create folder \"{{name}}\""
+    },
     "submit": {
       "add": "Add",
       "clone": "Clone",
