@@ -732,6 +732,15 @@ export const SETTINGS_SEARCH_ITEMS = [
     scope: "project-defaults",
   },
   {
+    id: "text-generation-api",
+    title: "Text generation API",
+    to: "/settings/source-control",
+    searchTerms: [
+      "openai compatible api key base url model deepseek generate commit message pr description",
+    ],
+    environmentOnly: true,
+  },
+  {
     id: "project-actions",
     title: "Actions",
     to: "/settings/projects",

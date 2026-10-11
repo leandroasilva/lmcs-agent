@@ -976,6 +976,12 @@ export default function GitActionsControl({
   );
   const activeEnvironmentId = activeThreadRef?.environmentId ?? null;
   const serverConfig = useAtomValue(serverEnvironment.configValueAtom(activeEnvironmentId));
+  const textGenerationApiConfigured =
+    serverConfig?.settings?.textGenerationApi != null &&
+    serverConfig.settings.textGenerationApi.enabled &&
+    serverConfig.settings.textGenerationApi.baseUrl.length > 0 &&
+    serverConfig.settings.textGenerationApi.apiKey.length > 0 &&
+    serverConfig.settings.textGenerationApi.model.length > 0;
   const openInPreferredEditor = useOpenInPreferredEditor(
     activeEnvironmentId,
     serverConfig?.availableEditors ?? [],
@@ -2194,6 +2200,7 @@ export default function GitActionsControl({
                     size="xs"
                     disabled={
                       isGeneratingCommitMessage ||
+                      !textGenerationApiConfigured ||
                       !activeServerThread?.modelSelection ||
                       selectedFiles.length === 0
                     }
