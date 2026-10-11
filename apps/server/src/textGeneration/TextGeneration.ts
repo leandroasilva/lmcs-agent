@@ -6,7 +6,12 @@ import { TextGenerationError } from "@lmcstools/core";
 
 import * as ProviderInstanceRegistry from "../provider/Services/ProviderInstanceRegistry.ts";
 import type { ProviderInstance } from "../provider/ProviderDriver.ts";
+import * as ServerSettings from "../serverSettings.ts";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
+import {
+  isTextGenerationApiConfigured,
+  makeOpenAiCompatibleTextGeneration,
+} from "./OpenAiCompatibleTextGeneration.ts";
 import * as ThreadTitleLinks from "./ThreadTitleLinks.ts";
 import type { TextGenerationPolicy } from "./TextGenerationPolicy.ts";
 
@@ -137,21 +142,36 @@ const resolveInstance = (
 export const make = Effect.gen(function* () {
   const registry = yield* ProviderInstanceRegistry.ProviderInstanceRegistry;
   const sourceControl = yield* SourceControlProviderRegistry.SourceControlProviderRegistry;
+  const settingsService = yield* ServerSettings.ServerSettingsService;
+
+  const resolveTextGeneration = (
+    operation: TextGenerationOp,
+    instanceId: ProviderInstanceId,
+  ): Effect.Effect<TextGeneration.TextGeneration["Service"], TextGenerationError> =>
+    settingsService.getSettings.pipe(
+      Effect.map((settings) => settings.textGenerationApi),
+      Effect.flatMap((apiConfig) =>
+        isTextGenerationApiConfigured(apiConfig)
+          ? Effect.succeed(makeOpenAiCompatibleTextGeneration(apiConfig))
+          : resolveInstance(registry, operation, instanceId),
+      ),
+    );
+
   return TextGeneration.of({
     generateCommitMessage: (input) =>
-      resolveInstance(registry, "generateCommitMessage", input.modelSelection.instanceId).pipe(
+      resolveTextGeneration("generateCommitMessage", input.modelSelection.instanceId).pipe(
         Effect.flatMap((textGeneration) => textGeneration.generateCommitMessage(input)),
       ),
     generatePrContent: (input) =>
-      resolveInstance(registry, "generatePrContent", input.modelSelection.instanceId).pipe(
+      resolveTextGeneration("generatePrContent", input.modelSelection.instanceId).pipe(
         Effect.flatMap((textGeneration) => textGeneration.generatePrContent(input)),
       ),
     generateBranchName: (input) =>
-      resolveInstance(registry, "generateBranchName", input.modelSelection.instanceId).pipe(
+      resolveTextGeneration("generateBranchName", input.modelSelection.instanceId).pipe(
         Effect.flatMap((textGeneration) => textGeneration.generateBranchName(input)),
       ),
     generateThreadTitle: (input) =>
-      resolveInstance(registry, "generateThreadTitle", input.modelSelection.instanceId).pipe(
+      resolveTextGeneration("generateThreadTitle", input.modelSelection.instanceId).pipe(
         Effect.flatMap((textGeneration) =>
           Effect.gen(function* () {
             const linkedContext =
