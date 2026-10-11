@@ -65,3 +65,50 @@ export class FilesystemBrowseError extends Schema.TaggedError<FilesystemBrowseEr
     } as any);
   }
 }
+
+export const FilesystemMkdirInput = Schema.Struct({
+  parentPath: TrimmedNonEmptyString.check(Schema.isMaxLength(FILESYSTEM_PATH_MAX_LENGTH)),
+  name: TrimmedNonEmptyString.check(Schema.isMaxLength(255)),
+});
+export type FilesystemMkdirInput = typeof FilesystemMkdirInput.Type;
+
+export const FilesystemMkdirResult = Schema.Struct({
+  fullPath: TrimmedNonEmptyString,
+});
+export type FilesystemMkdirResult = typeof FilesystemMkdirResult.Type;
+
+export const FilesystemMkdirFailure = Schema.Literals([
+  "windows_path_unsupported",
+  "create_directory_failed",
+  "directory_already_exists",
+]);
+export type FilesystemMkdirFailure = typeof FilesystemMkdirFailure.Type;
+
+export class FilesystemMkdirError extends Schema.TaggedError<FilesystemMkdirError>()(
+  "FilesystemMkdirError",
+  {
+    parentPath: Schema.optional(TrimmedNonEmptyString),
+    name: Schema.optional(TrimmedNonEmptyString),
+    failure: Schema.optional(FilesystemMkdirFailure),
+    platform: Schema.optional(TrimmedNonEmptyString),
+    message: TrimmedNonEmptyString,
+    cause: Schema.optional(Schema.Defect()),
+  },
+) {
+  // @effect-diagnostics-next-line overriddenSchemaConstructor:off
+  constructor(props: {
+    readonly parentPath: string;
+    readonly name: string;
+    readonly failure: FilesystemMkdirFailure;
+    readonly platform?: string;
+    readonly cause?: unknown;
+  }) {
+    super({
+      ...props,
+      message:
+        props.failure === "directory_already_exists"
+          ? `A folder named '${props.name}' already exists.`
+          : `Failed to create folder '${props.name}' in '${props.parentPath}'.`,
+    } as any);
+  }
+}
