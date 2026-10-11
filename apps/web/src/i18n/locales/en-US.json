@@ -1389,6 +1389,19 @@
         "noProviders": "No text generation providers available.",
         "writerModelAria": "Source control writer model",
         "dedicatedModelAria": "Use a separate source control writer model"
+      },
+      "api": {
+        "sectionTitle": "Text generation API",
+        "description": "Use an OpenAI-compatible API (e.g. DeepSeek) to generate commit messages and pull request descriptions. When enabled, this API is used instead of the active provider.",
+        "enabledAria": "Enable custom text generation API",
+        "baseUrlLabel": "Base URL",
+        "baseUrlPlaceholder": "https://api.deepseek.com/v1",
+        "apiKeyLabel": "API key",
+        "apiKeyPlaceholder": "sk-...",
+        "modelLabel": "Model",
+        "modelPlaceholder": "deepseek-chat",
+        "resetLabel": "text generation API",
+        "notConfigured": "Configure an API to enable commit and PR generation."
       }
     },
     "snapshot": {

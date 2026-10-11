@@ -58,7 +58,10 @@ import {
   type Icon,
 } from "../../shared/Icons";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
-import { SourceControlWritingSettingsSection } from "./SourceControlWritingSettings";
+import {
+  SourceControlWritingSettingsSection,
+  TextGenerationApiSettingsSection,
+} from "./SourceControlWritingSettings";
 import {
   PolicyTooltip,
   SettingResetButton,
@@ -644,6 +647,7 @@ export function SourceControlSettingsPanel() {
       )}
 
       <SourceControlWritingSettingsSection />
+      <TextGenerationApiSettingsSection />
     </SettingsPageContainer>
   );
 }

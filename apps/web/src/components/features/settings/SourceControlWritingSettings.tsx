@@ -34,6 +34,7 @@ import { Switch } from "../../ui/switch";
 import { Textarea } from "../../ui/textarea";
 import { toastManager } from "../../ui/toast";
 import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
 import {
   SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingResetButton,
@@ -353,6 +354,127 @@ export function SourceControlWritingSettingsSection() {
           )
         }
       />
+    </SettingsSection>
+  );
+}
+
+export function TextGenerationApiSettingsSection() {
+  const { t } = useTranslation();
+  const settings = useScopedSettings();
+  const updateSettings = useUpdateScopedSettings();
+  const api = settings.textGenerationApi;
+  const defaults = DEFAULT_UNIFIED_SETTINGS.textGenerationApi;
+
+  const isDirty =
+    api.enabled !== defaults.enabled ||
+    api.baseUrl !== defaults.baseUrl ||
+    api.apiKey !== defaults.apiKey ||
+    api.model !== defaults.model;
+
+  return (
+    <SettingsSection id="text-generation-api" title={t("settings.sourceControl.api.sectionTitle")}>
+      <SettingsRow
+        serverScoped
+        settingKeys={["textGenerationApi"]}
+        {...searchableSetting("text-generation-api")}
+        description={t("settings.sourceControl.api.description")}
+        resetAction={
+          isDirty ? (
+            <SettingResetButton
+              label={t("settings.sourceControl.api.resetLabel")}
+              onClick={() =>
+                updateSettings({
+                  textGenerationApi: {
+                    enabled: defaults.enabled,
+                    baseUrl: defaults.baseUrl,
+                    apiKey: defaults.apiKey,
+                    model: defaults.model,
+                  },
+                })
+              }
+            />
+          ) : null
+        }
+        control={
+          <Switch
+            checked={api.enabled}
+            onCheckedChange={(checked) =>
+              updateSettings({
+                textGenerationApi: { enabled: Boolean(checked) },
+              })
+            }
+            aria-label={t("settings.sourceControl.api.enabledAria")}
+          />
+        }
+      />
+
+      {api.enabled ? (
+        <>
+          <SettingsRow
+            serverScoped
+            settingKeys={["textGenerationApi"]}
+            {...searchableSetting("text-generation-api")}
+            description={t("settings.sourceControl.api.baseUrlLabel")}
+            control={
+              <Input
+                size="sm"
+                className="w-full sm:w-72"
+                value={api.baseUrl}
+                onChange={(event) =>
+                  updateSettings({
+                    textGenerationApi: { baseUrl: event.target.value },
+                  })
+                }
+                placeholder={t("settings.sourceControl.api.baseUrlPlaceholder")}
+                font="mono"
+              />
+            }
+          />
+
+          <SettingsRow
+            serverScoped
+            settingKeys={["textGenerationApi"]}
+            {...searchableSetting("text-generation-api")}
+            description={t("settings.sourceControl.api.apiKeyLabel")}
+            control={
+              <Input
+                size="sm"
+                className="w-full sm:w-72"
+                type="password"
+                value={api.apiKey}
+                onChange={(event) =>
+                  updateSettings({
+                    textGenerationApi: { apiKey: event.target.value },
+                  })
+                }
+                placeholder={t("settings.sourceControl.api.apiKeyPlaceholder")}
+                font="mono"
+              />
+            }
+          />
+
+          <SettingsRow
+            serverScoped
+            settingKeys={["textGenerationApi"]}
+            {...searchableSetting("text-generation-api")}
+            description={t("settings.sourceControl.api.modelLabel")}
+            control={
+              <Input
+                size="sm"
+                className="w-full sm:w-72"
+                value={api.model}
+                onChange={(event) =>
+                  updateSettings({
+                    textGenerationApi: { model: event.target.value },
+                  })
+                }
+                placeholder={t("settings.sourceControl.api.modelPlaceholder")}
+                font="mono"
+              />
+            }
+          />
+        </>
+      ) : null}
     </SettingsSection>
   );
 }
