@@ -64,6 +64,7 @@ import {
   type ServerLifecycleStreamEvent,
   type FilesystemBrowseFailure,
   FilesystemBrowseError,
+  FilesystemMkdirError,
   AssetWorkspaceContextNotFoundError,
   AssetWorkspaceContextResolutionError,
   RpcClientId,
@@ -3139,6 +3140,35 @@ const makeWsRpcLayer = (
                     cause,
                   }),
               ),
+            ),
+            { "rpc.aggregate": "workspace" },
+          ),
+        [WS_METHODS.filesystemMkdir]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.filesystemMkdir,
+            workspaceEntries.mkdir(input).pipe(
+              Effect.mapError((cause) => {
+                if (cause._tag === "WorkspaceEntriesWindowsPathUnsupportedError") {
+                  return new FilesystemMkdirError({
+                    ...input,
+                    failure: "windows_path_unsupported",
+                    platform: cause.platform,
+                    cause,
+                  });
+                }
+                if (cause._tag === "WorkspaceEntriesMkdirAlreadyExistsError") {
+                  return new FilesystemMkdirError({
+                    ...input,
+                    failure: "directory_already_exists",
+                    cause,
+                  });
+                }
+                return new FilesystemMkdirError({
+                  ...input,
+                  failure: "create_directory_failed",
+                  cause,
+                });
+              }),
             ),
             { "rpc.aggregate": "workspace" },
           ),

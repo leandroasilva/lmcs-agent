@@ -485,8 +485,12 @@ export function buildBrowseGroups(input: {
   canBrowseUp: boolean;
   upIcon: ReactNode;
   directoryIcon: ReactNode;
+  createFolderIcon: ReactNode;
+  createFolderLabel: string | null;
+  createFolderName: string | null;
   browseUp: () => void | Promise<void>;
   browseTo: (name: string) => void | Promise<void>;
+  createFolder: (() => void | Promise<void>) | null;
 }): CommandPaletteGroup[] {
   const items: CommandPaletteActionItem[] = [];
 
@@ -514,6 +518,20 @@ export function buildBrowseGroups(input: {
       keepOpen: true,
       run: async () => {
         await input.browseTo(entry.name);
+      },
+    });
+  }
+
+  if (input.createFolder && input.createFolderLabel && input.createFolderName) {
+    items.push({
+      kind: "action",
+      value: "browse:create-folder",
+      searchTerms: [input.browseQuery, input.createFolderName, "new folder"],
+      title: input.createFolderLabel,
+      icon: input.createFolderIcon,
+      keepOpen: false,
+      run: async () => {
+        await input.createFolder!();
       },
     });
   }

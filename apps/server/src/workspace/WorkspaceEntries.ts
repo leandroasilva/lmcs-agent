@@ -11,6 +11,8 @@ import * as Schema from "effect/Schema";
 import type {
   FilesystemBrowseInput,
   FilesystemBrowseResult,
+  FilesystemMkdirInput,
+  FilesystemMkdirResult,
   ProjectEntry,
   ProjectListEntriesInput,
   ProjectListEntriesResult,
@@ -75,6 +77,38 @@ export const WorkspaceEntriesBrowseError = Schema.Union([
 ]);
 export type WorkspaceEntriesBrowseError = typeof WorkspaceEntriesBrowseError.Type;
 
+export class WorkspaceEntriesMkdirAlreadyExistsError extends Schema.TaggedError<WorkspaceEntriesMkdirAlreadyExistsError>()(
+  "WorkspaceEntriesMkdirAlreadyExistsError",
+  {
+    parentPath: Schema.String,
+    name: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `A folder named '${this.name}' already exists in '${this.parentPath}'.`;
+  }
+}
+
+export class WorkspaceEntriesMkdirFailedError extends Schema.TaggedError<WorkspaceEntriesMkdirFailedError>()(
+  "WorkspaceEntriesMkdirFailedError",
+  {
+    parentPath: Schema.String,
+    name: Schema.String,
+    cause: Schema.Defect(),
+  },
+) {
+  override get message(): string {
+    return `Failed to create folder '${this.name}' in '${this.parentPath}'.`;
+  }
+}
+
+export const WorkspaceEntriesMkdirError = Schema.Union([
+  WorkspaceEntriesWindowsPathUnsupportedError,
+  WorkspaceEntriesMkdirAlreadyExistsError,
+  WorkspaceEntriesMkdirFailedError,
+]);
+export type WorkspaceEntriesMkdirError = typeof WorkspaceEntriesMkdirError.Type;
+
 export const WorkspaceEntriesError = Schema.Union([
   WorkspaceEntriesReadDirectoryError,
   WorkspacePaths.WorkspaceRootNotExistsError,
@@ -93,6 +127,9 @@ export class WorkspaceEntries extends Context.Service<
     readonly browse: (
       input: FilesystemBrowseInput,
     ) => Effect.Effect<FilesystemBrowseResult, WorkspaceEntriesBrowseError>;
+    readonly mkdir: (
+      input: FilesystemMkdirInput,
+    ) => Effect.Effect<FilesystemMkdirResult, WorkspaceEntriesMkdirError>;
     readonly list: (
       input: ProjectListEntriesInput,
     ) => Effect.Effect<ProjectListEntriesResult, WorkspaceEntriesError>;
@@ -232,6 +269,47 @@ export const make = Effect.gen(function* () {
     },
   );
 
+  const mkdir: WorkspaceEntries["Service"]["mkdir"] = Effect.fn("WorkspaceEntries.mkdir")(
+    function* (input) {
+      const platform = yield* HostProcessPlatform;
+      if (platform !== "win32" && isWindowsAbsolutePath(input.parentPath)) {
+        return yield* new WorkspaceEntriesWindowsPathUnsupportedError({
+          partialPath: input.parentPath,
+          platform,
+        });
+      }
+
+      const resolvedParent = path.resolve(expandHomePathWith(input.parentPath, path));
+      const fullPath = path.join(resolvedParent, input.name);
+
+      const exists = yield* Effect.promise(() =>
+        NodeFSP.stat(fullPath).then(
+          () => true,
+          () => false,
+        ),
+      );
+
+      if (exists) {
+        return yield* new WorkspaceEntriesMkdirAlreadyExistsError({
+          parentPath: resolvedParent,
+          name: input.name,
+        });
+      }
+
+      yield* Effect.tryPromise({
+        try: () => NodeFSP.mkdir(fullPath, { recursive: true }),
+        catch: (cause) =>
+          new WorkspaceEntriesMkdirFailedError({
+            parentPath: resolvedParent,
+            name: input.name,
+            cause,
+          }),
+      });
+
+      return { fullPath };
+    },
+  );
+
   const search: WorkspaceEntries["Service"]["search"] = Effect.fn("WorkspaceEntries.search")(
     function* (input) {
       const normalizedCwd = yield* normalizeWorkspaceRoot(input.cwd);
@@ -355,7 +433,7 @@ export const make = Effect.gen(function* () {
     },
   );
 
-  return WorkspaceEntries.of({ browse, list, refresh, search, searchContents });
+  return WorkspaceEntries.of({ browse, mkdir, list, refresh, search, searchContents });
 });
 
 export const layer = Layer.effect(WorkspaceEntries, make).pipe(

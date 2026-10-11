@@ -114,6 +114,7 @@ import {
   ensureBrowseDirectoryPath,
   findProjectByPath,
   getBrowseDirectoryPath,
+  getBrowseLeafPathSegment,
   hasTrailingPathSeparator,
   inferProjectTitleFromPath,
   isExplicitRelativeProjectPath,
@@ -748,6 +749,9 @@ function OpenCommandPaletteDialog(props: {
   const loadBrowsePath = useAtomQueryRunner(filesystemEnvironment.browse, {
     reportFailure: false,
     reportDefect: false,
+  });
+  const mkdirCommand = useAtomCommand(filesystemEnvironment.mkdir, {
+    reportFailure: false,
   });
   const cloneRepository = useAtomCommand(sourceControlEnvironment.cloneRepository, {
     reportFailure: false,
@@ -2625,6 +2629,54 @@ function OpenCommandPaletteDialog(props: {
     );
   }, [browseNavigation, browsePath.parentPath, pinnedCloneDirectoryName, prefetchBrowsePath]);
 
+  const browseLeafName = hasTrailingPathSeparator(query) ? "" : getBrowseLeafPathSegment(query);
+  const canCreateFolder =
+    isBrowsing &&
+    !relativePathNeedsActiveProject &&
+    browseEnvironmentId !== null &&
+    browseLeafName.length > 0 &&
+    exactBrowseEntry === null &&
+    canCreateProjectInEnvironment(browseEnvironment?.connection.phase);
+
+  const createFolder = canCreateFolder
+    ? async (): Promise<void> => {
+        if (!browseEnvironmentId) return;
+        const parentPath = browseDirectoryPath;
+        const name = browseLeafName;
+        const result = await mkdirCommand({
+          environmentId: browseEnvironmentId,
+          input: { parentPath, name },
+        });
+        if (result._tag === "Failure") {
+          if (!isAtomCommandInterrupted(result)) {
+            const error = squashAtomCommandFailure(result);
+            toastManager.add(
+              stackedThreadToast({
+                type: "error",
+                title: "Failed to create folder",
+                description: error instanceof Error ? error.message : "An error occurred.",
+              }),
+            );
+          }
+          return;
+        }
+        const newPath = result.value.fullPath;
+        const nextQuery = newPath.endsWith("/") ? newPath : `${newPath}/`;
+        await browseNavigation.run(
+          () => prefetchBrowsePath(newPath),
+          () => {
+            setHighlightedItemValue(null);
+            setQuery(nextQuery);
+            setBrowseGeneration((generation) => generation + 1);
+          },
+        );
+      }
+    : null;
+
+  const createFolderLabel = canCreateFolder
+    ? t("palette.browse.createFolder", { name: browseLeafName })
+    : null;
+
   // Resolve the add-project path from browse data when available. When the
   // query has a trailing separator (e.g. "~/projects/foo/"), parentPath is the
   // directory itself. Otherwise the user typed a partial leaf name, so we need
@@ -2641,8 +2693,12 @@ function OpenCommandPaletteDialog(props: {
     canBrowseUp,
     upIcon: <CornerLeftUpIcon className={ITEM_ICON_CLASS} />,
     directoryIcon: <FolderIcon className={ITEM_ICON_CLASS} />,
+    createFolderIcon: <FolderPlusIcon className={ITEM_ICON_CLASS} />,
+    createFolderLabel,
+    createFolderName: canCreateFolder ? browseLeafName : null,
     browseUp,
     browseTo,
+    createFolder,
   });
   const cloneDestinationBrowseGroups = useMemo(
     () =>

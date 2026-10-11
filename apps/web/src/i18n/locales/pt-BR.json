@@ -118,6 +118,9 @@
       "emptyCreateFolderHint": "Pressione Enter para criar esta pasta e adicioná-la como projeto.",
       "relativePathRequiresProject": "Caminhos relativos exigem um projeto ativo."
     },
+    "browse": {
+      "createFolder": "Criar pasta \"{{name}}\""
+    },
     "submit": {
       "add": "Adicionar",
       "clone": "Clonar",
