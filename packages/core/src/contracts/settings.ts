@@ -917,6 +917,75 @@ export const CommandCodeSettings = makeProviderSettingsSchema(
 );
 export type CommandCodeSettings = typeof CommandCodeSettings.Type;
 
+export const LocalLlmSettings = makeProviderSettingsSchema(
+  {
+    enabled: Schema.Boolean.pipe(
+      Schema.withDecodingDefault(Effect.succeed(false)),
+      Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
+    ),
+    baseUrl: TrimmedString.pipe(
+      Schema.withDecodingDefault(Effect.succeed("http://localhost:8080")),
+      Schema.annotateKey({
+        title: "Base URL",
+        description: "URL of the local LLM server (e.g. http://localhost:8080).",
+        providerSettingsForm: { placeholder: "http://localhost:8080" },
+      }),
+    ),
+    apiKey: TrimmedString.pipe(
+      Schema.withDecodingDefault(Effect.succeed("")),
+      Schema.annotateKey({
+        title: "API Key",
+        description: "API key for the local server. Leave empty for most local servers.",
+        providerSettingsForm: {
+          control: "password",
+          placeholder: "Optional",
+          clearWhenEmpty: "omit",
+        },
+      }),
+    ),
+    model: TrimmedString.pipe(
+      Schema.withDecodingDefault(Effect.succeed("")),
+      Schema.annotateKey({
+        title: "Model",
+        description: "Model name as reported by the server (e.g. llama3, qwen2).",
+        providerSettingsForm: { placeholder: "Model name from /v1/models" },
+      }),
+    ),
+    apiFormat: Schema.Union([Schema.Literal("openai"), Schema.Literal("anthropic")]).pipe(
+      Schema.withDecodingDefault(Effect.succeed("openai" as const)),
+      Schema.annotateKey({
+        title: "API Format",
+        description: "Request format: OpenAI Chat Completions or Anthropic Messages.",
+        providerSettingsForm: { control: "select" },
+      }),
+    ),
+    command: TrimmedString.pipe(
+      Schema.withDecodingDefault(Effect.succeed("")),
+      Schema.annotateKey({
+        title: "Server Command",
+        description:
+          "Command to start the local server (e.g. llama-server -m model.gguf --port 8080).",
+        providerSettingsForm: { placeholder: "llama-server -m model.gguf --port 8080" },
+      }),
+    ),
+    autoStart: Schema.Boolean.pipe(
+      Schema.withDecodingDefault(Effect.succeed(false)),
+      Schema.annotateKey({
+        title: "Auto-start Server",
+        description: "Automatically start the server when needed using the command above.",
+      }),
+    ),
+    customModels: Schema.Array(CustomModelSetting).pipe(
+      Schema.withDecodingDefault(Effect.succeed([])),
+      Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
+    ),
+  },
+  {
+    order: ["baseUrl", "apiKey", "model", "apiFormat", "command", "autoStart"],
+  },
+);
+export type LocalLlmSettings = typeof LocalLlmSettings.Type;
+
 /**
  * A read-only quota source outside this environment's provider CLIs. The
  * only kind today is a CLIProxyAPI hub, whose management API reports the
@@ -1311,6 +1380,7 @@ export const ServerSettings = Schema.Struct({
     opencode: OpenCodeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     qoder: QoderSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     commandCode: CommandCodeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+    localLlm: LocalLlmSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   }).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   // New driver-agnostic instance map. Keyed by `ProviderInstanceId`; values
   // are `ProviderInstanceConfig` envelopes. The driver-specific config blob
@@ -1493,6 +1563,19 @@ const CommandCodeSettingsPatch = Schema.Struct({
   customModels: Schema.optionalKey(Schema.Array(CustomModelSetting)),
 });
 
+const LocalLlmSettingsPatch = Schema.Struct({
+  enabled: Schema.optionalKey(Schema.Boolean),
+  baseUrl: Schema.optionalKey(TrimmedString),
+  apiKey: Schema.optionalKey(TrimmedString),
+  model: Schema.optionalKey(TrimmedString),
+  apiFormat: Schema.optionalKey(
+    Schema.Union([Schema.Literal("openai"), Schema.Literal("anthropic")]),
+  ),
+  command: Schema.optionalKey(TrimmedString),
+  autoStart: Schema.optionalKey(Schema.Boolean),
+  customModels: Schema.optionalKey(Schema.Array(CustomModelSetting)),
+});
+
 export const ServerSettingsPatch = Schema.Struct({
   worktreeCleanup: Schema.optionalKey(
     Schema.NullOr(
@@ -1604,6 +1687,7 @@ export const ServerSettingsPatch = Schema.Struct({
       opencode: Schema.optionalKey(OpenCodeSettingsPatch),
       qoder: Schema.optionalKey(QoderSettingsPatch),
       commandCode: Schema.optionalKey(CommandCodeSettingsPatch),
+      localLlm: Schema.optionalKey(LocalLlmSettingsPatch),
     }),
   ),
   // Whole-map replacement for the new instance config. Patching individual
