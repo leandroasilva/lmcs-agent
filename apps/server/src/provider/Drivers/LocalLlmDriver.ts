@@ -28,8 +28,8 @@ import {
   type ProviderSnapshotSettings,
 } from "../providerUpdateSettings.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
-import { makeLocalLlmTextGeneration } from "./textGeneration.ts";
-import { fetchModels, type LocalLlmClientConfig } from "./httpClient.ts";
+import { makeLocalLlmTextGeneration } from "./LocalLlm/textGeneration.ts";
+import { fetchModels, type LocalLlmClientConfig } from "./LocalLlm/httpClient.ts";
 
 const decodeLocalLlmSettings = Schema.decodeSync(LocalLlmSettings);
 
