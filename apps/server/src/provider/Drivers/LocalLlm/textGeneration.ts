@@ -5,18 +5,18 @@ import type { LocalLlmSettings } from "@lmcstools/core";
 import { TextGenerationError } from "@lmcstools/core";
 import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@lmcstools/core/git";
 
-import type * as TextGeneration from "../../textGeneration/TextGeneration.ts";
+import type * as TextGeneration from "../../../textGeneration/TextGeneration.ts";
 import {
   buildBranchNamePrompt,
   buildCommitMessagePrompt,
   buildPrContentPrompt,
   buildThreadTitlePrompt,
-} from "../../textGeneration/TextGenerationPrompts.ts";
+} from "../../../textGeneration/TextGenerationPrompts.ts";
 import {
   sanitizeCommitSubject,
   sanitizePrTitle,
   sanitizeThreadTitle,
-} from "../../textGeneration/TextGenerationUtils.ts";
+} from "../../../textGeneration/TextGenerationUtils.ts";
 import { chatCompletion, type LocalLlmClientConfig } from "./httpClient.ts";
 
 const isTextGenerationError = Schema.is(TextGenerationError);
