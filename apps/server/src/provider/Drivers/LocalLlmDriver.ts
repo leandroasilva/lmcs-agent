@@ -9,6 +9,7 @@ import {
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import { createModelCapabilities } from "@lmcstools/core/model";
 
 import { ProviderDriverError } from "../Errors.ts";
 import {
@@ -30,6 +31,7 @@ import {
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { makeLocalLlmTextGeneration } from "./LocalLlm/textGeneration.ts";
 import { fetchModels, type LocalLlmClientConfig } from "./LocalLlm/httpClient.ts";
+import { makeLocalLlmAdapter } from "../Layers/LocalLlmAdapter.ts";
 
 const decodeLocalLlmSettings = Schema.decodeSync(LocalLlmSettings);
 
@@ -43,12 +45,9 @@ const LOCAL_LLM_PRESENTATION = {
   reportsContextWindow: false,
 } as const;
 
-const EMPTY_CAPABILITIES = {
-  toolCall: false,
-  imageInput: false,
-  reasoning: false,
-  streaming: true,
-} as const;
+const EMPTY_CAPABILITIES = createModelCapabilities({
+  optionDescriptors: [],
+});
 
 function localLlmModelsFromConfig(
   config: LocalLlmClientConfig,
@@ -77,12 +76,14 @@ function localLlmModelsFromConfig(
 
   if (customModels) {
     for (const custom of customModels) {
-      if (!models.some((existing) => existing.slug === custom.slug)) {
+      const slug = typeof custom === "string" ? custom : custom.slug;
+      const name = typeof custom === "string" ? custom : custom.name || custom.slug;
+      if (!models.some((existing) => existing.slug === slug)) {
         models.push({
-          slug: custom.slug,
-          name: custom.name || custom.slug,
+          slug,
+          name,
           isCustom: true,
-          capabilities: custom.capabilities ?? EMPTY_CAPABILITIES,
+          capabilities: EMPTY_CAPABILITIES,
         });
       }
     }
@@ -155,7 +156,7 @@ function buildInitialLocalLlmSnapshot(
 function checkLocalLlmStatus(
   config: LocalLlmClientConfig,
   settings: LocalLlmSettings,
-): Effect.Effect<ServerProviderDraft, never, typeof DateTime.currentTimeMillis> {
+): Effect.Effect<ServerProviderDraft> {
   return Effect.gen(function* () {
     const checkedAt = yield* Effect.map(DateTime.now, DateTime.formatIso);
 
@@ -181,7 +182,7 @@ function checkLocalLlmStatus(
         return {
           installed: true,
           version: null,
-          status: "ready" as ServerProviderState,
+          status: "ready" as const,
           auth: { status: "authenticated" as const } as ServerProviderAuth,
           message: undefined,
         };
@@ -236,6 +237,8 @@ export const LocalLlmDriver: ProviderDriver<LocalLlmSettings, LocalLlmDriverEnv>
         apiFormat: effectiveConfig.apiFormat,
       };
 
+      const adapter = yield* makeLocalLlmAdapter(effectiveConfig, { instanceId });
+
       const textGeneration = makeLocalLlmTextGeneration(effectiveConfig);
 
       const snapshotSettings = makeProviderSnapshotSettingsSource(effectiveConfig, serverSettings);
@@ -280,6 +283,7 @@ export const LocalLlmDriver: ProviderDriver<LocalLlmSettings, LocalLlmDriverEnv>
         accentColor,
         enabled,
         snapshot,
+        adapter,
         textGeneration,
       } satisfies ProviderInstance;
     }),
