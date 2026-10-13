@@ -79,6 +79,8 @@ import {
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { LoadBalancingSettings } from "./LoadBalancingSettings";
 import { GitHubRoutingSettings } from "./GitHubRoutingSettings";
+import { DeviceTokenSettings } from "./DeviceTokenSettings";
+import { ConnectRemoteDeviceSettings } from "./ConnectRemoteDeviceSettings";
 import { Input } from "../../ui/input";
 import { CommandShortcut } from "../../ui/command";
 import {
@@ -3936,6 +3938,14 @@ export function ConnectionsSettings() {
       </SettingsSection>
       <LoadBalancingSettings environments={loadBalancingEnvironments} />
       <GitHubRoutingSettings environments={loadBalancingEnvironments} />
+
+      <SettingsSection id="device-token" title="Device Token">
+        <DeviceTokenSettings />
+      </SettingsSection>
+
+      <SettingsSection id="connect-remote-device" title="Connect to Remote Device">
+        <ConnectRemoteDeviceSettings />
+      </SettingsSection>
     </SettingsPageContainer>
   );
 }
