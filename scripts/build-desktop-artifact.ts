@@ -2730,6 +2730,10 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
           schemes: ["lmcs", "lmcs-dev"],
         },
       ],
+      // Disable electron-builder's automatic notarization (which includes stapling).
+      // The script handles notarization manually after the build to avoid stapling
+      // failures due to transient network issues with Apple's servers.
+      notarize: false,
       ...(signed ? { sign: path.join(repoRoot, "scripts/sign-macos.ts") } : {}),
       ...(macPasskeySigning
         ? {
