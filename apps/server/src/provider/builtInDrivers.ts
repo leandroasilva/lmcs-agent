@@ -27,7 +27,7 @@ import { GrokDriver, type GrokDriverEnv } from "./Drivers/GrokDriver.ts";
 import { OpenCodeDriver, type OpenCodeDriverEnv } from "./Drivers/OpenCodeDriver.ts";
 import { QoderDriver, type QoderDriverEnv } from "./Drivers/QoderDriver.ts";
 import { CommandCodeDriver, type CommandCodeDriverEnv } from "./Drivers/CommandCodeDriver.ts";
-// import { LocalLlmDriver, type LocalLlmDriverEnv } from "./Drivers/LocalLlmDriver.ts"; // Disabled: incomplete adapter implementation
+import { LocalLlmDriver, type LocalLlmDriverEnv } from "./Drivers/LocalLlmDriver.ts";
 import type { AnyProviderDriver } from "./ProviderDriver.ts";
 
 /**
@@ -42,8 +42,8 @@ export type BuiltInDriversEnv =
   | GrokDriverEnv
   | OpenCodeDriverEnv
   | QoderDriverEnv
-  | CommandCodeDriverEnv;
-// | LocalLlmDriverEnv; // Disabled: incomplete adapter implementation
+  | CommandCodeDriverEnv
+  | LocalLlmDriverEnv;
 
 /**
  * Ordered list of built-in drivers. Order matters only for tie-breaking in
@@ -58,5 +58,5 @@ export const BUILT_IN_DRIVERS: ReadonlyArray<AnyProviderDriver<BuiltInDriversEnv
   OpenCodeDriver,
   QoderDriver,
   CommandCodeDriver,
-  // LocalLlmDriver, // Disabled: incomplete adapter implementation
+  LocalLlmDriver,
 ];
