@@ -839,6 +839,20 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["pull request trusted environments shared credentials permissions read actions"],
   },
   {
+    id: "device-token",
+    title: "Device Token",
+    to: "/settings/connections",
+    targetId: "device-token",
+    searchTerms: ["token device unique identifier pair connect share regenerate"],
+  },
+  {
+    id: "connect-remote-device",
+    title: "Connect to Remote Device",
+    to: "/settings/connections",
+    targetId: "connect-remote-device",
+    searchTerms: ["remote device connect server url token pair collaborate"],
+  },
+  {
     id: "archive",
     title: "Archived threads",
     to: "/settings/archived",
