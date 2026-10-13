@@ -3508,17 +3508,6 @@ export function GeneralSettingsPanel() {
           }
         />
       </SettingsSection>
-
-      <SettingsSection id="about" title={t("settings.general.sections.about")}>
-        {isElectron() || HOSTED_APP_CHANNEL ? (
-          <AboutVersionSection />
-        ) : (
-          <SettingsRow
-            title={<AboutVersionTitle />}
-            description={t("settings.general.about.currentVersion")}
-          />
-        )}
-      </SettingsSection>
       <SettingsSection title={t("settings.sections.diagnostics")}>
         <SettingsRow
           {...searchableSetting("diagnostics")}
