@@ -59,6 +59,12 @@ function extractCommandFromToolData(toolData: unknown): string | null {
     return toolInput.command.trim();
   }
 
+  // Check for command in input (Claude format)
+  const input = data.input as Record<string, unknown> | undefined;
+  if (input?.command && typeof input.command === "string") {
+    return input.command.trim();
+  }
+
   // Check for command directly in data
   if (data.command && typeof data.command === "string") {
     return data.command.trim();
@@ -73,10 +79,29 @@ function extractCommandFromToolData(toolData: unknown): string | null {
   return null;
 }
 
+/**
+ * Extract command from detail field.
+ * Format: "Bash: <command>" or "Read: <path>" or "ToolName: <details>"
+ */
+function extractCommandFromDetail(detail: string | undefined): string | null {
+  if (!detail) return null;
+
+  // Match "ToolName: <command>" pattern
+  const match = detail.match(/^[A-Za-z]+:\s*(.+)$/);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+
+  return null;
+}
+
 function singleToolCallLabel(entry: WorkLogEntry): string {
   const toolPresentation = resolveWorkEntryToolPresentation(entry, "completed");
   if (toolPresentation) return toolPresentation.displayName;
-  const command = entry.command?.trim() ?? extractCommandFromToolData(entry.toolData);
+  const command =
+    entry.command?.trim() ??
+    extractCommandFromToolData(entry.toolData) ??
+    extractCommandFromDetail(entry.detail);
   if (command) return command;
   const heading = normalizeCompactToolLabel(entry.toolTitle || entry.label);
   return `${heading.charAt(0).toUpperCase()}${heading.slice(1)}`;
@@ -85,7 +110,10 @@ function singleToolCallLabel(entry: WorkLogEntry): string {
 export function workEntryDisplayLabel(entry: WorkLogEntry, workspaceRoot: string | undefined) {
   const toolPresentation = resolveWorkEntryToolPresentation(entry);
   if (toolPresentation) return toolPresentation.displayName;
-  const command = entry.command ?? extractCommandFromToolData(entry.toolData);
+  const command =
+    entry.command ??
+    extractCommandFromToolData(entry.toolData) ??
+    extractCommandFromDetail(entry.detail);
   if (command) return command;
   if (entry.detail) return entry.detail;
   const [firstPath] = entry.changedFiles ?? [];
@@ -110,7 +138,11 @@ export function liveWorkEntryLabel(
     toolLifecycleStatus: status,
   });
   if (toolPresentation) return toolPresentation.displayName;
-  const command = (entry.command ?? extractCommandFromToolData(entry.toolData))?.trim();
+  const command = (
+    entry.command ??
+    extractCommandFromToolData(entry.toolData) ??
+    extractCommandFromDetail(entry.detail)
+  )?.trim();
   if (command) {
     const verb =
       status === "inProgress"
