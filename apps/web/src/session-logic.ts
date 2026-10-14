@@ -1122,6 +1122,7 @@ function extractToolCommand(payload: Record<string, unknown> | null): {
   const itemResult = asRecord(item?.result);
   const itemInput = asRecord(item?.input);
   const toolInput = asRecord(data?.toolInput); // Qoder format
+  const input = asRecord(data?.input); // Claude format
   const itemType = asTrimmedString(payload?.itemType);
   const detail = asTrimmedString(payload?.detail);
   const candidates: unknown[] = [
@@ -1129,6 +1130,7 @@ function extractToolCommand(payload: Record<string, unknown> | null): {
     itemInput?.command,
     itemResult?.command,
     toolInput?.command, // Qoder format
+    input?.command, // Claude format
     data?.command,
     itemType === "command_execution" && detail ? stripTrailingExitCode(detail).output : null,
   ];
@@ -1142,6 +1144,20 @@ function extractToolCommand(payload: Record<string, unknown> | null): {
       command,
       rawCommand: toRawToolCommand(candidate, command),
     };
+  }
+
+  // Fallback: extract command from detail field (format: "Bash: <command>")
+  if (detail) {
+    const match = detail.match(/^[A-Za-z]+:\s*(.+)$/);
+    if (match && match[1]) {
+      const command = match[1].trim();
+      if (command) {
+        return {
+          command,
+          rawCommand: command,
+        };
+      }
+    }
   }
 
   return {
