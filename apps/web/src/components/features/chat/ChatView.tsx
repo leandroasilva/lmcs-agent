@@ -370,6 +370,7 @@ import { DraftHeroHeadline } from "./DraftHeroHeadline";
 import { ExpandedImageDialog } from "./ExpandedImageDialog";
 import { PullRequestThreadDialog } from "../pullRequest/PullRequestThreadDialog";
 import { MessagesTimeline } from "./MessagesTimeline";
+import { LiveToolCallPanel } from "./LiveToolCallPanel";
 import type { AssistantCitationRequest } from "./AssistantCitationSource";
 import { resolveTimelineIsAtEnd, worktreeSetupAgentStarted } from "./MessagesTimeline.logic";
 import { resolveComposerTimelineInset, resolveScrollToEndClearance } from "./composerFooterLayout";
@@ -10029,6 +10030,12 @@ export default function ChatView(props: ChatViewProps) {
             </div>
             {/* Messages Wrapper */}
             <div className="relative flex min-h-0 flex-1 flex-col bg-background">
+              {/* Live Tool Calls - Real-time tool execution visibility */}
+              <LiveToolCallPanel
+                environmentId={environmentId}
+                threadId={threadId}
+                isVisible={!paintOnlyDisplayedTimeline && isWorking}
+              />
               {/* Messages — LegendList handles virtualization and scrolling internally */}
               <MessagesTimeline
                 citationRequest={paintOnlyDisplayedTimeline ? null : citationRequest}

@@ -13,6 +13,7 @@ import {
   ProviderSetupError,
   ProviderSetupInput,
 } from "./providerSetup.ts";
+import { ProviderRuntimeEvent } from "./providerRuntime.ts";
 
 import { ExternalLauncherError, LaunchEditorInput } from "./editor.ts";
 import {
@@ -451,6 +452,7 @@ export const WS_METHODS = {
   subscribeAuthAccess: "subscribeAuthAccess",
   subscribeBackgroundPolicy: "subscribeBackgroundPolicy",
   subscribeResourceTelemetry: "subscribeResourceTelemetry",
+  subscribeProviderRuntimeEvents: "subscribeProviderRuntimeEvents",
 } as const;
 
 const WsServerUpsertKeybindingRpc = Rpc.make(WS_METHODS.serverUpsertKeybinding, {
@@ -1397,6 +1399,13 @@ const WsSubscribeAuthAccessRpc = Rpc.make(WS_METHODS.subscribeAuthAccess, {
   stream: true,
 });
 
+const WsSubscribeProviderRuntimeEventsRpc = Rpc.make(WS_METHODS.subscribeProviderRuntimeEvents, {
+  payload: Schema.Struct({}),
+  success: ProviderRuntimeEvent,
+  error: EnvironmentAuthorizationError,
+  stream: true,
+});
+
 const WsSubscribeBackgroundPolicyRpc = Rpc.make(WS_METHODS.subscribeBackgroundPolicy, {
   payload: Schema.Struct({}),
   success: BackgroundPolicySnapshot,
@@ -1550,6 +1559,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsSubscribeAuthAccessRpc,
   WsSubscribeBackgroundPolicyRpc,
   WsSubscribeResourceTelemetryRpc,
+  WsSubscribeProviderRuntimeEventsRpc,
   WsOrchestrationDispatchCommandRpc,
   WsOrchestrationGetWorkflowScriptRpc,
   WsOrchestrationGetTurnDiffRpc,
