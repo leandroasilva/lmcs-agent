@@ -3516,6 +3516,12 @@ const makeWsRpcLayer = (
             ),
             { "rpc.aggregate": "terminal" },
           ),
+        [WS_METHODS.subscribeProviderRuntimeEvents]: (_input) =>
+          observeRpcStream(
+            WS_METHODS.subscribeProviderRuntimeEvents,
+            providerService.streamEvents,
+            { "rpc.aggregate": "provider" },
+          ),
         [WS_METHODS.previewOpen]: (input) =>
           observeRpcEffect(WS_METHODS.previewOpen, previewManager.open(input), {
             "rpc.aggregate": "preview",

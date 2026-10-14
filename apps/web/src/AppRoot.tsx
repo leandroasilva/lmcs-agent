@@ -5,6 +5,7 @@ import { PreviewAutomationHosts } from "./components/features/preview/PreviewAut
 import { QuitHoldOverlay } from "./components/layout/QuitHoldOverlay";
 import { LocaleSync } from "./i18n/LocaleSync";
 import { AppAtomRegistryProvider } from "./rpc/atomRegistry";
+import { ProviderRuntimeEventsBridge } from "./components/ProviderRuntimeEventsBridge";
 import type { AppRouter } from "./router";
 
 /**
@@ -16,6 +17,7 @@ export function AppRoot({ router }: { readonly router: AppRouter }) {
   return (
     <AppAtomRegistryProvider>
       <LocaleSync />
+      <ProviderRuntimeEventsBridge />
       <RouterProvider router={router} />
       <PreviewAutomationHosts />
       <ElectronBrowserHost />
