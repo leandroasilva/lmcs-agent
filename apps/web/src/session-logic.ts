@@ -638,6 +638,12 @@ function toDerivedWorkLogEntry(activity: OrchestrationThreadActivity): DerivedWo
     if (toolData !== undefined) {
       entry.toolData = toolData;
     }
+  } else if (itemType === "dynamic_tool_call") {
+    // Store full data for dynamic_tool_call to extract command in UI
+    const data = asRecord(payload?.data);
+    if (data !== undefined) {
+      entry.toolData = data;
+    }
   }
   if (itemType) {
     entry.itemType = itemType;
@@ -1115,12 +1121,14 @@ function extractToolCommand(payload: Record<string, unknown> | null): {
   const item = asRecord(data?.item);
   const itemResult = asRecord(item?.result);
   const itemInput = asRecord(item?.input);
+  const toolInput = asRecord(data?.toolInput); // Qoder format
   const itemType = asTrimmedString(payload?.itemType);
   const detail = asTrimmedString(payload?.detail);
   const candidates: unknown[] = [
     item?.command,
     itemInput?.command,
     itemResult?.command,
+    toolInput?.command, // Qoder format
     data?.command,
     itemType === "command_execution" && detail ? stripTrailingExitCode(detail).output : null,
   ];

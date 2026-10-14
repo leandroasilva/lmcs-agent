@@ -45,10 +45,38 @@ const TIMELINE_MINIMAP_MAX_HEIGHT_CSS = "calc(100vh - 18rem)";
 const TIMELINE_CONTENT_MAX_WIDTH = 768;
 const TIMELINE_MINIMAP_PERSISTENT_GUTTER = 48;
 
+/**
+ * Extract command from toolData for dynamic_tool_call entries.
+ * Qoder and other providers may store the command in toolData instead of command field.
+ */
+function extractCommandFromToolData(toolData: unknown): string | null {
+  if (!toolData || typeof toolData !== "object") return null;
+  const data = toolData as Record<string, unknown>;
+
+  // Check for command in toolInput (Qoder format)
+  const toolInput = data.toolInput as Record<string, unknown> | undefined;
+  if (toolInput?.command && typeof toolInput.command === "string") {
+    return toolInput.command.trim();
+  }
+
+  // Check for command directly in data
+  if (data.command && typeof data.command === "string") {
+    return data.command.trim();
+  }
+
+  // Check for path/file_path (file operations)
+  const path = (data.path ?? data.file_path) as string | undefined;
+  if (path && typeof path === "string") {
+    return path.trim();
+  }
+
+  return null;
+}
+
 function singleToolCallLabel(entry: WorkLogEntry): string {
   const toolPresentation = resolveWorkEntryToolPresentation(entry, "completed");
   if (toolPresentation) return toolPresentation.displayName;
-  const command = entry.command?.trim();
+  const command = entry.command?.trim() ?? extractCommandFromToolData(entry.toolData);
   if (command) return command;
   const heading = normalizeCompactToolLabel(entry.toolTitle || entry.label);
   return `${heading.charAt(0).toUpperCase()}${heading.slice(1)}`;
@@ -57,7 +85,8 @@ function singleToolCallLabel(entry: WorkLogEntry): string {
 export function workEntryDisplayLabel(entry: WorkLogEntry, workspaceRoot: string | undefined) {
   const toolPresentation = resolveWorkEntryToolPresentation(entry);
   if (toolPresentation) return toolPresentation.displayName;
-  if (entry.command) return entry.command;
+  const command = entry.command ?? extractCommandFromToolData(entry.toolData);
+  if (command) return command;
   if (entry.detail) return entry.detail;
   const [firstPath] = entry.changedFiles ?? [];
   if (firstPath) {
@@ -81,7 +110,7 @@ export function liveWorkEntryLabel(
     toolLifecycleStatus: status,
   });
   if (toolPresentation) return toolPresentation.displayName;
-  const command = entry.command?.trim();
+  const command = (entry.command ?? extractCommandFromToolData(entry.toolData))?.trim();
   if (command) {
     const verb =
       status === "inProgress"
