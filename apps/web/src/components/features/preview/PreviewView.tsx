@@ -26,7 +26,10 @@ import { type ComposerImageAttachment, useComposerDraftStore } from "~/composerD
 import { capturePreviewAnnotationScreenshot } from "~/lib/previewAnnotation";
 import { ensureLocalApi } from "~/localApi";
 import {
+  clearDualModeCompanion,
+  findCompanionTabId,
   rememberPreviewUrl,
+  setDualModeCompanion,
   updatePreviewServerSnapshot,
   useThreadPreviewState,
 } from "~/previewStateStore";
@@ -47,6 +50,7 @@ import { openPreviewSession } from "./openPreviewSession";
 import { PreviewChromeRow } from "./PreviewChromeRow";
 import { PreviewEmptyState } from "./PreviewEmptyState";
 import { PreviewMoreMenu } from "./PreviewMoreMenu";
+import { DualPreviewView } from "./DualPreviewView";
 import {
   commitBrowserViewportChange,
   subscribeBrowserViewportChange,
@@ -123,6 +127,7 @@ export function PreviewView({
   );
   const addPreviewAnnotation = useComposerDraftStore((store) => store.addPreviewAnnotation);
   const addImage = useComposerDraftStore((store) => store.addImage);
+  const closePreview = useAtomCommand(previewEnvironment.close, "preview close");
   const environmentHttpBaseUrl = useEnvironmentHttpBaseUrl(threadRef.environmentId);
   const environmentHostname = environmentHttpBaseUrl
     ? new URL(environmentHttpBaseUrl).hostname
@@ -162,6 +167,12 @@ export function PreviewView({
   const controller = desktopOverlay?.controller ?? "none";
   const viewport = snapshot?.viewport ?? FILL_PREVIEW_VIEWPORT;
   const browserDefaults = useBrowserDefaults();
+  // Dual mode: check if this tab has a companion tab for side-by-side preview.
+  const companionTabId = tabId ? findCompanionTabId(previewState, tabId) : null;
+  const dualModeActive = companionTabId !== null;
+  const companionRuntimeTabId = companionTabId
+    ? previewRuntimeTabId(threadRef, previewState.serverEpoch, companionTabId)
+    : null;
   // A tab created before profiles existed carries no profile of its own. It
   // runs in the built-in `default` partition — the scope the browser used
   // before profiles — not in whatever profile is configured as the default
@@ -193,7 +204,11 @@ export function PreviewView({
         rememberPreviewUrl(threadRef, resolvedUrl);
         return true;
       }
-      const result = await openPreviewSession({ openPreview: open, threadRef, url: resolvedUrl });
+      const result = await openPreviewSession({
+        openPreview: open,
+        threadRef,
+        url: resolvedUrl,
+      });
       if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
         const error = squashAtomCommandFailure(result);
         if (error instanceof BrowserSettingsReadError) {
@@ -294,6 +309,83 @@ export function PreviewView({
       }),
     ).catch(() => undefined);
   };
+
+  const handleToggleDualMode = useCallback(async () => {
+    if (!tabId) return;
+    const currentState = previewState;
+    const existingCompanionTabId = findCompanionTabId(currentState, tabId);
+
+    if (existingCompanionTabId) {
+      // Exit dual mode: close the companion tab and clear mapping
+      const result = await closePreview({
+        environmentId: threadRef.environmentId,
+        input: { threadId: threadRef.threadId, tabId: existingCompanionTabId },
+      });
+      clearDualModeCompanion(tabId);
+      if (result._tag === "Failure") {
+        const error = squashAtomCommandFailure(result);
+        toastManager.add({
+          type: "error",
+          title: "Unable to close companion preview",
+          description: error instanceof Error ? error.message : "An error occurred.",
+        });
+      }
+      // Switch main tab back to fill
+      if (runtimeTabId) {
+        void commitBrowserViewportChange(runtimeTabId, FILL_PREVIEW_VIEWPORT).catch(
+          () => undefined,
+        );
+      }
+    } else {
+      // Enter dual mode: open a companion tab with mobile viewport
+      const mobileViewport: PreviewViewportSetting = {
+        _tag: "preset",
+        width: 390,
+        height: 844,
+        presetId: "iphone-12-pro",
+      };
+      const desktopViewport: PreviewViewportSetting = {
+        _tag: "preset",
+        width: 1440,
+        height: 900,
+        presetId: "nest-hub-max",
+      };
+      // Resize main tab to desktop
+      await handleViewportChange(desktopViewport);
+      // Open companion tab with mobile viewport
+      const companionResult = await open({
+        environmentId: threadRef.environmentId,
+        input: {
+          threadId: threadRef.threadId,
+          url: navStatus._tag === "Success" ? navStatus.url : undefined,
+          viewport: mobileViewport,
+          profileId: activeProfileId,
+        },
+      });
+      if (companionResult._tag === "Failure") {
+        const error = squashAtomCommandFailure(companionResult);
+        toastManager.add({
+          type: "error",
+          title: "Unable to open companion preview",
+          description: error instanceof Error ? error.message : "An error occurred.",
+        });
+        return;
+      }
+      // Register the companion mapping client-side
+      const companionTabId = companionResult.value.tabId;
+      setDualModeCompanion(tabId, companionTabId);
+    }
+  }, [
+    tabId,
+    runtimeTabId,
+    threadRef,
+    navStatus,
+    activeProfileId,
+    open,
+    closePreview,
+    handleViewportChange,
+    previewState,
+  ]);
 
   useEffect(() => {
     if (!runtimeTabId) return;
@@ -769,6 +861,8 @@ export function PreviewView({
               colorScheme={desktopOverlay?.colorScheme ?? "system"}
               deviceToolbarVisible={viewport._tag !== "fill"}
               onToggleDeviceToolbar={handleToggleDeviceToolbar}
+              dualModeActive={dualModeActive}
+              onToggleDualMode={handleToggleDualMode}
               nativePictureInPicture={desktopOverlay?.pictureInPicture ?? false}
               onNativePictureInPicture={handleNativePictureInPicture}
             />
@@ -777,7 +871,18 @@ export function PreviewView({
       />
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        {runtimeTabId && snapshot && !showEmptyState ? (
+        {dualModeActive && companionRuntimeTabId && runtimeTabId && snapshot && !showEmptyState ? (
+          <DualPreviewView
+            threadRef={threadRef}
+            mainTabId={runtimeTabId}
+            companionTabId={companionRuntimeTabId}
+            desktopViewport={viewport}
+            mobileViewport={
+              previewState.sessions[companionTabId]?.viewport ?? FILL_PREVIEW_VIEWPORT
+            }
+            visible={visible && !isUnreachable}
+          />
+        ) : runtimeTabId && snapshot && !showEmptyState ? (
           <BrowserSurfaceSlot
             key={runtimeTabId}
             tabId={runtimeTabId}

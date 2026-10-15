@@ -214,7 +214,10 @@ export function applyPreviewServerEvent(ref: ScopedThreadRef, event: PreviewEven
             },
             updatedAt: event.createdAt,
           };
-          const sessions = { ...current.sessions, [event.tabId]: failedSnapshot };
+          const sessions = {
+            ...current.sessions,
+            [event.tabId]: failedSnapshot,
+          };
           return {
             ...current,
             sessions,
@@ -449,6 +452,59 @@ export function setActivePreviewTab(ref: ScopedThreadRef, tabId: string): void {
       desktopOverlay: current.desktopByTabId[tabId] ?? null,
     };
   });
+}
+
+/**
+ * Client-side dual-mode companion mapping.
+ * Maps mainTabId → companionTabId for tabs opened in responsive preview mode.
+ * This is separate from the server's companionTabId field, which is only set
+ * when the server creates both tabs atomically via companionViewport.
+ */
+const dualModeCompanionTabIds = new Map<string, string>();
+
+/**
+ * Registers a companion tab for dual-mode responsive preview.
+ */
+export function setDualModeCompanion(mainTabId: string, companionTabId: string): void {
+  dualModeCompanionTabIds.set(mainTabId, companionTabId);
+}
+
+/**
+ * Removes the dual-mode companion mapping for a main tab.
+ */
+export function clearDualModeCompanion(mainTabId: string): void {
+  dualModeCompanionTabIds.delete(mainTabId);
+}
+
+/**
+ * Returns the companion tab id for a given tab, if one exists.
+ * Checks client-side dual-mode mapping first, then falls back to server-side
+ * companionTabId field (set when server creates both tabs atomically).
+ */
+export function findCompanionTabId(state: ThreadPreviewState, mainTabId: string): string | null {
+  // Client-side dual-mode mapping (takes precedence)
+  const clientCompanion = dualModeCompanionTabIds.get(mainTabId);
+  if (clientCompanion && state.sessions[clientCompanion]) {
+    return clientCompanion;
+  }
+  // Server-side companionTabId field
+  for (const snapshot of Object.values(state.sessions)) {
+    if (snapshot.companionTabId === mainTabId) {
+      return snapshot.tabId;
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns the main tab id for a given companion tab, if one exists.
+ */
+export function findMainTabForCompanion(
+  state: ThreadPreviewState,
+  companionTabId: string,
+): string | null {
+  const snapshot = state.sessions[companionTabId];
+  return snapshot?.companionTabId ?? null;
 }
 
 export function rememberPreviewUrl(ref: ScopedThreadRef, url: string): void {

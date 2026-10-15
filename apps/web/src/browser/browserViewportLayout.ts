@@ -35,7 +35,9 @@ export type BrowserViewportResizeDirection =
 export const browserViewportSettingKey = (setting: PreviewViewportSetting): string =>
   setting._tag === "fill"
     ? "fill"
-    : `${setting._tag}:${setting.width}:${setting.height}:${setting._tag === "preset" ? setting.presetId : ""}`;
+    : setting._tag === "dual"
+      ? `dual:${setting.desktop._tag}:${setting.mobile._tag}`
+      : `${setting._tag}:${setting.width}:${setting.height}:${setting._tag === "preset" ? setting.presetId : ""}`;
 
 const normalizeZoomFactor = (zoomFactor: number): number =>
   Number.isFinite(zoomFactor) && zoomFactor > 0 ? zoomFactor : 1;
@@ -48,7 +50,11 @@ export function resolveFittedBrowserViewport(
     readonly scale: number;
   } | null,
   zoomFactor = 1,
-): Exclude<PreviewViewportSetting, { readonly _tag: "fill" }> {
+): Exclude<PreviewViewportSetting, { readonly _tag: "fill" } | { readonly _tag: "dual" }> {
+  if (setting._tag === "dual") {
+    // Dual mode is handled by DualPreviewView; return a default freeform viewport.
+    return { _tag: "freeform", width: 1280, height: 800 };
+  }
   if (setting._tag !== "fill") return setting;
   const normalizedZoomFactor = normalizeZoomFactor(zoomFactor);
   if (sourceContent) {
@@ -87,7 +93,7 @@ export function resolveBrowserViewportLayout(
 ): BrowserViewportLayout {
   const containerWidth = Math.max(1, Math.round(container.width));
   const containerHeight = Math.max(1, Math.round(container.height));
-  if (setting._tag === "fill") {
+  if (setting._tag === "fill" || setting._tag === "dual") {
     return {
       canvasWidth: containerWidth,
       canvasHeight: containerHeight,

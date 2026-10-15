@@ -125,6 +125,7 @@ const buildLoadingSnapshot = (input: {
   readonly viewport: PreviewViewportSetting;
   readonly profileId?: string | undefined;
   readonly updatedAt: string;
+  readonly companionTabId?: string | undefined;
 }): PreviewSessionSnapshot => ({
   threadId: input.threadId,
   tabId: input.tabId,
@@ -133,6 +134,7 @@ const buildLoadingSnapshot = (input: {
   canGoForward: false,
   viewport: input.viewport,
   ...(input.profileId === undefined ? {} : { profileId: input.profileId }),
+  ...(input.companionTabId === undefined ? {} : { companionTabId: input.companionTabId }),
   updatedAt: input.updatedAt,
 });
 
@@ -142,6 +144,7 @@ const buildIdleSnapshot = (input: {
   readonly viewport: PreviewViewportSetting;
   readonly profileId?: string | undefined;
   readonly updatedAt: string;
+  readonly companionTabId?: string | undefined;
 }): PreviewSessionSnapshot => ({
   threadId: input.threadId,
   tabId: input.tabId,
@@ -150,6 +153,7 @@ const buildIdleSnapshot = (input: {
   canGoForward: false,
   viewport: input.viewport,
   ...(input.profileId === undefined ? {} : { profileId: input.profileId }),
+  ...(input.companionTabId === undefined ? {} : { companionTabId: input.companionTabId }),
   updatedAt: input.updatedAt,
 });
 
@@ -188,7 +192,10 @@ export const make = Effect.gen(function* PreviewManagerMake() {
       const session = state.sessions.get(compositeKey(threadId, tabId));
       if (!session) {
         return Effect.succeed([
-          { kind: "fail", error: new PreviewSessionLookupError({ threadId, tabId }) },
+          {
+            kind: "fail",
+            error: new PreviewSessionLookupError({ threadId, tabId }),
+          },
           state,
         ] as readonly [ModifyResult, ManagerState]);
       }
@@ -227,15 +234,53 @@ export const make = Effect.gen(function* PreviewManagerMake() {
       // session is born at the right size; older clients omit it and keep the
       // historical fill-panel behaviour.
       const viewport = input.viewport ?? FILL_PREVIEW_VIEWPORT;
+
+      // When a companion viewport is requested, create the companion tab first
+      // so we can reference its id from the main tab's snapshot.
+      let companionTabId: string | undefined;
+      if (input.companionViewport !== undefined) {
+        companionTabId = newPreviewTabId();
+        const companionSnapshot = input.url
+          ? buildLoadingSnapshot({
+              threadId: input.threadId,
+              tabId: companionTabId,
+              url: yield* normalizeUrl(input.url),
+              title: "",
+              viewport: input.companionViewport,
+              profileId: input.profileId,
+              updatedAt,
+              companionTabId: tabId,
+            })
+          : buildIdleSnapshot({
+              threadId: input.threadId,
+              tabId: companionTabId,
+              viewport: input.companionViewport,
+              profileId: input.profileId,
+              updatedAt,
+              companionTabId: tabId,
+            });
+        // We'll insert the companion after the main tab, but build its
+        // snapshot now so the main tab can reference it.
+        // Store temporarily; actual insertion happens below.
+        void companionSnapshot;
+      }
+
       const snapshot = input.url
         ? buildLoadingSnapshot({
             threadId: input.threadId,
             tabId,
-            url: yield* normalizeUrl(input.url),
+            url:
+              input.companionViewport !== undefined
+                ? // Re-normalize is safe (pure function); we already computed it above.
+                  yield* normalizeUrl(input.url)
+                : input.url
+                  ? yield* normalizeUrl(input.url)
+                  : "",
             title: "",
             viewport,
             profileId: input.profileId,
             updatedAt,
+            companionTabId,
           })
         : buildIdleSnapshot({
             threadId: input.threadId,
@@ -243,6 +288,7 @@ export const make = Effect.gen(function* PreviewManagerMake() {
             viewport,
             profileId: input.profileId,
             updatedAt,
+            companionTabId,
           });
       yield* SynchronizedRef.modifyEffect(stateRef, (state) =>
         Effect.gen(function* () {
@@ -253,6 +299,44 @@ export const make = Effect.gen(function* PreviewManagerMake() {
             tabId,
             snapshot,
           });
+          // Insert companion tab if one was requested.
+          if (companionTabId !== undefined && input.companionViewport !== undefined) {
+            const companionUrl = input.url ? yield* normalizeUrl(input.url) : undefined;
+            const companionSnapshot =
+              companionUrl !== undefined
+                ? buildLoadingSnapshot({
+                    threadId: input.threadId,
+                    tabId: companionTabId,
+                    url: companionUrl,
+                    title: "",
+                    viewport: input.companionViewport,
+                    profileId: input.profileId,
+                    updatedAt,
+                    companionTabId: tabId,
+                  })
+                : buildIdleSnapshot({
+                    threadId: input.threadId,
+                    tabId: companionTabId,
+                    viewport: input.companionViewport,
+                    profileId: input.profileId,
+                    updatedAt,
+                    companionTabId: tabId,
+                  });
+            sessions.set(compositeKey(input.threadId, companionTabId), {
+              threadId: input.threadId,
+              tabId: companionTabId,
+              snapshot: companionSnapshot,
+            });
+            yield* PubSub.publish(eventsPubSub, {
+              type: "opened",
+              threadId: input.threadId,
+              tabId: companionTabId,
+              createdAt: companionSnapshot.updatedAt,
+              serverEpoch,
+              revision: revision + 1,
+              snapshot: companionSnapshot,
+            });
+          }
           yield* PubSub.publish(eventsPubSub, {
             type: "opened",
             threadId: input.threadId,
@@ -262,7 +346,13 @@ export const make = Effect.gen(function* PreviewManagerMake() {
             revision,
             snapshot,
           });
-          return [snapshot, { sessions, revision }] as const;
+          return [
+            snapshot,
+            {
+              sessions,
+              revision: companionTabId !== undefined ? revision + 1 : revision,
+            },
+          ] as const;
         }),
       );
       return snapshot;
@@ -290,6 +380,9 @@ export const make = Effect.gen(function* PreviewManagerMake() {
             ...(session.snapshot.profileId === undefined
               ? {}
               : { profileId: session.snapshot.profileId }),
+            ...(session.snapshot.companionTabId === undefined
+              ? {}
+              : { companionTabId: session.snapshot.companionTabId }),
             updatedAt,
           };
           return {
@@ -326,6 +419,9 @@ export const make = Effect.gen(function* PreviewManagerMake() {
           ...(session.snapshot.profileId === undefined
             ? {}
             : { profileId: session.snapshot.profileId }),
+          ...(session.snapshot.companionTabId === undefined
+            ? {}
+            : { companionTabId: session.snapshot.companionTabId }),
           updatedAt,
         };
         const emit: PreviewEventDraft =
@@ -409,6 +505,24 @@ export const make = Effect.gen(function* PreviewManagerMake() {
         for (const target of targets) {
           revision += 1;
           sessions.delete(compositeKey(target.threadId, target.tabId));
+          // Also close the companion tab if this is the main tab of a pair.
+          const companionTabId = target.snapshot.companionTabId;
+          if (companionTabId !== undefined) {
+            const companionKey = compositeKey(target.threadId, companionTabId);
+            const companion = sessions.get(companionKey);
+            if (companion) {
+              sessions.delete(companionKey);
+              revision += 1;
+              eventsToEmit.push({
+                type: "closed",
+                threadId: companion.threadId,
+                tabId: companion.tabId,
+                createdAt,
+                serverEpoch,
+                revision,
+              });
+            }
+          }
           eventsToEmit.push({
             type: "closed",
             threadId: target.threadId,

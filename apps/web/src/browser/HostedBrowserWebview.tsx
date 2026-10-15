@@ -161,7 +161,10 @@ export function HostedBrowserWebview(props: {
     // would dismiss them. Replay it as a pointerdown on the webview itself.
     const dismissHostPopups = () => {
       webview.dispatchEvent(
-        new PointerEvent("pointerdown", { bubbles: true, pointerType: "mouse" }),
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          pointerType: "mouse",
+        }),
       );
     };
     webview.addEventListener("did-attach", register);
@@ -182,8 +185,10 @@ export function HostedBrowserWebview(props: {
   const active = presentation.visible && presentation.rect !== null;
   const lastRect = presentation.rect;
   const normalizedZoomFactor = Number.isFinite(zoomFactor) && zoomFactor > 0 ? zoomFactor : 1;
-  const viewportWidth = viewport._tag === "fill" ? null : viewport.width;
-  const viewportHeight = viewport._tag === "fill" ? null : viewport.height;
+  const viewportWidth =
+    viewport._tag === "fill" || viewport._tag === "dual" ? null : viewport.width;
+  const viewportHeight =
+    viewport._tag === "fill" || viewport._tag === "dual" ? null : viewport.height;
   const viewportAspectRatio =
     viewportWidth === null || viewportHeight === null ? null : viewportWidth / viewportHeight;
   const lockedAspectRatio =
@@ -198,7 +203,7 @@ export function HostedBrowserWebview(props: {
       }
     : null;
   const hiddenSize =
-    viewport._tag !== "fill"
+    viewport._tag !== "fill" && viewport._tag !== "dual"
       ? {
           width: viewport.width * normalizedZoomFactor,
           height: viewport.height * normalizedZoomFactor,
@@ -288,7 +293,9 @@ export function HostedBrowserWebview(props: {
       data-preview-viewport={runtimeTabId}
     >
       <div className="relative" style={{ width: layout.canvasWidth, height: layout.canvasHeight }}>
-        {deviceToolbarVisible && effectiveViewport._tag !== "fill" ? (
+        {deviceToolbarVisible &&
+        effectiveViewport._tag !== "fill" &&
+        effectiveViewport._tag !== "dual" ? (
           <BrowserDeviceToolbar
             setting={effectiveViewport}
             width={Math.max(1, Math.round(containerSize.width))}
@@ -305,7 +312,9 @@ export function HostedBrowserWebview(props: {
           // the guest attaches with popups disabled. React types `allowpopups` as a
           // boolean, but react-dom drops boolean values for unrecognized attributes,
           // so the literal string has to be spread past the type.
-          {...({ allowpopups: "true" } as unknown as { readonly allowpopups?: boolean })}
+          {...({ allowpopups: "true" } as unknown as {
+            readonly allowpopups?: boolean;
+          })}
           src={webviewGeneration === 0 ? initialSrc : recoverySrc}
           partition={config.partition}
           webpreferences={config.webPreferences}
@@ -317,16 +326,16 @@ export function HostedBrowserWebview(props: {
           data-preview-css-width={
             fittedSourceViewport
               ? fittedSourceViewport.width
-              : effectiveViewport._tag === "fill"
+              : effectiveViewport._tag === "fill" || effectiveViewport._tag === "dual"
                 ? Math.max(1, Math.round(layout.viewportWidth / normalizedZoomFactor))
-                : effectiveViewport.width
+                : (effectiveViewport as { width: number }).width
           }
           data-preview-css-height={
             fittedSourceViewport
               ? fittedSourceViewport.height
-              : effectiveViewport._tag === "fill"
+              : effectiveViewport._tag === "fill" || effectiveViewport._tag === "dual"
                 ? Math.max(1, Math.round(layout.viewportHeight / normalizedZoomFactor))
-                : effectiveViewport.height
+                : (effectiveViewport as { height: number }).height
           }
           aria-hidden={active ? undefined : true}
           className={cn(
