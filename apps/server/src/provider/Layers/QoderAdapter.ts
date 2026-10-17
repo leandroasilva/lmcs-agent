@@ -253,8 +253,10 @@ export function makeQoderAdapter(
           });
         }
 
+        // A ingestão usa o turno para identificar mensagens persistidas; o ID não pode
+        // se repetir quando a sessão é recriada ou o histórico em memória é reduzido.
         const turnId = TurnId.make(
-          `qoder-turn-${String(input.threadId)}-${context.turns.length + 1}`,
+          `qoder-turn-${yield* Effect.sync(() => NodeCrypto.randomUUID())}`,
         );
         context.activeTurnId = turnId;
         context.turnInterrupted = false;
