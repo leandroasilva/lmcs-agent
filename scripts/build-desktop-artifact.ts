@@ -1519,6 +1519,11 @@ export function createStageWorkspaceConfig(input: {
       ? { patchedDependencies }
       : {}),
     ...(overrides && Object.keys(overrides).length > 0 ? { overrides } : {}),
+    // Linux CI runners OOM during electron-builder's node_modules scan when
+    // pnpm's default symlink-heavy layout is present. A hoisted install
+    // flattens the tree and keeps the scan within the runner memory budget
+    // (the Windows sidecar already uses the same layout for asar packing).
+    ...(platform === "linux" ? { nodeLinker: "hoisted" as const } : {}),
   };
 }
 
