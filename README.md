@@ -6,7 +6,7 @@ Think of LMCS Agent as a bring-your-own-subscription alternative to apps like Cl
 
 ### Origin
 
-This project was forked from [LMCS Code](https://github.com/pingdotgg/t3code) (originally T3 Code) and has been heavily customized to fit the daily workflow of its maintainer. What started as a set of personal tweaks — additional provider integrations, custom automations, deployment pipelines, and quality-of-life adjustments — grew into a more complete and opinionated solution. LMCS Agent extends the original with extra providers, streamlined self-hosted deployment via Docker and HCloud, automated CI/CD for desktop and mobile builds, and various enhancements shaped by real daily use.
+This project was forked from [T3Code](https://github.com/pingdotgg/t3code) (originally T3 Code) and has been heavily customized to fit the daily workflow of its maintainer. What started as a set of personal tweaks — additional provider integrations, custom automations, deployment pipelines, and quality-of-life adjustments — grew into a more complete and opinionated solution. LMCS Agent extends the original with extra providers, streamlined self-hosted deployment via Docker and HCloud, automated CI/CD for desktop and mobile builds, and various enhancements shaped by real daily use.
 
 ## Features
 
