@@ -1569,7 +1569,10 @@ export function selectMessageImageResources(
   }
   return attachmentIds.size === 0
     ? EMPTY_IMAGE_RESOURCES
-    : Array.from(attachmentIds, (attachmentId) => ({ _tag: "attachment", attachmentId }));
+    : Array.from(attachmentIds, (attachmentId) => ({
+        _tag: "attachment",
+        attachmentId,
+      }));
 }
 
 /** Handoffs need server URLs even while their message rows are unmounted. */
@@ -1587,7 +1590,10 @@ export function selectHandoffImageResources(
   }
   return attachmentIds.size === 0
     ? EMPTY_IMAGE_RESOURCES
-    : Array.from(attachmentIds, (attachmentId) => ({ _tag: "attachment", attachmentId }));
+    : Array.from(attachmentIds, (attachmentId) => ({
+        _tag: "attachment",
+        attachmentId,
+      }));
 }
 
 /** Own one mapper per preview stage. Immutable messages retain unchanged preview objects. */

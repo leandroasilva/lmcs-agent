@@ -22,7 +22,11 @@ describe("browserViewportActions", () => {
       height: 700,
     });
     expect(first).not.toHaveBeenCalled();
-    expect(second).toHaveBeenCalledWith({ _tag: "freeform", width: 900, height: 700 });
+    expect(second).toHaveBeenCalledWith({
+      _tag: "freeform",
+      width: 900,
+      height: 700,
+    });
 
     unsubscribeSecond();
     await expect(
@@ -45,7 +49,7 @@ describe("browserViewportActions", () => {
     });
     const calls: Array<number> = [];
     const unsubscribe = subscribeBrowserViewportChange("tab-serial", async (setting) => {
-      if (setting._tag === "fill") return;
+      if (setting._tag === "fill" || setting._tag === "dual") return;
       calls.push(setting.width);
       if (setting.width === 800) {
         markFirstStarted?.();
@@ -131,7 +135,10 @@ describe("browserViewportActions", () => {
       await second;
 
       expect(handler).toHaveBeenCalledTimes(2);
-      expect(handler.mock.calls[1]?.[0]).toMatchObject({ width: 900, height: 700 });
+      expect(handler.mock.calls[1]?.[0]).toMatchObject({
+        width: 900,
+        height: 700,
+      });
       unsubscribe();
     } finally {
       vi.useRealTimers();

@@ -1,7 +1,7 @@
 "use client";
 
 import type { DesktopPreviewColorScheme, EnvironmentId } from "@lmcstools/core";
-import { Minus, MoreVertical, Plus as PlusIcon, RotateCcw } from "lucide-react";
+import { LayoutGrid, Minus, MoreVertical, Plus as PlusIcon, RotateCcw } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -48,6 +48,10 @@ interface Props {
   deviceToolbarVisible: boolean;
   /** Switches between fill-panel mode and a fixed responsive viewport. */
   onToggleDeviceToolbar: () => void;
+  /** Whether the dual (desktop + mobile) responsive preview is active. */
+  dualModeActive: boolean;
+  /** Toggles the dual responsive preview (desktop + mobile side-by-side). */
+  onToggleDualMode: () => void;
   /** Whether the separate native always-on-top preview window is open. */
   nativePictureInPicture: boolean;
   /** Toggles the optional native always-on-top preview window. */
@@ -77,6 +81,8 @@ export function PreviewMoreMenu({
   colorScheme,
   deviceToolbarVisible,
   onToggleDeviceToolbar,
+  dualModeActive,
+  onToggleDualMode,
   nativePictureInPicture,
   onNativePictureInPicture,
   environmentId,
@@ -122,6 +128,10 @@ export function PreviewMoreMenu({
         </MenuItem>
         <MenuItem onClick={onToggleDeviceToolbar} disabled={tabDisabled}>
           {deviceToolbarVisible ? "Hide device toolbar" : "Show device toolbar"}
+        </MenuItem>
+        <MenuItem onClick={onToggleDualMode} disabled={tabDisabled}>
+          <LayoutGrid className="mr-2 size-3.5" />
+          {dualModeActive ? "Exit responsive preview" : "Responsive preview (Desktop + Mobile)"}
         </MenuItem>
         <MenuSub>
           <MenuSubTrigger disabled={tabDisabled}>Appearance</MenuSubTrigger>

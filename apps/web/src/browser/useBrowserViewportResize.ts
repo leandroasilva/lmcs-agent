@@ -111,9 +111,9 @@ export function useBrowserViewportResize(options: {
 
   const handleResizeKeyDown = (
     direction: BrowserViewportResizeDirection,
-    event: ReactKeyboardEvent<HTMLButtonElement>,
+    event: React.KeyboardEvent<HTMLButtonElement>,
   ) => {
-    if (effectiveViewport._tag === "fill") return;
+    if (effectiveViewport._tag === "fill" || effectiveViewport._tag === "dual") return;
     const controlsWidth = direction.includes("east") || direction.includes("west");
     const controlsHeight = direction.includes("north") || direction.includes("south");
     const step = (event.shiftKey ? 50 : 10) * normalizedZoomFactor;
@@ -140,7 +140,11 @@ export function useBrowserViewportResize(options: {
       aspectRatio ?? undefined,
     );
     if (next.width === base.width && next.height === base.height) return;
-    const keyboardViewport = { sourceKey: sourceViewportKey, ...next, direction };
+    const keyboardViewport = {
+      sourceKey: sourceViewportKey,
+      ...next,
+      direction,
+    };
     keyboardViewportRef.current = keyboardViewport;
     setDragViewport(keyboardViewport);
     if (keyboardCommitTimerRef.current !== null) {
@@ -151,15 +155,19 @@ export function useBrowserViewportResize(options: {
       const latest = keyboardViewportRef.current;
       if (!latest || latest.sourceKey !== sourceViewportKeyRef.current) return;
       keyboardViewportRef.current = null;
-      commitDrag({ _tag: "freeform", width: latest.width, height: latest.height });
+      commitDrag({
+        _tag: "freeform",
+        width: latest.width,
+        height: latest.height,
+      });
     }, KEYBOARD_RESIZE_COMMIT_DELAY_MS);
   };
 
   const handleResizePointerDown = (
     direction: BrowserViewportResizeDirection,
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: React.PointerEvent<HTMLButtonElement>,
   ) => {
-    if (effectiveViewport._tag === "fill") return;
+    if (effectiveViewport._tag === "fill" || effectiveViewport._tag === "dual") return;
     event.preventDefault();
     event.stopPropagation();
     if (keyboardCommitTimerRef.current !== null) {
@@ -211,7 +219,12 @@ export function useBrowserViewportResize(options: {
         aspectRatio ?? undefined,
       );
       latest = { width, height };
-      setDragViewport({ sourceKey: sourceViewportKey, width, height, direction });
+      setDragViewport({
+        sourceKey: sourceViewportKey,
+        width,
+        height,
+        direction,
+      });
     };
     function cleanup() {
       window.removeEventListener("pointermove", move);

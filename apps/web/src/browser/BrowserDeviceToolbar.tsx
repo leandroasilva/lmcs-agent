@@ -31,11 +31,17 @@ import { ScreenRotationIcon } from "./ScreenRotationIcon";
 const RESPONSIVE_VALUE = "responsive";
 const SELECT_ITEMS = [
   { value: RESPONSIVE_VALUE, label: "Responsive" },
-  ...PREVIEW_VIEWPORT_PRESETS.map((preset) => ({ value: preset.id, label: preset.label })),
+  ...PREVIEW_VIEWPORT_PRESETS.map((preset) => ({
+    value: preset.id,
+    label: preset.label,
+  })),
 ];
 
 interface Props {
-  readonly setting: Exclude<PreviewViewportSetting, { readonly _tag: "fill" }>;
+  readonly setting: Exclude<
+    PreviewViewportSetting,
+    { readonly _tag: "fill" } | { readonly _tag: "dual" }
+  >;
   readonly width: number;
   readonly aspectRatio: number | null;
   readonly onAspectRatioChange: (aspectRatio: number | null) => void;
@@ -140,7 +146,11 @@ export function BrowserDeviceToolbar({
     const hasCustomSize =
       customValid && (customWidth !== setting.width || customHeight !== setting.height);
     const source = hasCustomSize
-      ? ({ _tag: "freeform", width: customWidth, height: customHeight } as const)
+      ? ({
+          _tag: "freeform",
+          width: customWidth,
+          height: customHeight,
+        } as const)
       : setting;
     apply(
       { ...source, width: source.height, height: source.width },

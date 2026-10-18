@@ -103,17 +103,52 @@ const StoredPreviewViewportPresetId = Schema.Literals([
   ...LEGACY_PREVIEW_VIEWPORT_PRESET_IDS,
 ]);
 
+/**
+ * Viewport settings that can appear inside a `dual` mode. Excludes `dual`
+ * itself to prevent infinite nesting — a dual preview contains exactly two
+ * flat viewports (desktop + mobile), not a tree of duals.
+ */
+const FillViewport = Schema.TaggedStruct("fill", {});
+const FreeformViewport = Schema.TaggedStruct("freeform", {
+  ...PreviewViewportSize.fields,
+}).check(viewportAreaFilter);
+const PresetViewport = Schema.TaggedStruct("preset", {
+  ...PreviewViewportSize.fields,
+  presetId: StoredPreviewViewportPresetId,
+}).check(viewportAreaFilter);
+const PreviewViewportSettingBase = Schema.Union([FillViewport, FreeformViewport, PresetViewport]);
+
 export const PreviewViewportSetting = Schema.Union([
-  Schema.TaggedStruct("fill", {}),
-  Schema.TaggedStruct("freeform", {
-    ...PreviewViewportSize.fields,
-  }).check(viewportAreaFilter),
-  Schema.TaggedStruct("preset", {
-    ...PreviewViewportSize.fields,
-    presetId: StoredPreviewViewportPresetId,
-  }).check(viewportAreaFilter),
+  FillViewport,
+  FreeformViewport,
+  PresetViewport,
+  /**
+   * Dual viewport mode: renders the same page at two different sizes
+   * side-by-side (e.g. desktop + mobile). The companion tab is managed
+   * by the server and kept in sync with the main tab's navigation.
+   */
+  Schema.TaggedStruct("dual", {
+    desktop: PreviewViewportSettingBase,
+    mobile: PreviewViewportSettingBase,
+  }),
 ]);
 export type PreviewViewportSetting = typeof PreviewViewportSetting.Type;
+
+/**
+ * Viewport variants that carry explicit `width` and `height` dimensions.
+ * Excludes `fill` (panel-filling) and `dual` (composite of two sub-viewports).
+ */
+export type SizedPreviewViewportSetting = Extract<
+  PreviewViewportSetting,
+  { readonly _tag: "freeform" | "preset" }
+>;
+
+/** Type guard: does this viewport carry explicit pixel dimensions? */
+export function isSizedPreviewViewport(
+  viewport: PreviewViewportSetting,
+): viewport is SizedPreviewViewportSetting {
+  return viewport._tag === "freeform" || viewport._tag === "preset";
+}
 
 export const FILL_PREVIEW_VIEWPORT = {
   _tag: "fill",
@@ -176,6 +211,12 @@ export const PreviewSessionSnapshot = Schema.Struct({
    * switching would require tearing the guest down and losing page state.
    */
   profileId: Schema.optional(BrowserProfileId),
+  /**
+   * When set, this tab is the "companion" in a dual-preview pair. The linked
+   * (main) tab drives navigation; the companion mirrors it at its own
+   * viewport size. Absent on standalone tabs and on the main tab itself.
+   */
+  companionTabId: Schema.optional(PreviewTabId),
   updatedAt: Schema.String,
 });
 export type PreviewSessionSnapshot = typeof PreviewSessionSnapshot.Type;
@@ -193,6 +234,14 @@ export const PreviewOpenInput = Schema.Struct({
   viewport: Schema.optional(PreviewViewportSetting),
   /** Omit to open under the client's configured default profile. */
   profileId: Schema.optional(BrowserProfileId),
+  /**
+   * When provided, the server creates a companion tab alongside this one for
+   * dual-preview mode. The companion receives its own viewport (typically a
+   * mobile preset) and mirrors the main tab's navigation automatically.
+   * The returned snapshot is for the main tab; the companion's snapshot
+   * arrives as a separate "opened" event.
+   */
+  companionViewport: Schema.optional(PreviewViewportSetting),
 });
 export type PreviewOpenInput = typeof PreviewOpenInput.Type;
 
