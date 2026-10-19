@@ -192,9 +192,12 @@ jobs:
 
   # ─── Desktop: Linux ────────────────────────────────────────────────
   desktop_linux:
-    name: Desktop Linux
+    name: Desktop Linux (${{ matrix.arch }})
     needs: version
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     timeout-minutes: 75
     steps:
       - name: Checkout
@@ -225,12 +228,12 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.arch == 'arm64' && 'aarch64-unknown-linux-gnu' || 'x86_64-unknown-linux-gnu' }}
 
-      - name: Build Linux desktop artifact (x64)
+      - name: Build Linux desktop artifact (${{ matrix.arch }})
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
-          node scripts/build-desktop-artifact.ts --platform linux --target AppImage --arch x64 --build-version ${{ needs.version.outputs.version }}
+          node scripts/build-desktop-artifact.ts --platform linux --target AppImage --arch ${{ matrix.arch }} --build-version ${{ needs.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -249,10 +252,10 @@ jobs:
           echo "=== yml files ==="
           ls -lh release/latest*.yml 2>/dev/null || echo "No yml files found"
 
-      - name: Upload Linux artifacts
+      - name: Upload Linux artifacts (${{ matrix.arch }})
         uses: actions/upload-artifact@v5
         with:
-          name: desktop-linux
+          name: desktop-linux-${{ matrix.arch }}
           path: |
             release/*.AppImage
             release/*.deb
@@ -344,11 +347,18 @@ jobs:
           name: desktop-macos
           path: artifacts/
 
-      - name: Download Linux artifacts
+      - name: Download Linux x64 artifacts
         if: steps.check_linux.outputs.available == 'true'
         uses: actions/download-artifact@v5
         with:
-          name: desktop-linux
+          name: desktop-linux-x64
+          path: artifacts/
+
+      - name: Download Linux arm64 artifacts
+        if: steps.check_linux.outputs.available == 'true'
+        uses: actions/download-artifact@v5
+        with:
+          name: desktop-linux-arm64
           path: artifacts/
 
       - name: Check if release exists
