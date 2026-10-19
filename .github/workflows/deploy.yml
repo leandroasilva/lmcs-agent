@@ -192,12 +192,9 @@ jobs:
 
   # ─── Desktop: Linux ────────────────────────────────────────────────
   desktop_linux:
-    name: Desktop Linux (${{ matrix.arch }})
+    name: Desktop Linux
     needs: version
-    strategy:
-      matrix:
-        arch: [x64, arm64]
-    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
       - name: Checkout
@@ -228,12 +225,12 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.arch == 'arm64' && 'aarch64-unknown-linux-gnu' || 'x86_64-unknown-linux-gnu' }}
+          targets: x86_64-unknown-linux-gnu
 
-      - name: Build Linux desktop artifact (${{ matrix.arch }})
+      - name: Build Linux desktop artifact (x64)
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
-          node scripts/build-desktop-artifact.ts --platform linux --target AppImage --arch ${{ matrix.arch }} --build-version ${{ needs.version.outputs.version }}
+          node scripts/build-desktop-artifact.ts --platform linux --target AppImage --arch x64 --build-version ${{ needs.version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -252,10 +249,81 @@ jobs:
           echo "=== yml files ==="
           ls -lh release/latest*.yml 2>/dev/null || echo "No yml files found"
 
-      - name: Upload Linux artifacts (${{ matrix.arch }})
+      - name: Upload Linux artifacts
         uses: actions/upload-artifact@v5
         with:
-          name: desktop-linux-${{ matrix.arch }}
+          name: desktop-linux
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/latest*.yml
+            release/latest*.yml.blockmap
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ─── Desktop: Linux ARM64 ──────────────────────────────────────────
+  desktop_linux_arm64:
+    name: Desktop Linux ARM64
+    needs: version
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 75
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install pnpm
+        run: npm install -g pnpm@11.10.0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cargo rustc \
+            build-essential \
+            libsecret-1-dev \
+            pkg-config \
+            imagemagick \
+            squashfs-tools
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Build Linux desktop artifact (arm64)
+        run: |
+          export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
+          node scripts/build-desktop-artifact.ts --platform linux --target AppImage --arch arm64 --build-version ${{ needs.version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List generated artifacts
+        if: always()
+        run: |
+          echo "=== Files in release/ ==="
+          ls -lh release/ 2>/dev/null || echo "release/ directory not found"
+          echo ""
+          echo "=== AppImage files ==="
+          ls -lh release/*.AppImage 2>/dev/null || echo "No AppImage files found"
+          echo ""
+          echo "=== deb files ==="
+          ls -lh release/*.deb 2>/dev/null || echo "No deb files found"
+          echo ""
+          echo "=== yml files ==="
+          ls -lh release/latest*.yml 2>/dev/null || echo "No yml files found"
+
+      - name: Upload Linux ARM64 artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: desktop-linux-arm64
           path: |
             release/*.AppImage
             release/*.deb
@@ -279,7 +347,7 @@ jobs:
   # ── Tag release ───────────────────────────────────────────────────
   tag:
     name: Create version tag
-    needs: [version, desktop_macos, desktop_linux]
+    needs: [version, desktop_macos, desktop_linux, desktop_linux_arm64]
     if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
@@ -305,7 +373,7 @@ jobs:
   # Creates release if electron-builder didn't publish automatically
   release:
     name: Create GitHub Release
-    needs: [version, tag, desktop_macos, desktop_linux]
+    needs: [version, tag, desktop_macos, desktop_linux, desktop_linux_arm64]
     if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
@@ -351,7 +419,7 @@ jobs:
         if: steps.check_linux.outputs.available == 'true'
         uses: actions/download-artifact@v5
         with:
-          name: desktop-linux-x64
+          name: desktop-linux
           path: artifacts/
 
       - name: Download Linux arm64 artifacts
