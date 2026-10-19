@@ -64,6 +64,56 @@ const imageProps = {
           </a>
         </div>
       </section>
+
+      <!-- Linux -->
+      <section class="platform-section" data-rise style="--d:360ms">
+        <div class="platform-header">
+          <svg class="platform-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M30.9 20.3c-3.1 0-5.6 2.5-5.6 5.6v12.5c0 3.1 2.5 5.6 5.6 5.6h3.1v-6.3c0-5.2 4.2-9.4 9.4-9.4h12.5c5.2 0 9.4 4.2 9.4 9.4v6.3h3.1c3.1 0 5.6-2.5 5.6-5.6V25.9c0-3.1-2.5-5.6-5.6-5.6H30.9zM37.2 37.7c-2.6 0-4.7 2.1-4.7 4.7v15.6c0 2.6 2.1 4.7 4.7 4.7h25c2.6 0 4.7-2.1 4.7-4.7V42.4c0-2.6-2.1-4.7-4.7-4.7h-25zM34 65.8c-2.2 0-4 1.8-4 4v6.2c0 2.2 1.8 4 4 4h32c2.2 0 4-1.8 4-4v-6.2c0-2.2-1.8-4-4-4H34zm4.7 17.3c-2.6 0-4.7 2.1-4.7 4.7v2.5c0 2.6 2.1 4.7 4.7 4.7h22.5c2.6 0 4.7-2.1 4.7-4.7v-2.5c0-2.6-2.1-4.7-4.7-4.7H38.7z"/></svg>
+          <h2 class="platform-name">Linux</h2>
+        </div>
+        <div class="download-cards">
+          <a class="download-card" data-asset="x64.AppImage" href={RELEASES_URL}>
+            <span class="card-icon">
+              <Image class="card-icon--stable" src={iconSystem} width={28} height={28} loading="lazy" {...imageProps} />
+              <Image class="card-icon--nightly" src={iconNightly} width={28} height={28} loading="lazy" {...imageProps} />
+            </span>
+            <span class="card-text">
+              <span class="card-arch">x64</span>
+              <span class="card-format">.AppImage</span>
+            </span>
+          </a>
+          <a class="download-card" data-asset="arm64.AppImage" href={RELEASES_URL}>
+            <span class="card-icon">
+              <Image class="card-icon--stable" src={iconSystem} width={28} height={28} loading="lazy" {...imageProps} />
+              <Image class="card-icon--nightly" src={iconNightly} width={28} height={28} loading="lazy" {...imageProps} />
+            </span>
+            <span class="card-text">
+              <span class="card-arch">arm64</span>
+              <span class="card-format">.AppImage</span>
+            </span>
+          </a>
+          <a class="download-card" data-asset="x64.deb" href={RELEASES_URL}>
+            <span class="card-icon">
+              <Image class="card-icon--stable" src={iconSystem} width={28} height={28} loading="lazy" {...imageProps} />
+              <Image class="card-icon--nightly" src={iconNightly} width={28} height={28} loading="lazy" {...imageProps} />
+            </span>
+            <span class="card-text">
+              <span class="card-arch">x64</span>
+              <span class="card-format">.deb (Debian/Ubuntu)</span>
+            </span>
+          </a>
+          <a class="download-card" data-asset="arm64.deb" href={RELEASES_URL}>
+            <span class="card-icon">
+              <Image class="card-icon--stable" src={iconSystem} width={28} height={28} loading="lazy" {...imageProps} />
+              <Image class="card-icon--nightly" src={iconNightly} width={28} height={28} loading="lazy" {...imageProps} />
+            </span>
+            <span class="card-text">
+              <span class="card-arch">arm64</span>
+              <span class="card-format">.deb (Debian/Ubuntu)</span>
+            </span>
+          </a>
+        </div>
+      </section>
     </div>
 
     <p class="releases-link" data-rise style="--d:480ms">
