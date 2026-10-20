@@ -17,7 +17,6 @@ import type {
   RelayAgentActivityState,
 } from "@lmcstools/core/relay";
 import { CommandId, ProviderInstanceId } from "@lmcstools/core";
-import { RelayClientTracer } from "@lmcstools/core/relayTracing";
 import { RELAY_ACTIVITY_PUBLISH_TYP, verifyRelayJwt } from "@lmcstools/core/relayJwt";
 import { describe, expect, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
@@ -674,7 +673,6 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
           resolveFetchSeen = resolve;
         });
         const userSpans: Array<string> = [];
-        const productSpans: Array<string> = [];
         const collectingTracer = (spans: Array<string>) =>
           Tracer.make({
             span: (options) => {
@@ -825,7 +823,6 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
 
           const url = yield* Effect.promise(() => fetchSeen).pipe(Effect.timeout("2 seconds"));
           expect(url.origin).toBe("https://transport.example.test");
-          expect(productSpans).toContain("makePublishProof");
           expect(userSpans).not.toContain("makePublishProof");
         }).pipe(
           Effect.provide(
@@ -834,7 +831,6 @@ describe.sequential("signRelayAgentActivityPublishProof", () => {
               Layer.provideMerge(NodeServices.layer),
             ),
           ),
-          Effect.provideService(RelayClientTracer, Option.some(collectingTracer(productSpans))),
           Effect.withTracer(collectingTracer(userSpans)),
         );
       }),

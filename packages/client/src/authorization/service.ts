@@ -4,7 +4,6 @@ import {
   type ExecutionEnvironmentDescriptor,
 } from "@lmcstools/core";
 import { RelayEnvironmentConnectScope } from "@lmcstools/core/relay";
-import { withRelayClientTracing } from "@lmcstools/core/relayTracing";
 import {
   exchangeRemoteDpopAccessToken,
   type RemoteEnvironmentAuthError,
@@ -500,7 +499,6 @@ export const make = Effect.gen(function* () {
       getDpopToken(input).pipe(
         Effect.map(({ token }) => httpAuthorization(token)),
         Effect.withSpan("environment.authorization.http"),
-        withRelayClientTracing,
       ),
   });
 });

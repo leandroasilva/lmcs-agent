@@ -12,7 +12,6 @@ import {
 } from "@lmcstools/core/relay";
 import { projectThreadAwareness } from "@lmcstools/core/agentAwareness";
 import { makeDrainableWorker } from "@lmcstools/core/DrainableWorker";
-import { withRelayClientTracing } from "@lmcstools/core/relayTracing";
 import {
   normalizeRelayIssuer,
   RELAY_ACTIVITY_PUBLISH_TYP,
@@ -531,7 +530,6 @@ export const make = Effect.gen(function* () {
         });
       }),
       Effect.withSpan("AgentAwarenessRelay.publishThread"),
-      withRelayClientTracing,
     );
 
   const publishActiveThreadsUnsafe = Effect.gen(function* () {

@@ -21,7 +21,6 @@ import {
 } from "effect/unstable/http";
 
 import { DESKTOP_UPDATE_RESTART_MARKER_FILE, EnvironmentId } from "@lmcstools/core";
-import { RelayClientTracer } from "@lmcstools/core/relayTracing";
 import * as EnvironmentAuth from "../auth/EnvironmentAuth.ts";
 import * as ServerSecretStore from "../auth/ServerSecretStore.ts";
 import * as ServerConfigModule from "../config.ts";
@@ -171,7 +170,6 @@ describe("relay request tracing", () => {
 
       yield* traceRelayRequest(Effect.void.pipe(Effect.withSpan("relay.mint.handler"))).pipe(
         Effect.provideService(HttpServerRequest.HttpServerRequest, request),
-        Effect.provideService(RelayClientTracer, Option.some(productTracer)),
       );
 
       expect(spans).toHaveLength(1);
@@ -201,10 +199,7 @@ describe("relay request tracing", () => {
 
       yield* traceAuthenticatedRelayRequest(
         Effect.void.pipe(Effect.withSpan("relay.mint.handler")),
-      ).pipe(
-        Effect.provideService(HttpServerRequest.HttpServerRequest, request),
-        Effect.provideService(RelayClientTracer, Option.some(productTracer)),
-      );
+      ).pipe(Effect.provideService(HttpServerRequest.HttpServerRequest, request));
 
       expect(spans).toHaveLength(1);
       const span = spans[0]!;

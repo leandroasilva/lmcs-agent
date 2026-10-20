@@ -21,16 +21,11 @@ describe("electron development launcher", () => {
       VITE_DEV_SERVER_URL: "http://127.0.0.1:8526",
       LMCS_PORT: "16566",
       LMCS_HOME: "/tmp/t3",
-      LMCS_OTLP_PROTOCOL: "http/protobuf",
     });
 
     assert.include(
       environmentScript,
       "if [ -z \"${VITE_DEV_SERVER_URL:-}\" ]; then export VITE_DEV_SERVER_URL='http://127.0.0.1:8526'; fi",
-    );
-    assert.include(
-      environmentScript,
-      "if [ -z \"${LMCS_OTLP_PROTOCOL:-}\" ]; then export LMCS_OTLP_PROTOCOL='http/protobuf'; fi",
     );
     assert.notInclude(environmentScript, "\nexport VITE_DEV_SERVER_URL=");
   });

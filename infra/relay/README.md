@@ -164,5 +164,4 @@ and hosted web builds.
 See:
 
 - [LMCS Connect setup](../../docs/operations/connect-setup.md) for Clerk keys, JWT templates, and sign-up restrictions.
-- [Relay Observability](../../docs/operations/relay-observability.md) for deployment tracing and diagnostics.
 - [LMCS Connect architecture](../../docs/internals/connect.md) for environment linking and trust boundaries.

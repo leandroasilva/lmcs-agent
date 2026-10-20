@@ -72,10 +72,6 @@
       "types": "./src/shared/observability.ts",
       "import": "./src/shared/observability.ts"
     },
-    "./otelEnvironment": {
-      "types": "./src/shared/otelEnvironment.ts",
-      "import": "./src/shared/otelEnvironment.ts"
-    },
     "./httpObservability": {
       "types": "./src/shared/httpObservability.ts",
       "import": "./src/shared/httpObservability.ts"
@@ -255,10 +251,6 @@
     "./relayClient": {
       "types": "./src/shared/relayClient.ts",
       "import": "./src/shared/relayClient.ts"
-    },
-    "./relayTracing": {
-      "types": "./src/shared/relayTracing.ts",
-      "import": "./src/shared/relayTracing.ts"
     },
     "./preview": {
       "types": "./src/shared/preview.ts",

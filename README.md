@@ -290,7 +290,6 @@ scripts/           Repository tooling
 - [Remote environments](./docs/internals/remote.md)
 - [Development runbook](./docs/operations/development.md)
 - [Release process](./docs/operations/release.md)
-- [Observability](./docs/operations/observability.md)
 
 ## Contributing
 

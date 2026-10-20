@@ -15,8 +15,6 @@ import {
   PortSchema,
 } from "@lmcstools/core";
 import { resolveWorktreeLmcsHome } from "@lmcstools/core/devHome";
-import { DEFAULT_SIGNAL_EXPORT } from "@lmcstools/core/observability";
-import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
 import {
   buildTailscaleHttpsBaseUrl,
   DEFAULT_TAILSCALE_SERVE_PORT,
@@ -320,14 +318,6 @@ const makePairServerConfig = Effect.fn(function* (input: {
     traceBatchWindowMs: 1_000,
     traceMaxBytes: 10 * 1024 * 1024,
     traceMaxFiles: 10,
-    otlpTracesUrl: undefined,
-    otlpMetricsUrl: undefined,
-    otlpLogsUrl: undefined,
-    otlpTracesExport: DEFAULT_SIGNAL_EXPORT,
-    otlpMetricsExport: DEFAULT_SIGNAL_EXPORT,
-    otlpLogsExport: DEFAULT_SIGNAL_EXPORT,
-    otlpServiceName: "lmcs-server",
-    otelEnvironment: OtelEnvironment.none,
     mode: "web",
     port: state.port,
     host: state.host,

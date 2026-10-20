@@ -1,11 +1,4 @@
 import * as NetService from "@lmcstools/core/Net";
-import {
-  OtlpHeadersFromString,
-  OtlpProtocol,
-  type SignalExport,
-} from "@lmcstools/core/observability";
-import * as OtelEnvironment from "@lmcstools/core/otelEnvironment";
-import { parsePersistedServerObservabilitySettings } from "@lmcstools/core/serverSettings";
 import { DesktopBackendBootstrap, PortSchema } from "@lmcstools/core";
 import * as Config from "effect/Config";
 import * as Duration from "effect/Duration";
@@ -93,27 +86,6 @@ const EnvServerConfig = Config.all({
   traceMaxBytes: Config.Int("LMCS_TRACE_MAX_BYTES").pipe(Config.withDefault(10 * 1024 * 1024)),
   traceMaxFiles: Config.Int("LMCS_TRACE_MAX_FILES").pipe(Config.withDefault(10)),
   traceBatchWindowMs: Config.Int("LMCS_TRACE_BATCH_WINDOW_MS").pipe(Config.withDefault(1_000)),
-  otlpTracesUrl: Config.String("LMCS_OTLP_TRACES_URL").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
-  ),
-  otlpMetricsUrl: Config.String("LMCS_OTLP_METRICS_URL").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
-  ),
-  otlpLogsUrl: Config.String("LMCS_OTLP_LOGS_URL").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
-  ),
-  otlpExportIntervalMs: Config.Int("LMCS_OTLP_EXPORT_INTERVAL_MS").pipe(Config.withDefault(10_000)),
-  otlpServiceName: Config.String("LMCS_OTLP_SERVICE_NAME").pipe(Config.withDefault("lmcs-server")),
-  otlpHeaders: Config.schema(OtlpHeadersFromString, "LMCS_OTLP_HEADERS").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
-  ),
-  otlpProtocol: Config.schema(OtlpProtocol, "LMCS_OTLP_PROTOCOL").pipe(
-    Config.withDefault("http/json"),
-  ),
   mode: Config.schema(ServerConfig.RuntimeMode, "LMCS_MODE").pipe(
     Config.option,
     Config.map(Option.getOrUndefined),
@@ -230,21 +202,6 @@ const resolveOptionPrecedence = <Value>(
   ...values: ReadonlyArray<Option.Option<Value>>
 ): Option.Option<Value> => Option.firstSomeOf(values);
 
-const loadPersistedObservabilitySettings = Effect.fn(function* (settingsPath: string) {
-  const fs = yield* FileSystem.FileSystem;
-  const exists = yield* fs.exists(settingsPath).pipe(Effect.orElseSucceed(() => false));
-  if (!exists) {
-    return {
-      otlpTracesUrl: undefined,
-      otlpMetricsUrl: undefined,
-      otlpLogsUrl: undefined,
-    };
-  }
-
-  const raw = yield* fs.readFileString(settingsPath).pipe(Effect.orElseSucceed(() => ""));
-  return parsePersistedServerObservabilitySettings(raw);
-});
-
 export const resolveServerConfig = (
   flags: CliServerFlags,
   cliLogLevel: Option.Option<LogLevel.LogLevel>,
@@ -326,9 +283,6 @@ export const resolveServerConfig = (
       baseDirIsExplicit: Option.isSome(explicitBaseDir),
     });
     yield* ServerConfig.ensureServerDirectories(derivedPaths);
-    const persistedObservabilitySettings = yield* loadPersistedObservabilitySettings(
-      derivedPaths.settingsPath,
-    );
     const serverTracePath = env.traceFile ?? derivedPaths.serverTracePath;
     yield* fs.makeDirectory(path.dirname(serverTracePath), { recursive: true });
     const startupPresentation = options?.startupPresentation ?? "browser";
@@ -389,16 +343,6 @@ export const resolveServerConfig = (
     );
     const logLevel = Option.getOrElse(cliLogLevel, () => env.logLevel);
 
-    const otel = yield* OtelEnvironment.load;
-
-    // LMCS Code's own OTLP variables name no signal, so the one answer they give
-    // is the answer for all three.
-    const signalExport: SignalExport = {
-      protocol: env.otlpProtocol,
-      headers: env.otlpHeaders,
-      exportIntervalMs: env.otlpExportIntervalMs,
-    };
-
     const config: ServerConfig.ServerConfig["Service"] = {
       logLevel,
       traceMinLevel: env.traceMinLevel,
@@ -406,24 +350,6 @@ export const resolveServerConfig = (
       traceBatchWindowMs: env.traceBatchWindowMs,
       traceMaxBytes: env.traceMaxBytes,
       traceMaxFiles: env.traceMaxFiles,
-      otlpTracesUrl: otel.disabled
-        ? undefined
-        : (env.otlpTracesUrl ??
-          bootstrap?.otlpTracesUrl ??
-          persistedObservabilitySettings.otlpTracesUrl),
-      otlpMetricsUrl: otel.disabled
-        ? undefined
-        : (env.otlpMetricsUrl ??
-          bootstrap?.otlpMetricsUrl ??
-          persistedObservabilitySettings.otlpMetricsUrl),
-      otlpLogsUrl: otel.disabled
-        ? undefined
-        : (env.otlpLogsUrl ?? bootstrap?.otlpLogsUrl ?? persistedObservabilitySettings.otlpLogsUrl),
-      otlpTracesExport: signalExport,
-      otlpMetricsExport: signalExport,
-      otlpLogsExport: signalExport,
-      otlpServiceName: env.otlpServiceName,
-      otelEnvironment: otel,
       mode,
       port,
       cwd,
