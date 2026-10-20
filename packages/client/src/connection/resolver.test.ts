@@ -3,7 +3,6 @@ import {
   ORCHESTRATION_PROTOCOL_VERSION,
   type DesktopSshEnvironmentTarget,
 } from "@lmcstools/core";
-import { RelayClientTracer } from "@lmcstools/core/relayTracing";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -362,10 +361,7 @@ describe("ConnectionResolver", () => {
 
       yield* broker
         .prepare(catalogEntry(target))
-        .pipe(
-          Effect.provideService(RelayClientTracer, Option.some(collectingTracer(productSpans))),
-          Effect.withTracer(collectingTracer(userSpans)),
-        );
+        .pipe(Effect.withTracer(collectingTracer(userSpans)));
 
       expect(productSpans).toContain("clientRuntime.connection.broker.relay");
       expect(productSpans).toContain("test.remote.authorizeDpop");

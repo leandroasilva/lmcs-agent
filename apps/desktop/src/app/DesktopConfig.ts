@@ -1,4 +1,3 @@
-import { OtlpHeadersFromString, OtlpProtocol } from "@lmcstools/core/observability";
 import * as Config from "effect/Config";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Option from "effect/Option";
@@ -45,14 +44,6 @@ export const DesktopConfig = Config.all({
   commitHashOverride: trimmedString("LMCS_COMMIT_HASH"),
   desktopLanHostOverride: trimmedString("LMCS_DESKTOP_LAN_HOST"),
   desktopHttpsEndpointUrls: commaSeparatedStrings("LMCS_DESKTOP_HTTPS_ENDPOINTS"),
-  otlpTracesUrl: trimmedString("LMCS_OTLP_TRACES_URL"),
-  otlpMetricsUrl: trimmedString("LMCS_OTLP_METRICS_URL"),
-  otlpLogsUrl: trimmedString("LMCS_OTLP_LOGS_URL"),
-  otlpExportIntervalMs: Config.Int("LMCS_OTLP_EXPORT_INTERVAL_MS").pipe(Config.withDefault(10_000)),
-  otlpHeaders: Config.schema(OtlpHeadersFromString, "LMCS_OTLP_HEADERS").pipe(Config.option),
-  otlpProtocol: Config.schema(OtlpProtocol, "LMCS_OTLP_PROTOCOL").pipe(
-    Config.withDefault("http/json"),
-  ),
   appImagePath: trimmedString("APPIMAGE"),
   disableAutoUpdate: optionalBoolean("LMCS_DISABLE_AUTO_UPDATE"),
   mockUpdates: optionalBoolean("LMCS_DESKTOP_MOCK_UPDATES"),

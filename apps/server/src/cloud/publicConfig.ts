@@ -14,9 +14,6 @@ import * as SchemaIssue from "effect/SchemaIssue";
 declare const __LMCS_BUILD_RELAY_URL__: string | undefined;
 declare const __LMCS_BUILD_CLERK_PUBLISHABLE_KEY__: string | undefined;
 declare const __LMCS_BUILD_CLERK_CLI_OAUTH_CLIENT_ID__: string | undefined;
-declare const __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_URL__: string | undefined;
-declare const __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_DATASET__: string | undefined;
-declare const __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_TOKEN__: string | undefined;
 
 const CLOUD_CLI_OAUTH_LOOPBACK_PORT = 34338;
 const CLOUD_CLI_OAUTH_SCOPES = CONNECT_OAUTH_SCOPES;
@@ -40,15 +37,6 @@ function readBuildTimeValue(value: string | undefined): string {
   return typeof value === "undefined" ? "" : value.trim();
 }
 
-function normalizeSecureUrl(value: string): string | null {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
 const buildTimeRelayUrl =
   typeof __LMCS_BUILD_RELAY_URL__ === "undefined"
     ? ""
@@ -63,36 +51,6 @@ const buildTimeClerkCliOAuthClientId = readBuildTimeValue(
     ? undefined
     : __LMCS_BUILD_CLERK_CLI_OAUTH_CLIENT_ID__,
 );
-const buildTimeRelayClientTracing = {
-  tracesUrl: readBuildTimeValue(
-    typeof __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_URL__ === "undefined"
-      ? undefined
-      : __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_URL__,
-  ),
-  tracesDataset: readBuildTimeValue(
-    typeof __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_DATASET__ === "undefined"
-      ? undefined
-      : __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_DATASET__,
-  ),
-  tracesToken: readBuildTimeValue(
-    typeof __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_TOKEN__ === "undefined"
-      ? undefined
-      : __LMCS_BUILD_RELAY_CLIENT_OTLP_TRACES_TOKEN__,
-  ),
-} as const;
-
-export function resolveRelayClientTracingConfig(
-  env: Readonly<Record<string, string | undefined>> = process.env,
-  fallback = buildTimeRelayClientTracing,
-) {
-  const tracesUrl = env.LMCS_RELAY_CLIENT_OTLP_TRACES_URL?.trim() || fallback.tracesUrl;
-  const tracesDataset = env.LMCS_RELAY_CLIENT_OTLP_TRACES_DATASET?.trim() || fallback.tracesDataset;
-  const tracesToken = env.LMCS_RELAY_CLIENT_OTLP_TRACES_TOKEN?.trim() || fallback.tracesToken;
-  const normalizedTracesUrl = normalizeSecureUrl(tracesUrl);
-  return normalizedTracesUrl && tracesDataset && tracesToken
-    ? { tracesUrl: normalizedTracesUrl, tracesDataset, tracesToken }
-    : null;
-}
 
 export function makeRelayUrlConfig(fallback = buildTimeRelayUrl) {
   const runtimeConfig = Config.NonEmptyString("LMCS_RELAY_URL");

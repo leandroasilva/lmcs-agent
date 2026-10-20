@@ -1,6 +1,5 @@
 import * as NodeOS from "node:os";
 
-import { parsePersistedServerObservabilitySettings } from "@lmcstools/core/serverSettings";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -9,7 +8,6 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as PlatformError from "effect/PlatformError";
-import * as Schema from "effect/Schema";
 import * as SynchronizedRef from "effect/SynchronizedRef";
 
 import serverPackageJson from "../../../server/package.json" with { type: "json" };
@@ -20,18 +18,6 @@ import * as DesktopServerExposure from "./DesktopServerExposure.ts";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopWslEnvironment from "../wsl/DesktopWslEnvironment.ts";
 import * as DesktopWslServerTree from "../wsl/DesktopWslServerTree.ts";
-
-export class DesktopBackendObservabilitySettingsReadError extends Schema.TaggedError<DesktopBackendObservabilitySettingsReadError>()(
-  "DesktopBackendObservabilitySettingsReadError",
-  {
-    settingsPath: Schema.String,
-    cause: Schema.Defect(),
-  },
-) {
-  override get message(): string {
-    return `Failed to read persisted backend observability settings at ${this.settingsPath}.`;
-  }
-}
 
 export class DesktopBackendConfiguration extends Context.Service<
   DesktopBackendConfiguration,
@@ -64,18 +50,6 @@ export class DesktopBackendConfiguration extends Context.Service<
   }
 >()("@lmcstools/desktop/backend/DesktopBackendConfiguration") {}
 
-interface BackendObservabilitySettings {
-  readonly otlpTracesUrl: Option.Option<string>;
-  readonly otlpMetricsUrl: Option.Option<string>;
-  readonly otlpLogsUrl: Option.Option<string>;
-}
-
-const emptyBackendObservabilitySettings: BackendObservabilitySettings = {
-  otlpTracesUrl: Option.none(),
-  otlpMetricsUrl: Option.none(),
-  otlpLogsUrl: Option.none(),
-};
-
 const DESKTOP_BACKEND_ENV_NAMES = [
   "LMCS_PORT",
   "LMCS_MODE",
@@ -93,15 +67,7 @@ const DESKTOP_BACKEND_ENV_NAMES = [
 // across the wsl.exe boundary without WSLENV. The dev-server URL is handled
 // separately via a `--dev-url` CLI flag because WSLENV translation of
 // URL-shaped values (colons / slashes) is unreliable.
-const WSL_FORWARDED_ENV_NAMES = [
-  "OPENAI_API_KEY",
-  "ANTHROPIC_API_KEY",
-  // Otherwise the WSL server keeps exporting to endpoints from the bootstrap.
-  "LMCS_OTEL_SDK_DISABLED",
-  "OTEL_SDK_DISABLED",
-  "LMCS_OTLP_HEADERS",
-  "LMCS_OTLP_PROTOCOL",
-] as const;
+const WSL_FORWARDED_ENV_NAMES = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"] as const;
 
 const WSL_SERVER_SYSTEM_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
@@ -144,19 +110,6 @@ const mergeWslEnv = (
   return parts.length > 0 ? parts.join(":") : undefined;
 };
 
-const logBackendObservabilitySettingsReadFailure = (
-  settingsPath: string,
-  cause: PlatformError.PlatformError,
-) => {
-  const error = new DesktopBackendObservabilitySettingsReadError({ settingsPath, cause });
-  return Effect.logWarning(error).pipe(
-    Effect.annotateLogs({
-      component: "desktop-backend-configuration",
-      error,
-    }),
-  );
-};
-
 function resourceMonitorBinaryName(platform: NodeJS.Platform): string {
   return platform === "win32" ? "lmcs-resource-monitor.exe" : "lmcs-resource-monitor";
 }
@@ -195,51 +148,8 @@ const resolveResourceMonitorPath = Effect.fn(
   return Option.none<string>();
 });
 
-const readPersistedBackendObservabilitySettings = Effect.gen(function* () {
-  const fileSystem = yield* FileSystem.FileSystem;
-  const environment = yield* DesktopEnvironment.DesktopEnvironment;
-  const raw = yield* fileSystem.readFileString(environment.serverSettingsPath).pipe(
-    Effect.asSome,
-    Effect.catchTags({
-      PlatformError: (cause) =>
-        cause.reason._tag === "NotFound"
-          ? Effect.succeedNone
-          : logBackendObservabilitySettingsReadFailure(environment.serverSettingsPath, cause).pipe(
-              Effect.as(Option.none()),
-            ),
-    }),
-  );
-  if (Option.isNone(raw)) {
-    return emptyBackendObservabilitySettings;
-  }
-
-  const parsed = parsePersistedServerObservabilitySettings(raw.value);
-  return {
-    otlpTracesUrl: Option.fromNullishOr(parsed.otlpTracesUrl),
-    otlpMetricsUrl: Option.fromNullishOr(parsed.otlpMetricsUrl),
-    otlpLogsUrl: Option.fromNullishOr(parsed.otlpLogsUrl),
-  };
-});
-
-// The bootstrap is the only channel that carries an OTLP endpoint to every
-// backend. A Windows-native child inherits the desktop process's env, but a
-// WSL child gets nothing across wsl.exe that WSLENV does not declare, and
-// WSLENV translation of URL-shaped values is unreliable, so the endpoints are
-// deliberately not forwarded that way. Env beats the persisted settings file,
-// matching the precedence resolveServerConfig and DesktopObservability apply.
-const readBackendObservabilitySettings = Effect.gen(function* () {
-  const environment = yield* DesktopEnvironment.DesktopEnvironment;
-  const persisted = yield* readPersistedBackendObservabilitySettings;
-  return {
-    otlpTracesUrl: Option.orElse(environment.otlpTracesUrl, () => persisted.otlpTracesUrl),
-    otlpMetricsUrl: Option.orElse(environment.otlpMetricsUrl, () => persisted.otlpMetricsUrl),
-    otlpLogsUrl: Option.orElse(environment.otlpLogsUrl, () => persisted.otlpLogsUrl),
-  } satisfies BackendObservabilitySettings;
-});
-
 interface SharedBootstrapInput {
   readonly bootstrapToken: string;
-  readonly observabilitySettings: BackendObservabilitySettings;
 }
 
 // What the launch runs inside the distro. The staged runtime is the release's
@@ -501,21 +411,6 @@ const isLocalHostIpv4 = (ip: string): boolean => {
   return false;
 };
 
-const buildObservabilityFragment = (observabilitySettings: BackendObservabilitySettings) => ({
-  ...Option.match(observabilitySettings.otlpTracesUrl, {
-    onNone: () => ({}),
-    onSome: (otlpTracesUrl) => ({ otlpTracesUrl }),
-  }),
-  ...Option.match(observabilitySettings.otlpMetricsUrl, {
-    onNone: () => ({}),
-    onSome: (otlpMetricsUrl) => ({ otlpMetricsUrl }),
-  }),
-  ...Option.match(observabilitySettings.otlpLogsUrl, {
-    onNone: () => ({}),
-    onSome: (otlpLogsUrl) => ({ otlpLogsUrl }),
-  }),
-});
-
 const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolvePrimary")(
   function* (
     input: SharedBootstrapInput & {
@@ -545,7 +440,6 @@ const resolvePrimaryStartConfig = Effect.fn("desktop.backendConfiguration.resolv
         onNone: () => ({}),
         onSome: (resourceMonitorPath) => ({ resourceMonitorPath }),
       }),
-      ...buildObservabilityFragment(input.observabilitySettings),
     };
 
     return {
@@ -626,7 +520,6 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
     // Linux WSL backend. Keep the field absent instead of passing an unusable
     // `/mnt/.../*.exe` path; WSL resource telemetry is reported unavailable.
     // See docs/architecture/resource-telemetry.md.
-    ...buildObservabilityFragment(input.observabilitySettings),
   };
 
   // The archive is the primary packaged WSL path: it installs directly into
@@ -834,16 +727,10 @@ export const make = Effect.gen(function* () {
 
   // Both resolvers share the same bootstrap token: the renderer holds a
   // single token and uses it against whichever backend it's currently
-  // talking to. Observability settings get re-read each resolve so a
-  // hot-swap of the server-settings file is picked up on the next
-  // restart cycle without having to bounce the desktop process.
+  // talking to.
   const sharedInputs = Effect.gen(function* () {
     const bootstrapToken = yield* getOrCreateBootstrapToken;
-    const observabilitySettings = yield* readBackendObservabilitySettings.pipe(
-      Effect.provideService(FileSystem.FileSystem, fileSystem),
-      Effect.provideService(DesktopEnvironment.DesktopEnvironment, environment),
-    );
-    return { bootstrapToken, observabilitySettings } satisfies SharedBootstrapInput;
+    return { bootstrapToken } satisfies SharedBootstrapInput;
   });
 
   const buildWslPrimaryConfig = Effect.gen(function* () {

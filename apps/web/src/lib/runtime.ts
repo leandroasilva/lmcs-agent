@@ -4,13 +4,12 @@ import * as Layer from "effect/Layer";
 import * as Socket from "effect/unstable/socket/Socket";
 
 import { remoteHttpClientLayer } from "@lmcstools/client/rpc";
-import { makeRelayClientTracingLayer } from "@lmcstools/core/relayTracing";
 import * as PrimaryEnvironmentHttpClient from "../environments/primary/httpClient";
 import { primaryEnvironmentHttpLayer } from "../environments/primary/httpLayer";
 
 import { browserCryptoLayer } from "../cloud/dpop";
 import { managedRelayClientLayer } from "../cloud/managedRelayLayer";
-import { resolveCloudPublicConfig, resolveRelayTracingConfig } from "../cloud/publicConfig";
+import { resolveCloudPublicConfig } from "../cloud/publicConfig";
 import * as ClientTracer from "../observability/clientTracer";
 
 function configuredRelayUrl(): string {
@@ -18,18 +17,11 @@ function configuredRelayUrl(): string {
 }
 
 const httpClientLayer = remoteHttpClientLayer((input, init) => globalThis.fetch(input, init));
-const relayTracingLayer = makeRelayClientTracingLayer(resolveRelayTracingConfig(), {
-  serviceName: "t3-web-relay-client",
-  serviceVersion: import.meta.env.APP_VERSION,
-  runtime: "browser",
-  client: typeof window !== "undefined" && window.desktopBridge ? "desktop" : "web",
-}).pipe(Layer.provide(httpClientLayer));
 
 type RuntimeLayerSource =
   | typeof httpClientLayer
   | typeof browserCryptoLayer
   | typeof Socket.layerWebSocketConstructorGlobal
-  | typeof relayTracingLayer
   | typeof ClientTracer.layer
   | ReturnType<typeof managedRelayClientLayer>;
 
@@ -59,7 +51,6 @@ const runtimeLayer = Layer.mergeAll(
   browserCryptoLayer,
   Socket.layerWebSocketConstructorGlobal,
   ClientTracer.layer,
-  relayTracingLayer,
   managedRelayClientLayer(configuredRelayUrl()).pipe(
     Layer.provide(Layer.mergeAll(httpClientLayer, browserCryptoLayer)),
   ),

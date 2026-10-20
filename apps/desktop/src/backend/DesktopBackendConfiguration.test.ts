@@ -3,12 +3,9 @@ import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
-import * as Logger from "effect/Logger";
 import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
-import * as PlatformError from "effect/PlatformError";
-import * as Schema from "effect/Schema";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
@@ -18,22 +15,6 @@ import * as DesktopServerExposure from "./DesktopServerExposure.ts";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopWslEnvironment from "../wsl/DesktopWslEnvironment.ts";
 import * as DesktopWslServerTree from "../wsl/DesktopWslServerTree.ts";
-
-const PersistedServerObservabilitySettingsDocument = Schema.Struct({
-  observability: Schema.Struct({
-    otlpTracesUrl: Schema.String,
-    otlpMetricsUrl: Schema.String,
-    otlpLogsUrl: Schema.String,
-  }),
-});
-
-const encodePersistedServerObservabilitySettingsDocument = Schema.encodeEffect(
-  Schema.fromJsonString(PersistedServerObservabilitySettingsDocument),
-);
-
-const isDesktopBackendObservabilitySettingsReadError = Schema.is(
-  DesktopBackendConfiguration.DesktopBackendObservabilitySettingsReadError,
-);
 
 const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExposure, {
   getState: Effect.die("unexpected getState"),
@@ -61,9 +42,6 @@ function makeEnvironmentLayer(
     readonly resourcesPath?: string;
     readonly appVersion?: string;
     readonly processArch?: NodeJS.Architecture;
-    readonly otlpTracesUrl?: string;
-    readonly otlpMetricsUrl?: string;
-    readonly otlpLogsUrl?: string;
   },
 ) {
   return DesktopEnvironment.layer({
@@ -86,9 +64,6 @@ function makeEnvironmentLayer(
           LMCS_MODE: "desktop",
           LMCS_DESKTOP_LAN_HOST: "192.168.1.50",
           VITE_DEV_SERVER_URL: options?.devServerUrl,
-          LMCS_OTLP_TRACES_URL: options?.otlpTracesUrl,
-          LMCS_OTLP_METRICS_URL: options?.otlpMetricsUrl,
-          LMCS_OTLP_LOGS_URL: options?.otlpLogsUrl,
         }),
       ),
     ),
@@ -726,201 +701,6 @@ describe("DesktopBackendConfiguration", () => {
     ),
   );
 
-  it.effect("resolvePrimary surfaces persisted backend observability endpoints", () =>
-    withHarness(
-      Effect.gen(function* () {
-        const fileSystem = yield* FileSystem.FileSystem;
-        const environment = yield* DesktopEnvironment.DesktopEnvironment;
-        const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
-
-        yield* fileSystem.makeDirectory(environment.path.dirname(environment.serverSettingsPath), {
-          recursive: true,
-        });
-        yield* fileSystem.writeFileString(
-          environment.serverSettingsPath,
-          yield* encodePersistedServerObservabilitySettingsDocument({
-            observability: {
-              otlpTracesUrl: " http://127.0.0.1:4318/v1/traces ",
-              otlpMetricsUrl: " http://127.0.0.1:4318/v1/metrics ",
-              otlpLogsUrl: " http://127.0.0.1:4318/v1/logs ",
-            },
-          }),
-        );
-
-        const config = yield* configuration.resolvePrimary;
-        assert.equal(config.bootstrap.otlpTracesUrl, "http://127.0.0.1:4318/v1/traces");
-        assert.equal(config.bootstrap.otlpMetricsUrl, "http://127.0.0.1:4318/v1/metrics");
-        assert.equal(config.bootstrap.otlpLogsUrl, "http://127.0.0.1:4318/v1/logs");
-      }),
-    ),
-  );
-
-  it.effect("resolvePrimary omits backend observability endpoints when settings are missing", () =>
-    withHarness(
-      Effect.gen(function* () {
-        const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
-        const config = yield* configuration.resolvePrimary;
-
-        assert.isUndefined(config.bootstrap.otlpTracesUrl);
-        assert.isUndefined(config.bootstrap.otlpMetricsUrl);
-        assert.isUndefined(config.bootstrap.otlpLogsUrl);
-      }),
-    ),
-  );
-
-  it.effect("resolveWsl carries environment-configured observability endpoints", () =>
-    Effect.gen(function* () {
-      const fileSystem = yield* FileSystem.FileSystem;
-      const baseDir = yield* fileSystem.makeTempDirectoryScoped({
-        prefix: "t3-desktop-backend-config-test-",
-      });
-
-      yield* Effect.gen(function* () {
-        const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
-        const config = yield* configuration.resolveWsl({ port: 5050, distro: null });
-
-        // No settings.json exists here: the endpoints come from the desktop
-        // process's env, which a WSL child cannot inherit, so the bootstrap
-        // has to carry them or log export stays off inside the distro.
-        assert.equal(config.bootstrap.otlpTracesUrl, "http://127.0.0.1:4318/v1/traces");
-        assert.equal(config.bootstrap.otlpMetricsUrl, "http://127.0.0.1:4318/v1/metrics");
-        assert.equal(config.bootstrap.otlpLogsUrl, "http://127.0.0.1:4318/v1/logs");
-        assert.notInclude(config.env.WSLENV ?? "", "LMCS_OTLP_LOGS_URL");
-      }).pipe(
-        Effect.provide(
-          DesktopBackendConfiguration.layer.pipe(
-            Layer.provideMerge(serverExposureLayer),
-            Layer.provideMerge(DesktopAppSettings.layerTest()),
-            Layer.provideMerge(DesktopWslServerTree.layerTest()),
-            Layer.provideMerge(
-              DesktopWslEnvironment.layerTest({
-                isAvailable: true,
-                windowsToWslPath: () => Option.some("/mnt/c/repo/apps/server/src/index.ts"),
-                getDistroIp: () => Option.some("172.27.0.99"),
-              }),
-            ),
-            Layer.provideMerge(
-              makeEnvironmentLayer(baseDir, {
-                platform: "win32",
-                otlpTracesUrl: " http://127.0.0.1:4318/v1/traces ",
-                otlpMetricsUrl: " http://127.0.0.1:4318/v1/metrics ",
-                otlpLogsUrl: " http://127.0.0.1:4318/v1/logs ",
-              }),
-            ),
-          ),
-        ),
-      );
-    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-  );
-
-  it.effect("environment observability endpoints win over the persisted settings file", () =>
-    Effect.gen(function* () {
-      const fileSystem = yield* FileSystem.FileSystem;
-      const baseDir = yield* fileSystem.makeTempDirectoryScoped({
-        prefix: "t3-desktop-backend-config-test-",
-      });
-
-      yield* Effect.gen(function* () {
-        const environment = yield* DesktopEnvironment.DesktopEnvironment;
-        const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
-
-        yield* fileSystem.makeDirectory(environment.path.dirname(environment.serverSettingsPath), {
-          recursive: true,
-        });
-        yield* fileSystem.writeFileString(
-          environment.serverSettingsPath,
-          yield* encodePersistedServerObservabilitySettingsDocument({
-            observability: {
-              otlpTracesUrl: "http://persisted:4318/v1/traces",
-              otlpMetricsUrl: "http://persisted:4318/v1/metrics",
-              otlpLogsUrl: "http://persisted:4318/v1/logs",
-            },
-          }),
-        );
-
-        const config = yield* configuration.resolvePrimary;
-        assert.equal(config.bootstrap.otlpLogsUrl, "http://env:4318/v1/logs");
-        // Only the logs endpoint is set in env, so the other two still come
-        // from the settings file rather than being dropped together.
-        assert.equal(config.bootstrap.otlpTracesUrl, "http://persisted:4318/v1/traces");
-        assert.equal(config.bootstrap.otlpMetricsUrl, "http://persisted:4318/v1/metrics");
-      }).pipe(
-        Effect.provide(
-          DesktopBackendConfiguration.layer.pipe(
-            Layer.provideMerge(serverExposureLayer),
-            Layer.provideMerge(DesktopAppSettings.layerTest()),
-            Layer.provideMerge(DesktopWslServerTree.layerTest()),
-            Layer.provideMerge(DesktopWslEnvironment.layerTest()),
-            Layer.provideMerge(
-              makeEnvironmentLayer(baseDir, { otlpLogsUrl: "http://env:4318/v1/logs" }),
-            ),
-          ),
-        ),
-      );
-    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-  );
-
-  it.effect("logs structured context when persisted observability settings cannot be read", () =>
-    Effect.gen(function* () {
-      const fileSystem = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
-      const baseDir = yield* fileSystem.makeTempDirectoryScoped({
-        prefix: "t3-desktop-backend-config-test-",
-      });
-      const settingsPath = path.join(baseDir, "userdata", "settings.json");
-      const cause = PlatformError.systemError({
-        _tag: "PermissionDenied",
-        module: "FileSystem",
-        method: "readFileString",
-        pathOrDescriptor: settingsPath,
-      });
-      const messages: Array<unknown> = [];
-      const logger = Logger.make(({ message }) => {
-        messages.push(message);
-      });
-      const failingFileSystemLayer = Layer.succeed(
-        FileSystem.FileSystem,
-        FileSystem.makeNoop({
-          readFileString: () => Effect.fail(cause),
-        }),
-      );
-
-      const config = yield* Effect.gen(function* () {
-        const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
-        return yield* configuration.resolvePrimary;
-      }).pipe(
-        Effect.provide(
-          Layer.mergeAll(
-            DesktopBackendConfiguration.layer.pipe(
-              Layer.provideMerge(serverExposureLayer),
-              Layer.provideMerge(DesktopAppSettings.layerTest()),
-              Layer.provideMerge(DesktopWslServerTree.layerTest()),
-              Layer.provideMerge(DesktopWslEnvironment.layerTest()),
-              Layer.provideMerge(makeEnvironmentLayer(baseDir)),
-              Layer.provideMerge(failingFileSystemLayer),
-            ),
-            Logger.layer([logger], { mergeWithExisting: false }),
-          ),
-        ),
-      );
-
-      assert.isUndefined(config.bootstrap.otlpTracesUrl);
-      assert.isUndefined(config.bootstrap.otlpMetricsUrl);
-      assert.isUndefined(config.bootstrap.otlpLogsUrl);
-
-      const error = messages
-        .flatMap((message) => (Array.isArray(message) ? message : [message]))
-        .find(isDesktopBackendObservabilitySettingsReadError);
-      assert.isDefined(error);
-      assert.equal(error.settingsPath, settingsPath);
-      assert.equal(error.cause, cause);
-      assert.equal(
-        error.message,
-        `Failed to read persisted backend observability settings at ${settingsPath}.`,
-      );
-    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-  );
-
   it.effect("resolvePrimary captures backend output in dev so child logs can be persisted", () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
@@ -950,122 +730,6 @@ describe("DesktopBackendConfiguration", () => {
           ),
         ),
       );
-    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-  );
-
-  it.effect("resolveWsl carries the kill switch into the distro", () =>
-    Effect.gen(function* () {
-      const fileSystem = yield* FileSystem.FileSystem;
-      const baseDir = yield* fileSystem.makeTempDirectoryScoped({
-        prefix: "t3-desktop-backend-config-test-",
-      });
-
-      const previousWslEnv = process.env.WSLENV;
-      const previousDisabled = process.env.OTEL_SDK_DISABLED;
-      try {
-        delete process.env.WSLENV;
-        process.env.OTEL_SDK_DISABLED = "true";
-
-        yield* Effect.gen(function* () {
-          const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
-          const config = yield* configuration.resolveWsl({ port: 5050, distro: null });
-
-          assert.equal(config.env.OTEL_SDK_DISABLED, "true");
-          assert.include((config.env.WSLENV ?? "").split(":"), "OTEL_SDK_DISABLED");
-        }).pipe(
-          Effect.provide(
-            DesktopBackendConfiguration.layer.pipe(
-              Layer.provideMerge(serverExposureLayer),
-              Layer.provideMerge(DesktopAppSettings.layerTest()),
-              Layer.provideMerge(DesktopWslServerTree.layerTest()),
-              Layer.provideMerge(
-                DesktopWslEnvironment.layerTest({
-                  isAvailable: true,
-                  windowsToWslPath: () => Option.some("/mnt/c/repo/apps/server/src/index.ts"),
-                  getDistroIp: () => Option.some("172.27.0.99"),
-                }),
-              ),
-              Layer.provideMerge(makeEnvironmentLayer(baseDir, { platform: "win32" })),
-            ),
-          ),
-        );
-      } finally {
-        restoreEnv("WSLENV", previousWslEnv);
-        restoreEnv("OTEL_SDK_DISABLED", previousDisabled);
-      }
-    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
-  );
-
-  it.effect("resolveWsl preserves existing WSLENV entries when forwarding backend secrets", () =>
-    Effect.gen(function* () {
-      const fileSystem = yield* FileSystem.FileSystem;
-      const baseDir = yield* fileSystem.makeTempDirectoryScoped({
-        prefix: "t3-desktop-backend-config-test-",
-      });
-
-      const previousWslEnv = process.env.WSLENV;
-      const previousOpenAiKey = process.env.OPENAI_API_KEY;
-      const previousAnthropicKey = process.env.ANTHROPIC_API_KEY;
-      const previousOtlpHeaders = process.env.LMCS_OTLP_HEADERS;
-      const previousOtlpProtocol = process.env.LMCS_OTLP_PROTOCOL;
-      try {
-        process.env.WSLENV = "GOPATH/p:OPENAI_API_KEY/u:EMPTY::AZURE_DEVOPS_EXT_PAT/u";
-        process.env.OPENAI_API_KEY = "openai-key";
-        process.env.ANTHROPIC_API_KEY = "anthropic-key";
-        process.env.LMCS_OTLP_HEADERS = 'authorization="Bearer%20my-token"';
-        process.env.LMCS_OTLP_PROTOCOL = "http/protobuf";
-
-        yield* Effect.gen(function* () {
-          const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
-          const config = yield* configuration.resolveWsl({ port: 5050, distro: null });
-
-          assert.equal(config.executablePath, "wsl.exe");
-          assert.equal(config.bootstrap.port, 5050);
-          // Binds to 0.0.0.0 inside WSL so the backend is reachable via
-          // both wslhost-forwarded localhost and the distro's eth0 IP.
-          assert.equal(config.bootstrap.host, "0.0.0.0");
-          assert.equal(config.bootstrap.tailscaleServeEnabled, false);
-          assert.notProperty(config.bootstrap, "desktopTelemetryFd");
-          assert.notProperty(config.bootstrap, "resourceMonitorPath");
-          // httpBaseUrl uses the resolved distro IP from the test stub,
-          // not localhost — the renderer reaches the backend directly to
-          // avoid relying on wslhost forwarding.
-          assert.equal(config.httpBaseUrl.href, "http://172.27.0.99:5050/");
-          assert.equal(config.env.OPENAI_API_KEY, "openai-key");
-          assert.equal(config.env.ANTHROPIC_API_KEY, "anthropic-key");
-          assert.equal(config.env.LMCS_OTLP_PROTOCOL, "http/protobuf");
-          // The existing WSLENV is preserved byte-for-byte (note the empty
-          // "::" segment survives — WSL ignores it, so we don't normalize
-          // it away) and ANTHROPIC_API_KEY is appended. OPENAI_API_KEY is
-          // already declared, so it isn't forwarded twice.
-          assert.equal(
-            config.env.WSLENV,
-            "GOPATH/p:OPENAI_API_KEY/u:EMPTY::AZURE_DEVOPS_EXT_PAT/u:ANTHROPIC_API_KEY:LMCS_OTLP_HEADERS:LMCS_OTLP_PROTOCOL",
-          );
-        }).pipe(
-          Effect.provide(
-            DesktopBackendConfiguration.layer.pipe(
-              Layer.provideMerge(serverExposureLayer),
-              Layer.provideMerge(DesktopAppSettings.layerTest()),
-              Layer.provideMerge(DesktopWslServerTree.layerTest()),
-              Layer.provideMerge(
-                DesktopWslEnvironment.layerTest({
-                  isAvailable: true,
-                  windowsToWslPath: () => Option.some("/mnt/c/repo/apps/server/src/index.ts"),
-                  getDistroIp: () => Option.some("172.27.0.99"),
-                }),
-              ),
-              Layer.provideMerge(makeEnvironmentLayer(baseDir, { platform: "win32" })),
-            ),
-          ),
-        );
-      } finally {
-        restoreEnv("WSLENV", previousWslEnv);
-        restoreEnv("OPENAI_API_KEY", previousOpenAiKey);
-        restoreEnv("ANTHROPIC_API_KEY", previousAnthropicKey);
-        restoreEnv("LMCS_OTLP_HEADERS", previousOtlpHeaders);
-        restoreEnv("LMCS_OTLP_PROTOCOL", previousOtlpProtocol);
-      }
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );
 

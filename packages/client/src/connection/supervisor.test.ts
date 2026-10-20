@@ -1,5 +1,4 @@
 import { AuthStandardClientScopes, EnvironmentId } from "@lmcstools/core";
-import { RelayClientTracer } from "@lmcstools/core/relayTracing";
 import { describe, expect, it } from "@effect/vitest";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -250,10 +249,7 @@ describe("EnvironmentSupervisor", () => {
       });
       const supervisor = yield* EnvironmentSupervisor.make(RELAY_ENTRY, {
         initiallyDesired: true,
-      }).pipe(
-        Effect.provide(harness.dependencies),
-        Effect.provideService(RelayClientTracer, Option.some(tracer)),
-      );
+      }).pipe(Effect.provide(harness.dependencies));
 
       yield* awaitState(
         supervisor.state,

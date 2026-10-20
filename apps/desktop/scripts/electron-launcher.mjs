@@ -114,10 +114,6 @@ export function makeDevelopmentEnvironmentScript(environment) {
     ["LMCS_PORT", environment.LMCS_PORT],
     ["LMCS_HOME", environment.LMCS_HOME],
     ["LMCS_COMMIT_HASH", environment.LMCS_COMMIT_HASH],
-    ["LMCS_OTLP_TRACES_URL", environment.LMCS_OTLP_TRACES_URL],
-    ["LMCS_OTLP_EXPORT_INTERVAL_MS", environment.LMCS_OTLP_EXPORT_INTERVAL_MS],
-    ["LMCS_OTLP_HEADERS", environment.LMCS_OTLP_HEADERS],
-    ["LMCS_OTLP_PROTOCOL", environment.LMCS_OTLP_PROTOCOL],
     ["LMCS_DESKTOP_APP_USER_MODEL_ID", APP_BUNDLE_ID],
   ].filter((entry) => typeof entry[1] === "string" && entry[1].trim().length > 0);
   return [

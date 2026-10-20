@@ -333,21 +333,69 @@ jobs:
           retention-days: 30
 
   # ─── Desktop: Windows ──────────────────────────────────────────────
-  # DISABLED: electron-builder OOM during node_modules scan on Windows runner
-  # Requires manual investigation on a local Windows runner
-  desktop_windows_disabled:
-    name: Desktop Windows (DISABLED)
+  desktop_windows:
+    name: Desktop Windows
     needs: version
-    if: false
     runs-on: windows-2022
     timeout-minutes: 75
     steps:
-      - run: echo "Windows build disabled - requires manual investigation"
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install pnpm
+        run: npm install -g pnpm@11.10.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Build Windows desktop artifact (x64)
+        run: |
+          $env:PATH = "$env:GITHUB_WORKSPACE\node_modules\.bin;$env:PATH"
+          node scripts/build-desktop-artifact.ts --platform win --target nsis --arch x64 --build-version ${{ needs.version.outputs.version }} --signed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_TRUSTED_SIGNING_PUBLISHER_NAME: ${{ secrets.AZURE_TRUSTED_SIGNING_PUBLISHER_NAME }}
+          AZURE_TRUSTED_SIGNING_ENDPOINT: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
+          AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME: ${{ secrets.AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME }}
+          AZURE_TRUSTED_SIGNING_ACCOUNT_NAME: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT_NAME }}
+
+      - name: List generated artifacts
+        if: always()
+        run: |
+          echo "=== Files in release/ ==="
+          dir release\ 2>$null
+          echo ""
+          echo "=== EXE files ==="
+          dir release\*.exe 2>$null
+          echo ""
+          echo "=== yml files ==="
+          dir release\latest*.yml 2>$null
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: desktop-windows
+          path: |
+            release/*.exe
+            release/latest*.yml
+            release/latest*.yml.blockmap
+          if-no-files-found: warn
+          retention-days: 30
 
   # ── Tag release ───────────────────────────────────────────────────
   tag:
     name: Create version tag
-    needs: [version, desktop_macos, desktop_linux, desktop_linux_arm64]
+    needs: [version, desktop_macos, desktop_linux, desktop_linux_arm64, desktop_windows]
     if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
@@ -373,7 +421,7 @@ jobs:
   # Creates release if electron-builder didn't publish automatically
   release:
     name: Create GitHub Release
-    needs: [version, tag, desktop_macos, desktop_linux, desktop_linux_arm64]
+    needs: [version, tag, desktop_macos, desktop_linux, desktop_linux_arm64, desktop_windows]
     if: always() && !cancelled()
     runs-on: ubuntu-24.04
     steps:
@@ -408,6 +456,20 @@ jobs:
             echo "::warning::Linux build did not succeed (result: ${{ needs.desktop_linux.result }}), skipping artifact download"
           fi
 
+      - name: Check if Windows build succeeded
+        id: check_windows
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ needs.desktop_windows.result }}" == "success" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Windows build succeeded, will download artifacts"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Windows build did not succeed (result: ${{ needs.desktop_windows.result }}), skipping artifact download"
+          fi
+
       - name: Download macOS artifacts
         if: steps.check_macos.outputs.available == 'true'
         uses: actions/download-artifact@v5
@@ -429,6 +491,13 @@ jobs:
           name: desktop-linux-arm64
           path: artifacts/
 
+      - name: Download Windows artifacts
+        if: steps.check_windows.outputs.available == 'true'
+        uses: actions/download-artifact@v5
+        with:
+          name: desktop-windows
+          path: artifacts/
+
       - name: Check if release exists
         id: check_release
         shell: bash
@@ -445,7 +514,7 @@ jobs:
           fi
 
       - name: Create release and upload artifacts
-        if: steps.check_release.outputs.exists == 'false' && (steps.check_macos.outputs.available == 'true' || steps.check_linux.outputs.available == 'true')
+        if: steps.check_release.outputs.exists == 'false' && (steps.check_macos.outputs.available == 'true' || steps.check_linux.outputs.available == 'true' || steps.check_windows.outputs.available == 'true')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -473,7 +542,7 @@ jobs:
           echo "::notice::Created release $TAG with artifacts"
 
       - name: Create release without artifacts
-        if: steps.check_release.outputs.exists == 'false' && steps.check_macos.outputs.available != 'true' && steps.check_linux.outputs.available != 'true'
+        if: steps.check_release.outputs.exists == 'false' && steps.check_macos.outputs.available != 'true' && steps.check_linux.outputs.available != 'true' && steps.check_windows.outputs.available != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
