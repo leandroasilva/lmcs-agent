@@ -2834,7 +2834,17 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       signAndEditExecutable: true,
     };
     if (signed) {
-      winConfig.azureSignOptions = yield* AzureTrustedSigningOptionsConfig;
+      // Azure Trusted Signing credentials are only required to sign, not to
+      // build. When the secrets are absent (e.g. fork or unconfigured repo),
+      // fall back to an unsigned artifact instead of failing the build.
+      const azureSignOptions = yield* AzureTrustedSigningOptionsConfig.pipe(Config.option);
+      if (Option.isSome(azureSignOptions)) {
+        winConfig.azureSignOptions = azureSignOptions.value;
+      } else {
+        yield* Effect.logWarning(
+          "Azure Trusted Signing environment is not configured; building unsigned Windows artifact.",
+        );
+      }
     }
     buildConfig.win = winConfig;
   }
