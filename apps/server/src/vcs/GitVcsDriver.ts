@@ -195,6 +195,12 @@ export interface GitRenameBranchResult {
   branch: string;
 }
 
+export interface GitDeleteBranchInput {
+  cwd: string;
+  branch: string;
+  remoteName?: string;
+}
+
 export interface GitFetchPullRequestBranchInput {
   cwd: string;
   prNumber: number;
@@ -401,6 +407,7 @@ export class GitVcsDriver extends Context.Service<
     ) => Effect.Effect<VcsSwitchRefResult, GitCommandError>;
     readonly initRepo: (input: VcsInitInput) => Effect.Effect<void, GitCommandError>;
     readonly listLocalBranchNames: (cwd: string) => Effect.Effect<string[], GitCommandError>;
+    readonly deleteBranch: (input: GitDeleteBranchInput) => Effect.Effect<void, GitCommandError>;
   }
 >()("lmcs/vcs/GitVcsDriver") {}
 

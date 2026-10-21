@@ -1021,14 +1021,15 @@ export default function GitActionsControl({
     [activeEnvironmentId, gitCwd],
   );
   // Fetch branches for PR base branch selector (only when dialog is open)
-  // Use remote refs to avoid showing deleted local branches
+  // Use "all" refs to include both local and remote branches so the user
+  // can target any branch (e.g. "dev" even when only tracked locally).
   const prBaseBranchesQuery = useEnvironmentQuery(
     pendingPrAction !== null && activeEnvironmentId !== null && gitCwd !== null
       ? vcsEnvironment.listRefs({
           environmentId: activeEnvironmentId,
           input: {
             cwd: gitCwd,
-            refKind: "remote",
+            refKind: "all",
             includeMatchingRemoteRefs: false,
             limit: 100,
           },
@@ -2354,16 +2355,34 @@ export default function GitActionsControl({
               <option value="" disabled>
                 {prBaseBranchesQuery.isPending ? "Loading branches..." : "Select a branch..."}
               </option>
-              {prBaseBranchesQuery.data?.refs.map((ref) => {
-                // Remove remote prefix (e.g., "origin/") for display
-                const displayName = ref.name.replace(/^origin\//, "");
-                return (
-                  <option key={ref.name} value={displayName}>
-                    {displayName}
-                    {ref.isDefault ? " (default)" : ""}
-                  </option>
+              {(() => {
+                const refs = prBaseBranchesQuery.data?.refs;
+                if (!refs) return null;
+                const deduped = Array.from(
+                  refs
+                    // Deduplicate: when both local ("dev") and remote ("origin/dev")
+                    // exist, keep the remote entry (carries isDefault flag) and
+                    // strip the origin/ prefix for display.
+                    .reduce<Map<string, (typeof refs)[number]>>((acc, ref) => {
+                      const bareName = ref.name.replace(/^origin\//, "");
+                      const existing = acc.get(bareName);
+                      if (!existing || ref.isRemote) {
+                        acc.set(bareName, ref);
+                      }
+                      return acc;
+                    }, new Map())
+                    .values(),
                 );
-              })}
+                return deduped.map((ref) => {
+                  const displayName = ref.name.replace(/^origin\//, "");
+                  return (
+                    <option key={ref.name} value={displayName}>
+                      {displayName}
+                      {ref.isDefault ? " (default)" : ""}
+                    </option>
+                  );
+                });
+              })()}
             </select>
           </div>
           <DialogFooter variant="bare" className="sm:flex-wrap sm:items-center">

@@ -68,6 +68,7 @@ import {
   VcsCreateWorktreeInput,
   VcsCreateWorktreeResult,
   VcsInitInput,
+  VcsDeleteBranchInput,
   VcsListRefsInput,
   VcsListRefsResult,
   GitManagerServiceError,
@@ -326,6 +327,7 @@ export const WS_METHODS = {
   vcsRemoveWorktree: "vcs.removeWorktree",
   vcsCreateRef: "vcs.createRef",
   vcsSwitchRef: "vcs.switchRef",
+  vcsDeleteBranch: "vcs.deleteBranch",
   vcsInit: "vcs.init",
 
   // Git workflow methods
@@ -1108,6 +1110,11 @@ const WsVcsSwitchRefRpc = Rpc.make(WS_METHODS.vcsSwitchRef, {
   error: Schema.Union([GitCommandError, EnvironmentAuthorizationError]),
 });
 
+const WsVcsDeleteBranchRpc = Rpc.make(WS_METHODS.vcsDeleteBranch, {
+  payload: VcsDeleteBranchInput,
+  error: Schema.Union([GitCommandError, EnvironmentAuthorizationError]),
+});
+
 const WsVcsInitRpc = Rpc.make(WS_METHODS.vcsInit, {
   payload: VcsInitInput,
   error: Schema.Union([VcsError, EnvironmentAuthorizationError]),
@@ -1521,6 +1528,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsVcsRemoveWorktreeRpc,
   WsVcsCreateRefRpc,
   WsVcsSwitchRefRpc,
+  WsVcsDeleteBranchRpc,
   WsVcsInitRpc,
   WsReviewGetDiffPreviewRpc,
   WsReviewGetDiffFileContentsRpc,
