@@ -3781,30 +3781,20 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     yield* fs.copy(path.join(repoRoot, "patches"), path.join(stageAppDir, "patches"));
   }
 
-  yield* Effect.log("[desktop-artifact] Installing staged production dependencies...");
-  const installCommand = yield* resolveSpawnCommand("vp", [...STAGE_INSTALL_ARGS]);
+  // The staged manifest's only devDependency is electron, which electron-builder
+  // needs installed to resolve its version, so a full install here yields exactly
+  // the production tree plus electron. It also keeps pnpm's included-deps set
+  // stable for the electron-builder `vp add` below: after a --prod install that
+  // add switches the set to include devDependencies and pnpm aborts with
+  // ERR_PNPM_INCLUDED_DEPS_CONFLICT (seen on the Windows runner).
+  yield* Effect.log("[desktop-artifact] Installing staged dependencies...");
+  const installCommand = yield* resolveSpawnCommand("vp", ["install"]);
   yield* runCommand(
     ChildProcess.make(installCommand.command, installCommand.args, {
       cwd: stageAppDir,
       shell: installCommand.shell,
     }),
-    { label: "vp install --prod", verbose: options.verbose },
-  );
-
-  // electron-builder requires electron to be installed to compute the version,
-  // but --prod excludes devDependencies. Install electron separately.
-  yield* Effect.log("[desktop-artifact] Installing electron for electron-builder...");
-  const electronInstallCommand = yield* resolveSpawnCommand("vp", [
-    "add",
-    "--save-dev",
-    `electron@${electronVersion}`,
-  ]);
-  yield* runCommand(
-    ChildProcess.make(electronInstallCommand.command, electronInstallCommand.args, {
-      cwd: stageAppDir,
-      shell: electronInstallCommand.shell,
-    }),
-    { label: "vp add electron", verbose: options.verbose },
+    { label: "vp install", verbose: options.verbose },
   );
 
   // Install electron-builder in the staged dir so we can run it directly
