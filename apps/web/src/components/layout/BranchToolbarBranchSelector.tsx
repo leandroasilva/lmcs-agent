@@ -524,6 +524,14 @@ export function BranchToolbarBranchSelector({
 
   const handleDeleteBranch = (branchName: string) => {
     if (!branchCwd || isBranchActionPending) return;
+    if (branchName === currentGitBranch || branchName === resolvedActiveBranch) {
+      toastManager.add({
+        type: "error",
+        title: "Cannot delete the checked-out branch",
+        description: `Switch to another branch before deleting ${branchName}.`,
+      });
+      return;
+    }
     setDeleteConfirmBranch(null);
     runBranchAction(async () => {
       const result = await deleteBranchCommand({
@@ -790,7 +798,8 @@ export function BranchToolbarBranchSelector({
           : refName.isDefault
             ? "default"
             : null;
-    const canDelete = !refName.current && !refName.isRemote && !refName.isDefault;
+    const canDelete =
+      !refName.current && !refName.isRemote && !refName.isDefault && !hasSecondaryWorktree;
     return (
       <ComboboxItem
         hideIndicator
@@ -814,6 +823,7 @@ export function BranchToolbarBranchSelector({
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  handleOpenChange(false);
                   setDeleteConfirmBranch(itemValue);
                 }}
                 className="rounded-sm p-0.5 text-muted-foreground/50 transition-colors hover:text-destructive"
