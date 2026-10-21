@@ -3828,6 +3828,35 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     return { branch: targetBranch };
   });
 
+  const deleteBranch: GitVcsDriver.GitVcsDriver["Service"]["deleteBranch"] = Effect.fn(
+    "deleteBranch",
+  )(function* (input) {
+    const { cwd, branch, remoteName } = input;
+
+    // Delete the local branch (force to allow deleting unmerged branches).
+    yield* executeGit("GitVcsDriver.deleteBranch.local", cwd, ["branch", "-D", "--", branch], {
+      timeoutMs: 10_000,
+      fallbackErrorDetail: `Failed to delete local branch ${branch}`,
+      allowNonZeroExit: true,
+    });
+
+    // Remove the remote-tracking ref so it no longer appears in branch lists.
+    const remote =
+      remoteName ?? (yield* resolvePrimaryRemoteName(cwd).pipe(Effect.orElseSucceed(() => null)));
+    if (remote) {
+      yield* executeGit(
+        "GitVcsDriver.deleteBranch.remoteTracking",
+        cwd,
+        ["branch", "-D", "-r", "--", `${remote}/${branch}`],
+        {
+          timeoutMs: 10_000,
+          fallbackErrorDetail: `Failed to remove remote-tracking ref ${remote}/${branch}`,
+          allowNonZeroExit: true,
+        },
+      );
+    }
+  });
+
   const switchRef: GitVcsDriver.GitVcsDriver["Service"]["switchRef"] = Effect.fn("switchRef")(
     function* (input) {
       const [localInputExists, remoteExists] = yield* Effect.all(
@@ -4022,6 +4051,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     removeWorktree: (input) => withListRefsInvalidation(input.cwd, removeWorktree(input)),
     pruneWorktrees: (input) => withListRefsInvalidation(input.cwd, pruneWorktrees(input)),
     renameBranch: (input) => withListRefsInvalidation(input.cwd, renameBranch(input)),
+    deleteBranch: (input) => withListRefsInvalidation(input.cwd, deleteBranch(input)),
     createRef: (input) => withListRefsInvalidation(input.cwd, createRef(input)),
     switchRef: (input) => withListRefsInvalidation(input.cwd, switchRef(input)),
     initRepo: initRepoWithListRefsInvalidation,

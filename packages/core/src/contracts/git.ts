@@ -258,6 +258,12 @@ export const VcsInitInput = Schema.Struct({
 });
 export type VcsInitInput = typeof VcsInitInput.Type;
 
+export const VcsDeleteBranchInput = Schema.Struct({
+  cwd: TrimmedNonEmptyStringSchema,
+  branch: TrimmedNonEmptyStringSchema,
+});
+export type VcsDeleteBranchInput = typeof VcsDeleteBranchInput.Type;
+
 // RPC Results
 
 const VcsStatusChangeRequest = Schema.Struct({

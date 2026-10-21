@@ -68,7 +68,9 @@ export const commitVcsRefsRefresh = Effect.fn("CachedVcsRefsState.commitRefresh"
   return yield* withVcsRefsPersistenceLock(
     input.environmentId,
     Effect.gen(function* () {
-      const stateAtom = vcsRefsCacheStateAtom({ environmentId: input.environmentId });
+      const stateAtom = vcsRefsCacheStateAtom({
+        environmentId: input.environmentId,
+      });
       const state = registry.get(stateAtom);
       if (state.revision !== input.expectedRevision) {
         return false;
@@ -270,7 +272,10 @@ export function createVcsEnvironmentAtoms<R, E>(
     readonly input: VcsListRefsInput;
   }) => listRefsFamily(JSON.stringify([target.environmentId, target.input]));
   const invalidateRefs = (
-    target: { readonly environmentId: EnvironmentId; readonly input: { readonly cwd: string } },
+    target: {
+      readonly environmentId: EnvironmentId;
+      readonly input: { readonly cwd: string };
+    },
     registry: AtomRegistry.AtomRegistry,
   ) =>
     invalidateCachedVcsRefs(registry, {
@@ -344,6 +349,13 @@ export function createVcsEnvironmentAtoms<R, E>(
     switchRef: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:vcs:switch-ref",
       tag: WS_METHODS.vcsSwitchRef,
+      scheduler: vcsCommandScheduler,
+      concurrency: vcsCommandConcurrency,
+      onSettled: invalidateRefs,
+    }),
+    deleteBranch: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:vcs:delete-branch",
+      tag: WS_METHODS.vcsDeleteBranch,
       scheduler: vcsCommandScheduler,
       concurrency: vcsCommandConcurrency,
       onSettled: invalidateRefs,
