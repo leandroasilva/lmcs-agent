@@ -46,6 +46,7 @@ import {
   resolvePullRequestReferenceHost,
   resolvePullRequestPrimaryControl,
   allowsSinglePullRequestMerge,
+  allowsRemoteBranchDeletion,
   shouldRefreshPullRequestActivity,
   resolveBaseFreshness,
   resolvePullRequestMergeMethod,
@@ -1619,7 +1620,10 @@ describe("which actions need the host read again after they run", () => {
     // test until somebody decides which side of the diff it belongs on.
     expect(PullRequestAction.literals.map(pullRequestActionNeedsHostRefresh)).toEqual(
       PullRequestAction.literals.map(
-        (action) => action === "update-branch" || action === "approve-workflows",
+        (action) =>
+          action === "update-branch" ||
+          action === "approve-workflows" ||
+          action === "delete-branch",
       ),
     );
   });
@@ -1713,6 +1717,49 @@ describe("cached pull request detail", () => {
       setItem: (key: string, value: string) => void held.set(key, value),
     };
   };
+
+  it("oferece exclusão remota só para PR integrado com suporte e permissão", () => {
+    const merged = detail({ state: "merged" });
+    const eligible = {
+      ...merged,
+      capabilities: {
+        ...merged.capabilities,
+        actions: ["delete-branch" as const],
+      },
+      viewerPermissions: {
+        ...merged.viewerPermissions,
+        actions: ["delete-branch" as const],
+      },
+    };
+    expect(allowsRemoteBranchDeletion(eligible)).toBe(true);
+    for (const state of ["open", "closed"] as const) {
+      expect(allowsRemoteBranchDeletion({ ...eligible, state })).toBe(false);
+    }
+    expect(
+      allowsRemoteBranchDeletion({
+        ...eligible,
+        capabilities: { ...eligible.capabilities, actions: [] },
+      }),
+    ).toBe(false);
+    expect(
+      allowsRemoteBranchDeletion({
+        ...eligible,
+        viewerPermissions: { ...eligible.viewerPermissions, actions: [] },
+      }),
+    ).toBe(false);
+    expect(
+      allowsRemoteBranchDeletion({
+        ...eligible,
+        headRepositoryNameWithOwner: "fork/web",
+      }),
+    ).toBe(false);
+    expect(
+      allowsRemoteBranchDeletion({
+        ...eligible,
+        headBranch: eligible.baseBranch,
+      }),
+    ).toBe(false);
+  });
 
   it("hydrates the last title, author, and counts so a reopen does not ghost the tab", () => {
     const storage = makeStorage();

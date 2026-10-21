@@ -1899,6 +1899,150 @@ layer("GitHubPullRequestCli.layer", (it) => {
     }),
   );
 
+  const branchDeletionResponse = (pullRequest: Readonly<Record<string, unknown>> = {}) =>
+    encodeJson({
+      data: {
+        repository: {
+          defaultBranchRef: { name: "main" },
+          pullRequest: {
+            merged: true,
+            isCrossRepository: false,
+            headRefName: "feature/cleanup",
+            baseRefName: "main",
+            headRefOid: "merged-head",
+            headRef: {
+              id: "REF_feature",
+              name: "feature/cleanup",
+              target: { oid: "merged-head" },
+            },
+            ...pullRequest,
+          },
+        },
+      },
+    });
+  const deleteBranchInput = {
+    cwd: "/w",
+    repository: "acme/web",
+    host: "github.example.com",
+    number: 7,
+    action: "delete-branch" as const,
+  };
+
+  it.effect("exclui a branch remota somente depois de confirmar o merge no host", () =>
+    Effect.gen(function* () {
+      mockedExecute.mockReturnValueOnce(Effect.succeed(output(branchDeletionResponse())));
+      mockedExecute.mockReturnValueOnce(Effect.succeed(output("{}")));
+      const cli = yield* GitHubPullRequestCli.GitHubPullRequestCli;
+
+      yield* cli.runPullRequestAction(deleteBranchInput);
+
+      expect(mockedExecute).toHaveBeenCalledTimes(2);
+      expect(callAt(0).args).toEqual(
+        expect.arrayContaining([
+          "--hostname",
+          "github.example.com",
+          "owner=acme",
+          "name=web",
+          "number=7",
+        ]),
+      );
+      expect(callAt(0).args.join(" ")).toContain("merged isCrossRepository");
+      expect(callAt(1).args).toEqual([
+        "api",
+        "graphql",
+        "--hostname",
+        "github.example.com",
+        "--input",
+        "-",
+      ]);
+      expect(callAt(1).stdin).toContain("deleteRef");
+      expect(callAt(1).stdin).toContain('"refId":"REF_feature"');
+    }),
+  );
+
+  for (const [reason, overrides] of [
+    ["PR aberto ou fechado sem merge", { merged: false }],
+    ["branch de fork", { isCrossRepository: true }],
+    ["branch base", { baseRefName: "feature/cleanup" }],
+    ["branch padrão", { headRefName: "main", baseRefName: "release" }],
+    [
+      "branch com novos commits",
+      {
+        headRef: {
+          id: "REF_feature",
+          name: "feature/cleanup",
+          target: { oid: "new-head" },
+        },
+      },
+    ],
+    [
+      "branch renomeada",
+      {
+        headRef: {
+          id: "REF_feature",
+          name: "feature/renamed",
+          target: { oid: "merged-head" },
+        },
+      },
+    ],
+  ] as const) {
+    it.effect(`recusa exclusão remota: ${reason}`, () =>
+      Effect.gen(function* () {
+        mockedExecute.mockReturnValueOnce(
+          Effect.succeed(output(branchDeletionResponse(overrides))),
+        );
+        const cli = yield* GitHubPullRequestCli.GitHubPullRequestCli;
+
+        const error = yield* cli.runPullRequestAction(deleteBranchInput).pipe(Effect.flip);
+
+        expect(error._tag).toBe("GitHubBranchDeletionRefusedError");
+        expect(mockedExecute).toHaveBeenCalledTimes(1);
+      }),
+    );
+  }
+
+  it.effect("a exclusão remota já realizada não envia outra mutação", () =>
+    Effect.gen(function* () {
+      mockedExecute.mockReturnValueOnce(
+        Effect.succeed(output(branchDeletionResponse({ headRef: null }))),
+      );
+      const cli = yield* GitHubPullRequestCli.GitHubPullRequestCli;
+
+      yield* cli.runPullRequestAction(deleteBranchInput);
+
+      expect(mockedExecute).toHaveBeenCalledTimes(1);
+    }),
+  );
+
+  it.effect("a exclusão remota falha sem mutação quando a consulta não confirma o PR", () =>
+    Effect.gen(function* () {
+      mockedExecute.mockReturnValueOnce(Effect.succeed(output('{"data":{"repository":null}}')));
+      const cli = yield* GitHubPullRequestCli.GitHubPullRequestCli;
+
+      const error = yield* cli.runPullRequestAction(deleteBranchInput).pipe(Effect.flip);
+
+      expect(error._tag).toBe("GitHubPullRequestReadError");
+      expect(mockedExecute).toHaveBeenCalledTimes(1);
+    }),
+  );
+
+  it.effect("a exclusão remota propaga recusas do host como erro tipado", () =>
+    Effect.gen(function* () {
+      const refused = new GitHubCli.GitHubCliCommandError({
+        command: "gh",
+        cwd: "/w",
+        cause: new Error("Branch protegida"),
+      });
+      mockedExecute.mockReturnValueOnce(Effect.succeed(output(branchDeletionResponse())));
+      mockedExecute.mockReturnValueOnce(Effect.fail(refused));
+      const cli = yield* GitHubPullRequestCli.GitHubPullRequestCli;
+
+      const error = yield* cli.runPullRequestAction(deleteBranchInput).pipe(Effect.flip);
+
+      expect(error).toBe(refused);
+    }),
+  );
+
   it.effect("opens a pull request that reverts a merged pull request", () =>
     Effect.gen(function* () {
       mockedExecute.mockReturnValueOnce(

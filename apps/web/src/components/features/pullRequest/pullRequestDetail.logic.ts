@@ -53,6 +53,29 @@ export function allowsSinglePullRequestMerge(input: {
   );
 }
 
+/** Oferece exclusão remota só após merge; o servidor revalida a branch no host. */
+export function allowsRemoteBranchDeletion(
+  detail: Pick<
+    PullRequestDetail,
+    | "state"
+    | "headBranch"
+    | "baseBranch"
+    | "repository"
+    | "headRepositoryNameWithOwner"
+    | "capabilities"
+    | "viewerPermissions"
+  >,
+): boolean {
+  return (
+    detail.state === "merged" &&
+    detail.headBranch !== detail.baseBranch &&
+    (detail.headRepositoryNameWithOwner == null ||
+      detail.headRepositoryNameWithOwner.toLowerCase() === detail.repository.toLowerCase()) &&
+    detail.capabilities.actions.includes("delete-branch") &&
+    detail.viewerPermissions.actions.includes("delete-branch")
+  );
+}
+
 export function resolvePullRequestMergeMethod(
   allowed: ReadonlyArray<PullRequestMergeMethod>,
   current: PullRequestMergeMethod | null,
@@ -1128,6 +1151,7 @@ const ACTION_NEEDS_HOST_REFRESH: Record<PullRequestAction, boolean> = {
   "disable-auto-merge": false,
   revert: false,
   "approve-workflows": true,
+  "delete-branch": true,
 };
 
 export function pullRequestActionNeedsHostRefresh(action: PullRequestAction): boolean {
