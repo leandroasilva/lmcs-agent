@@ -456,6 +456,20 @@ jobs:
             echo "::warning::Linux build did not succeed (result: ${{ needs.desktop_linux.result }}), skipping artifact download"
           fi
 
+      - name: Check if Linux ARM64 build succeeded
+        id: check_linux_arm64
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ needs.desktop_linux_arm64.result }}" == "success" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Linux ARM64 build succeeded, will download artifacts"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Linux ARM64 build did not succeed (result: ${{ needs.desktop_linux_arm64.result }}), skipping artifact download"
+          fi
+
       - name: Check if Windows build succeeded
         id: check_windows
         shell: bash
@@ -485,7 +499,7 @@ jobs:
           path: artifacts/
 
       - name: Download Linux arm64 artifacts
-        if: steps.check_linux.outputs.available == 'true'
+        if: steps.check_linux_arm64.outputs.available == 'true'
         uses: actions/download-artifact@v5
         with:
           name: desktop-linux-arm64
@@ -514,7 +528,7 @@ jobs:
           fi
 
       - name: Create release and upload artifacts
-        if: steps.check_release.outputs.exists == 'false' && (steps.check_macos.outputs.available == 'true' || steps.check_linux.outputs.available == 'true' || steps.check_windows.outputs.available == 'true')
+        if: steps.check_release.outputs.exists == 'false' && (steps.check_macos.outputs.available == 'true' || steps.check_linux.outputs.available == 'true' || steps.check_linux_arm64.outputs.available == 'true' || steps.check_windows.outputs.available == 'true')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -542,7 +556,7 @@ jobs:
           echo "::notice::Created release $TAG with artifacts"
 
       - name: Create release without artifacts
-        if: steps.check_release.outputs.exists == 'false' && steps.check_macos.outputs.available != 'true' && steps.check_linux.outputs.available != 'true' && steps.check_windows.outputs.available != 'true'
+        if: steps.check_release.outputs.exists == 'false' && steps.check_macos.outputs.available != 'true' && steps.check_linux.outputs.available != 'true' && steps.check_linux_arm64.outputs.available != 'true' && steps.check_windows.outputs.available != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
