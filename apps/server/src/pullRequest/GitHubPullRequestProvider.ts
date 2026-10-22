@@ -31,6 +31,7 @@ const CAPABILITIES: PullRequestCapabilities = {
     "disable-auto-merge",
     "revert",
     "approve-workflows",
+    "delete-branch",
   ],
   mergeMethods: ["merge", "squash", "rebase"],
   updateMethods: ["merge", "rebase"],
@@ -80,6 +81,7 @@ export function gitHubViewerPermissions(access: GitHubViewerAccess): PullRequest
             "disable-auto-merge",
             "revert",
             "approve-workflows",
+            "delete-branch",
           ] as const)
         : []),
       ...(access.canUpdate ? (["ready", "draft", "close", "reopen"] as const) : []),

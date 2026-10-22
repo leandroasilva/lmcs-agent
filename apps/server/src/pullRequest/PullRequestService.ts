@@ -294,6 +294,8 @@ const ACTION_ACCESS_REFUSALS: Record<PullRequestAction, string> = {
   "disable-auto-merge":
     "You need write access on this repository to stop it being merged for you once it is ready.",
   revert: "You need write access on this repository to open a revert pull request.",
+  "delete-branch":
+    "Você precisa de permissão de escrita para excluir a branch remota após o merge.",
   "approve-workflows":
     "You need write access on this repository to approve workflows from a fork pull request.",
 };

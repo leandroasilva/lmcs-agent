@@ -358,7 +358,53 @@ export class GitHubWorkflowApprovalHeadChangedError extends Schema.TaggedError<G
   }
 }
 
+export class GitHubBranchDeletionRefusedError extends Schema.TaggedError<GitHubBranchDeletionRefusedError>()(
+  "GitHubBranchDeletionRefusedError",
+  { command: Schema.Literal("gh"), cwd: Schema.String, detail: Schema.String },
+) {
+  override get message(): string {
+    return this.detail;
+  }
+}
+
+const decodeBranchDeletionTarget = Schema.decodeUnknownResult(
+  Schema.fromJsonString(
+    Schema.Struct({
+      data: Schema.Struct({
+        repository: Schema.Struct({
+          defaultBranchRef: Schema.NullOr(Schema.Struct({ name: TrimmedNonEmptyString })),
+          pullRequest: Schema.Struct({
+            merged: Schema.Boolean,
+            isCrossRepository: Schema.Boolean,
+            headRefName: TrimmedNonEmptyString,
+            baseRefName: TrimmedNonEmptyString,
+            headRefOid: TrimmedNonEmptyString,
+            headRef: Schema.NullOr(
+              Schema.Struct({
+                id: TrimmedNonEmptyString,
+                name: TrimmedNonEmptyString,
+                target: Schema.Struct({ oid: TrimmedNonEmptyString }),
+              }),
+            ),
+          }),
+        }),
+      }),
+    }),
+  ),
+);
+
+const BRANCH_DELETION_TARGET_QUERY = `query BranchDeletionTarget($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    defaultBranchRef { name }
+    pullRequest(number: $number) {
+      merged isCrossRepository headRefName baseRefName headRefOid
+      headRef { id name target { oid } }
+    }
+  }
+}`;
+
 export type GitHubPullRequestCliError =
+  | GitHubBranchDeletionRefusedError
   | GitHubStackActionError
   | GitHubCli.GitHubCliError
   | GitHubPullRequestReadError
@@ -1077,6 +1123,8 @@ function actionArgs(
       return ["close"];
     case "reopen":
       return ["reopen"];
+    case "delete-branch":
+      throw new Error("A exclusão remota exige verificar o merge e usar a API.");
     case "revert":
       throw new Error("Revert requires a GraphQL mutation");
     // Handled separately because it may approve several workflow runs rather than mutate the
@@ -2534,9 +2582,66 @@ export const make = Effect.gen(function* () {
 
     runPullRequestAction: (input) => {
       if (input.stackNumber !== undefined)
-        return runGitHubStackAction({ ...input, stackNumber: input.stackNumber }).pipe(
-          Effect.provideService(GitHubCli.GitHubCli, github),
+        return runGitHubStackAction({
+          ...input,
+          stackNumber: input.stackNumber,
+        }).pipe(Effect.provideService(GitHubCli.GitHubCli, github));
+      if (input.action === "delete-branch") {
+        const { owner, name } = parseRepositorySelector(input.repository);
+        return graphqlRead({
+          cwd: input.cwd,
+          host: input.host,
+          operation: "deleteBranch",
+          allowReserve: true,
+          variables: [
+            ["-f", `owner=${owner}`],
+            ["-f", `name=${name}`],
+            ["-F", `number=${input.number}`],
+          ],
+          query: BRANCH_DELETION_TARGET_QUERY,
+          decode: decodeBranchDeletionTarget,
+        }).pipe(
+          Effect.flatMap(
+            ({ data: { repository } }): Effect.Effect<void, GitHubPullRequestCliError> => {
+              const pr = repository.pullRequest;
+              // Consulta atual ao host: não confia no estado em cache da interface.
+              if (
+                !pr.merged ||
+                pr.isCrossRepository ||
+                pr.headRefName === pr.baseRefName ||
+                pr.headRefName === repository.defaultBranchRef?.name
+              ) {
+                return Effect.fail(
+                  new GitHubBranchDeletionRefusedError({
+                    command: "gh",
+                    cwd: input.cwd,
+                    detail:
+                      "Só é possível excluir a branch de origem de um PR integrado neste repositório; a branch base, a padrão e branches de forks são preservadas.",
+                  }),
+                );
+              }
+              if (pr.headRef === null) return Effect.void;
+              if (pr.headRef.name !== pr.headRefName || pr.headRef.target.oid !== pr.headRefOid) {
+                return Effect.fail(
+                  new GitHubBranchDeletionRefusedError({
+                    command: "gh",
+                    cwd: input.cwd,
+                    detail:
+                      "A branch recebeu novos commits após o PR. A exclusão foi cancelada para preservar esse trabalho.",
+                  }),
+                );
+              }
+              return graphql({
+                cwd: input.cwd,
+                host: input.host,
+                query:
+                  "mutation DeleteMergedBranch($refId: ID!) { deleteRef(input: {refId: $refId}) { clientMutationId } }",
+                variables: { refId: pr.headRef.id },
+              });
+            },
+          ),
         );
+      }
       if (input.action === "revert") {
         return pullRequestNodeId({ ...input, operation: "revertPullRequest" }).pipe(
           Effect.flatMap((pullRequestId) =>

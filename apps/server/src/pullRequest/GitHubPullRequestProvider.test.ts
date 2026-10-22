@@ -174,6 +174,7 @@ describe("gitHubViewerPermissions", () => {
         "disable-auto-merge",
         "revert",
         "approve-workflows",
+        "delete-branch",
         "ready",
         "draft",
         "close",
