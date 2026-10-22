@@ -98,6 +98,8 @@ export const PullRequestAction = Schema.Literals([
   "revert",
   /** Allow Actions workflows from a fork pull request to begin running. */
   "approve-workflows",
+  /** Exclusão explícita da branch remota de um PR já integrado. */
+  "delete-branch",
 ]);
 export type PullRequestAction = typeof PullRequestAction.Type;
 

@@ -67,6 +67,12 @@ describe("RPC authorization scopes", () => {
     );
   });
 
+  it("autoriza a exclusão local com permissão de operação", () => {
+    expect(requiredScopeForRpcMethod(WS_METHODS.vcsDeleteBranch)).toBe(
+      AuthOrchestrationOperateScope,
+    );
+  });
+
   it("rejects unknown RPC method names", () => {
     for (const method of ["server.notRegistered", "toString", "constructor"]) {
       expect(() => requiredScopeForRpcMethod(method)).toThrow(

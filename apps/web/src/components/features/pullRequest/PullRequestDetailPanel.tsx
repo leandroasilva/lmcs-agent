@@ -37,6 +37,7 @@ import {
   PanelRightIcon,
   PlayIcon,
   RotateCcwIcon,
+  Trash2Icon,
   TriangleAlertIcon,
 } from "lucide-react";
 import {
@@ -157,6 +158,7 @@ import {
   resolveDisplayedPullRequestDetail,
   resolvePullRequestPrimaryControl,
   allowsSinglePullRequestMerge,
+  allowsRemoteBranchDeletion,
   resolveBaseFreshness,
   resolvePullRequestMergeMethod,
   type PullRequestFinding,
@@ -199,6 +201,7 @@ const ACTION_SUCCESS_LABELS: Record<PullRequestAction, string> = {
   "disable-auto-merge": "Auto-merge turned off",
   revert: "Revert pull request opened",
   "approve-workflows": "Workflows approved",
+  "delete-branch": "Branch remota excluída; a branch local foi preservada",
 };
 
 /** Said as the thing that did not happen, rather than as the operation that returned an error. */
@@ -213,6 +216,7 @@ const ACTION_FAILURE_LABELS: Record<PullRequestAction, string> = {
   "disable-auto-merge": "Could not turn off auto-merge",
   revert: "Could not open a revert pull request",
   "approve-workflows": "Could not approve workflows",
+  "delete-branch": "Não foi possível excluir a branch remota",
 };
 
 /** What to try, for the times the host says only that it refused. */
@@ -238,6 +242,8 @@ const ACTION_FAILURE_HINTS: Record<PullRequestAction, string> = {
     "The host refused it. Check that you have write access and that this pull request was merged on the host.",
   "approve-workflows":
     "The host refused it. Check that you have Actions write access and that these workflow runs are still awaiting approval.",
+  "delete-branch":
+    "Verifique se o PR foi integrado, se você tem permissão de escrita e se a branch não recebeu novos commits.",
 };
 
 /**
@@ -584,8 +590,15 @@ export function PullRequestDetailPanel({
   };
   const [confirmation, setConfirmation] = useState<{
     readonly open: boolean;
-    readonly action: "merge" | "close" | "enable-auto-merge" | "revert" | "approve-workflows";
+    readonly action:
+      | "merge"
+      | "close"
+      | "enable-auto-merge"
+      | "revert"
+      | "approve-workflows"
+      | "delete-branch";
   }>({ open: false, action: "merge" });
+  const [deletedBranchScope, setDeletedBranchScope] = useState<string | null>(null);
   const confirmAction = confirmation.action;
   // Which handoff is preparing, keyed so a per-finding button can say "Preparing..." on itself
   // alone. One at a time whatever the key: they all check the same pull request out.
@@ -1004,6 +1017,7 @@ export function PullRequestDetailPanel({
       onActed?.(action, "failed");
       return false;
     }
+    if (action === "delete-branch") setDeletedBranchScope(`${environmentId}:${pullRequestKey}`);
     toastManager.add({ type: "success", title: ACTION_SUCCESS_LABELS[action] });
     // A branch update moves the head commit, which leaves the diff atom pointed at a comparison
     // that no longer exists — the same staleness the manual refresh button fixes, so it goes
@@ -2237,6 +2251,25 @@ export function PullRequestDetailPanel({
                       </MenuItem>
                     </>
                   ) : null}
+                  {allowsRemoteBranchDeletion(detail) && deletedBranchScope !== tabScopeKey ? (
+                    <>
+                      <MenuSeparator />
+                      <MenuItem
+                        variant="destructive"
+                        disabled={actionPending}
+                        closeOnClick
+                        onClick={() =>
+                          setConfirmation({
+                            open: true,
+                            action: "delete-branch",
+                          })
+                        }
+                      >
+                        <Trash2Icon className="size-3.5" />
+                        Excluir branch remota
+                      </MenuItem>
+                    </>
+                  ) : null}
                 </MenuPopup>
               </Menu>
             </TooltipProvider>
@@ -2853,7 +2886,9 @@ export function PullRequestDetailPanel({
                     ? "Revert these changes?"
                     : confirmAction === "approve-workflows"
                       ? "Approve workflows to run?"
-                      : "Close pull request?"}
+                      : confirmAction === "delete-branch"
+                        ? "Excluir branch remota?"
+                        : "Close pull request?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === "merge"
@@ -2867,7 +2902,9 @@ export function PullRequestDetailPanel({
                     ? `This opens a new pull request that reverses the changes merged by #${reference.number}.`
                     : confirmAction === "approve-workflows"
                       ? `This allows ${workflowApprovalsRequired} ${workflowApprovalsRequired === 1 ? "workflow" : "workflows"} from #${reference.number} to run. Review the code and workflow changes first.`
-                      : `This closes #${reference.number} without merging it.`}
+                      : confirmAction === "delete-branch"
+                        ? `Excluir a branch remota “${detail?.headBranch}” de ${reference.repository} após o merge do PR #${reference.number}? A branch local será preservada.`
+                        : `This closes #${reference.number} without merging it.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -2876,7 +2913,11 @@ export function PullRequestDetailPanel({
             </AlertDialogClose>
             <Button
               size="sm"
-              variant={confirmAction === "close" ? "destructive" : "default"}
+              variant={
+                confirmAction === "close" || confirmAction === "delete-branch"
+                  ? "destructive"
+                  : "default"
+              }
               disabled={actionPending}
               onClick={() => {
                 const action = confirmAction;
@@ -2887,6 +2928,7 @@ export function PullRequestDetailPanel({
                 if (action === "revert") void perform("revert");
                 if (action === "approve-workflows") void perform("approve-workflows");
                 if (action === "close") void perform("close");
+                if (action === "delete-branch") void perform("delete-branch");
               }}
             >
               {confirmAction === "merge"
@@ -2897,7 +2939,9 @@ export function PullRequestDetailPanel({
                     ? "Create revert PR"
                     : confirmAction === "approve-workflows"
                       ? "Approve and run"
-                      : "Close"}
+                      : confirmAction === "delete-branch"
+                        ? "Excluir branch remota"
+                        : "Close"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogPopup>

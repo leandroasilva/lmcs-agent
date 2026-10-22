@@ -3831,30 +3831,14 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
   const deleteBranch: GitVcsDriver.GitVcsDriver["Service"]["deleteBranch"] = Effect.fn(
     "deleteBranch",
   )(function* (input) {
-    const { cwd, branch, remoteName } = input;
+    const { cwd, branch } = input;
 
-    // Delete the local branch (force to allow deleting unmerged branches).
+    // Exclui apenas a branch local, mesmo sem merge; o Git preserva branches em uso.
+    // As referências remotas pertencem ao fluxo de exclusão após o merge do PR.
     yield* executeGit("GitVcsDriver.deleteBranch.local", cwd, ["branch", "-D", "--", branch], {
       timeoutMs: 10_000,
       fallbackErrorDetail: `Failed to delete local branch ${branch}`,
-      allowNonZeroExit: true,
     });
-
-    // Remove the remote-tracking ref so it no longer appears in branch lists.
-    const remote =
-      remoteName ?? (yield* resolvePrimaryRemoteName(cwd).pipe(Effect.orElseSucceed(() => null)));
-    if (remote) {
-      yield* executeGit(
-        "GitVcsDriver.deleteBranch.remoteTracking",
-        cwd,
-        ["branch", "-D", "-r", "--", `${remote}/${branch}`],
-        {
-          timeoutMs: 10_000,
-          fallbackErrorDetail: `Failed to remove remote-tracking ref ${remote}/${branch}`,
-          allowNonZeroExit: true,
-        },
-      );
-    }
   });
 
   const switchRef: GitVcsDriver.GitVcsDriver["Service"]["switchRef"] = Effect.fn("switchRef")(

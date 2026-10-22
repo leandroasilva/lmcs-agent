@@ -198,7 +198,6 @@ export interface GitRenameBranchResult {
 export interface GitDeleteBranchInput {
   cwd: string;
   branch: string;
-  remoteName?: string;
 }
 
 export interface GitFetchPullRequestBranchInput {

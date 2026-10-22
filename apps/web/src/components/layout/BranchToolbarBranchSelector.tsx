@@ -1011,11 +1011,10 @@ export function BranchToolbarBranchSelector({
       >
         <AlertDialogPopup>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete branch</AlertDialogTitle>
+            <AlertDialogTitle>Excluir branch local</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <code className="font-medium">{deleteConfirmBranch}</code>? This action cannot be
-              undone.
+              Excluir a branch local <code className="font-medium">{deleteConfirmBranch}</code>?
+              Commits não integrados podem ser perdidos. A branch remota será preservada.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

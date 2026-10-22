@@ -148,6 +148,7 @@ import * as ServerRuntimeStartup from "./serverRuntimeStartup.ts";
 import * as ServiceLauncherClient from "./cloud/serviceLauncherClient.ts";
 import * as ServerSettings from "./serverSettings.ts";
 import * as TerminalManager from "./terminal/Manager.ts";
+import * as TextGeneration from "./textGeneration/TextGeneration.ts";
 import * as ProjectCloneTracker from "./project/ProjectCloneTracker.ts";
 import * as WorktreeSetupTracker from "./project/WorktreeSetupTracker.ts";
 import * as PreviewManager from "./preview/Manager.ts";
@@ -562,7 +563,9 @@ const buildAppUnderTest = (options?: {
 }) =>
   Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
-    const tempBaseDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-router-test-" });
+    const tempBaseDir = yield* fileSystem.makeTempDirectoryScoped({
+      prefix: "lmcs-router-test-",
+    });
     const baseDir = options?.config?.baseDir ?? tempBaseDir;
     const devUrl = options?.config?.devUrl;
     const derivedPaths = yield* ServerConfig.deriveServerPaths(baseDir, devUrl);
@@ -791,7 +794,10 @@ const buildAppUnderTest = (options?: {
             refreshInstance: () => Effect.succeed([]),
             getProviderMaintenanceCapabilitiesForInstance: (_instanceId, provider) =>
               Effect.succeed(
-                makeManualOnlyProviderMaintenanceCapabilities({ provider, packageName: null }),
+                makeManualOnlyProviderMaintenanceCapabilities({
+                  provider,
+                  packageName: null,
+                }),
               ),
             setProviderMaintenanceActionState: () => Effect.succeed([]),
             streamChanges: Stream.empty,
@@ -931,6 +937,7 @@ const buildAppUnderTest = (options?: {
             ...options?.layers?.terminalManager,
           }),
           WorktreeSetupTracker.layer,
+          Layer.mock(TextGeneration.TextGeneration)({}),
           ProjectCloneTracker.layer.pipe(
             Layer.provide(
               Layer.mock(SourceControlRepositoryService.SourceControlRepositoryService)({
@@ -949,7 +956,12 @@ const buildAppUnderTest = (options?: {
             reportStatus: () => Effect.void,
             refresh: () => Effect.void,
             close: () => Effect.void,
-            list: () => Effect.succeed({ sessions: [], serverEpoch: "test-server", revision: 0 }),
+            list: () =>
+              Effect.succeed({
+                sessions: [],
+                serverEpoch: "test-server",
+                revision: 0,
+              }),
             events: Stream.empty,
             subscribeEvents: Effect.flatMap(PubSub.unbounded<PreviewEvent>(), (pubsub) =>
               PubSub.subscribe(pubsub),
@@ -1397,7 +1409,10 @@ const makeDpopProof = (input: {
           const { privateKey, publicKey } = NodeCrypto.generateKeyPairSync("ec", {
             namedCurve: "P-256",
           });
-          return { privateKey, publicJwk: publicKey.export({ format: "jwk" }) as DpopPublicJwk };
+          return {
+            privateKey,
+            publicJwk: publicKey.export({ format: "jwk" }) as DpopPublicJwk,
+          };
         })();
   const header = Buffer.from(
     JSON.stringify({
@@ -1541,7 +1556,11 @@ const fetchEffect = (input: Parameters<typeof fetch>[0], init?: RequestInit) => 
   const effect = HttpClient.execute(request);
   return (
     init?.redirect === "manual"
-      ? effect.pipe(Effect.provideService(FetchHttpClient.RequestInit, { redirect: "manual" }))
+      ? effect.pipe(
+          Effect.provideService(FetchHttpClient.RequestInit, {
+            redirect: "manual",
+          }),
+        )
       : effect
   ).pipe(Effect.mapError((cause) => new TestHttpRequestError({ cause })));
 };
@@ -1704,7 +1723,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-router-gate-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-router-gate-",
+      });
       yield* fileSystem.writeFileString(path.join(staticDir, "index.html"), "ready");
       const entered = yield* Deferred.make<void>();
       const ready = yield* Deferred.make<void>();
@@ -1755,7 +1776,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-static-cache-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-static-cache-",
+      });
       const assetPath = path.join(staticDir, "app.js");
       yield* fileSystem.writeFileString(assetPath, 'export const build = "first";');
       yield* buildAppUnderTest({ config: { staticDir } });
@@ -1791,7 +1814,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.include(yield* mismatched.text, "first");
 
       yield* fileSystem.writeFileString(assetPath, 'export const build = "the next build";');
-      const changed = yield* HttpClient.get("/app.js", { headers: { "if-none-match": etag! } });
+      const changed = yield* HttpClient.get("/app.js", {
+        headers: { "if-none-match": etag! },
+      });
       assert.equal(changed.status, 200);
       assert.notEqual(changed.headers.etag, etag);
       assert.include(yield* changed.text, "next build");
@@ -1802,7 +1827,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-static-html-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-static-html-",
+      });
       const indexPath = path.join(staticDir, "index.html");
       const modifiedAt = DateTime.toDateUtc(DateTime.makeUnsafe("1985-10-26T08:15:00.000Z"));
       yield* fileSystem.writeFileString(indexPath, "<html>old build</html>");
@@ -1830,7 +1857,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       }
 
       const head = yield* HttpClient.head("/", {
-        headers: { "if-none-match": previousEtag, "accept-encoding": "identity" },
+        headers: {
+          "if-none-match": previousEtag,
+          "accept-encoding": "identity",
+        },
       });
       assert.equal(head.status, 200);
       assert.equal(head.headers["content-length"], String(Buffer.byteLength(nextHtml)));
@@ -1896,7 +1926,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.equal(compressedHead.headers["content-length"], compressed.headers["content-length"]);
       assert.equal(yield* compressedHead.text, "");
       const unchanged = yield* HttpClient.get("/assets/large-aBcD9876.js", {
-        headers: { "accept-encoding": "identity", "if-none-match": compressed.headers.etag! },
+        headers: {
+          "accept-encoding": "identity",
+          "if-none-match": compressed.headers.etag!,
+        },
       });
       assert.equal(unchanged.status, 304);
       assert.equal(unchanged.headers.vary, "Accept-Encoding");
@@ -1920,7 +1953,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
   for (const manifest of [
     { label: "missing", contents: null },
-    { label: "nonmatching", contents: '{"other.js":{"file":"assets/other-AbCd0123.js"}}' },
+    {
+      label: "nonmatching",
+      contents: '{"other.js":{"file":"assets/other-AbCd0123.js"}}',
+    },
     { label: "malformed", contents: "{not-json" },
   ]) {
     it.effect(`revalidates hash-like static filenames with a ${manifest.label} manifest`, () =>
@@ -2028,7 +2064,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const staticDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-static-close-" });
+      const staticDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-static-close-",
+      });
       const filePath = path.join(staticDir, "app.txt");
       const body = "file content\n".repeat(1024);
       yield* fileSystem.writeFileString(filePath, body);
@@ -2082,7 +2120,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.isAbove(bodyReads, 0);
       const readsAfterGet = bodyReads;
 
-      const head = yield* HttpClient.head("/app.txt", { headers: { "accept-encoding": "gzip" } });
+      const head = yield* HttpClient.head("/app.txt", {
+        headers: { "accept-encoding": "gzip" },
+      });
       assert.equal(head.status, 200);
       assert.equal(head.headers["content-encoding"], "gzip");
       assert.equal(yield* head.text, "");
@@ -2283,7 +2323,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
   it.effect("migrates a valid legacy remote-web session cookie", () =>
     Effect.gen(function* () {
-      yield* buildAppUnderTest({ config: { mode: "web", host: "192.168.1.50" } });
+      yield* buildAppUnderTest({
+        config: { mode: "web", host: "192.168.1.50" },
+      });
 
       const { cookie } = yield* bootstrapBrowserSession();
       const currentCookie = cookie?.split(";")[0] ?? "";
@@ -2292,7 +2334,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const response = yield* fetchEffect(sessionUrl, {
         headers: { cookie: legacyCookie },
       });
-      const body = yield* responseJsonEffect<{ readonly authenticated: boolean }>(response);
+      const body = yield* responseJsonEffect<{
+        readonly authenticated: boolean;
+      }>(response);
 
       assert.equal(body.authenticated, true);
       assert.equal(response.headers["set-cookie"], cookie);
@@ -2304,7 +2348,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     "does not migrate a stale legacy cookie when %s auth succeeds",
     (source) =>
       Effect.gen(function* () {
-        yield* buildAppUnderTest({ config: { mode: "web", host: "192.168.1.50" } });
+        yield* buildAppUnderTest({
+          config: { mode: "web", host: "192.168.1.50" },
+        });
 
         const { cookie } = yield* bootstrapBrowserSession();
         const sessionCookie = cookie?.split(";")[0] ?? "";
@@ -2314,9 +2360,14 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           headers:
             source === "cookie"
               ? { cookie: `${sessionCookie}; t3_session=stale` }
-              : { authorization: `Bearer ${sessionToken}`, cookie: "t3_session=stale" },
+              : {
+                  authorization: `Bearer ${sessionToken}`,
+                  cookie: "t3_session=stale",
+                },
         });
-        const body = yield* responseJsonEffect<{ readonly authenticated: boolean }>(response);
+        const body = yield* responseJsonEffect<{
+          readonly authenticated: boolean;
+        }>(response);
 
         assert.equal(body.authenticated, true);
         assert.isUndefined(response.headers["set-cookie"]);
@@ -2392,7 +2443,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         const response = yield* HttpClient.get("/api/auth/session", {
           headers: { authorization: `Bearer ${previous.body.access_token}` },
         });
-        const state = (yield* response.json) as { readonly authenticated: boolean };
+        const state = (yield* response.json) as {
+          readonly authenticated: boolean;
+        };
         assert.equal(state.authenticated, false);
       }
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
@@ -2470,7 +2523,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           headers: { cookie: ownerCookie },
           body: yield* HttpBody.json({}),
         });
-        const credential = (yield* credentialResponse.json) as { readonly credential: string };
+        const credential = (yield* credentialResponse.json) as {
+          readonly credential: string;
+        };
         const tokenUrl = yield* getHttpServerUrl("/oauth/token");
         const now = yield* DateTime.now;
         const tokenProof = makeDpopProof({
@@ -2506,9 +2561,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         const bearerResponse = yield* fetchEffect(sessionUrl, {
           headers: { authorization: `Bearer ${token.access_token}` },
         });
-        const bearerState = yield* responseJsonEffect<{ readonly authenticated: boolean }>(
-          bearerResponse,
-        );
+        const bearerState = yield* responseJsonEffect<{
+          readonly authenticated: boolean;
+        }>(bearerResponse);
         assert.equal(bearerState.authenticated, false);
 
         const sessionProof = makeDpopProof({
@@ -2544,7 +2599,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         headers: { cookie: ownerCookie },
         body: yield* HttpBody.json({}),
       });
-      const credential = (yield* credentialResponse.json) as { readonly credential: string };
+      const credential = (yield* credentialResponse.json) as {
+        readonly credential: string;
+      };
       const tokenUrl = yield* getHttpServerUrl("/oauth/token");
       const now = yield* DateTime.now;
       const dpop = makeDpopProof({
@@ -2950,7 +3007,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         headers: { cookie: ownerCookie },
         body: yield* HttpBody.json({}),
       });
-      const credential = (yield* credentialResponse.json) as { readonly credential: string };
+      const credential = (yield* credentialResponse.json) as {
+        readonly credential: string;
+      };
       const pairedCookie = yield* getAuthenticatedSessionCookieHeader(credential.credential);
       const linkStateUrl = yield* getHttpServerUrl("/api/connect/link-state");
       const response = yield* fetchEffect(linkStateUrl, {
@@ -3037,7 +3096,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         headers: { cookie: ownerCookie },
         body: yield* HttpBody.json({}),
       });
-      const credential = (yield* credentialResponse.json) as { readonly credential: string };
+      const credential = (yield* credentialResponse.json) as {
+        readonly credential: string;
+      };
       const pairedCookie = yield* getAuthenticatedSessionCookieHeader(credential.credential);
       const pairedResponse = yield* fetchEffect(preferencesUrl, {
         method: "POST",
@@ -3138,18 +3199,18 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         cloudUserId: "user_123",
         environmentCredential: "   ",
       });
-      const insecureRelayUrlBody = yield* responseJsonEffect<{ readonly message?: string }>(
-        insecureRelayUrl,
-      );
-      const insecureRelayIssuerBody = yield* responseJsonEffect<{ readonly message?: string }>(
-        insecureRelayIssuer,
-      );
-      const nonOriginRelayUrlBody = yield* responseJsonEffect<{ readonly message?: string }>(
-        nonOriginRelayUrl,
-      );
-      const emptyCredentialBody = yield* responseJsonEffect<{ readonly message?: string }>(
-        emptyCredential,
-      );
+      const insecureRelayUrlBody = yield* responseJsonEffect<{
+        readonly message?: string;
+      }>(insecureRelayUrl);
+      const insecureRelayIssuerBody = yield* responseJsonEffect<{
+        readonly message?: string;
+      }>(insecureRelayIssuer);
+      const nonOriginRelayUrlBody = yield* responseJsonEffect<{
+        readonly message?: string;
+      }>(nonOriginRelayUrl);
+      const emptyCredentialBody = yield* responseJsonEffect<{
+        readonly message?: string;
+      }>(emptyCredential);
 
       assert.equal(insecureRelayUrl.status, 400);
       assert.equal(insecureRelayUrlBody.message, "Relay URL must be a secure absolute HTTPS URL.");
@@ -3219,7 +3280,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                 appliedRuntimeConfigs.push(config);
                 return config === null
                   ? ({ status: "disabled" } as const)
-                  : ({ status: "unsupported", providerKind: config.providerKind } as const);
+                  : ({
+                      status: "unsupported",
+                      providerKind: config.providerKind,
+                    } as const);
               }),
           },
         },
@@ -3256,9 +3320,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const linkStateResponse = yield* fetchEffect(linkStateUrl, {
         headers: { cookie: ownerCookie },
       });
-      const linkStateBody = yield* responseJsonEffect<{ readonly linked?: boolean }>(
-        linkStateResponse,
-      );
+      const linkStateBody = yield* responseJsonEffect<{
+        readonly linked?: boolean;
+      }>(linkStateResponse);
 
       assert.equal(relayConfigResponse.status, 503);
       assert.equal(relayConfigBody._tag, "EnvironmentCloudEndpointUnavailableError");
@@ -3770,7 +3834,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                 appliedRuntimeConfigs.push(config);
                 return config === null
                   ? ({ status: "disabled" } as const)
-                  : ({ status: "running", providerKind: "cloudflare_tunnel", pid: 123 } as const);
+                  : ({
+                      status: "running",
+                      providerKind: "cloudflare_tunnel",
+                      pid: 123,
+                    } as const);
               }),
           },
           httpClient: HttpClient.make((request) =>
@@ -3809,9 +3877,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           },
         }),
       });
-      const relayConfigBody = yield* responseJsonEffect<{ readonly _tag?: string }>(
-        relayConfigResponse,
-      );
+      const relayConfigBody = yield* responseJsonEffect<{
+        readonly _tag?: string;
+      }>(relayConfigResponse);
 
       assert.equal(relayConfigResponse.status, 500);
       assert.equal(relayConfigBody._tag, "EnvironmentHttpInternalServerError");
@@ -3835,7 +3903,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                   appliedRuntimeConfigs.push(config);
                   return config === null
                     ? ({ status: "disabled" } as const)
-                    : ({ status: "running", providerKind: "cloudflare_tunnel", pid: 123 } as const);
+                    : ({
+                        status: "running",
+                        providerKind: "cloudflare_tunnel",
+                        pid: 123,
+                      } as const);
                 }),
               requestRecovery: (config) =>
                 Effect.sync(() => {
@@ -4362,7 +4434,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
       const { response: exchangeResponse, body: tokenBody } = yield* exchangeAccessToken(
         defaultDesktopBootstrapToken,
-        { scope: "access:write" },
+        {
+          scope: "access:write",
+        },
       );
       assert.equal(exchangeResponse.status, 200);
       assert.equal(tokenBody.scope, "access:write");
@@ -4388,7 +4462,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           authorization: `Bearer ${tokenBody.access_token ?? ""}`,
         },
       });
-      const wsTicketBody = (yield* wsTicketResponse.json) as { readonly ticket: string };
+      const wsTicketBody = (yield* wsTicketResponse.json) as {
+        readonly ticket: string;
+      };
       assert.equal(overbroadPairingResponse.status, 403);
       assert.equal(overbroadPairingBody.requiredScope, "orchestration:read");
       assert.equal(pairingResponse.status, 200);
@@ -4676,7 +4752,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         headers: { cookie: yield* getAuthenticatedSessionCookieHeader() },
         body: yield* HttpBody.json({ label: "Synthetic phone" }),
       });
-      const created = (yield* createdResponse.json) as { id: string; credential: string };
+      const created = (yield* createdResponse.json) as {
+        id: string;
+        credential: string;
+      };
       assert.equal(createdResponse.status, 200);
       const response = yield* HttpClient.get("/api/auth/pairing-links", {
         headers: { authorization: `Bearer ${reader.body.access_token ?? ""}` },
@@ -4700,18 +4779,24 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       });
 
       const unauthorizedCreate = yield* HttpClient.post("/api/auth/pairing-token", {
-        headers: { authorization: `Bearer ${reader.body.access_token ?? ""}` },
+        headers: {
+          authorization: `Bearer ${reader.body.access_token ?? ""}`,
+        },
         body: yield* HttpBody.json({}),
       });
       assert.equal(unauthorizedCreate.status, 403);
-      const idExchange = yield* exchangeAccessToken(created.id, { scope: "terminal:operate" });
+      const idExchange = yield* exchangeAccessToken(created.id, {
+        scope: "terminal:operate",
+      });
       assert.equal(idExchange.response.status, 401);
       const authorized = yield* exchangeAccessToken(created.credential, {
         scope: AuthStandardClientScopes.join(" "),
       });
       assert.equal(authorized.response.status, 200);
       assert.equal(authorized.body.scope, AuthStandardClientScopes.join(" "));
-      const reused = yield* exchangeAccessToken(created.credential, { scope: "terminal:operate" });
+      const reused = yield* exchangeAccessToken(created.credential, {
+        scope: "terminal:operate",
+      });
       assert.equal(reused.response.status, 401);
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
@@ -4739,7 +4824,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       });
       assert.equal(reader.body.scope, "access:read");
       const ticketResponse = yield* HttpClient.post("/api/auth/websocket-ticket", {
-        headers: { authorization: `Bearer ${reader.body.access_token ?? ""}` },
+        headers: {
+          authorization: `Bearer ${reader.body.access_token ?? ""}`,
+        },
       });
       assert.equal(ticketResponse.status, 200);
       const { ticket } = (yield* ticketResponse.json) as { ticket: string };
@@ -5547,7 +5634,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       yield* buildAppUnderTest();
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const directory = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-host-media-" });
+      const directory = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-host-media-",
+      });
       const wsUrl = yield* getWsServerUrl("/ws");
       const threadId = ThreadId.make("thread-on-another-environment");
 
@@ -5585,14 +5674,20 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const wsUrl = yield* getWsServerUrl("/ws");
-      const directory = yield* fileSystem.makeTempDirectoryScoped({ prefix: "lmcs-draft-media-" });
+      const directory = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "lmcs-draft-media-",
+      });
       yield* fileSystem.writeFileString(path.join(directory, "note.html"), "<p>draft</p>");
 
       yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
           Effect.gen(function* () {
             const issued = yield* client[WS_METHODS.assetsCreateUrl]({
-              resource: { _tag: "draft-workspace-file", cwd: directory, path: "note.html" },
+              resource: {
+                _tag: "draft-workspace-file",
+                cwd: directory,
+                path: "note.html",
+              },
             });
             const response = yield* HttpClient.get(issued.relativeUrl);
             assert.equal(response.status, 200);
@@ -5634,7 +5729,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
             const attachmentPath = path.join(config.attachmentsDir, `${issued.attachmentId}.png`);
             assert.isTrue(yield* fileSystem.exists(attachmentPath));
 
-            yield* client[WS_METHODS.attachmentsDelete]({ attachmentId: issued.attachmentId });
+            yield* client[WS_METHODS.attachmentsDelete]({
+              attachmentId: issued.attachmentId,
+            });
             assert.isFalse(yield* fileSystem.exists(attachmentPath));
 
             const streamed = yield* client[WS_METHODS.attachmentsCreateUploadUrl]({
@@ -5646,7 +5743,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               body: HttpBody.stream(Stream.make(new Uint8Array([1, 2, 3, 4, 5, 6])), "image/png"),
             });
             assert.equal(streamedResponse.status, 204);
-            yield* client[WS_METHODS.attachmentsDelete]({ attachmentId: streamed.attachmentId });
+            yield* client[WS_METHODS.attachmentsDelete]({
+              attachmentId: streamed.attachmentId,
+            });
 
             const uploadedFile = yield* client[WS_METHODS.attachmentsCreateUploadUrl]({
               type: "file",
@@ -5687,7 +5786,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
             // Old clients mint without name or mime and still get a download.
             const bareDownload = yield* client[WS_METHODS.assetsCreateUrl]({
-              resource: { _tag: "attachment", attachmentId: uploadedFile.attachmentId },
+              resource: {
+                _tag: "attachment",
+                attachmentId: uploadedFile.attachmentId,
+              },
             });
             const bareResponse = yield* HttpClient.get(bareDownload.relativeUrl);
             assert.equal(bareResponse.status, 200);
@@ -5838,7 +5940,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-auth-required-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "lmcs-ws-auth-required-",
+      });
       yield* fs.writeFileString(
         path.join(workspaceDir, "needle-file.ts"),
         "export const needle = 1;",
@@ -5909,9 +6013,13 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       });
       assert.equal(token.response.status, 200);
       const ticketResponse = yield* HttpClient.post("/api/auth/websocket-ticket", {
-        headers: { authorization: `Bearer ${token.body.access_token ?? ""}` },
+        headers: {
+          authorization: `Bearer ${token.body.access_token ?? ""}`,
+        },
       });
-      const { ticket } = yield* responseJsonEffect<{ readonly ticket: string }>(ticketResponse);
+      const { ticket } = yield* responseJsonEffect<{
+        readonly ticket: string;
+      }>(ticketResponse);
       const wsUrl = `${yield* getWsServerUrl("/ws", { authenticated: false })}?wsTicket=${encodeURIComponent(ticket)}`;
       yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
@@ -5970,7 +6078,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
             start: (input, ownerSessionId) =>
               Effect.sync(() => {
                 flowOwner = ownerSessionId;
-                calls.push({ operation: "start", instanceId: input.instanceId, ownerSessionId });
+                calls.push({
+                  operation: "start",
+                  instanceId: input.instanceId,
+                  ownerSessionId,
+                });
                 return waiting;
               }),
             subscribe: (input, ownerSessionId) =>
@@ -5983,12 +6095,21 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                   });
                   return ownerSessionId === flowOwner
                     ? waiting
-                    : { ...waiting, flowId: null, authorizationUrl: null, expiresAt: null };
+                    : {
+                        ...waiting,
+                        flowId: null,
+                        authorizationUrl: null,
+                        expiresAt: null,
+                      };
                 }),
               ),
             complete: (input, ownerSessionId) =>
               Effect.gen(function* () {
-                calls.push({ operation: "complete", instanceId: input.instanceId, ownerSessionId });
+                calls.push({
+                  operation: "complete",
+                  instanceId: input.instanceId,
+                  ownerSessionId,
+                });
                 if (ownerSessionId !== flowOwner) {
                   return yield* new ProviderSetupError({
                     instanceId: input.instanceId,
@@ -5998,13 +6119,25 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                 }
                 assert.equal(input.flowId, flowId);
                 forwardedCallbacks.push(input.callbackUrl);
-                return { ...waiting, phase: "verifying" as const, authorizationUrl: null };
+                return {
+                  ...waiting,
+                  phase: "verifying" as const,
+                  authorizationUrl: null,
+                };
               }),
             cancel: (input, ownerSessionId) =>
               Effect.sync(() => {
                 assert.equal(input.flowId, flowId);
-                calls.push({ operation: "cancel", instanceId: input.instanceId, ownerSessionId });
-                return { ...providerSetupAuthState, phase: "cancelled" as const, flowId };
+                calls.push({
+                  operation: "cancel",
+                  instanceId: input.instanceId,
+                  ownerSessionId,
+                });
+                return {
+                  ...providerSetupAuthState,
+                  phase: "cancelled" as const,
+                  flowId,
+                };
               }),
             logout: (input) =>
               Effect.sync(() => {
@@ -6021,7 +6154,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       }).pipe(
         Effect.flatMap(
           responseJsonEffect<
-            ReadonlyArray<{ readonly sessionId: string; readonly current: boolean }>
+            ReadonlyArray<{
+              readonly sessionId: string;
+              readonly current: boolean;
+            }>
           >,
         ),
       );
@@ -6030,7 +6166,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       }).pipe(
         Effect.flatMap(
           responseJsonEffect<
-            ReadonlyArray<{ readonly sessionId: string; readonly current: boolean }>
+            ReadonlyArray<{
+              readonly sessionId: string;
+              readonly current: boolean;
+            }>
           >,
         ),
       );
@@ -6039,7 +6178,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       assert.isString(firstOwner);
       assert.isString(secondOwner);
       assert.notEqual(firstOwner, secondOwner);
-      const baseWsUrl = yield* getWsServerUrl("/ws", { authenticated: false });
+      const baseWsUrl = yield* getWsServerUrl("/ws", {
+        authenticated: false,
+      });
       const target = {
         instanceId: providerSetupInstanceId,
         ownerSessionId: "client-supplied-owner",
@@ -6062,7 +6203,12 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                   ).pipe(Stream.runHead, Effect.map(Option.getOrThrow));
                   assert.isNull(otherState.authorizationUrl);
                   assert.isNull(otherState.flowId);
-                  const forged = { ...target, ownerSessionId: firstOwner, flowId, callbackUrl };
+                  const forged = {
+                    ...target,
+                    ownerSessionId: firstOwner,
+                    flowId,
+                    callbackUrl,
+                  };
                   const denied = yield* otherClient[WS_METHODS.providerAuthComplete](forged).pipe(
                     Effect.flip,
                   );
@@ -6077,7 +6223,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               callbackUrl,
             });
             assert.equal(completed.phase, "verifying");
-            const cancelled = yield* client[WS_METHODS.providerAuthCancel]({ ...target, flowId });
+            const cancelled = yield* client[WS_METHODS.providerAuthCancel]({
+              ...target,
+              flowId,
+            });
             assert.equal(cancelled.phase, "cancelled");
             const signedOut = yield* client[WS_METHODS.providerAuthLogout](target);
             assert.equal(signedOut.phase, "idle");
@@ -6259,7 +6408,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           ({
             instanceId,
             driverKind: driver,
-            continuationIdentity: { driverKind: driver, continuationKey: instanceId },
+            continuationIdentity: {
+              driverKind: driver,
+              continuationKey: instanceId,
+            },
             displayName: undefined,
             enabled: true,
             invalidateCaches: Effect.sync(() => {
@@ -6308,8 +6460,13 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                 return ModelManifest.BUNDLED_MODEL_MANIFEST;
               }),
             },
-            providerInstanceRegistry: { listInstances: Effect.succeed(instances) },
-            providerRegistry: { refresh: () => probe, refreshInstance: () => probe },
+            providerInstanceRegistry: {
+              listInstances: Effect.succeed(instances),
+            },
+            providerRegistry: {
+              refresh: () => probe,
+              refreshInstance: () => probe,
+            },
           },
         });
         const wsUrl = yield* getWsServerUrl("/ws");
@@ -6484,10 +6641,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const wsUrl = yield* getWsServerUrl("/ws");
       const events = yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
-          client[WS_METHODS.subscribeServerConfig]({ environmentThemes: true }).pipe(
-            Stream.take(2),
-            Stream.runCollect,
-          ),
+          client[WS_METHODS.subscribeServerConfig]({
+            environmentThemes: true,
+          }).pipe(Stream.take(2), Stream.runCollect),
         ),
       );
 
@@ -6557,7 +6713,12 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                   usageLimits: {
                     checkedAt: "2026-04-11T00:00:00.000Z",
                     windows: [
-                      { id: "weekly", kind: "weekly" as const, label: "Weekly", usedPercent: 25 },
+                      {
+                        id: "weekly",
+                        kind: "weekly" as const,
+                        label: "Weekly",
+                        usedPercent: 25,
+                      },
                     ],
                   },
                 }
@@ -6584,10 +6745,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         const wsUrl = yield* getWsServerUrl("/ws");
         const events = yield* Effect.scoped(
           withWsRpcClient(wsUrl, (client) =>
-            client[WS_METHODS.subscribeServerConfig]({ usageLimitsCommand: true }).pipe(
-              Stream.take(2),
-              Stream.runCollect,
-            ),
+            client[WS_METHODS.subscribeServerConfig]({
+              usageLimitsCommand: true,
+            }).pipe(Stream.take(2), Stream.runCollect),
           ),
         );
 
@@ -6636,7 +6796,14 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           skills: [],
           usageLimits: {
             checkedAt: "2026-04-11T00:00:00.000Z",
-            windows: [{ id: "weekly", kind: "weekly" as const, label: "Weekly", usedPercent: 25 }],
+            windows: [
+              {
+                id: "weekly",
+                kind: "weekly" as const,
+                label: "Weekly",
+                usedPercent: 25,
+              },
+            ],
           },
         };
         yield* buildAppUnderTest({
@@ -6701,7 +6868,12 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               usageLimits: {
                 checkedAt: "2026-04-11T00:00:00.000Z",
                 windows: [
-                  { id: "weekly", kind: "weekly" as const, label: "Weekly", usedPercent: 25 },
+                  {
+                    id: "weekly",
+                    kind: "weekly" as const,
+                    label: "Weekly",
+                    usedPercent: 25,
+                  },
                 ],
               },
             },
@@ -6730,10 +6902,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         const wsUrl = yield* getWsServerUrl("/ws");
         const events = yield* Effect.scoped(
           withWsRpcClient(wsUrl, (client) =>
-            client[WS_METHODS.subscribeServerConfig]({ usageLimitsCommand: true }).pipe(
-              Stream.take(2),
-              Stream.runCollect,
-            ),
+            client[WS_METHODS.subscribeServerConfig]({
+              usageLimitsCommand: true,
+            }).pipe(Stream.take(2), Stream.runCollect),
           ),
         );
 
@@ -6750,7 +6921,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               {
                 ...codex,
                 slashCommands: [
-                  { name: "usage-limits", description: "Show this provider's usage limits" },
+                  {
+                    name: "usage-limits",
+                    description: "Show this provider's usage limits",
+                  },
                 ],
               },
             ],
@@ -6779,7 +6953,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           version: 1 as const,
           sequence: 2,
           type: "ready" as const,
-          payload: { at: "2026-01-01T00:00:00.000Z", environment: testEnvironmentDescriptor },
+          payload: {
+            at: "2026-01-01T00:00:00.000Z",
+            environment: testEnvironmentDescriptor,
+          },
         });
 
         yield* buildAppUnderTest({
@@ -6846,7 +7023,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         version: 1 as const,
         sequence: 3,
         type: "ready" as const,
-        payload: { at: "2026-01-01T00:00:01.000Z", environment: testEnvironmentDescriptor },
+        payload: {
+          at: "2026-01-01T00:00:01.000Z",
+          environment: testEnvironmentDescriptor,
+        },
       };
       const liveStream = Stream.unwrap(
         Effect.gen(function* () {
@@ -6905,7 +7085,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-search-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "lmcs-ws-project-search-",
+      });
       yield* fs.writeFileString(
         path.join(workspaceDir, "needle-file.ts"),
         "export const needle = 1;",
@@ -6934,8 +7116,12 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-files-" });
-      yield* fs.makeDirectory(path.join(workspaceDir, "src"), { recursive: true });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "lmcs-ws-project-files-",
+      });
+      yield* fs.makeDirectory(path.join(workspaceDir, "src"), {
+        recursive: true,
+      });
       yield* fs.writeFileString(
         path.join(workspaceDir, "src", "index.ts"),
         "export const answer = 42;\n",
@@ -6947,7 +7133,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const response = yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
           Effect.all({
-            listing: client[WS_METHODS.projectsListEntries]({ cwd: workspaceDir }),
+            listing: client[WS_METHODS.projectsListEntries]({
+              cwd: workspaceDir,
+            }),
             file: client[WS_METHODS.projectsReadFile]({
               cwd: workspaceDir,
               relativePath: "src/index.ts",
@@ -6974,12 +7162,16 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         prefix: "lmcs-ws-project-search-gitignored-",
       });
       yield* fs.writeFileString(path.join(workspaceDir, ".gitignore"), ".venv/\n");
-      yield* fs.makeDirectory(path.join(workspaceDir, ".venv", "lib"), { recursive: true });
+      yield* fs.makeDirectory(path.join(workspaceDir, ".venv", "lib"), {
+        recursive: true,
+      });
       yield* fs.writeFileString(
         path.join(workspaceDir, ".venv", "lib", "ignored-search-target.ts"),
         "export const ignored = true;",
       );
-      yield* fs.makeDirectory(path.join(workspaceDir, "src"), { recursive: true });
+      yield* fs.makeDirectory(path.join(workspaceDir, "src"), {
+        recursive: true,
+      });
       yield* fs.writeFileString(
         path.join(workspaceDir, "src", "tracked.ts"),
         "export const ok = 1;",
@@ -7052,9 +7244,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               query: sensitiveQuery,
               limit: 10,
             }).pipe(Effect.result),
-            list: client[WS_METHODS.projectsListEntries]({ cwd: invalidWorkspace }).pipe(
-              Effect.result,
-            ),
+            list: client[WS_METHODS.projectsListEntries]({
+              cwd: invalidWorkspace,
+            }).pipe(Effect.result),
             read: client[WS_METHODS.projectsReadFile]({
               cwd: workspaceDir,
               relativePath: "linked-outside.txt",
@@ -7152,7 +7344,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         const wsUrl = yield* getWsServerUrl("/ws");
         return yield* Effect.scoped(
           withWsRpcClient(wsUrl, (client) =>
-            client[WS_METHODS.projectsListEntries]({ cwd: workspaceRoot }).pipe(Effect.result),
+            client[WS_METHODS.projectsListEntries]({
+              cwd: workspaceRoot,
+            }).pipe(Effect.result),
           ),
         );
       }).pipe(Effect.ensuring(fs.chmod(blockedRoot, 0o700).pipe(Effect.ignore)));
@@ -7171,7 +7365,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-write-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "lmcs-ws-project-write-",
+      });
 
       yield* buildAppUnderTest();
 
@@ -7196,7 +7392,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const parentDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-create-" });
+      const parentDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "lmcs-ws-project-create-",
+      });
       const missingWorkspaceRoot = path.join(parentDir, "nested", "new-project");
 
       yield* buildAppUnderTest();
@@ -7230,7 +7428,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const parentDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-clone-" });
+      const parentDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "lmcs-ws-project-clone-",
+      });
       const destinationPath = path.join(parentDir, "t3code");
       const projectId = ProjectId.make("project-clone-1");
       const dispatched: Array<string> = [];
@@ -7553,7 +7753,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
   it.effect("routes websocket rpc projects.writeFile errors", () =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
-      const workspaceDir = yield* fs.makeTempDirectoryScoped({ prefix: "lmcs-ws-project-write-" });
+      const workspaceDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "lmcs-ws-project-write-",
+      });
 
       yield* buildAppUnderTest();
 
@@ -7637,6 +7839,84 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       );
 
       assertFailure(result, externalLauncherError);
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("exclusão local mantém a conexão RPC após sucesso e erro do Git", () =>
+    Effect.gen(function* () {
+      const deletedBranches: string[] = [];
+      const deleteError = new GitCommandError({
+        operation: "GitVcsDriver.deleteBranch.local",
+        command: "git branch -D",
+        cwd: "/tmp/repo",
+        detail: "A branch está em uso.",
+      });
+      // @effect-diagnostics-next-line anyUnknownInErrorContext:off - o fixture compartilhado propaga o contexto dos mocks; o teste fornece NodeHttpServer e NodeServices.
+      yield* buildAppUnderTest({
+        layers: {
+          vcsDriver: { isInsideWorkTree: () => Effect.succeed(true) },
+          gitVcsDriver: {
+            deleteBranch: (input) =>
+              input.branch === "main"
+                ? Effect.fail(deleteError)
+                : Effect.sync(() => {
+                    deletedBranches.push(input.branch);
+                  }),
+            listRefs: () =>
+              Effect.succeed({
+                refs: [
+                  {
+                    name: "main",
+                    current: true,
+                    isDefault: true,
+                    worktreePath: null,
+                  },
+                ],
+                isRepo: true,
+                hasPrimaryRemote: false,
+                nextCursor: null,
+                totalCount: 1,
+              }),
+          },
+          vcsStatusBroadcaster: {
+            refreshStatus: () =>
+              Effect.succeed({
+                isRepo: true,
+                hasPrimaryRemote: false,
+                isDefaultRef: true,
+                refName: "main",
+                hasWorkingTreeChanges: false,
+                workingTree: { files: [], insertions: 0, deletions: 0 },
+                hasUpstream: false,
+                aheadCount: 0,
+                behindCount: 0,
+                pr: null,
+              }),
+          },
+        },
+      });
+      const wsUrl = yield* getWsServerUrl("/ws");
+      yield* Effect.scoped(
+        withWsRpcClient(wsUrl, (client) =>
+          Effect.gen(function* () {
+            yield* client[WS_METHODS.vcsDeleteBranch]({
+              cwd: "/tmp/repo",
+              branch: "feature/local",
+            });
+            assert.deepEqual(deletedBranches, ["feature/local"]);
+            const failure = yield* client[WS_METHODS.vcsDeleteBranch]({
+              cwd: "/tmp/repo",
+              branch: "main",
+            }).pipe(Effect.result);
+            assertFailure(failure, deleteError);
+            // A mesma conexão responde após a falha, sem handshake adicional.
+            const refs = yield* client[WS_METHODS.vcsListRefs]({
+              cwd: "/tmp/repo",
+            });
+            assert.equal(refs.refs[0]?.name, "main");
+          }),
+        ),
+      );
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
@@ -8521,7 +8801,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         ),
       );
 
-      assert.deepEqual(Option.getOrThrow(firstItem), { kind: "synchronized" });
+      assert.deepEqual(Option.getOrThrow(firstItem), {
+        kind: "synchronized",
+      });
     }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
@@ -8537,7 +8819,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           createdAt: "2026-01-01T00:00:01.000Z",
           updatedAt: "2026-01-01T00:00:01.000Z",
         };
-        const thread = { ...makeDefaultOrchestrationReadModel().threads[0]!, messages: [message] };
+        const thread = {
+          ...makeDefaultOrchestrationReadModel().threads[0]!,
+          messages: [message],
+        };
         const event = {
           sequence: 2,
           eventId: EventId.make("thinking-compatibility-event"),
@@ -8578,7 +8863,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               streamDomainEvents: Stream.fromPubSub(liveEvents),
               latestSequence: Effect.succeed(3),
               getThreadReplayStats: () =>
-                Effect.succeed({ eventCount: 2, payloadBytes: 200, hasCreateEvent: false }),
+                Effect.succeed({
+                  eventCount: 2,
+                  payloadBytes: 200,
+                  hasCreateEvent: false,
+                }),
               readThreadEvents: () => Stream.make(event, answer),
             },
             projectionSnapshotQuery: {
@@ -8604,7 +8893,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           yield* getHttpServerUrl(
             `/api/orchestration/threads/${defaultThreadId}?turnLimit=1${reasoningMessages ? "&reasoningMessages=true" : ""}`,
           ),
-          { headers: { cookie: yield* getAuthenticatedSessionCookieHeader() } },
+          {
+            headers: { cookie: yield* getAuthenticatedSessionCookieHeader() },
+          },
         );
         const httpSnapshot = yield* responseJsonEffect<OrchestrationThreadDetailSnapshot>(response);
         assert.equal(response.status, 200);
@@ -8633,7 +8924,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           }
           const events = items.filter((item) => item.kind === "event");
           assert.equal(events.length, 2);
-          assert.deepEqual(events[0]?.event, { ...event, payload: { ...event.payload, role } });
+          assert.deepEqual(events[0]?.event, {
+            ...event,
+            payload: { ...event.payload, role },
+          });
           assert.deepEqual(events[1]?.event, answer);
           assert.deepEqual(items.at(-1), { kind: "synchronized" });
         }
@@ -8868,7 +9162,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
             toolCallId: "call-build",
             status: "completed",
             title: "Build complete",
-            data: { item: { command: "build", aggregatedOutput: "Build complete" } },
+            data: {
+              item: { command: "build", aggregatedOutput: "Build complete" },
+            },
           });
         } else {
           assertTrue(update?.kind === "thread-upserted");
@@ -9145,7 +9441,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         const releaseAck = yield* Deferred.make<void>();
         const firstApplied = yield* Deferred.make<void>();
         const replayStarted = yield* Deferred.make<void>();
-        const replayCalls: Array<{ afterSequence: number; headSequence: number }> = [];
+        const replayCalls: Array<{
+          afterSequence: number;
+          headSequence: number;
+        }> = [];
         let headSequence = 0;
         let snapshotCalls = 0;
         const message = (sequence: number, text: string) =>
@@ -9330,7 +9629,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           aggregateKind: "project",
           aggregateId: defaultProjectId,
           type: "project.deleted",
-          payload: { projectId: defaultProjectId, deletedAt: "2026-01-01T00:00:02.000Z" },
+          payload: {
+            projectId: defaultProjectId,
+            deletedAt: "2026-01-01T00:00:02.000Z",
+          },
         },
       );
       yield* buildAppUnderTest({
@@ -9641,7 +9943,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
                   Stream.runCollect,
                 );
                 assert.deepEqual(shellItems, [
-                  { kind: "thread-removed", sequence: deleted.sequence, threadId: defaultThreadId },
+                  {
+                    kind: "thread-removed",
+                    sequence: deleted.sequence,
+                    threadId: defaultThreadId,
+                  },
                   { kind: "synchronized" },
                 ]);
               }),
@@ -9695,7 +10001,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
             getThreadReplayStats: () =>
               Effect.sync(() => {
                 headSequence = 100;
-                return { eventCount: 1, payloadBytes: 100, hasCreateEvent: false };
+                return {
+                  eventCount: 1,
+                  payloadBytes: 100,
+                  hasCreateEvent: false,
+                };
               }),
             readThreadEvents: ({ toSequenceInclusive }) => {
               replayHead = toSequenceInclusive;
@@ -9771,7 +10081,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
               Effect.succeed({
                 snapshotSequence: 100_000,
                 projects: [],
-                threads: [makeDefaultOrchestrationThreadShell({ id: snapshotThreadId })],
+                threads: [
+                  makeDefaultOrchestrationThreadShell({
+                    id: snapshotThreadId,
+                  }),
+                ],
                 updatedAt: now,
               }),
           },
@@ -9904,9 +10218,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const wsUrl = yield* getWsServerUrl("/ws");
       const first = yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
-          client[ORCHESTRATION_WS_METHODS.subscribeShell]({ afterSequence: 10 }).pipe(
-            Stream.runHead,
-          ),
+          client[ORCHESTRATION_WS_METHODS.subscribeShell]({
+            afterSequence: 10,
+          }).pipe(Stream.runHead),
         ),
       );
 
@@ -10147,10 +10461,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const wsUrl = yield* getWsServerUrl("/ws");
       const items = yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
-          client[ORCHESTRATION_WS_METHODS.subscribeShell]({ afterSequence: 0 }).pipe(
-            Stream.take(1),
-            Stream.runCollect,
-          ),
+          client[ORCHESTRATION_WS_METHODS.subscribeShell]({
+            afterSequence: 0,
+          }).pipe(Stream.take(1), Stream.runCollect),
         ),
       );
 
@@ -10206,10 +10519,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const wsUrl = yield* getWsServerUrl("/ws");
       const items = yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
-          client[ORCHESTRATION_WS_METHODS.subscribeShell]({ afterSequence: 0 }).pipe(
-            Stream.take(1),
-            Stream.runCollect,
-          ),
+          client[ORCHESTRATION_WS_METHODS.subscribeShell]({
+            afterSequence: 0,
+          }).pipe(Stream.take(1), Stream.runCollect),
         ),
       );
 
@@ -10265,10 +10577,9 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
       const wsUrl = yield* getWsServerUrl("/ws");
       const items = yield* Effect.scoped(
         withWsRpcClient(wsUrl, (client) =>
-          client[ORCHESTRATION_WS_METHODS.subscribeShell]({ afterSequence: 0 }).pipe(
-            Stream.take(1),
-            Stream.runCollect,
-          ),
+          client[ORCHESTRATION_WS_METHODS.subscribeShell]({
+            afterSequence: 0,
+          }).pipe(Stream.take(1), Stream.runCollect),
         ),
       );
 
@@ -10450,7 +10761,10 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
           projectionSnapshotQuery: {
             getThreadShellById: () =>
               Effect.succeedSome(
-                makeDefaultOrchestrationThreadShell({ id: threadId, session: null }),
+                makeDefaultOrchestrationThreadShell({
+                  id: threadId,
+                  session: null,
+                }),
               ),
           },
         },
@@ -11167,7 +11481,11 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
 
   it.effect.each([
     { caseName: "a non-repository", isRepository: false, failFetch: false },
-    { caseName: "a base without a commit", isRepository: true, failFetch: false },
+    {
+      caseName: "a base without a commit",
+      isRepository: true,
+      failFetch: false,
+    },
     { caseName: "a fetch failure", isRepository: true, failFetch: true },
   ])(
     "rejects required worktree bootstrap before creating a thread for $caseName",
@@ -12348,7 +12666,10 @@ it.live(
           // so reactor writes and subscription reads land in the same total.
           const sqlCounter = makeSqlStatementCounter();
           return Effect.acquireUseRelease(
-            makeOrchestrationIntegrationHarness({ provider, tracer: sqlCounter.tracer }),
+            makeOrchestrationIntegrationHarness({
+              provider,
+              tracer: sqlCounter.tracer,
+            }),
             (harness) =>
               Effect.gen(function* () {
                 yield* seedTransferBudgetHistory(harness, provider);
@@ -12391,9 +12712,18 @@ it.live(
                     // Three sockets, the way real installs look: the capped
                     // thread-only client, a shell-only socket that isolates the
                     // sidebar cost, and a second device holding both.
-                    const threadClient = yield* openMeasuredWsClient({ url: wsUrl, cookie });
-                    const shellClient = yield* openMeasuredWsClient({ url: wsUrl, cookie });
-                    const secondClient = yield* openMeasuredWsClient({ url: wsUrl, cookie });
+                    const threadClient = yield* openMeasuredWsClient({
+                      url: wsUrl,
+                      cookie,
+                    });
+                    const shellClient = yield* openMeasuredWsClient({
+                      url: wsUrl,
+                      cookie,
+                    });
+                    const secondClient = yield* openMeasuredWsClient({
+                      url: wsUrl,
+                      cookie,
+                    });
                     assert.include(
                       threadClient.recorder.negotiatedExtensions(),
                       "permessage-deflate",
@@ -12533,7 +12863,10 @@ it.live(
                     // catch-up bytes stay separable.
                     yield* secondClient.close;
                     const reconnectSqlStart = sqlCounter.count();
-                    const reconnected = yield* openMeasuredWsClient({ url: wsUrl, cookie });
+                    const reconnected = yield* openMeasuredWsClient({
+                      url: wsUrl,
+                      cookie,
+                    });
                     const reconnectStartTotals = reconnected.recorder.totals();
                     const reconnectThreadItems = yield* subscribeThreadItems(
                       reconnected,

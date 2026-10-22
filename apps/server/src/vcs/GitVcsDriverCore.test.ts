@@ -353,6 +353,70 @@ it.effect("uses stable diagnostics for every parsed non-repository command", () 
   }).pipe(Effect.provide(layer));
 });
 
+it.effect("exclui branch local sem merge e atualiza a lista sem depender de remoto", () =>
+  Effect.gen(function* () {
+    const driver = yield* GitVcsDriver.GitVcsDriver;
+    const cwd = yield* makeTmpDir();
+    const { initialBranch } = yield* initRepoWithCommit(cwd);
+    yield* git(cwd, ["checkout", "-b", "feature/local"]);
+    yield* writeTextFile(cwd, "local.txt", "trabalho local\n");
+    yield* git(cwd, ["add", "."]);
+    yield* git(cwd, ["commit", "-m", "local"]);
+    yield* git(cwd, ["checkout", initialBranch]);
+    const before = yield* driver.listRefs({ cwd });
+    assert.isTrue(before.refs.some((ref) => ref.name === "feature/local"));
+
+    yield* driver.deleteBranch({ cwd, branch: "feature/local" });
+
+    const after = yield* driver.listRefs({ cwd });
+    assert.isFalse(after.refs.some((ref) => ref.name === "feature/local"));
+    assert.equal(yield* git(cwd, ["branch", "--show-current"]), initialBranch);
+  }).pipe(Effect.provide(TestLayer)),
+);
+
+it.effect("excluir a local preserva a branch remota e sua referência de acompanhamento", () =>
+  Effect.gen(function* () {
+    const driver = yield* GitVcsDriver.GitVcsDriver;
+    const cwd = yield* makeTmpDir();
+    const remote = yield* makeTmpDir();
+    yield* initRepoWithCommit(cwd);
+    yield* git(remote, ["init", "--bare"]);
+    yield* git(cwd, ["remote", "add", "origin", remote]);
+    yield* git(cwd, ["branch", "feature/shared"]);
+    yield* git(cwd, ["push", "-u", "origin", "feature/shared"]);
+    const head = yield* git(cwd, ["rev-parse", "refs/heads/feature/shared"]);
+
+    yield* driver.deleteBranch({ cwd, branch: "feature/shared" });
+
+    assert.equal(yield* git(cwd, ["rev-parse", "refs/remotes/origin/feature/shared"]), head);
+    assert.equal(yield* git(remote, ["rev-parse", "refs/heads/feature/shared"]), head);
+    const refs = yield* driver.listRefs({ cwd });
+    assert.isFalse(refs.refs.some((ref) => ref.name === "feature/shared" && !ref.isRemote));
+    assert.isTrue(refs.refs.some((ref) => ref.name === "origin/feature/shared" && ref.isRemote));
+  }).pipe(Effect.provide(TestLayer)),
+);
+
+it.effect("reporta falhas de exclusão sem apagar branches em uso ou referências remotas", () =>
+  Effect.gen(function* () {
+    const driver = yield* GitVcsDriver.GitVcsDriver;
+    const cwd = yield* makeTmpDir();
+    const { initialBranch } = yield* initRepoWithCommit(cwd);
+    const head = yield* git(cwd, ["rev-parse", "HEAD"]);
+    yield* git(cwd, ["update-ref", "refs/remotes/origin/remote-only", head]);
+    const worktree = yield* makeTmpDir();
+    yield* git(cwd, ["worktree", "add", "-b", "in-use", worktree]);
+
+    for (const branch of [initialBranch, "in-use", "missing", "origin/remote-only"]) {
+      const error = yield* Effect.flip(driver.deleteBranch({ cwd, branch }));
+      assert.equal(error._tag, "GitCommandError");
+      assert.equal(error.operation, "GitVcsDriver.deleteBranch.local");
+    }
+    assert.equal(yield* git(cwd, ["rev-parse", "HEAD"]), head);
+    assert.equal(yield* git(worktree, ["branch", "--show-current"]), "in-use");
+    assert.equal(yield* git(cwd, ["rev-parse", "refs/remotes/origin/remote-only"]), head);
+  }).pipe(Effect.provide(TestLayer)),
+);
+
 it.effect("invalidates origin remote cache when a driver mutation adds origin", () =>
   Effect.gen(function* () {
     const driver = yield* GitVcsDriver.GitVcsDriver;
