@@ -29,6 +29,21 @@ interface ChatCompletionResponse {
   }>;
 }
 
+/**
+ * The chat-completions endpoint a configured base URL stands for.
+ *
+ * Providers document their URL differently — an API root, the `/chat`
+ * collection, or the full endpoint — and users paste whichever they copied.
+ * Only the suffix the value is missing gets added, so every form reaches the
+ * endpoint instead of 404ing on a doubled path.
+ */
+export function resolveChatCompletionsUrl(baseUrl: string): string {
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
+  if (trimmed.endsWith("/chat/completions")) return trimmed;
+  if (trimmed.endsWith("/chat")) return `${trimmed}/completions`;
+  return `${trimmed}/chat/completions`;
+}
+
 function callOpenAiCompatibleApi(
   baseUrl: string,
   apiKey: string,
@@ -36,7 +51,7 @@ function callOpenAiCompatibleApi(
   prompt: string,
   operation: string,
 ): Effect.Effect<string, TextGenerationError> {
-  const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
+  const url = resolveChatCompletionsUrl(baseUrl);
 
   return Effect.tryPromise({
     try: () =>

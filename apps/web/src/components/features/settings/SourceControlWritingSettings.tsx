@@ -34,7 +34,7 @@ import { Switch } from "../../ui/switch";
 import { Textarea } from "../../ui/textarea";
 import { toastManager } from "../../ui/toast";
 import { Button } from "../../ui/button";
-import { Input } from "../../ui/input";
+import { DraftInput } from "../../ui/draft-input";
 import {
   SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingResetButton,
@@ -413,18 +413,13 @@ export function TextGenerationApiSettingsSection() {
           <SettingsRow
             serverScoped
             settingKeys={["textGenerationApi"]}
-            {...searchableSetting("text-generation-api")}
-            description={t("settings.sourceControl.api.baseUrlLabel")}
+            title={t("settings.sourceControl.api.baseUrlLabel")}
             control={
-              <Input
+              <DraftInput
                 size="sm"
                 className="w-full sm:w-72"
                 value={api.baseUrl}
-                onChange={(event) =>
-                  updateSettings({
-                    textGenerationApi: { baseUrl: event.target.value },
-                  })
-                }
+                onCommit={(baseUrl) => updateSettings({ textGenerationApi: { baseUrl } })}
                 placeholder={t("settings.sourceControl.api.baseUrlPlaceholder")}
                 font="mono"
               />
@@ -434,19 +429,14 @@ export function TextGenerationApiSettingsSection() {
           <SettingsRow
             serverScoped
             settingKeys={["textGenerationApi"]}
-            {...searchableSetting("text-generation-api")}
-            description={t("settings.sourceControl.api.apiKeyLabel")}
+            title={t("settings.sourceControl.api.apiKeyLabel")}
             control={
-              <Input
+              <DraftInput
                 size="sm"
                 className="w-full sm:w-72"
                 type="password"
                 value={api.apiKey}
-                onChange={(event) =>
-                  updateSettings({
-                    textGenerationApi: { apiKey: event.target.value },
-                  })
-                }
+                onCommit={(apiKey) => updateSettings({ textGenerationApi: { apiKey } })}
                 placeholder={t("settings.sourceControl.api.apiKeyPlaceholder")}
                 font="mono"
               />
@@ -456,18 +446,13 @@ export function TextGenerationApiSettingsSection() {
           <SettingsRow
             serverScoped
             settingKeys={["textGenerationApi"]}
-            {...searchableSetting("text-generation-api")}
-            description={t("settings.sourceControl.api.modelLabel")}
+            title={t("settings.sourceControl.api.modelLabel")}
             control={
-              <Input
+              <DraftInput
                 size="sm"
                 className="w-full sm:w-72"
                 value={api.model}
-                onChange={(event) =>
-                  updateSettings({
-                    textGenerationApi: { model: event.target.value },
-                  })
-                }
+                onCommit={(model) => updateSettings({ textGenerationApi: { model } })}
                 placeholder={t("settings.sourceControl.api.modelPlaceholder")}
                 font="mono"
               />
