@@ -957,7 +957,9 @@ function BrowserAutoShowFloatingPreviewSetting({ disabled }: { readonly disabled
  *
  * Built-ins render without a rename field: they are synthesized rather than
  * stored, so there is nothing to rename and removing them would strand every
- * tab that opened under them.
+ * tab that opened under them. Both can be the default, so Incognito is listed
+ * like Default; it stays out of import targets because nothing written there
+ * survives the app closing.
  *
  * Sources are listed lazily on open: detection touches the other browser's
  * files, and the answer changes while the app is running (quitting the browser
@@ -990,13 +992,13 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
   const profileWritesDisabled = disabled || !settingsHydrated;
 
   const profiles = resolveBrowserProfiles(userProfiles);
-  // Incognito is deliberately not a row — it holds nothing to manage — so the
-  // default has to resolve against the list that renders. A stored
-  // `browserDefaultProfileId` of "incognito" would otherwise leave the section
-  // with no Default badge at all.
-  const listedProfiles = profiles.filter((profile) => profile.kind !== "incognito");
+  // Rows and tab defaults resolve against the same list, so whichever row
+  // carries the badge is the profile new tabs open under — Incognito included.
   const resolvedDefaultId =
-    findBrowserProfile(listedProfiles, defaultProfileId)?.id ?? DEFAULT_BROWSER_PROFILE_ID;
+    findBrowserProfile(profiles, defaultProfileId)?.id ?? DEFAULT_BROWSER_PROFILE_ID;
+  // Imports write cookies to disk, so the ephemeral built-in is never a target
+  // even though it can be the default.
+  const importTargets = profiles.filter((profile) => profile.kind !== "incognito");
 
   const createProfile = (baseName: string) => {
     if (!settingsHydrated || importInFlightRef.current) return undefined;
@@ -1322,7 +1324,7 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
         (`pt-3 pb-1`).
       */}
       <div className="mt-2 mb-2 overflow-hidden rounded-lg border border-border/60">
-        {listedProfiles.map((profile, index) => {
+        {profiles.map((profile, index) => {
           const builtIn = isBuiltInBrowserProfileId(profile.id);
           const isDefault = profile.id === resolvedDefaultId;
           return (
@@ -1484,7 +1486,7 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
         <BrowserImportWizard
           source={importSession.source}
           destinationEnvironmentName={importSession.environmentName}
-          targetProfiles={listedProfiles.map((profile) => ({
+          targetProfiles={importTargets.map((profile) => ({
             id: profile.id,
             name: profile.name,
           }))}

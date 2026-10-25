@@ -34,12 +34,11 @@ describe("getBrowserDefaults profile resolution", () => {
     expect(withDefaultProfile("deleted").profileId).toBe(DEFAULT_BROWSER_PROFILE_ID);
   });
 
-  it("refuses incognito as the default", () => {
-    // A stored incognito default would open every new tab into storage that is
-    // discarded on close, and the settings list no longer offers it — so the
-    // row badged "Default" must be the one tabs actually open under.
+  it("keeps incognito when it is the default", () => {
+    // Incognito is listed beside Default in settings, so choosing it has to
+    // reach the tabs: the row badged "Default" is the one they open under.
     expect(withDefaultProfile(INCOGNITO_BROWSER_PROFILE_ID).profileId).toBe(
-      DEFAULT_BROWSER_PROFILE_ID,
+      INCOGNITO_BROWSER_PROFILE_ID,
     );
   });
 });

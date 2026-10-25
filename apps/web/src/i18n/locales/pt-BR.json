@@ -1392,6 +1392,19 @@
         "noProviders": "Nenhum provedor de geração de texto disponível.",
         "writerModelAria": "Modelo de escrita do controle de versão",
         "dedicatedModelAria": "Usar um modelo de escrita do controle de versão separado"
+      },
+      "api": {
+        "sectionTitle": "API de geração de texto",
+        "description": "Use uma API compatível com OpenAI (ex.: DeepSeek) para gerar mensagens de commit e descrições de pull request. Quando ativada, esta API é usada em vez do provedor ativo.",
+        "enabledAria": "Ativar API personalizada de geração de texto",
+        "baseUrlLabel": "URL base",
+        "baseUrlPlaceholder": "https://api.deepseek.com/v1",
+        "apiKeyLabel": "Chave da API",
+        "apiKeyPlaceholder": "sk-...",
+        "modelLabel": "Modelo",
+        "modelPlaceholder": "deepseek-chat",
+        "resetLabel": "API de geração de texto",
+        "notConfigured": "Configure uma API para ativar a geração de commits e PRs."
       }
     },
     "snapshot": {

@@ -1186,7 +1186,9 @@ export default function GitActionsControl({
         setDialogCommitMessage(body ? `${subject}\n\n${body}` : subject);
       } else {
         const error = squashAtomCommandFailure(result);
-        toastManager.update("generate-commit-message", {
+        // Added, not updated: no earlier toast owns this id, so an update
+        // would be a no-op and the failure would pass silently.
+        toastManager.add({
           type: "error",
           title: "Failed to generate commit message",
           description: String(error),
