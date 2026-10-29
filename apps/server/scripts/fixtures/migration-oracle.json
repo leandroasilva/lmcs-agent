@@ -1,0 +1,899 @@
+{
+  "formatVersion": 1,
+  "rules": {
+    "clock": "Effect wall clock fixed at 2026-01-01T00:00:00.000Z; real monotonic clock retained",
+    "eventIds": "Fresh-workflow eventId UUIDs map to event-<sequence>; matching causationEventId/correlationId references use the same map. Legacy IDs and command IDs are unchanged.",
+    "hashes": "SHA-256 of JSON.stringify SQL rows in query column order: migrations ordered by migration_id (id/name only); sqlite_master non-sqlite_% objects ordered by type/name (type/name/tbl_name/sql). Migration timestamps excluded.",
+    "projections": "SQL snapshot and pure event replay are reported independently without field normalization."
+  },
+  "commands": [
+    {
+      "type": "project.create",
+      "commandId": "create-project",
+      "projectId": "oracle-project",
+      "title": "Synthetic project",
+      "workspaceRoot": "/synthetic/workspace",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "type": "thread.create",
+      "commandId": "create-thread",
+      "threadId": "oracle-thread",
+      "projectId": "oracle-project",
+      "title": "Synthetic thread",
+      "modelSelection": { "instanceId": "codex", "model": "gpt-5.4" },
+      "runtimeMode": "full-access",
+      "interactionMode": "default",
+      "branch": null,
+      "worktreePath": null,
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "type": "thread.message.user.append",
+      "commandId": "user-message",
+      "threadId": "oracle-thread",
+      "message": { "messageId": "user-message", "text": "Hello", "attachments": [] },
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "type": "thread.message.assistant.delta",
+      "commandId": "provider:assistant-delta",
+      "threadId": "oracle-thread",
+      "messageId": "assistant-message",
+      "delta": "Hello back",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "type": "thread.message.assistant.complete",
+      "commandId": "provider:assistant-complete",
+      "threadId": "oracle-thread",
+      "messageId": "assistant-message",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "type": "thread.meta.update",
+      "commandId": "rename-thread",
+      "threadId": "oracle-thread",
+      "title": "Renamed thread"
+    },
+    { "type": "thread.archive", "commandId": "archive-thread", "threadId": "oracle-thread" },
+    { "type": "thread.unarchive", "commandId": "unarchive-thread", "threadId": "oracle-thread" }
+  ],
+  "duplicateCommand": {
+    "type": "project.create",
+    "commandId": "duplicate-project",
+    "projectId": "oracle-project",
+    "title": "Synthetic project",
+    "workspaceRoot": "/synthetic/workspace",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "eventId": "event-1",
+      "aggregateKind": "project",
+      "aggregateId": "oracle-project",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "create-project",
+      "causationEventId": null,
+      "correlationId": "create-project",
+      "metadata": {},
+      "type": "project.created",
+      "payload": {
+        "projectId": "oracle-project",
+        "title": "Synthetic project",
+        "workspaceRoot": "/synthetic/workspace",
+        "defaultModelSelection": null,
+        "faviconPath": null,
+        "projectIcon": null,
+        "scripts": [],
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "sequence": 2,
+      "eventId": "event-2",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "create-thread",
+      "causationEventId": null,
+      "correlationId": "create-thread",
+      "metadata": {},
+      "type": "thread.created",
+      "payload": {
+        "threadId": "oracle-thread",
+        "projectId": "oracle-project",
+        "title": "Synthetic thread",
+        "modelSelection": { "instanceId": "codex", "model": "gpt-5.4" },
+        "runtimeMode": "full-access",
+        "interactionMode": "default",
+        "branch": null,
+        "worktreePath": null,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "sequence": 3,
+      "eventId": "event-3",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "user-message",
+      "causationEventId": null,
+      "correlationId": "user-message",
+      "metadata": { "deferredTurn": true },
+      "type": "thread.message-sent",
+      "payload": {
+        "threadId": "oracle-thread",
+        "messageId": "user-message",
+        "role": "user",
+        "text": "Hello",
+        "attachments": [],
+        "turnId": null,
+        "streaming": false,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "sequence": 4,
+      "eventId": "event-4",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "provider:assistant-delta",
+      "causationEventId": null,
+      "correlationId": "provider:assistant-delta",
+      "metadata": {},
+      "type": "thread.message-sent",
+      "payload": {
+        "threadId": "oracle-thread",
+        "messageId": "assistant-message",
+        "role": "assistant",
+        "text": "Hello back",
+        "turnId": null,
+        "streaming": true,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "sequence": 5,
+      "eventId": "event-5",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "provider:assistant-complete",
+      "causationEventId": null,
+      "correlationId": "provider:assistant-complete",
+      "metadata": {},
+      "type": "thread.message-sent",
+      "payload": {
+        "threadId": "oracle-thread",
+        "messageId": "assistant-message",
+        "role": "assistant",
+        "text": "",
+        "turnId": null,
+        "streaming": false,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "sequence": 6,
+      "eventId": "event-6",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "rename-thread",
+      "causationEventId": null,
+      "correlationId": "rename-thread",
+      "metadata": {},
+      "type": "thread.meta-updated",
+      "payload": {
+        "threadId": "oracle-thread",
+        "title": "Renamed thread",
+        "titleState": { "source": "manual", "version": "rename-thread", "needsRefinement": false },
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "sequence": 7,
+      "eventId": "event-7",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "archive-thread",
+      "causationEventId": null,
+      "correlationId": "archive-thread",
+      "metadata": {},
+      "type": "thread.archived",
+      "payload": {
+        "threadId": "oracle-thread",
+        "archivedAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "sequence": 8,
+      "eventId": "event-8",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "commandId": "unarchive-thread",
+      "causationEventId": null,
+      "correlationId": "unarchive-thread",
+      "metadata": {},
+      "type": "thread.unarchived",
+      "payload": { "threadId": "oracle-thread", "updatedAt": "2026-01-01T00:00:00.000Z" }
+    }
+  ],
+  "replay": {
+    "snapshotSequence": 8,
+    "projects": [
+      {
+        "id": "oracle-project",
+        "title": "Synthetic project",
+        "workspaceRoot": "/synthetic/workspace",
+        "defaultModelSelection": null,
+        "defaultThreadEnvMode": null,
+        "autoPull": false,
+        "faviconPath": null,
+        "projectIcon": null,
+        "scripts": [],
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "deletedAt": null
+      }
+    ],
+    "threads": [
+      {
+        "id": "oracle-thread",
+        "projectId": "oracle-project",
+        "title": "Renamed thread",
+        "modelSelection": { "instanceId": "codex", "model": "gpt-5.4" },
+        "runtimeMode": "full-access",
+        "interactionMode": "default",
+        "branch": null,
+        "worktreePath": null,
+        "pullRequests": [],
+        "branchPullRequest": null,
+        "latestTurn": null,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "archivedAt": null,
+        "settledOverride": null,
+        "settledAt": null,
+        "unsettledAt": null,
+        "snoozedUntil": null,
+        "snoozedAt": null,
+        "activeOrderKey": null,
+        "autoSettleDisabledAt": null,
+        "deletedAt": null,
+        "messages": [
+          {
+            "id": "user-message",
+            "role": "user",
+            "text": "Hello",
+            "attachments": [],
+            "turnId": null,
+            "streaming": false,
+            "createdAt": "2026-01-01T00:00:00.000Z",
+            "updatedAt": "2026-01-01T00:00:00.000Z"
+          },
+          {
+            "id": "assistant-message",
+            "role": "assistant",
+            "text": "Hello back",
+            "turnId": null,
+            "streaming": false,
+            "createdAt": "2026-01-01T00:00:00.000Z",
+            "updatedAt": "2026-01-01T00:00:00.000Z"
+          }
+        ],
+        "proposedPlans": [],
+        "activities": [],
+        "checkpoints": [],
+        "session": null,
+        "titleState": { "source": "manual", "version": "rename-thread", "needsRefinement": false },
+        "titleRegeneration": null
+      }
+    ],
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  },
+  "snapshot": {
+    "snapshotSequence": 8,
+    "projects": [
+      {
+        "id": "oracle-project",
+        "title": "Synthetic project",
+        "workspaceRoot": "/synthetic/workspace",
+        "repositoryIdentity": null,
+        "defaultModelSelection": null,
+        "defaultThreadEnvMode": null,
+        "autoPull": false,
+        "faviconPath": null,
+        "projectIcon": null,
+        "scripts": [],
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "deletedAt": null
+      }
+    ],
+    "threads": [
+      {
+        "id": "oracle-thread",
+        "projectId": "oracle-project",
+        "title": "Renamed thread",
+        "modelSelection": { "instanceId": "codex", "model": "gpt-5.4" },
+        "runtimeMode": "full-access",
+        "interactionMode": "default",
+        "branch": null,
+        "worktreePath": null,
+        "pullRequests": [],
+        "branchPullRequest": null,
+        "latestTurn": null,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "archivedAt": null,
+        "settledOverride": null,
+        "settledAt": null,
+        "unsettledAt": null,
+        "snoozedUntil": null,
+        "snoozedAt": null,
+        "pinnedAt": null,
+        "pinOrderKey": null,
+        "activeOrderKey": null,
+        "autoSettleDisabledAt": null,
+        "titleRegeneration": null,
+        "titleState": { "source": "manual", "version": "rename-thread", "needsRefinement": false },
+        "deletedAt": null,
+        "messages": [
+          {
+            "id": "assistant-message",
+            "role": "assistant",
+            "text": "Hello back",
+            "turnId": null,
+            "streaming": false,
+            "createdAt": "2026-01-01T00:00:00.000Z",
+            "updatedAt": "2026-01-01T00:00:00.000Z"
+          },
+          {
+            "id": "user-message",
+            "role": "user",
+            "text": "Hello",
+            "attachments": [],
+            "turnId": null,
+            "streaming": false,
+            "createdAt": "2026-01-01T00:00:00.000Z",
+            "updatedAt": "2026-01-01T00:00:00.000Z"
+          }
+        ],
+        "proposedPlans": [],
+        "activities": [],
+        "checkpoints": [],
+        "session": null
+      }
+    ],
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  },
+  "receipts": [
+    {
+      "commandId": "archive-thread",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 7,
+      "status": "accepted",
+      "error": null
+    },
+    {
+      "commandId": "create-project",
+      "aggregateKind": "project",
+      "aggregateId": "oracle-project",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 1,
+      "status": "accepted",
+      "error": null
+    },
+    {
+      "commandId": "create-thread",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 2,
+      "status": "accepted",
+      "error": null
+    },
+    {
+      "commandId": "duplicate-project",
+      "aggregateKind": "project",
+      "aggregateId": "oracle-project",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 8,
+      "status": "rejected",
+      "error": "Orchestration command invariant failed (project.create): Project 'oracle-project' already exists and cannot be created twice."
+    },
+    {
+      "commandId": "provider:assistant-complete",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 5,
+      "status": "accepted",
+      "error": null
+    },
+    {
+      "commandId": "provider:assistant-delta",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 4,
+      "status": "accepted",
+      "error": null
+    },
+    {
+      "commandId": "rename-thread",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 6,
+      "status": "accepted",
+      "error": null
+    },
+    {
+      "commandId": "unarchive-thread",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 8,
+      "status": "accepted",
+      "error": null
+    },
+    {
+      "commandId": "user-message",
+      "aggregateKind": "thread",
+      "aggregateId": "oracle-thread",
+      "acceptedAt": "2026-01-01T00:00:00.000Z",
+      "resultSequence": 3,
+      "status": "accepted",
+      "error": null
+    }
+  ],
+  "latestSequence": 8,
+  "storedEnvelopes": [
+    { "sequence": 1, "stream_version": 0, "actor_kind": "client" },
+    { "sequence": 2, "stream_version": 0, "actor_kind": "client" },
+    { "sequence": 3, "stream_version": 1, "actor_kind": "client" },
+    { "sequence": 4, "stream_version": 2, "actor_kind": "provider" },
+    { "sequence": 5, "stream_version": 3, "actor_kind": "provider" },
+    { "sequence": 6, "stream_version": 4, "actor_kind": "client" },
+    { "sequence": 7, "stream_version": 5, "actor_kind": "client" },
+    { "sequence": 8, "stream_version": 6, "actor_kind": "client" }
+  ],
+  "persistence": {
+    "migrationCount": 54,
+    "latestMigration": { "migration_id": 54, "name": "ProjectionThreadsAutoSettleDisabledAt" },
+    "migrationManifestSha256": "85d3655d35c75d793453f7aff6a55f999bef85eb0bbe216be8b8d91502cef753",
+    "schemaSha256": "e8878eba884daea05aa5e890d380c93c4bc77e8d23cff40157a7f0247f79c220",
+    "userVersion": [{ "user_version": 0 }],
+    "journalMode": [{ "journal_mode": "wal" }]
+  },
+  "dispatch": {
+    "accepted": [
+      { "sequence": 1 },
+      { "sequence": 2 },
+      { "sequence": 3 },
+      { "sequence": 4 },
+      { "sequence": 5 },
+      { "sequence": 6 },
+      { "sequence": 7 },
+      { "sequence": 8 }
+    ],
+    "acceptedRetry": { "sequence": 1 },
+    "rejectedInitial": {
+      "tag": "OrchestrationCommandInvariantError",
+      "message": "Orchestration command invariant failed (project.create): Project 'oracle-project' already exists and cannot be created twice."
+    },
+    "rejectedRetry": {
+      "tag": "OrchestrationCommandPreviouslyRejectedError",
+      "message": "Command previously rejected (duplicate-project): Orchestration command invariant failed (project.create): Project 'oracle-project' already exists and cannot be created twice."
+    }
+  },
+  "reopenStable": true,
+  "legacy": {
+    "fromMigration": 25,
+    "before": {
+      "projects": [
+        {
+          "project_id": "legacy-project",
+          "title": "Legacy project",
+          "workspace_root": "/synthetic/legacy",
+          "created_at": "2026-01-01T00:00:00.000Z",
+          "updated_at": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "threads": [
+        {
+          "thread_id": "legacy-thread",
+          "project_id": "legacy-project",
+          "title": "Legacy thread",
+          "branch": "legacy-branch",
+          "model_selection_json": "{\"provider\":\"claudeAgent\",\"model\":\"claude-opus-4-6\",\"options\":{\"effort\":\"max\",\"thinking\":false}}",
+          "created_at": "2026-01-01T00:00:00.000Z",
+          "updated_at": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "events": [
+        {
+          "sequence": 1,
+          "event_id": "legacy-project-event",
+          "aggregate_kind": "project",
+          "stream_id": "legacy-project",
+          "stream_version": 0,
+          "event_type": "project.created",
+          "occurred_at": "2026-01-01T00:00:00.000Z",
+          "command_id": "legacy-create-project",
+          "causation_event_id": null,
+          "correlation_id": "legacy-correlation",
+          "actor_kind": "client",
+          "payload_json": "{\"projectId\":\"legacy-project\",\"title\":\"Legacy project\",\"workspaceRoot\":\"/synthetic/legacy\",\"defaultModelSelection\":null,\"scripts\":[],\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"}",
+          "metadata_json": "{}"
+        },
+        {
+          "sequence": 2,
+          "event_id": "legacy-thread-event",
+          "aggregate_kind": "thread",
+          "stream_id": "legacy-thread",
+          "stream_version": 0,
+          "event_type": "thread.created",
+          "occurred_at": "2026-01-01T00:00:00.000Z",
+          "command_id": "legacy-create-thread",
+          "causation_event_id": "legacy-project-event",
+          "correlation_id": "legacy-correlation",
+          "actor_kind": "client",
+          "payload_json": "{\"projectId\":\"legacy-project\",\"threadId\":\"legacy-thread\",\"title\":\"Legacy thread\",\"modelSelection\":{\"provider\":\"claudeAgent\",\"model\":\"claude-opus-4-6\",\"options\":{\"effort\":\"max\",\"thinking\":false}},\"runtimeMode\":\"full-access\",\"interactionMode\":\"default\",\"branch\":\"legacy-branch\",\"worktreePath\":null,\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"}",
+          "metadata_json": "{}"
+        }
+      ],
+      "receipts": [
+        {
+          "command_id": "legacy-create-project",
+          "aggregate_kind": "project",
+          "aggregate_id": "legacy-project",
+          "accepted_at": "2026-01-01T00:00:00.000Z",
+          "result_sequence": 1,
+          "status": "accepted",
+          "error": null
+        },
+        {
+          "command_id": "legacy-create-thread",
+          "aggregate_kind": "thread",
+          "aggregate_id": "legacy-thread",
+          "accepted_at": "2026-01-01T00:00:00.000Z",
+          "result_sequence": 2,
+          "status": "accepted",
+          "error": null
+        }
+      ]
+    },
+    "after": {
+      "projects": [
+        {
+          "project_id": "legacy-project",
+          "title": "Legacy project",
+          "workspace_root": "/synthetic/legacy",
+          "created_at": "2026-01-01T00:00:00.000Z",
+          "updated_at": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "threads": [
+        {
+          "thread_id": "legacy-thread",
+          "project_id": "legacy-project",
+          "title": "Legacy thread",
+          "branch": "legacy-branch",
+          "model_selection_json": "{\"provider\":\"claudeAgent\",\"model\":\"claude-opus-4-6\",\"options\":[{\"id\":\"effort\",\"value\":\"max\"},{\"id\":\"thinking\",\"value\":false}]}",
+          "created_at": "2026-01-01T00:00:00.000Z",
+          "updated_at": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "events": [
+        {
+          "sequence": 1,
+          "event_id": "legacy-project-event",
+          "aggregate_kind": "project",
+          "stream_id": "legacy-project",
+          "stream_version": 0,
+          "event_type": "project.created",
+          "occurred_at": "2026-01-01T00:00:00.000Z",
+          "command_id": "legacy-create-project",
+          "causation_event_id": null,
+          "correlation_id": "legacy-correlation",
+          "actor_kind": "client",
+          "payload_json": "{\"projectId\":\"legacy-project\",\"title\":\"Legacy project\",\"workspaceRoot\":\"/synthetic/legacy\",\"defaultModelSelection\":null,\"scripts\":[],\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"}",
+          "metadata_json": "{}"
+        },
+        {
+          "sequence": 2,
+          "event_id": "legacy-thread-event",
+          "aggregate_kind": "thread",
+          "stream_id": "legacy-thread",
+          "stream_version": 0,
+          "event_type": "thread.created",
+          "occurred_at": "2026-01-01T00:00:00.000Z",
+          "command_id": "legacy-create-thread",
+          "causation_event_id": "legacy-project-event",
+          "correlation_id": "legacy-correlation",
+          "actor_kind": "client",
+          "payload_json": "{\"projectId\":\"legacy-project\",\"threadId\":\"legacy-thread\",\"title\":\"Legacy thread\",\"modelSelection\":{\"provider\":\"claudeAgent\",\"model\":\"claude-opus-4-6\",\"options\":[{\"id\":\"effort\",\"value\":\"max\"},{\"id\":\"thinking\",\"value\":false}]},\"runtimeMode\":\"full-access\",\"interactionMode\":\"default\",\"branch\":\"legacy-branch\",\"worktreePath\":null,\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"}",
+          "metadata_json": "{}"
+        }
+      ],
+      "receipts": [
+        {
+          "command_id": "legacy-create-project",
+          "aggregate_kind": "project",
+          "aggregate_id": "legacy-project",
+          "accepted_at": "2026-01-01T00:00:00.000Z",
+          "result_sequence": 1,
+          "status": "accepted",
+          "error": null
+        },
+        {
+          "command_id": "legacy-create-thread",
+          "aggregate_kind": "thread",
+          "aggregate_id": "legacy-thread",
+          "accepted_at": "2026-01-01T00:00:00.000Z",
+          "result_sequence": 2,
+          "status": "accepted",
+          "error": null
+        }
+      ]
+    },
+    "applied": [
+      [26, "CanonicalizeModelSelectionOptions"],
+      [27, "ProviderSessionRuntimeInstanceId"],
+      [28, "ProjectionThreadSessionInstanceId"],
+      [29, "ProjectionThreadDetailOrderingIndexes"],
+      [30, "ProjectionThreadShellArchiveIndexes"],
+      [31, "AuthAuthorizationScopes"],
+      [32, "AuthPairingProofKeyThumbprint"],
+      [33, "ProjectionThreadsSettled"],
+      [34, "ProjectionThreadsSnoozed"],
+      [35, "ProjectionThreadTitleRegeneration"],
+      [36, "ProjectionThreadsPinned"],
+      [37, "ProjectionTurnsKeysetIndex"],
+      [38, "ProjectionThreadsPinOrderKey"],
+      [39, "ProjectionProjectsDefaultThreadEnvMode"],
+      [40, "ProjectionProjectFaviconPath"],
+      [41, "AuthSessionClientConnection"],
+      [42, "ProjectionThreadLinkedPullRequest"],
+      [43, "ProjectionThreadsUnsettledAt"],
+      [44, "ClearAutomaticProjectModelDefaults"],
+      [45, "ProjectionProjectsAutoPull"],
+      [46, "RepairAutomaticSettlementTimestamps"],
+      [47, "ProjectionProjectIcon"],
+      [48, "ProjectionThreadBranchPullRequest"],
+      [49, "ProjectionThreadsActiveOrderKey"],
+      [50, "ProjectionThreadPullRequests"],
+      [51, "ProjectionThreadMessageContext"],
+      [52, "ProjectionThreadTitleState"],
+      [53, "PullRequestFilesViewed"],
+      [54, "ProjectionThreadsAutoSettleDisabledAt"]
+    ],
+    "repeated": [],
+    "events": [
+      {
+        "sequence": 1,
+        "eventId": "legacy-project-event",
+        "aggregateKind": "project",
+        "aggregateId": "legacy-project",
+        "occurredAt": "2026-01-01T00:00:00.000Z",
+        "commandId": "legacy-create-project",
+        "causationEventId": null,
+        "correlationId": "legacy-correlation",
+        "metadata": {},
+        "type": "project.created",
+        "payload": {
+          "projectId": "legacy-project",
+          "title": "Legacy project",
+          "workspaceRoot": "/synthetic/legacy",
+          "defaultModelSelection": null,
+          "scripts": [],
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      },
+      {
+        "sequence": 2,
+        "eventId": "legacy-thread-event",
+        "aggregateKind": "thread",
+        "aggregateId": "legacy-thread",
+        "occurredAt": "2026-01-01T00:00:00.000Z",
+        "commandId": "legacy-create-thread",
+        "causationEventId": "legacy-project-event",
+        "correlationId": "legacy-correlation",
+        "metadata": {},
+        "type": "thread.created",
+        "payload": {
+          "threadId": "legacy-thread",
+          "projectId": "legacy-project",
+          "title": "Legacy thread",
+          "modelSelection": {
+            "instanceId": "claudeAgent",
+            "model": "claude-opus-4-6",
+            "options": [
+              { "id": "effort", "value": "max" },
+              { "id": "thinking", "value": false }
+            ]
+          },
+          "runtimeMode": "full-access",
+          "interactionMode": "default",
+          "branch": "legacy-branch",
+          "worktreePath": null,
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z"
+        }
+      }
+    ],
+    "replay": {
+      "snapshotSequence": 2,
+      "projects": [
+        {
+          "id": "legacy-project",
+          "title": "Legacy project",
+          "workspaceRoot": "/synthetic/legacy",
+          "defaultModelSelection": null,
+          "defaultThreadEnvMode": null,
+          "autoPull": false,
+          "faviconPath": null,
+          "projectIcon": null,
+          "scripts": [],
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z",
+          "deletedAt": null
+        }
+      ],
+      "threads": [
+        {
+          "id": "legacy-thread",
+          "projectId": "legacy-project",
+          "title": "Legacy thread",
+          "modelSelection": {
+            "instanceId": "claudeAgent",
+            "model": "claude-opus-4-6",
+            "options": [
+              { "id": "effort", "value": "max" },
+              { "id": "thinking", "value": false }
+            ]
+          },
+          "runtimeMode": "full-access",
+          "interactionMode": "default",
+          "branch": "legacy-branch",
+          "worktreePath": null,
+          "pullRequests": [],
+          "branchPullRequest": null,
+          "latestTurn": null,
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z",
+          "archivedAt": null,
+          "settledOverride": null,
+          "settledAt": null,
+          "unsettledAt": null,
+          "snoozedUntil": null,
+          "snoozedAt": null,
+          "activeOrderKey": null,
+          "autoSettleDisabledAt": null,
+          "deletedAt": null,
+          "messages": [],
+          "proposedPlans": [],
+          "activities": [],
+          "checkpoints": [],
+          "session": null
+        }
+      ],
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "snapshot": {
+      "snapshotSequence": 2,
+      "projects": [
+        {
+          "id": "legacy-project",
+          "title": "Legacy project",
+          "workspaceRoot": "/synthetic/legacy",
+          "repositoryIdentity": null,
+          "defaultModelSelection": null,
+          "defaultThreadEnvMode": null,
+          "autoPull": false,
+          "faviconPath": null,
+          "projectIcon": null,
+          "scripts": [],
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z",
+          "deletedAt": null
+        }
+      ],
+      "threads": [
+        {
+          "id": "legacy-thread",
+          "projectId": "legacy-project",
+          "title": "Legacy thread",
+          "modelSelection": {
+            "instanceId": "claudeAgent",
+            "model": "claude-opus-4-6",
+            "options": [
+              { "id": "effort", "value": "max" },
+              { "id": "thinking", "value": false }
+            ]
+          },
+          "runtimeMode": "full-access",
+          "interactionMode": "default",
+          "branch": "legacy-branch",
+          "worktreePath": null,
+          "pullRequests": [],
+          "branchPullRequest": null,
+          "latestTurn": null,
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-01T00:00:00.000Z",
+          "archivedAt": null,
+          "settledOverride": null,
+          "settledAt": null,
+          "unsettledAt": null,
+          "snoozedUntil": null,
+          "snoozedAt": null,
+          "pinnedAt": null,
+          "pinOrderKey": null,
+          "activeOrderKey": null,
+          "autoSettleDisabledAt": null,
+          "titleRegeneration": null,
+          "titleState": null,
+          "deletedAt": null,
+          "messages": [],
+          "proposedPlans": [],
+          "activities": [],
+          "checkpoints": [],
+          "session": null
+        }
+      ],
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    "receipts": [
+      {
+        "commandId": "legacy-create-project",
+        "aggregateKind": "project",
+        "aggregateId": "legacy-project",
+        "acceptedAt": "2026-01-01T00:00:00.000Z",
+        "resultSequence": 1,
+        "status": "accepted",
+        "error": null
+      },
+      {
+        "commandId": "legacy-create-thread",
+        "aggregateKind": "thread",
+        "aggregateId": "legacy-thread",
+        "acceptedAt": "2026-01-01T00:00:00.000Z",
+        "resultSequence": 2,
+        "status": "accepted",
+        "error": null
+      }
+    ],
+    "latestSequence": 2,
+    "storedEnvelopes": [
+      { "sequence": 1, "stream_version": 0, "actor_kind": "client" },
+      { "sequence": 2, "stream_version": 0, "actor_kind": "client" }
+    ],
+    "persistence": {
+      "migrationCount": 54,
+      "latestMigration": { "migration_id": 54, "name": "ProjectionThreadsAutoSettleDisabledAt" },
+      "migrationManifestSha256": "85d3655d35c75d793453f7aff6a55f999bef85eb0bbe216be8b8d91502cef753",
+      "schemaSha256": "e8878eba884daea05aa5e890d380c93c4bc77e8d23cff40157a7f0247f79c220",
+      "userVersion": [{ "user_version": 0 }],
+      "journalMode": [{ "journal_mode": "wal" }]
+    },
+    "reopenStable": true
+  }
+}

@@ -1,0 +1,442 @@
+{
+  "formatVersion": 1,
+  "provenance": "synthetic-no-user-data",
+  "cases": [
+    {
+      "id": "command-project-current",
+      "schema": "ClientOrchestrationCommand",
+      "input": {
+        "type": "project.create",
+        "commandId": "cmd-project",
+        "projectId": "project-fixture",
+        "title": "Fixture",
+        "workspaceRoot": "/fixture/workspace",
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "project.create",
+          "commandId": "cmd-project",
+          "projectId": "project-fixture",
+          "title": "Fixture",
+          "workspaceRoot": "/fixture/workspace",
+          "createdAt": "2026-01-01T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "command-thread-legacy-defaults",
+      "schema": "ClientOrchestrationCommand",
+      "input": {
+        "type": "thread.create",
+        "commandId": "cmd-thread",
+        "threadId": "thread-fixture",
+        "projectId": "project-fixture",
+        "title": "Fixture",
+        "modelSelection": { "provider": "codex", "model": "fixture-model" },
+        "runtimeMode": "full-access",
+        "branch": null,
+        "worktreePath": null,
+        "createdAt": "2026-01-01T00:00:00.000Z"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "thread.create",
+          "commandId": "cmd-thread",
+          "threadId": "thread-fixture",
+          "projectId": "project-fixture",
+          "title": "Fixture",
+          "modelSelection": { "instanceId": "codex", "model": "fixture-model" },
+          "runtimeMode": "full-access",
+          "interactionMode": "default",
+          "branch": null,
+          "worktreePath": null,
+          "createdAt": "2026-01-01T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "id": "command-project-absent-override",
+      "schema": "ClientOrchestrationCommand",
+      "input": {
+        "type": "project.meta.update",
+        "commandId": "cmd-meta",
+        "projectId": "project-fixture"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "project.meta.update",
+          "commandId": "cmd-meta",
+          "projectId": "project-fixture"
+        }
+      }
+    },
+    {
+      "id": "command-project-clear-override",
+      "schema": "ClientOrchestrationCommand",
+      "input": {
+        "type": "project.meta.update",
+        "commandId": "cmd-meta",
+        "projectId": "project-fixture",
+        "defaultModelSelection": null
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "project.meta.update",
+          "commandId": "cmd-meta",
+          "projectId": "project-fixture",
+          "defaultModelSelection": null
+        }
+      }
+    },
+    {
+      "id": "command-unknown-discriminant",
+      "schema": "ClientOrchestrationCommand",
+      "input": { "type": "future.command", "commandId": "cmd-unknown" },
+      "expected": { "accepted": false }
+    },
+    {
+      "id": "command-timestamp-string-preserved-by-current-schema",
+      "schema": "ClientOrchestrationCommand",
+      "input": {
+        "type": "project.create",
+        "commandId": "cmd-project",
+        "projectId": "project-fixture",
+        "title": "Fixture",
+        "workspaceRoot": "/fixture/workspace",
+        "createdAt": "not-a-date"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "project.create",
+          "commandId": "cmd-project",
+          "projectId": "project-fixture",
+          "title": "Fixture",
+          "workspaceRoot": "/fixture/workspace",
+          "createdAt": "not-a-date"
+        }
+      }
+    },
+    {
+      "id": "terminal-unicode-and-control-sequences",
+      "schema": "TerminalEvent",
+      "input": {
+        "type": "output",
+        "threadId": "thread-fixture",
+        "terminalId": "term-1",
+        "sequence": 7,
+        "data": "ação 漢字 \u001b[31mred\u001b[0m\r\n"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "output",
+          "threadId": "thread-fixture",
+          "terminalId": "term-1",
+          "sequence": 7,
+          "data": "ação 漢字 \u001b[31mred\u001b[0m\r\n"
+        }
+      }
+    },
+    {
+      "id": "terminal-legacy-without-sequence",
+      "schema": "TerminalEvent",
+      "input": {
+        "type": "output",
+        "threadId": "thread-fixture",
+        "terminalId": "term-1",
+        "data": "legacy\r\n"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "output",
+          "threadId": "thread-fixture",
+          "terminalId": "term-1",
+          "data": "legacy\r\n"
+        }
+      }
+    },
+    {
+      "id": "terminal-null-exit-status",
+      "schema": "TerminalEvent",
+      "input": {
+        "type": "exited",
+        "threadId": "thread-fixture",
+        "terminalId": "term-1",
+        "exitCode": null,
+        "exitSignal": null
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "exited",
+          "threadId": "thread-fixture",
+          "terminalId": "term-1",
+          "exitCode": null,
+          "exitSignal": null
+        }
+      }
+    },
+    {
+      "id": "terminal-max-dimensions",
+      "schema": "TerminalResizeInput",
+      "input": { "threadId": "thread-fixture", "terminalId": "term-1", "cols": 1000, "rows": 500 },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "threadId": "thread-fixture",
+          "terminalId": "term-1",
+          "cols": 1000,
+          "rows": 500
+        }
+      }
+    },
+    {
+      "id": "terminal-zero-columns",
+      "schema": "TerminalResizeInput",
+      "input": { "threadId": "thread-fixture", "terminalId": "term-1", "cols": 0, "rows": 30 },
+      "expected": { "accepted": false }
+    },
+    {
+      "id": "terminal-too-many-rows",
+      "schema": "TerminalResizeInput",
+      "input": { "threadId": "thread-fixture", "terminalId": "term-1", "cols": 120, "rows": 501 },
+      "expected": { "accepted": false }
+    },
+    {
+      "id": "terminal-fractional-dimensions",
+      "schema": "TerminalResizeInput",
+      "input": { "threadId": "thread-fixture", "terminalId": "term-1", "cols": 120.5, "rows": 30 },
+      "expected": { "accepted": false }
+    },
+    {
+      "id": "terminal-unknown-environment-key-dropped",
+      "schema": "TerminalOpenInput",
+      "input": {
+        "threadId": "thread-fixture",
+        "terminalId": "term-1",
+        "cwd": "/fixture/workspace",
+        "env": { "INVALID-NAME": "fixture" }
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "threadId": "thread-fixture",
+          "terminalId": "term-1",
+          "cwd": "/fixture/workspace",
+          "env": {}
+        }
+      }
+    },
+    {
+      "id": "terminal-windows-path",
+      "schema": "TerminalOpenInput",
+      "input": {
+        "threadId": "thread-fixture",
+        "terminalId": "term-1",
+        "cwd": "C:\\fixture\\workspace",
+        "worktreePath": null
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "threadId": "thread-fixture",
+          "terminalId": "term-1",
+          "cwd": "C:\\fixture\\workspace",
+          "worktreePath": null
+        }
+      }
+    },
+    {
+      "id": "pairing-explicit-scopes",
+      "schema": "AuthCreatePairingCredentialInput",
+      "input": { "label": "Fixture client", "scopes": ["orchestration:read", "terminal:operate"] },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "label": "Fixture client",
+          "scopes": ["orchestration:read", "terminal:operate"]
+        }
+      }
+    },
+    {
+      "id": "pairing-invalid-scope",
+      "schema": "AuthCreatePairingCredentialInput",
+      "input": { "scopes": ["admin:all"] },
+      "expected": { "accepted": false }
+    },
+    {
+      "id": "auth-dpop-token-envelope",
+      "schema": "AuthAccessTokenResult",
+      "input": {
+        "access_token": "synthetic-not-a-credential",
+        "issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
+        "token_type": "DPoP",
+        "expires_in": 300,
+        "scope": "orchestration:read"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "access_token": "synthetic-not-a-credential",
+          "issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
+          "token_type": "DPoP",
+          "expires_in": 300,
+          "scope": "orchestration:read"
+        }
+      }
+    },
+    {
+      "id": "auth-legacy-session-without-optional-fields",
+      "schema": "AuthSessionState",
+      "input": {
+        "authenticated": false,
+        "auth": {
+          "policy": "remote-reachable",
+          "bootstrapMethods": ["one-time-token"],
+          "sessionMethods": ["bearer-access-token", "dpop-access-token"],
+          "sessionCookieName": "fixture_session"
+        }
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "authenticated": false,
+          "auth": {
+            "policy": "remote-reachable",
+            "bootstrapMethods": ["one-time-token"],
+            "sessionMethods": ["bearer-access-token", "dpop-access-token"],
+            "sessionCookieName": "fixture_session"
+          }
+        }
+      }
+    },
+    {
+      "id": "rpc-typed-authorization-error",
+      "schema": "EnvironmentAuthorizationError",
+      "input": {
+        "_tag": "EnvironmentAuthorizationError",
+        "message": "Fixture denial",
+        "requiredScope": "terminal:operate"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "_tag": "EnvironmentAuthorizationError",
+          "message": "Fixture denial",
+          "requiredScope": "terminal:operate"
+        }
+      }
+    },
+    {
+      "id": "http-legacy-auth-error",
+      "schema": "EnvironmentAuthInvalidError",
+      "input": {
+        "_tag": "EnvironmentAuthInvalidError",
+        "code": "auth_invalid",
+        "reason": "invalid_credential",
+        "traceId": "fixture-trace"
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "_tag": "EnvironmentAuthInvalidError",
+          "code": "auth_invalid",
+          "reason": "invalid_credential",
+          "traceId": "fixture-trace"
+        }
+      }
+    },
+    {
+      "id": "provider-legacy-codex-session",
+      "schema": "ProviderRuntimeEvent",
+      "input": {
+        "type": "session.started",
+        "eventId": "provider-event-1",
+        "provider": "codex",
+        "threadId": "thread-fixture",
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "payload": { "resume": { "threadId": "synthetic-provider-thread" } }
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "session.started",
+          "eventId": "provider-event-1",
+          "provider": "codex",
+          "threadId": "thread-fixture",
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "payload": { "resume": { "threadId": "synthetic-provider-thread" } }
+        }
+      }
+    },
+    {
+      "id": "provider-distinct-instance-routing",
+      "schema": "ProviderRuntimeEvent",
+      "input": {
+        "type": "session.started",
+        "eventId": "provider-event-2",
+        "provider": "claudeAgent",
+        "providerInstanceId": "claude-work",
+        "threadId": "thread-fixture",
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "payload": {}
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "session.started",
+          "eventId": "provider-event-2",
+          "provider": "claudeAgent",
+          "providerInstanceId": "claude-work",
+          "threadId": "thread-fixture",
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "payload": {}
+        }
+      }
+    },
+    {
+      "id": "provider-fork-driver-preserved",
+      "schema": "ProviderRuntimeEvent",
+      "input": {
+        "type": "session.started",
+        "eventId": "provider-event-3",
+        "provider": "custom-fork",
+        "threadId": "thread-fixture",
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "payload": {}
+      },
+      "expected": {
+        "accepted": true,
+        "encoded": {
+          "type": "session.started",
+          "eventId": "provider-event-3",
+          "provider": "custom-fork",
+          "threadId": "thread-fixture",
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "payload": {}
+        }
+      }
+    },
+    {
+      "id": "provider-invalid-routing-slug",
+      "schema": "ProviderRuntimeEvent",
+      "input": {
+        "type": "session.started",
+        "eventId": "provider-event-4",
+        "provider": "codex",
+        "providerInstanceId": "invalid/instance",
+        "threadId": "thread-fixture",
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "payload": {}
+      },
+      "expected": { "accepted": false }
+    }
+  ]
+}
