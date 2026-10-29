@@ -6,7 +6,11 @@ import type {
 import type { EnvironmentId, ProjectEntry } from "@lmcstools/core";
 import { FileTree, useFileTree, useFileTreeSearch, useFileTreeSelector } from "@pierre/trees/react";
 import { serializeComposerFileLink } from "@lmcstools/core/composerTrigger";
-import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@lmcstools/client/state/runtime";
+import { ChevronsDownUpIcon, ChevronsUpDownIcon, FilePlusIcon, FolderPlusIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "~/components/ui/button";
@@ -25,8 +29,16 @@ import { PIERRE_TREE_UNSAFE_CSS, pierreTreeStyle } from "~/pierre-tree-theme";
 import { createFileTreeDragMentionController } from "./fileTreeDragMention";
 import { areAllDirectoriesExpanded, setAllDirectoriesExpanded } from "./fileTreeExpansion";
 import { buildFileTreePathUpdates } from "./fileTreePathReconciliation";
+import {
+  joinRelativePath,
+  resolveCreationParentPath,
+  validateNewEntryName,
+} from "./fileTreeCreation";
 import { useDirectoryEntries } from "./useDirectoryEntries";
 import { useProjectPathSearch } from "~/state/queries";
+import { filesystemEnvironment } from "~/state/filesystem";
+import { projectEnvironment } from "~/state/projects";
+import { useAtomCommand } from "~/state/use-atom-command";
 
 interface FileBrowserPanelProps {
   environmentId: EnvironmentId;
@@ -117,6 +129,13 @@ export default function FileBrowserPanel({
   } = useDirectoryEntries(environmentId, cwd);
   const [query, setQuery] = useState("");
   const [expandAll, setExpandAll] = useState(false);
+  /** Folder a pending "new file"/"new folder" draft is created in. */
+  const [creation, setCreation] = useState<{ kind: "file" | "folder"; parentDir: string } | null>(
+    null,
+  );
+  const [creationName, setCreationName] = useState("");
+  const [creationError, setCreationError] = useState<string | null>(null);
+  const [creationPending, setCreationPending] = useState(false);
   const pathSearch = useProjectPathSearch({ environmentId, cwd, query: query.slice(0, 256) }, 200);
   const entries = useMemo(() => {
     const result = new Map(directoryEntries.map((entry) => [entry.path, entry]));
@@ -298,6 +317,71 @@ export default function FileBrowserPanel({
   const closeSearch = () => {
     setQuery("");
     search.close();
+  };
+  const writeFile = useAtomCommand(projectEnvironment.writeFile, { reportFailure: false });
+  const mkdir = useAtomCommand(filesystemEnvironment.mkdir, { reportFailure: false });
+  const startCreation = (kind: "file" | "folder") => {
+    const selectedPath = model.getSelectedPaths().at(-1)?.replace(/\/$/, "") || null;
+    setCreation({
+      kind,
+      parentDir: resolveCreationParentPath(
+        selectedPath,
+        selectedPath === null ? undefined : entryKindsRef.current.get(selectedPath),
+      ),
+    });
+    setCreationName("");
+    setCreationError(null);
+  };
+  const cancelCreation = () => {
+    setCreation(null);
+    setCreationName("");
+    setCreationError(null);
+  };
+  const confirmCreation = async () => {
+    if (!creation || creationPending) return;
+    const validationError = validateNewEntryName(creationName);
+    if (validationError) {
+      setCreationError(validationError);
+      return;
+    }
+    const name = creationName.trim();
+    const relativePath = joinRelativePath(creation.parentDir, name);
+    setCreationPending(true);
+    try {
+      const result =
+        creation.kind === "file"
+          ? await writeFile({ environmentId, input: { cwd, relativePath, contents: "" } })
+          : await mkdir({
+              environmentId,
+              input: {
+                parentPath: creation.parentDir ? `${cwd}/${creation.parentDir}` : cwd,
+                name,
+              },
+            });
+      if (result._tag === "Failure") {
+        if (!isAtomCommandInterrupted(result)) {
+          const error = squashAtomCommandFailure(result);
+          toastManager.add({
+            type: "error",
+            title: creation.kind === "file" ? "Failed to create file" : "Failed to create folder",
+            description: error instanceof Error ? error.message : "An error occurred.",
+          });
+        }
+        return;
+      }
+      const { kind, parentDir } = creation;
+      cancelCreation();
+      refresh();
+      if (parentDir) {
+        await load(parentDir, true);
+        const parentItem = model.getItem(`${parentDir}/`);
+        if (parentItem && "expand" in parentItem) parentItem.expand();
+      }
+      // A new file opens straight away so the user can code in it.
+      if (kind === "file") onOpenFile(relativePath);
+    } finally {
+      setCreationPending(false);
+    }
   };
   const expandedPathsRef = useRef(new Set<string>());
   useEffect(() => {
@@ -499,6 +583,38 @@ export default function FileBrowserPanel({
           onValueChange={handleSearchValueChange}
           onClose={closeSearch}
         />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                aria-label="New file"
+                onClick={() => startCreation("file")}
+              />
+            }
+          >
+            <FilePlusIcon className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipPopup>New file</TooltipPopup>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                aria-label="New folder"
+                onClick={() => startCreation("folder")}
+              />
+            }
+          >
+            <FolderPlusIcon className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipPopup>New folder</TooltipPopup>
+        </Tooltip>
         {directoryPaths.length > 0 ? (
           <Tooltip>
             <TooltipTrigger
@@ -528,6 +644,47 @@ export default function FileBrowserPanel({
           </Tooltip>
         ) : null}
       </div>
+      {creation ? (
+        <div className="flex shrink-0 items-center gap-1 border-b border-border/60 px-2 py-1">
+          {creation.kind === "file" ? (
+            <FilePlusIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <FolderPlusIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          )}
+          <InputGroup variant="ghost" className="h-7 min-w-0 flex-1">
+            <InputGroupInput
+              autoFocus
+              type="text"
+              size="sm"
+              value={creationName}
+              aria-label={creation.kind === "file" ? "New file name" : "New folder name"}
+              placeholder={joinRelativePath(
+                creation.parentDir,
+                creation.kind === "file" ? "new-file.ts" : "new-folder",
+              )}
+              spellCheck={false}
+              onChange={(event) => {
+                setCreationName(event.target.value);
+                setCreationError(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void confirmCreation();
+                  return;
+                }
+                if (event.key === "Escape") {
+                  cancelCreation();
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+          </InputGroup>
+        </div>
+      ) : null}
+      {creationError ? (
+        <div className="shrink-0 px-3 py-1 text-xs text-destructive">{creationError}</div>
+      ) : null}
       {error || pathSearch.error ? (
         <button
           type="button"
