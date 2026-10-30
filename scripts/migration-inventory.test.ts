@@ -9,12 +9,29 @@ import { WsRpcGroup, WS_METHODS } from "../packages/core/src/contracts/rpc.ts";
 import * as Channels from "../apps/desktop/src/ipc/channels.ts";
 import { RPC_REQUIRED_SCOPES } from "../apps/server/src/auth/RpcAuthorization.ts";
 import { buildMigrationInventory } from "./migration-inventory.ts";
+import {
+  classifyMigrationInventory,
+  migrationContractClassifications,
+} from "./migration-coverage.ts";
 
 const root = NodeURL.fileURLToPath(new URL("..", import.meta.url));
 const inventory = buildMigrationInventory(root);
 const rpcPath = "packages/core/src/contracts/rpc.ts";
 const schemaPath = "packages/core/src/contracts/schema.ts";
 const sorted = (values: Iterable<string>) => [...values].sort();
+
+it("keeps reviewed schema gaps linked to unchanged evidence without waiving parity", async () => {
+  const result = await inventory;
+  const classified = classifyMigrationInventory(result, migrationContractClassifications);
+  assert.deepEqual(classified.reviewIssues, []);
+  const schemaGaps = result.issues.filter((issue) =>
+    ["raw-http-schema-not-declared", "ipc-schema-not-declared"].includes(issue.code),
+  );
+  assert.lengthOf(classified.pendingParity, schemaGaps.length);
+  assert.isTrue(classified.pendingParity.every((entry) => entry.status === "not-run"));
+  assert.isFalse(classified.unresolved.some((issue) => schemaGaps.includes(issue)));
+  assert.equal(result.issues.length, classified.entries.length);
+});
 
 it("matches the runtime RPC map, streams, and exported channel strings without loading handlers", async () => {
   const result = await inventory;
@@ -59,6 +76,36 @@ it("matches the runtime RPC map, streams, and exported channel strings without l
   assert.equal(dynamic.value, "orchestration:read");
   assert.include(dynamic.dynamic!.expression, "input.retryHostId || input.updateTool");
   assert.include(dynamic.dynamic!.expression, "AuthOrchestrationOperateScope");
+});
+
+it("retains unregistered project declarations and scopes their reference evidence", async () => {
+  const result = await inventory;
+  assert.deepEqual(
+    result.unregisteredWsMethods.map((entry) => entry.tag),
+    ["projects.list", "projects.add", "projects.remove"],
+  );
+  for (const entry of result.unregisteredWsMethods) {
+    assert.equal(entry.registration, "not-a-member-of-WsRpcGroup");
+    assert.deepEqual(entry.referenceCandidates, []);
+    assert.match(entry.declarationFingerprint, /^[a-f0-9]{64}$/);
+    assert.isTrue(
+      result.issues.some(
+        (issue) => issue.code === "declared-unregistered-ws-method" && issue.subject === entry.tag,
+      ),
+    );
+  }
+  for (const path of ["packages/client/src", "apps/web/src", "apps/mobile/src"]) {
+    assert.include(result.unregisteredMethodEvidence.scannedRoots, path);
+    assert.isTrue(
+      result.unregisteredMethodEvidence.additionalSources.some((source) =>
+        source.file.startsWith(`${path}/`),
+      ),
+    );
+  }
+  assert.include(
+    result.unregisteredMethodEvidence.interpretation,
+    "not resolved consumers or proof of dead code",
+  );
 });
 
 it("matches typed HTTP membership and retains raw routes and the separate OAuth listener", async () => {
@@ -153,10 +200,10 @@ const fixtureFiles: Record<string, string> = {
   [rpcPath]: `
     import { Input as Payload } from "./schema.ts";
     throw new Error("Inventory must never execute this module");
-    export const WS_METHODS = { one: "one", two: "two", orphan: "orphan" } as const;
+    export const WS_METHODS = { one: "one", two: "two", orphanMethod: "orphan" } as const;
     const one = Rpc.make(WS_METHODS.one, { payload: Payload, success: Schema.String });
     const two = Rpc.make(WS_METHODS.two, { payload: MissingSchema, stream: true });
-    const orphan = Rpc.make(WS_METHODS.orphan, {});
+    const orphan = Rpc.make(WS_METHODS.orphanMethod, {});
     // Rpc.make("comment", {}); HttpRouter.add("GET", "/comment", handler);
     const decoy = 'Rpc.make("string", {})';
     export const WsRpcGroup = RpcGroup.make(one, two, MissingRpc);
@@ -196,6 +243,23 @@ const fixtureFiles: Record<string, string> = {
   "apps/server/src/poison.test.ts": 'HttpRouter.add("GET", "/test", handler);',
   "apps/server/src/nested/tests/poison.ts": 'HttpRouter.add("GET", "/test-directory", handler);',
   "apps/server/src/build/poison.ts": 'HttpRouter.add("GET", "/build", handler);',
+  "packages/client/src/usage.ts": `
+    throw new Error("Reference scanning must never execute client code");
+    const { orphanMethod: alias } = WS_METHODS;
+    const methods = WS_METHODS;
+    send(methods["orphanMethod"]);
+    send("orphan");
+    send("orphan-extra");
+    // WS_METHODS.orphanMethod and "orphan" are not references here.
+    const text = "WS_METHODS.orphanMethod";
+  `,
+  "apps/web/src/usage.tsx": `
+    const orphanMethod = "unrelated-local-name";
+    const view = <div>{WS_METHODS.orphanMethod}</div>;
+    HttpRouter.add("GET", "/not-a-server-route", handler);
+  `,
+  "apps/mobile/src/usage.ts": "send(`orphan`);",
+  "apps/mobile/src/ignored.test.ts": 'send("orphan");',
 };
 
 async function withFixture(run: (directory: string) => Promise<void>) {
@@ -271,6 +335,114 @@ it("fingerprints schema changes even when tags and schema reference names stay u
     assert.notEqual(
       before.sources.find((entry) => entry.file === schemaPath)!.fingerprint,
       after.sources.find((entry) => entry.file === schemaPath)!.fingerprint,
+    );
+  });
+});
+
+it("records AST reference candidates across clients without treating names as resolved consumers", async () => {
+  await withFixture(async (directory) => {
+    const result = await buildMigrationInventory(directory);
+    const method = result.unregisteredWsMethods.find((entry) => entry.tag === "orphan")!;
+    const candidates = method.referenceCandidates;
+    assert.equal(method.registration, "not-a-member-of-WsRpcGroup");
+    assert.deepEqual(
+      candidates
+        .filter((entry) => entry.source.file === rpcPath)
+        .map((entry) => entry.source.symbol),
+      ["orphan"],
+    );
+    assert.deepEqual(
+      candidates
+        .filter((entry) => entry.source.file === "packages/client/src/usage.ts")
+        .map((entry) => [entry.match, entry.syntax]),
+      [
+        ["symbol-name", "identifier"],
+        ["symbol-name", "string-literal"],
+        ["wire-tag", "string-literal"],
+      ],
+    );
+    assert.lengthOf(
+      candidates.filter((entry) => entry.source.file === "apps/web/src/usage.tsx"),
+      2,
+    );
+    assert.lengthOf(
+      candidates.filter((entry) => entry.source.file === "apps/mobile/src/usage.ts"),
+      1,
+    );
+    assert.lengthOf(candidates, 7);
+    assert.isTrue(
+      candidates.every(
+        (entry) =>
+          entry.source.line > 0 &&
+          entry.source.column > 0 &&
+          /^[a-f0-9]{64}$/.test(entry.source.fingerprint),
+      ),
+    );
+    assert.isFalse(result.http.raw.some((entry) => entry.path === "/not-a-server-route"));
+    assert.isFalse(result.sources.some((entry) => entry.file.includes("/usage.")));
+    assert.lengthOf(result.unregisteredMethodEvidence.additionalSources, 3);
+    assert.isFalse(
+      result.unregisteredMethodEvidence.additionalSources.some((entry) =>
+        entry.file.includes("ignored.test"),
+      ),
+    );
+  });
+});
+
+it("detects new client reference candidates without changing server contract evidence", async () => {
+  await withFixture(async (directory) => {
+    const before = await buildMigrationInventory(directory);
+    const path = "apps/mobile/src/usage.ts";
+    await NodeFSP.writeFile(
+      NodePath.join(directory, path),
+      'send(WS_METHODS.orphanMethod); send("orphan");',
+    );
+    const after = await buildMigrationInventory(directory);
+    assert.deepEqual(after.sources, before.sources);
+    assert.deepEqual(after.rpc, before.rpc);
+    assert.notDeepEqual(
+      after.unregisteredWsMethods[0]!.referenceCandidates,
+      before.unregisteredWsMethods[0]!.referenceCandidates,
+    );
+    assert.notEqual(
+      after.unregisteredMethodEvidence.additionalSources.find((source) => source.file === path)!
+        .fingerprint,
+      before.unregisteredMethodEvidence.additionalSources.find((source) => source.file === path)!
+        .fingerprint,
+    );
+    assert.isTrue(
+      after.issues.some(
+        (issue) => issue.code === "declared-unregistered-ws-method" && issue.subject === "orphan",
+      ),
+    );
+  });
+});
+
+it("does not let reference-only client globals resolve missing server contracts", async () => {
+  await withFixture(async (directory) => {
+    const before = await buildMigrationInventory(directory);
+    await NodeFSP.writeFile(
+      NodePath.join(directory, "packages/client/src/usage.ts"),
+      `
+      const MissingRpc = Rpc.make("client-only-rpc", {});
+      const MissingSchema = Schema.Struct({ fromClient: Schema.String });
+    `,
+    );
+    const after = await buildMigrationInventory(directory);
+    assert.deepEqual(after.rpc, before.rpc);
+    assert.deepEqual(after.http, before.http);
+    assert.deepEqual(after.desktopIpc, before.desktopIpc);
+    assert.deepEqual(after.issues, before.issues);
+  });
+});
+
+it("keeps reference-source parse failures visible instead of claiming an empty usage set", async () => {
+  await withFixture(async (directory) => {
+    const path = "apps/mobile/src/usage.ts";
+    await NodeFSP.writeFile(NodePath.join(directory, path), "const broken = (");
+    const result = await buildMigrationInventory(directory);
+    assert.isTrue(
+      result.issues.some((issue) => issue.code === "source-parse-error" && issue.subject === path),
     );
   });
 });

@@ -6,7 +6,7 @@ import {
   ThreadId,
   type ClientOrchestrationCommand,
 } from "@lmcstools/core";
-import { describe, expect, it } from "@effect/vitest";
+import { assert, describe, expect, it } from "@effect/vitest";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -24,6 +24,7 @@ import type { WsRpcProtocolClient } from "../rpc/protocol.ts";
 import {
   archiveThread,
   createProject,
+  deleteProject,
   revertThreadCheckpoint,
   reorderActiveThread,
   settleThread,
@@ -97,6 +98,40 @@ describe("environment commands", () => {
           title: "Project",
           workspaceRoot: "/workspace/project",
           createdAt: "2026-06-06T00:00:00.000Z",
+        },
+      ]);
+    }).pipe(Effect.provide(TEST_CRYPTO_LAYER)),
+  );
+
+  it.effect("dispatches project deletion through orchestration without changing force intent", () =>
+    Effect.gen(function* () {
+      const dispatched: ClientOrchestrationCommand[] = [];
+      const supervisor = yield* makeSupervisor(dispatched);
+      for (const [index, force] of [undefined, false, true].entries()) {
+        const result = yield* deleteProject({
+          projectId: ProjectId.make("project-1"),
+          commandId: CommandId.make(`delete-project-${index}`),
+          ...(force === undefined ? {} : { force }),
+        }).pipe(Effect.provideService(EnvironmentSupervisor.EnvironmentSupervisor, supervisor));
+        assert.deepEqual(result, { sequence: index + 1 });
+      }
+      assert.deepEqual(dispatched, [
+        {
+          type: "project.delete",
+          commandId: CommandId.make("delete-project-0"),
+          projectId: ProjectId.make("project-1"),
+        },
+        {
+          type: "project.delete",
+          commandId: CommandId.make("delete-project-1"),
+          projectId: ProjectId.make("project-1"),
+          force: false,
+        },
+        {
+          type: "project.delete",
+          commandId: CommandId.make("delete-project-2"),
+          projectId: ProjectId.make("project-1"),
+          force: true,
         },
       ]);
     }).pipe(Effect.provide(TEST_CRYPTO_LAYER)),

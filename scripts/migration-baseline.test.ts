@@ -9,7 +9,12 @@ import { baselineGate, matchesOracleGolden, writeBaselineReport } from "./migrat
 
 const ready = {
   inventoryIssues: 0,
+  classificationIssues: 0,
+  pendingParityChecks: 0,
   failedWireCases: 0,
+  failedDeviceHttpCases: 0,
+  failedOtlpHttpCases: 0,
+  knownRouteDefects: 0,
   oracleMatchesGolden: true,
   ownershipIssues: 0,
   unexercisedAreas: 0,
@@ -25,7 +30,12 @@ it("requires all parity criteria before declaring the gate ready", () => {
   assert.deepEqual(baselineGate(ready), { status: "ready", blockers: [] });
   for (const failure of [
     { inventoryIssues: 1 },
+    { classificationIssues: 1 },
+    { pendingParityChecks: 1 },
     { failedWireCases: 1 },
+    { failedDeviceHttpCases: 1 },
+    { failedOtlpHttpCases: 1 },
+    { knownRouteDefects: 1 },
     { oracleMatchesGolden: false },
     { ownershipIssues: 1 },
     { unexercisedAreas: 1 },
@@ -37,12 +47,17 @@ it("requires all parity criteria before declaring the gate ready", () => {
   assert.lengthOf(
     baselineGate({
       inventoryIssues: 1,
+      classificationIssues: 1,
+      pendingParityChecks: 1,
       failedWireCases: 1,
+      failedDeviceHttpCases: 1,
+      failedOtlpHttpCases: 1,
+      knownRouteDefects: 1,
       oracleMatchesGolden: false,
       ownershipIssues: 1,
       unexercisedAreas: 1,
     }).blockers,
-    5,
+    10,
   );
 });
 
@@ -91,8 +106,49 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
   assert.equal(report.gate.status, "blocked");
   assert.isTrue(report.sqlite.matchesGolden);
   assert.isTrue(report.wire.results.every((entry: { passed: boolean }) => entry.passed));
+  assert.lengthOf(report.deviceHttp.results, 32);
+  assert.isTrue(report.deviceHttp.results.every((entry: { passed: boolean }) => entry.passed));
+  assert.include(report.deviceHttp.interpretation, "No listener, full server middleware");
+  assert.sameMembers(
+    [...new Set(report.deviceHttp.results.map((entry: { subject: string }) => entry.subject))],
+    report.contractCoverage.pendingParity
+      .filter((entry: { tests: string[] }) =>
+        entry.tests.includes("apps/server/scripts/migration-device-http.test.ts"),
+      )
+      .map((entry: { subject: string }) => entry.subject),
+  );
+  assert.lengthOf(report.otlpHttp.results, 7);
+  assert.isTrue(report.otlpHttp.results.every((entry: { passed: boolean }) => entry.passed));
+  assert.include(report.otlpHttp.interpretation, "not an approved contract");
+  assert.lengthOf(report.otlpHttp.knownDefects, 3);
+  assert.sameMembers(
+    [...new Set(report.otlpHttp.results.map((entry: { subject: string }) => entry.subject))],
+    report.contractCoverage.pendingParity
+      .filter((entry: { tests: string[] }) =>
+        entry.tests.includes("apps/server/scripts/migration-otlp-http.test.ts"),
+      )
+      .map((entry: { subject: string }) => entry.subject),
+  );
+  assert.isTrue(
+    report.gate.blockers.some((blocker: string) =>
+      blocker.includes("known raw route defects must be resolved"),
+    ),
+  );
   assert.isAbove(report.inventory.rpc.length, 0);
   assert.isAbove(report.coverage.notExercisedBySyntheticBaseline.length, 0);
+  assert.deepEqual(report.contractCoverage.reviewIssues, []);
+  assert.lengthOf(report.contractCoverage.pendingParity, 25);
+  assert.isTrue(
+    report.contractCoverage.pendingParity.every(
+      (entry: { status: string }) => entry.status === "not-run",
+    ),
+  );
+  assert.isTrue(
+    report.gate.blockers.some((blocker: string) =>
+      blocker.includes("classified contracts still require functional parity"),
+    ),
+  );
+  assert.equal(report.contractCoverage.entries.length, report.inventory.issues.length);
   assert.isFalse("measurements" in report.sqlite.oracle);
   assert.lengthOf(report.measurements.sqlite.samples, 6);
 }, 30_000);

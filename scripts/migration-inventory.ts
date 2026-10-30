@@ -5,6 +5,7 @@ import * as NodePath from "node:path";
 import ts from "typescript-legacy";
 
 const roots = ["packages/core/src", "apps/server/src", "apps/desktop/src"];
+const referenceRoots = ["packages/client/src", "apps/web/src", "apps/mobile/src"];
 const rpcFile = "packages/core/src/contracts/rpc.ts";
 const httpFile = "packages/core/src/contracts/environmentHttp.ts";
 const authFile = "apps/server/src/auth/RpcAuthorization.ts";
@@ -53,7 +54,8 @@ type Location = ReturnType<typeof location>;
 /** Static evidence only: never imports or evaluates code from the supplied root. */
 export async function buildMigrationInventory(root: string) {
   const files = new Map<string, ts.SourceFile>();
-  async function collect(directory: string) {
+  const referenceFiles = new Map<string, ts.SourceFile>();
+  async function collect(directory: string, target: Map<string, ts.SourceFile>) {
     const entries = await NodeFSP.readdir(NodePath.resolve(root, directory), {
       withFileTypes: true,
     }).catch((error: NodeJS.ErrnoException) => {
@@ -63,13 +65,13 @@ export async function buildMigrationInventory(root: string) {
     for (const entry of entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
       if (entry.name.startsWith(".") || ignored.has(entry.name)) continue;
       const path = NodePath.posix.join(directory, entry.name);
-      if (entry.isDirectory()) await collect(path);
+      if (entry.isDirectory()) await collect(path, target);
       else if (
         entry.isFile() &&
         /\.(?:[cm]?ts|tsx)$/.test(path) &&
         !/\.(?:test|spec|d)\.[cm]?tsx?$/.test(path)
       ) {
-        files.set(
+        target.set(
           path,
           ts.createSourceFile(
             path,
@@ -81,7 +83,9 @@ export async function buildMigrationInventory(root: string) {
       }
     }
   }
-  for (const directory of roots) await collect(directory);
+  for (const directory of roots) await collect(directory, files);
+  for (const directory of referenceRoots) await collect(directory, referenceFiles);
+  const allFiles = new Map([...files, ...referenceFiles]);
   // A closed compiler host gives us lexical binding and barrel/alias resolution, not execution.
   // It cannot load dependencies, configs, plugins, or files outside these source trees.
   const options = { noLib: true, allowImportingTsExtensions: true, module: ts.ModuleKind.ESNext };
@@ -104,10 +108,21 @@ export async function buildMigrationInventory(root: string) {
     });
   const program = ts.createProgram([...files.keys()], options, host);
   const checker = program.getTypeChecker();
+  // Client script globals must not resolve missing declarations in the contract checker.
+  const referenceProgram = ts.createProgram([...referenceFiles.keys()], options, {
+    ...host,
+    getSourceFile: (name) => referenceFiles.get(name),
+    fileExists: (name) => referenceFiles.has(name),
+    readFile: (name) => referenceFiles.get(name)?.text,
+    resolveModuleNames: (names) => names.map(() => undefined),
+  });
   const issues: { code: string; subject: string; source: Location | null }[] = [];
   const issue = (code: string, subject: string, node?: ts.Node) =>
     issues.push({ code, subject, source: node ? location(node) : null });
-  for (const diagnostic of program.getSyntacticDiagnostics()) {
+  for (const diagnostic of [
+    ...program.getSyntacticDiagnostics(),
+    ...referenceProgram.getSyntacticDiagnostics(),
+  ]) {
     issue("source-parse-error", diagnostic.file?.fileName ?? "source");
   }
   function declaration(node: ts.Node): ts.Declaration | undefined {
@@ -264,18 +279,56 @@ export async function buildMigrationInventory(root: string) {
     }
   rpc.sort((a, b) => (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0));
   const tags = new Set(rpc.map((entry) => entry.tag));
-  const unregisteredWsMethods = [...fields(named(rpcFile, "WS_METHODS"))].flatMap(
-    ([symbol, node]) => {
-      const tag = literal(node);
-      if (tag === null) {
-        issue("unresolved-ws-method", symbol, node);
-        return [];
+  const wsMethods = fields(named(rpcFile, "WS_METHODS"));
+  const unregisteredWsMethods = [...wsMethods].flatMap(([symbol, node]) => {
+    const tag = literal(node);
+    if (tag === null) {
+      issue("unresolved-ws-method", symbol, node);
+      return [];
+    }
+    if (tags.has(tag)) return [];
+    issue("declared-unregistered-ws-method", tag, node);
+    return [
+      {
+        symbol,
+        tag,
+        source: location(node),
+        declarationFingerprint: hash(text(node.parent)),
+        registration: "not-a-member-of-WsRpcGroup" as const,
+        referenceCandidates: [] as {
+          match: "symbol-name" | "wire-tag";
+          syntax: "identifier" | "string-literal";
+          source: ReturnType<typeof evidence> & { column: number };
+        }[],
+      },
+    ];
+  });
+  for (const file of allFiles.values())
+    walk(file, (node) => {
+      if (!ts.isIdentifier(node) && !ts.isStringLiteralLike(node)) return;
+      for (const entry of unregisteredWsMethods) {
+        if (
+          node.text !== entry.symbol &&
+          !(ts.isStringLiteralLike(node) && node.text === entry.tag)
+        )
+          continue;
+        const declaration = wsMethods.get(entry.symbol)!.parent;
+        if (
+          file === declaration.getSourceFile() &&
+          node.getStart() >= declaration.getStart() &&
+          node.end <= declaration.end
+        )
+          continue;
+        entry.referenceCandidates.push({
+          match: node.text === entry.symbol ? "symbol-name" : "wire-tag",
+          syntax: ts.isIdentifier(node) ? "identifier" : "string-literal",
+          source: {
+            ...evidence(node),
+            column: file.getLineAndCharacterOfPosition(node.getStart()).character + 1,
+          },
+        });
       }
-      if (tags.has(tag)) return [];
-      issue("declared-unregistered-ws-method", tag, node);
-      return [{ symbol, tag, source: location(node) }];
-    },
-  );
+    });
 
   // Follow only the fluent .add chain rooted at EnvironmentHttpApi, not every endpoint declaration.
   function chain(node: ts.Node | undefined): ts.CallExpression[] {
@@ -499,11 +552,20 @@ export async function buildMigrationInventory(root: string) {
       schemas:
         "Source expressions and declaration fingerprints, not evaluated schemas. Null means omitted/unknown; RPC defaults apply only to omitted fields. Stream success/error describe elements, not the transport wrapper.",
       fingerprints:
-        "SHA-256 of comment-free TypeScript printing. Source manifest covers all scanned files, including transitive local schema changes; external package implementations are not resolved.",
+        "SHA-256 of comment-free TypeScript printing. sources covers contract-discovery roots; unregisteredMethodEvidence.additionalSources covers extra reference-only roots. External package implementations are not resolved.",
       scannedRoots: roots,
     },
     rpc,
     unregisteredWsMethods,
+    unregisteredMethodEvidence: {
+      interpretation:
+        "Exact AST identifier and string-literal candidates outside each method's own declaration, not resolved consumers or proof of dead code. Aliases retaining the property name and literal bracket keys are visible; computed names, reflection, external consumers and sources outside the listed roots are not. Comments, tests, declarations (.d.ts) and the configured build-output directories are excluded. No candidates does not authorize removal or waive the inventory finding.",
+      scannedRoots: [...roots, ...referenceRoots],
+      additionalSources: [...referenceFiles].map(([file, source]) => ({
+        file,
+        fingerprint: hash(text(source)),
+      })),
+    },
     http: { typed: typedHttp, raw: rawHttp },
     desktopIpc,
     registrationEvidence: {

@@ -10,9 +10,17 @@ import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/ho
 import * as Effect from "effect/Effect";
 import * as Logger from "effect/Logger";
 import oracleGolden from "../apps/server/scripts/fixtures/migration-oracle.json" with { type: "json" };
+import { runMigrationDeviceHttp } from "../apps/server/scripts/migration-device-http.ts";
+import { runMigrationOtlpHttp } from "../apps/server/scripts/migration-otlp-http.ts";
 import { runMigrationOracle } from "../apps/server/scripts/migration-oracle.ts";
 import { buildMigrationInventory } from "./migration-inventory.ts";
-import { migrationCoverage, migrationOwnership, validateOwnership } from "./migration-coverage.ts";
+import {
+  classifyMigrationInventory,
+  migrationContractClassifications,
+  migrationCoverage,
+  migrationOwnership,
+  validateOwnership,
+} from "./migration-coverage.ts";
 import { measureTerminalSerialization } from "./migration-metrics.ts";
 import { runWireCorpus } from "./migration-wire.ts";
 
@@ -20,7 +28,12 @@ const root = NodeURL.fileURLToPath(new URL("..", import.meta.url));
 
 export function baselineGate(input: {
   inventoryIssues: number;
+  classificationIssues: number;
+  pendingParityChecks: number;
   failedWireCases: number;
+  failedDeviceHttpCases: number;
+  failedOtlpHttpCases: number;
+  knownRouteDefects: number;
   oracleMatchesGolden: boolean;
   ownershipIssues: number;
   unexercisedAreas: number;
@@ -28,8 +41,24 @@ export function baselineGate(input: {
   const blockers = [];
   if (input.inventoryIssues)
     blockers.push(`${input.inventoryIssues} inventory findings need classification or repair.`);
+  if (input.classificationIssues)
+    blockers.push(`${input.classificationIssues} contract classifications are stale or invalid.`);
+  if (input.pendingParityChecks)
+    blockers.push(
+      `${input.pendingParityChecks} classified contracts still require functional parity checks.`,
+    );
   if (input.failedWireCases)
     blockers.push(`${input.failedWireCases} wire golden cases differ from the Node oracle.`);
+  if (input.failedDeviceHttpCases)
+    blockers.push(
+      `${input.failedDeviceHttpCases} device HTTP checks differ from the Node baseline.`,
+    );
+  if (input.failedOtlpHttpCases)
+    blockers.push(`${input.failedOtlpHttpCases} OTLP HTTP checks differ from the Node baseline.`);
+  if (input.knownRouteDefects)
+    blockers.push(
+      `${input.knownRouteDefects} known raw route defects must be resolved or explicitly accepted.`,
+    );
   if (!input.oracleMatchesGolden)
     blockers.push("SQLite replay, receipts or migration output differ from the fixed golden.");
   if (input.ownershipIssues)
@@ -61,9 +90,17 @@ export async function buildMigrationBaseline() {
   const { oracle, measurements } = result;
   const oracleMatchesGolden = matchesOracleGolden(oracle);
   const ownershipIssues = validateOwnership(migrationOwnership);
+  const contractCoverage = classifyMigrationInventory(inventory, migrationContractClassifications);
+  const deviceHttp = await runMigrationDeviceHttp();
+  const otlpHttp = await runMigrationOtlpHttp();
   const gate = baselineGate({
-    inventoryIssues: inventory.issues.length,
+    inventoryIssues: contractCoverage.unresolved.length,
+    classificationIssues: contractCoverage.reviewIssues.length,
+    pendingParityChecks: contractCoverage.pendingParity.length,
     failedWireCases: wire.filter((result) => !result.passed).length,
+    failedDeviceHttpCases: deviceHttp.results.filter((result) => !result.passed).length,
+    failedOtlpHttpCases: otlpHttp.results.filter((result) => !result.passed).length,
+    knownRouteDefects: otlpHttp.knownDefects.length,
     oracleMatchesGolden,
     ownershipIssues: ownershipIssues.length,
     unexercisedAreas: migrationCoverage.notExercisedBySyntheticBaseline.length,
@@ -88,6 +125,9 @@ export async function buildMigrationBaseline() {
     },
     gate,
     inventory,
+    contractCoverage,
+    deviceHttp,
+    otlpHttp,
     wire: {
       interpretation: "Schema decode/encode only, not token verification or provider execution.",
       results: wire,
