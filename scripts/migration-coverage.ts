@@ -759,7 +759,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
     evidence: evidence("cli", "cliHtml", "cloudConfig", "secrets", "connectAuth"),
     tests: ["apps/server/src/cloud/CliTokenManager.test.ts"],
     parityRequirement:
-      "Exercise the callback route, state rejection, response bytes, duplicate callbacks, timeout and listener cleanup; existing tests cover interaction helpers.",
+      "Exercising the shipped handler with a real listener means binding the hard-coded loopback port 34338 (publicConfig has no override), which is the production port of every CLI login on the machine, so it needs an explicit decision first: add a port override or accept the bind. Existing tests cover only the interaction helpers; state rejection, response bytes, duplicate callbacks, timeout and listener cleanup remain unexecuted.",
   },
   {
     code: "raw-http-schema-not-declared",
@@ -977,7 +977,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/server/src/terminal/OutputProtocol.test.ts",
     ],
     parityRequirement:
-      "Verify frames, streams, method scopes, cookie/ticket handling and teardown on every disconnect/failure path; the missing vcs.deleteBranch scope remains a separate blocker.",
+      "Existing tests already bind a real listener on an ephemeral port with the production perMessageDeflate setting and drive real WebSocket RPC clients, so the upgrade path is executed rather than stubbed; that is a suite, not a pinned corpus, and one of its cases currently fails on the known OTLP route defect. Parity still needs frames, streams, method scopes, cookie/ticket handling and teardown on every disconnect/failure path recorded deterministically; the missing vcs.deleteBranch scope remains a separate blocker.",
   },
 ];
 
