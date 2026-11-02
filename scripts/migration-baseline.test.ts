@@ -195,7 +195,7 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
       )
       .map((entry: { subject: string }) => entry.subject),
   );
-  assert.lengthOf(report.preloadIpc.results, 64);
+  assert.lengthOf(report.preloadIpc.results, 78);
   assert.isTrue(report.preloadIpc.results.every((entry: { passed: boolean }) => entry.passed));
   assert.include(report.preloadIpc.interpretation, "not an approved contract");
   assert.include(report.preloadIpc.interpretation, "in-memory electron stub");
@@ -208,16 +208,31 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
     )
     .map((entry: { subject: string }) => entry.subject);
   assert.lengthOf(ipcSubjects, 14);
-  const coveredConstants: string[] = report.preloadIpc.coveredChannels.map(
+  const coveredEventConstants: string[] = report.preloadIpc.coveredEventChannels.map(
+    (entry: { constant: string }) => entry.constant,
+  );
+  const coveredRequestConstants: string[] = report.preloadIpc.coveredRequestChannels.map(
     (entry: { constant: string }) => entry.constant,
   );
   assert.sameMembers(
     ipcSubjects,
-    coveredConstants.filter((constant: string) => ipcSubjects.includes(constant)),
+    coveredEventConstants.filter((constant: string) => ipcSubjects.includes(constant)),
   );
   assert.deepEqual(
-    coveredConstants.filter((constant: string) => !ipcSubjects.includes(constant)),
+    coveredEventConstants.filter((constant: string) => !ipcSubjects.includes(constant)),
     ["SET_NOTIFICATION_BADGE_CHANNEL"],
+  );
+  assert.lengthOf(report.preloadIpc.requestMethods, 99);
+  assert.lengthOf(coveredRequestConstants, 99);
+  assert.deepEqual(
+    coveredRequestConstants.filter((constant: string) => constant === ""),
+    [],
+  );
+  // The schema gap is exclusively on the event side: every request channel the shipped preload
+  // invokes is a declared constant that the inventory did not flag as schema-less.
+  assert.deepEqual(
+    coveredRequestConstants.filter((constant: string) => ipcSubjects.includes(constant)),
+    [],
   );
   assert.isAbove(report.inventory.rpc.length, 0);
   assert.isAbove(report.coverage.notExercisedBySyntheticBaseline.length, 0);

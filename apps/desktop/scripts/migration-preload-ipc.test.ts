@@ -12,8 +12,8 @@ const actualOf = (
 
 it("characterizes the shipped preload event guards without Electron", async () => {
   const report = await runMigrationPreloadIpc();
-  assert.lengthOf(report.results, 64);
-  assert.equal(new Set(report.results.map((result) => result.id)).size, 64);
+  assert.lengthOf(report.results, 78);
+  assert.equal(new Set(report.results.map((result) => result.id)).size, 78);
   assert.deepEqual(
     report.results.filter((result) => !result.passed),
     [],
@@ -112,6 +112,86 @@ it("pins the recorded divergence between guards and declared contracts", async (
   });
 });
 
+it("drives every shipped renderer->main request method", async () => {
+  const report = await runMigrationPreloadIpc();
+  const rows = report.requestMethods;
+  assert.lengthOf(rows, 99);
+  assert.deepEqual(
+    rows
+      .filter((row) => row.kind === "sendSync")
+      .map((row) => row.path)
+      .sort(),
+    [
+      "getAppBranding",
+      "getLocalEnvironmentBootstraps",
+      "getLocalEnvironmentEnabled",
+      "getSystemLocale",
+      "getWindowFullscreenState",
+    ],
+  );
+  assert.deepEqual(actualOf(report, "every-declared-channel-is-exercised-by-the-shipped-preload"), {
+    declaredCount: 113,
+    requestChannelCount: 99,
+    eventChannelCount: 15,
+    unexercised: [],
+    usedByBothRoles: ["desktop:set-notification-badge"],
+    macChannelConstant: "MAC_PERMISSION_HELPER_CHANNEL",
+  });
+  assert.equal((actualOf(report, "non-request-bridge-members") as unknown[]).length, 15);
+  assert.lengthOf(
+    rows.filter((row) => row.kind === "invoke" && row.args.length === 0),
+    17,
+  );
+  assert.deepEqual(actualOf(report, "single-argument-calls-separate-omitted-from-undefined-keys"), {
+    ensureSshEnvironment: { target: "s0" },
+    showContextMenu: { items: "s0" },
+    "preview.createTab without defaults": {
+      tabId: "s0",
+      zoomFactor: "__undefined__",
+      colorScheme: "__undefined__",
+    },
+  });
+  assert.deepEqual(actualOf(report, "preview-create-tab-drops-unknown-default-fields"), {
+    tabId: "s0",
+    zoomFactor: 1.5,
+    colorScheme: "dark",
+  });
+  assert.deepEqual(actualOf(report, "get-local-environment-enabled-uses-loose-not-false"), {
+    false: false,
+    true: true,
+    null: true,
+    undefined: true,
+    string: true,
+    object: true,
+  });
+  assert.deepEqual(actualOf(report, "get-window-fullscreen-state-requires-strict-true"), {
+    true: true,
+    false: false,
+    string: false,
+    number: false,
+    null: false,
+  });
+  assert.deepEqual(actualOf(report, "get-app-branding-nullifies-non-object-results"), {
+    object: { name: "LMCS" },
+    array: [1, 2],
+    string: null,
+    number: null,
+    null: null,
+    undefined: null,
+  });
+  assert.deepEqual(
+    actualOf(report, "ensure-ssh-environment-converts-cancellation-into-a-rejection"),
+    {
+      cancelledWithMessage: { thrown: "no credentials", value: null },
+      cancelledWithoutMessage: { thrown: "SSH authentication cancelled.", value: null },
+      cancelledWithNonStringMessage: { thrown: "SSH authentication cancelled.", value: null },
+      passthrough: { thrown: null, value: { status: "connected" } },
+      nullResult: { thrown: null, value: null },
+    },
+  );
+  assert.include(report.interpretation, "ipcRenderer.invoke or sendSync");
+});
+
 it("drives the macOS permission panel bridge and maps every observed channel back to its constant", async () => {
   const report = await runMigrationPreloadIpc();
   assert.deepEqual(actualOf(report, "mac-permission-preload-registers-its-dom-bridge"), [
@@ -151,7 +231,7 @@ it("drives the macOS permission panel bridge and maps every observed channel bac
     "finder",
   ]);
   assert.deepEqual(
-    report.coveredChannels.map((entry) => entry.constant),
+    report.coveredEventChannels.map((entry) => entry.constant),
     [
       "DESKTOP_APP_ACTIVATION_REQUEST_CHANNEL",
       "MAC_PERMISSION_HELPER_CHANNEL",
