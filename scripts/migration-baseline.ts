@@ -10,8 +10,12 @@ import { HostProcessArchitecture, HostProcessPlatform } from "@lmcstools/core/ho
 import * as Effect from "effect/Effect";
 import * as Logger from "effect/Logger";
 import oracleGolden from "../apps/server/scripts/fixtures/migration-oracle.json" with { type: "json" };
+import { runMigrationAssetHttp } from "../apps/server/scripts/migration-asset-http.ts";
 import { runMigrationDeviceHttp } from "../apps/server/scripts/migration-device-http.ts";
+import { runMigrationDeviceHubHttp } from "../apps/server/scripts/migration-device-hub-http.ts";
 import { runMigrationOtlpHttp } from "../apps/server/scripts/migration-otlp-http.ts";
+import { runMigrationStaticHttp } from "../apps/server/scripts/migration-static-http.ts";
+import { runMigrationUploadHttp } from "../apps/server/scripts/migration-upload-http.ts";
 import { runMigrationOracle } from "../apps/server/scripts/migration-oracle.ts";
 import { buildMigrationInventory } from "./migration-inventory.ts";
 import {
@@ -33,6 +37,10 @@ export function baselineGate(input: {
   failedWireCases: number;
   failedDeviceHttpCases: number;
   failedOtlpHttpCases: number;
+  failedStaticHttpCases: number;
+  failedUploadHttpCases: number;
+  failedAssetHttpCases: number;
+  failedDeviceHubHttpCases: number;
   knownRouteDefects: number;
   oracleMatchesGolden: boolean;
   ownershipIssues: number;
@@ -55,6 +63,20 @@ export function baselineGate(input: {
     );
   if (input.failedOtlpHttpCases)
     blockers.push(`${input.failedOtlpHttpCases} OTLP HTTP checks differ from the Node baseline.`);
+  if (input.failedStaticHttpCases)
+    blockers.push(
+      `${input.failedStaticHttpCases} static HTTP checks differ from the Node baseline.`,
+    );
+  if (input.failedUploadHttpCases)
+    blockers.push(
+      `${input.failedUploadHttpCases} attachment upload checks differ from the Node baseline.`,
+    );
+  if (input.failedAssetHttpCases)
+    blockers.push(`${input.failedAssetHttpCases} asset HTTP checks differ from the Node baseline.`);
+  if (input.failedDeviceHubHttpCases)
+    blockers.push(
+      `${input.failedDeviceHubHttpCases} device hub proxy checks differ from the Node baseline.`,
+    );
   if (input.knownRouteDefects)
     blockers.push(
       `${input.knownRouteDefects} known raw route defects must be resolved or explicitly accepted.`,
@@ -93,6 +115,10 @@ export async function buildMigrationBaseline() {
   const contractCoverage = classifyMigrationInventory(inventory, migrationContractClassifications);
   const deviceHttp = await runMigrationDeviceHttp();
   const otlpHttp = await runMigrationOtlpHttp();
+  const staticHttp = await runMigrationStaticHttp();
+  const uploadHttp = await runMigrationUploadHttp();
+  const assetHttp = await runMigrationAssetHttp();
+  const deviceHubHttp = await runMigrationDeviceHubHttp();
   const gate = baselineGate({
     inventoryIssues: contractCoverage.unresolved.length,
     classificationIssues: contractCoverage.reviewIssues.length,
@@ -100,6 +126,10 @@ export async function buildMigrationBaseline() {
     failedWireCases: wire.filter((result) => !result.passed).length,
     failedDeviceHttpCases: deviceHttp.results.filter((result) => !result.passed).length,
     failedOtlpHttpCases: otlpHttp.results.filter((result) => !result.passed).length,
+    failedStaticHttpCases: staticHttp.results.filter((result) => !result.passed).length,
+    failedUploadHttpCases: uploadHttp.results.filter((result) => !result.passed).length,
+    failedAssetHttpCases: assetHttp.results.filter((result) => !result.passed).length,
+    failedDeviceHubHttpCases: deviceHubHttp.results.filter((result) => !result.passed).length,
     knownRouteDefects: otlpHttp.knownDefects.length,
     oracleMatchesGolden,
     ownershipIssues: ownershipIssues.length,
@@ -128,6 +158,10 @@ export async function buildMigrationBaseline() {
     contractCoverage,
     deviceHttp,
     otlpHttp,
+    staticHttp,
+    uploadHttp,
+    assetHttp,
+    deviceHubHttp,
     wire: {
       interpretation: "Schema decode/encode only, not token verification or provider execution.",
       results: wire,

@@ -742,9 +742,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "environmentHttp",
       "server",
     ),
-    tests: ["apps/server/src/device/DeviceHubProxy.test.ts"],
+    tests: [
+      "apps/server/scripts/migration-device-hub-http.test.ts",
+      "apps/server/src/device/DeviceHubProxy.test.ts",
+    ],
     parityRequirement:
-      "Cover successful WS pumps/close, header/body fidelity, host selection, readiness errors and scope matrix beyond mocked HTTP forwarding.",
+      "Cover successful WS pumps/close, header/body fidelity, host selection, readiness errors and the full scope matrix beyond a stubbed hub; the corpus characterizes path/method gating, read/operate denial, ticket stripping, header hygiene, readiness and response rewriting, but no upgrade or real upstream.",
   },
   {
     code: "raw-http-schema-not-declared",
@@ -854,12 +857,13 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "May initialize a shared signing key, read files/icons, hold scoped media descriptors or fetch GitHub data with cached credentials.",
     evidence: evidence("http", "assets", "media", "github", "server"),
     tests: [
+      "apps/server/scripts/migration-asset-http.test.ts",
       "apps/server/src/http.test.ts",
       "apps/server/src/assets/AssetAccess.test.ts",
       "apps/server/src/server.test.ts",
     ],
     parityRequirement:
-      "Exercise composed-route tamper/expiry failures, ranges, GitHub redirects/errors and descriptor cancellation; helper tests do not cover the full route.",
+      "The isolated corpus covers attachment claims: forged, expired and deleted-file 404s, inline images ignoring ranges, private no-store video with 206/416 and Accept-Ranges, download disposition with RFC 5987 file names, sandboxed inline HTML and invalid Host. Workspace-file, media-file-exact, project-favicon, native-app-icon and github-media claims, conditional requests, cancellation and helper-level descriptor lifetime remain untested at the route.",
   },
   {
     code: "raw-http-schema-not-declared",
@@ -875,9 +879,13 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "Consumes request stream in its scope, writes unique .part file, renames on success and removes partial data on failure; may initialize shared signing key.",
     evidence: evidence("http", "uploads", "server"),
-    tests: ["apps/server/src/assets/AttachmentUpload.test.ts", "apps/server/src/server.test.ts"],
+    tests: [
+      "apps/server/scripts/migration-upload-http.test.ts",
+      "apps/server/src/assets/AttachmentUpload.test.ts",
+      "apps/server/src/server.test.ts",
+    ],
     parityRequirement:
-      "Verify route-level token rejection, exact bytes, interruption/overflow cleanup and scope finalization as well as successful uploads.",
+      "The isolated corpus covers route-level token rejection (missing, malformed, tampered, extra segment, expired), Content-Length agreement, exact/chunked/zero-size storage, short and oversized body rejection with .part cleanup and extension selection. Real client interruption, rename-over-existing behavior, authentication middleware and attachment consumption after upload remain untested.",
   },
   {
     code: "raw-http-schema-not-declared",
@@ -892,9 +900,13 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "Loads immutable-asset metadata and owns scoped file handles/streams, including SPA fallback and conditional responses.",
     evidence: evidence("http", "server"),
-    tests: ["apps/server/src/http.test.ts", "apps/server/src/server.test.ts"],
+    tests: [
+      "apps/server/scripts/migration-static-http.test.ts",
+      "apps/server/src/http.test.ts",
+      "apps/server/src/server.test.ts",
+    ],
     parityRequirement:
-      "Preserve conditional/range/compression/HEAD behavior, cancellation and dev redirect; add traversal, missing-file and remote-dev cases.",
+      "The isolated corpus covers SPA/HTML fallback, manifest-gated immutable caching, revalidation, 304/HEAD, encoded parent-segment rejection, invalid Host, dev redirect/proxied prefixes and the no-static 503. Compression, ranges, media streaming, packaged-build drift, proxy loops and cancellation remain untested.",
   },
   {
     code: "raw-http-schema-not-declared",
