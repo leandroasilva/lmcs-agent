@@ -18,6 +18,7 @@ const ready = {
   failedUploadHttpCases: 0,
   failedAssetHttpCases: 0,
   failedDeviceHubHttpCases: 0,
+  failedPreloadIpcCases: 0,
   knownRouteDefects: 0,
   oracleMatchesGolden: true,
   ownershipIssues: 0,
@@ -43,6 +44,7 @@ it("requires all parity criteria before declaring the gate ready", () => {
     { failedUploadHttpCases: 1 },
     { failedAssetHttpCases: 1 },
     { failedDeviceHubHttpCases: 1 },
+    { failedPreloadIpcCases: 1 },
     { knownRouteDefects: 1 },
     { oracleMatchesGolden: false },
     { ownershipIssues: 1 },
@@ -64,12 +66,13 @@ it("requires all parity criteria before declaring the gate ready", () => {
       failedUploadHttpCases: 1,
       failedAssetHttpCases: 1,
       failedDeviceHubHttpCases: 1,
+      failedPreloadIpcCases: 1,
       knownRouteDefects: 1,
       oracleMatchesGolden: false,
       ownershipIssues: 1,
       unexercisedAreas: 1,
     }).blockers,
-    14,
+    15,
   );
 });
 
@@ -191,6 +194,30 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
         entry.tests.includes("apps/server/scripts/migration-device-hub-http.test.ts"),
       )
       .map((entry: { subject: string }) => entry.subject),
+  );
+  assert.lengthOf(report.preloadIpc.results, 64);
+  assert.isTrue(report.preloadIpc.results.every((entry: { passed: boolean }) => entry.passed));
+  assert.include(report.preloadIpc.interpretation, "not an approved contract");
+  assert.include(report.preloadIpc.interpretation, "in-memory electron stub");
+  assert.isAbove(report.preloadIpc.knownLimitations.length, 0);
+  const ipcSubjects = report.contractCoverage.pendingParity
+    .filter(
+      (entry: { code: string; tests: string[] }) =>
+        entry.code === "ipc-schema-not-declared" &&
+        entry.tests.includes("apps/desktop/scripts/migration-preload-ipc.test.ts"),
+    )
+    .map((entry: { subject: string }) => entry.subject);
+  assert.lengthOf(ipcSubjects, 14);
+  const coveredConstants: string[] = report.preloadIpc.coveredChannels.map(
+    (entry: { constant: string }) => entry.constant,
+  );
+  assert.sameMembers(
+    ipcSubjects,
+    coveredConstants.filter((constant: string) => ipcSubjects.includes(constant)),
+  );
+  assert.deepEqual(
+    coveredConstants.filter((constant: string) => !ipcSubjects.includes(constant)),
+    ["SET_NOTIFICATION_BADGE_CHANNEL"],
   );
   assert.isAbove(report.inventory.rpc.length, 0);
   assert.isAbove(report.coverage.notExercisedBySyntheticBaseline.length, 0);

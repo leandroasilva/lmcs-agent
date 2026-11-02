@@ -442,9 +442,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "dispatchMenuAction can reveal/create a window and defer event delivery until loading finishes.",
     evidence: evidence("channels", "ipc", "preload", "window"),
-    tests: ["apps/desktop/src/window/DesktopWindow.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/window/DesktopWindow.test.ts",
+    ],
     parityRequirement:
-      "Verify exact delivery, preload rejection of non-strings, queued-window delivery and listener disposal; downstream menu actions need client coverage.",
+      "The corpus pins the desktop:menu-action channel, string-only acceptance, non-string rejection and disposal; parity still needs main-side dispatch with queued-window delivery and the downstream menu actions in a renderer.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -459,9 +462,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "Dispatches capture lifecycle notifications and reveals the window for started events.",
     evidence: evidence("channels", "ipc", "base", "preload", "window"),
-    tests: ["apps/desktop/src/window/DesktopWindow.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/window/DesktopWindow.test.ts",
+    ],
     parityRequirement:
-      "Capture observed acceptance for each discriminant, absent/invalid IDs, focus behavior and subscription cleanup; do not silently tighten to the declared Schema.",
+      "The corpus pins guard acceptance per discriminant, absent/invalid IDs, extra-field passthrough, cleanup and the divergences from the declared Schema; parity still needs the main-side focus and window-reveal behavior. Do not silently tighten the port to the declared Schema.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -475,9 +481,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "QuitShortcutHintEvent is an erased up/down union; preload checks state and hold/double-click mode, then reconstructs the payload.",
     effects: "Relays quit-hint transitions; QuitHold owns the actual timing and quit action.",
     evidence: evidence("channels", "ipc", "preload", "window", "quit"),
-    tests: ["apps/desktop/src/window/QuitHold.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/window/QuitHold.test.ts",
+    ],
     parityRequirement:
-      "Add exact channel/argument and preload-guard coverage; callback/timing tests do not verify Electron forwarding.",
+      "The corpus pins channel identity, guard rejections and payload reconstruction; parity still needs the main-process emit path wired to QuitHold timing, which callback tests alone do not verify.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -491,9 +500,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "gestureScrollEnd sends no arguments; preload invokes a zero-argument listener. No declared Schema.Void.",
     effects: "Notifies renderer listeners when native trackpad scrolling ends.",
     evidence: evidence("channels", "preload", "window"),
-    tests: ["apps/desktop/src/window/DesktopWindow.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/window/DesktopWindow.test.ts",
+    ],
     parityRequirement:
-      "Assert zero-argument arity, end/update distinction and listener cleanup, then exercise the consuming device view.",
+      "The corpus pins the zero-argument arity, payload-ignoring wrapper and cleanup; parity still needs the native gesture source, end/update distinction and the consuming device view.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -508,9 +520,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "macOS enter/leave hooks publish true/false; leaving also resynchronizes native window buttons.",
     evidence: evidence("channels", "ipc", "preload", "window"),
-    tests: ["apps/desktop/src/window/DesktopWindow.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/window/DesktopWindow.test.ts",
+    ],
     parityRequirement:
-      "Verify enter/leave ordering, initial sync state, invalid payload rejection and platform-specific behavior.",
+      "The corpus pins boolean-only acceptance and invalid payload rejection; parity still needs enter/leave ordering, the initial synchronous state fetch and platform-specific button resynchronization.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -527,11 +542,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "Activation broker queues requests until renderer readiness; completion uses a separate invoke method.",
     evidence: evidence("channels", "activationContract", "base", "preload", "activation", "broker"),
     tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
       "apps/desktop/src/app/DesktopAppActivationBroker.test.ts",
       "apps/desktop/src/app/DesktopAppActivation.test.ts",
     ],
     parityRequirement:
-      "Test actual IPC forwarding, duplicate/readiness ordering, completion and preload acceptance; broker/socket tests alone are insufficient.",
+      "The corpus pins the outgoing channel and the preload's object-only acceptance versus the declared Schema; parity still needs real IPC forwarding with duplicate/readiness ordering and completion.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -546,9 +562,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "Publishes update progress/state; this notification does not download or install an update.",
     evidence: evidence("channels", "ipc", "settings", "preload", "updates", "electronWindow"),
-    tests: ["apps/desktop/src/updates/DesktopUpdates.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/updates/DesktopUpdates.test.ts",
+    ],
     parityRequirement:
-      "Assert channel identity as well as full state payload, invalid inputs and listener teardown; existing harness ignores the channel.",
+      "The corpus pins channel identity, full-state forwarding, empty-object acceptance and teardown; parity still needs every state the real updater emits and broadcast ordering across live windows.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -563,9 +582,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "Registers a pending prompt, focuses/restores the window and awaits resolution with timeout/cleanup.",
     evidence: evidence("channels", "ipc", "preload", "ssh"),
-    tests: ["apps/desktop/src/ssh/DesktopSshPasswordPrompts.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/ssh/DesktopSshPasswordPrompts.test.ts",
+    ],
     parityRequirement:
-      "Cover every prompt field, cancellation/expiry, request isolation and preload acceptance without storing real credentials in fixtures.",
+      "The corpus pins the channel and that any object, including an empty one, is forwarded unchecked; parity still needs every prompt field, cancellation/expiry and request isolation without storing real credentials in fixtures.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -580,9 +602,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "Captures JPEG frames, checks dimensions, suppresses duplicates and adjusts PiP aspect/size before delivery.",
     evidence: evidence("channels", "ipc", "preview", "pip"),
-    tests: ["apps/desktop/src/preview/Manager.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/preview/Manager.test.ts",
+    ],
     parityRequirement:
-      "Verify frame bytes/dimensions, duplicate suppression, window closure and dedicated preload validation on the real PiP surface.",
+      "The corpus pins the dedicated PiP channel and its object-only guard; parity still needs frame bytes/dimensions, duplicate suppression and window closure on the real PiP surface.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -605,9 +630,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "electronWindow",
       "ipcHandlers",
     ),
-    tests: ["apps/desktop/src/preview/Manager.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/preview/Manager.test.ts",
+    ],
     parityRequirement:
-      "Determine retained-path compatibility separately from native recording, then test exact channel delivery, acknowledgement and cleanup.",
+      "The corpus pins the recording-frame channel identity and its object-only guard; parity still needs retained-path compatibility versus native recording, plus acknowledgement and cleanup evidence.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -630,9 +658,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "electronWindow",
       "ipcHandlers",
     ),
-    tests: ["apps/desktop/src/preview/Manager.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/preview/Manager.test.ts",
+    ],
     parityRequirement:
-      "Verify positional arity, tab/state identity, malformed fields, disposal and downstream navigation reporting; internal manager callbacks are not IPC parity.",
+      "The corpus pins two-positional-argument delivery, malformed-argument rejection and disposal; parity still needs tab/state identity from the real broadcaster and downstream navigation reporting. Internal manager callbacks are not IPC parity.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -655,9 +686,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "electronWindow",
       "ipcHandlers",
     ),
-    tests: ["apps/desktop/src/preview/Manager.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/preview/Manager.test.ts",
+    ],
     parityRequirement:
-      "Assert outgoing desktop channel, ordering, sequence and coordinates independently of guest-channel and internal-callback tests.",
+      "The corpus pins the outgoing desktop channel and its object-only guard; parity still needs ordering, sequence and coordinates independently of guest-channel and internal-callback tests.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -672,9 +706,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
     effects:
       "Starts native bundle drag, reveals in Finder or closes/refocuses windows; it does not grant permissions.",
     evidence: evidence("channels", "macPreload", "macHelper"),
-    tests: ["apps/desktop/src/permissions/MacPermissionHelper.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/permissions/MacPermissionHelper.test.ts",
+    ],
     parityRequirement:
-      "Cover malformed actions, other senders, subframes, drag fallback and listener removal after close on macOS.",
+      "The corpus pins the panel's DOM bridge and that only drag/finder/close strings reach desktop:mac-permission-helper; parity still needs malformed actions, other senders, subframes, drag fallback and listener removal after close on macOS.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -699,9 +736,12 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "electronWindow",
       "ipcHandlers",
     ),
-    tests: ["apps/desktop/src/preview/Manager.test.ts"],
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/preview/Manager.test.ts",
+    ],
     parityRequirement:
-      "Test complete envelope and exact desktop channel, tab gates and unsubscribe behavior; upstream guest validation alone is not event parity.",
+      "The corpus pins the exact desktop channel and that the envelope is object-checked only; parity still needs the complete {tabId,input} envelope, tab gates and unsubscribe behavior. Upstream guest validation alone is not event parity.",
   },
   {
     code: "raw-http-schema-not-declared",
