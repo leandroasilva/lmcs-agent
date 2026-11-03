@@ -525,7 +525,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/desktop/src/window/DesktopWindow.test.ts",
     ],
     parityRequirement:
-      "The corpus pins boolean-only acceptance and invalid payload rejection; parity still needs enter/leave ordering, the initial synchronous state fetch and platform-specific button resynchronization.",
+      "The corpus pins boolean-only acceptance and invalid payload rejection; parity still needs enter/leave ordering, platform-specific button resynchronization and this channel's own synchronous handler (its channel, strict-true transform and declared sync result codec are pinned, as is the shipped sendSync framing: the encoded result lands on `event.returnValue` and a failed encode throws instead of replying).",
   },
   {
     code: "ipc-schema-not-declared",
@@ -547,7 +547,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/desktop/src/app/DesktopAppActivation.test.ts",
     ],
     parityRequirement:
-      "The corpus pins the outgoing channel and the preload's object-only acceptance versus the declared Schema; parity still needs real IPC forwarding with duplicate/readiness ordering and completion.",
+      "The corpus pins the outgoing channel and the preload's object-only acceptance versus the declared Schema, plus the ready/complete request channels with their envelopes and declared codecs; parity still needs real IPC forwarding with duplicate/readiness ordering and completion.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -741,7 +741,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/desktop/src/preview/Manager.test.ts",
     ],
     parityRequirement:
-      "The corpus pins the exact desktop channel and that the envelope is object-checked only; parity still needs the complete {tabId,input} envelope, tab gates and unsubscribe behavior. Upstream guest validation alone is not event parity.",
+      "The corpus pins the exact desktop channel, that the preload envelope is object-checked only and that the shipped main-side framing decodes before the handler and encodes before replying; parity still needs the complete {tabId,input} envelope through this channel's real handler, tab gates and unsubscribe behavior. Upstream guest validation alone is not event parity.",
   },
   {
     code: "raw-http-schema-not-declared",

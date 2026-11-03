@@ -195,7 +195,7 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
       )
       .map((entry: { subject: string }) => entry.subject),
   );
-  assert.lengthOf(report.preloadIpc.results, 78);
+  assert.lengthOf(report.preloadIpc.results, 94);
   assert.isTrue(report.preloadIpc.results.every((entry: { passed: boolean }) => entry.passed));
   assert.include(report.preloadIpc.interpretation, "not an approved contract");
   assert.include(report.preloadIpc.interpretation, "in-memory electron stub");
