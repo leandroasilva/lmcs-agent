@@ -5,17 +5,23 @@
  * The shipped preload guards are closures inside `contextBridge.exposeInMainWorld`, so they
  * cannot be imported directly: the module also touches `electron`, Clerk's preload bridge and
  * renderer globals. This script registers a Node module hook that substitutes an in-memory
- * `electron` stub, imports the real preload entry points (desktop bridge, PiP bridge and the macOS
- * permission panel), drives the captured listeners with synthetic payloads for the main -> renderer
- * direction, and calls every bridge request method to record the channel and argument envelope the
- * shipped wrapper hands to `ipcRenderer.invoke`/`sendSync` for the renderer -> main direction. The
- * payload contract each shipped main-process factory declares for those channels is captured by
+ * `electron` stub, imports the real preload entry points (desktop bridge, PiP bridge, the macOS
+ * permission panel and the preview pick guest), drives the captured listeners with synthetic payloads
+ * for the main -> renderer direction, and calls every bridge request method to record the channel and
+ * argument envelope the
+ * shipped wrapper hands to `ipcRenderer.invoke`/`sendSync` for the renderer -> main direction. The * payload contract each shipped main-process factory declares for those channels is captured by
  * recording the codecs at `makeIpcMethod`/`makeSyncIpcMethod` time, so the envelopes can be audited
  * against the codecs instead of only against the wrapper. Service-free codecs are then registered
  * through the shipped `DesktopIpc.make(ipcMain)` itself, so the main-process framing of a request —
  * decode before the handler, handler input, result encode, listener replacement and release — runs
  * here instead of being only described, and `installNotificationBadge` runs for real because its
- * payload codec is built inside that installer and is unreachable otherwise.
+ * payload codec is built inside that installer and is unreachable otherwise. `MacPermissionHelper`
+ * also runs for real: it is the one classified IPC surface whose main-process half is a plain
+ * `ipcMain.on` listener, so the panel preload's own sends are delivered into that live listener.
+ * The pick preload speaks a separate `preview:*` guest protocol that the desktop channel inventory
+ * does not cover, so its recording cursor also runs for real against a stubbed DOM with captured
+ * timers and animation frames: the `preview:recording-input` payloads pinned here are the ones the
+ * shipped guest emits, and they are compared against the schema the host validates them with.
  * Because the stub only exists for Node's own loader, the corpus runs itself as a child process so
  * `node scripts/migration-baseline.ts` and Vitest get the same report.
  */
@@ -33,6 +39,12 @@ const STUB_MARK = "virtual:lmcs-migration-electron";
 const desktopRoot = NodePath.resolve(NodeURL.fileURLToPath(new URL("..", import.meta.url)));
 const desktopIpcUrl = NodeURL.pathToFileURL(
   NodePath.join(desktopRoot, "src/ipc/DesktopIpc.ts"),
+).href;
+const macPermissionHelperUrl = NodeURL.pathToFileURL(
+  NodePath.join(desktopRoot, "src/permissions/MacPermissionHelper.ts"),
+).href;
+const macSettingsWindowUrl = NodeURL.pathToFileURL(
+  NodePath.join(desktopRoot, "src/permissions/MacSettingsWindow.ts"),
 ).href;
 
 interface Registration {
@@ -55,12 +67,49 @@ interface DomListener {
   readonly target: string;
   readonly type: string;
   readonly handler: (event: SyntheticEvent) => void;
+  readonly capture: boolean;
 }
 
 interface SyntheticEvent {
   readonly type: string;
   readonly key?: string;
+  readonly code?: string;
+  readonly isTrusted?: boolean;
+  readonly clientX?: number;
+  readonly clientY?: number;
+  readonly button?: number;
+  readonly pointerType?: string;
+  readonly isComposing?: boolean;
+  readonly repeat?: boolean;
+  readonly relatedTarget?: unknown;
   readonly preventDefault: () => void;
+  readonly stopImmediatePropagation?: () => void;
+}
+
+/** One node the recording cursor builds through the stubbed `document.createElement`. */
+interface GuestElement {
+  readonly tag: string;
+  readonly attrs: Record<string, string>;
+  readonly style: Record<string, string>;
+  textContent: string;
+  innerHTML: string;
+  removed: boolean;
+}
+
+/**
+ * Recorders the preview pick preload drives through the stubbed DOM. Timers and animation frames
+ * are captured instead of scheduled, so the cursor's 700ms agent-cursor reset and its pointer
+ * coalescing frame only run when the corpus flushes them.
+ */
+interface GuestStub {
+  readonly effects: string[];
+  readonly elements: GuestElement[];
+  readonly frames: { id: number; callback: () => void; cancelled: boolean }[];
+  readonly timers: { id: number; ms: number; callback: () => void; cleared: boolean }[];
+  activeElement: unknown;
+  platform: string;
+  innerWidth: number;
+  innerHeight: number;
 }
 
 interface CapturedCodec {
@@ -79,6 +128,34 @@ interface BadgeStub {
   failing: boolean;
 }
 
+/** Recorders the shipped `MacPermissionHelper` drives through the Electron stub. */
+interface HelperStub {
+  readonly effects: string[];
+  readonly loadedUrls: string[];
+  readonly windowOptions: unknown[];
+  readonly windows: unknown[];
+  readonly windowEvents: { type: string; handler: () => void }[];
+  readonly webContentsEvents: string[];
+  readonly windowOpenHandlers: unknown[];
+  readonly listeners: {
+    channel: string;
+    handler: (event: unknown, ...args: unknown[]) => void;
+  }[];
+  readonly watchers: { onChange: (settings: unknown) => void; onUnavailable: () => void }[];
+  exePath: string;
+  mediaAccessStatus: string;
+  accessibilityTrusted: boolean;
+  iconEmpty: boolean;
+  dragFails: boolean;
+  loadFails: boolean;
+  deliver: boolean;
+  untrustedSender: boolean;
+  untrustedFrame: boolean;
+  visible: boolean;
+  focused: boolean;
+  bounds: { x: number; y: number; width: number; height: number };
+}
+
 interface StubState {
   readonly registrations: Registration[];
   readonly bridges: Record<string, Record<string, unknown>>;
@@ -90,6 +167,8 @@ interface StubState {
   readonly domListeners: DomListener[];
   readonly elementLookups: string[];
   readonly badge: BadgeStub;
+  readonly helper: HelperStub;
+  readonly guest: GuestStub;
 }
 
 declare global {
@@ -130,6 +209,10 @@ export const ipcRenderer = {
   },
   send: (channel, ...args) => {
     state.sends.push({ channel, args });
+    if (!state.helper.deliver) return;
+    for (const entry of state.helper.listeners.slice()) {
+      if (entry.channel === channel) entry.handler(helperEvent(), ...args);
+    }
   },
 };
 export const webFrame = { getZoomFactor: () => 1, setZoomFactor: () => {} };
@@ -150,15 +233,117 @@ const badgeWindow = (id) => ({
       state.badge.effects.push("send " + channel + " " + JSON.stringify(args)),
   },
 });
-export const app = { on: inert, once: inert, getPath: () => "/tmp", setPath: inert, getAppPath: () => "/tmp", isReady: () => true, whenReady: async () => {}, quit: inert, setBadgeCount: (count) => {
+export const app = { on: inert, once: inert, getPath: (name) => (name === "exe" ? state.helper.exePath : "/tmp"), setPath: inert, getAppPath: () => "/tmp", isReady: () => true, whenReady: async () => {}, quit: inert, setBadgeCount: (count) => {
   if (state.badge.failing) throw new Error("synthetic badge failure");
   state.badge.effects.push("setBadgeCount " + count);
   return true;
 } };
 export const dialog = { showOpenDialog: async () => ({}) };
-export const shell = { openExternal: async () => {}, showItemInFolder: inert, trashItem: async () => {} };
+export const shell = { openExternal: async () => {}, showItemInFolder: (path) => state.helper.effects.push("showItemInFolder " + path), trashItem: async () => {} };
 export const Menu = { buildFromTemplate: () => ({ popup: inert }), setApplicationMenu: inert };
+// The permission helper registers its own listener on the real ipcMain object it imports, so this
+// one records registrations and delivers the preload's sends straight into them.
+export const ipcMain = {
+  on: (channel, handler) => {
+    state.helper.listeners.push({ channel, handler });
+    state.helper.effects.push("ipcMain.on " + channel);
+  },
+  removeListener: (channel, handler) => {
+    const index = state.helper.listeners.findIndex(
+      (entry) => entry.channel === channel && entry.handler === handler,
+    );
+    if (index >= 0) state.helper.listeners.splice(index, 1);
+    state.helper.effects.push("ipcMain.removeListener " + channel);
+  },
+};
+// Only the helper's own window identity may drive its actions, so the corpus chooses which half of
+// the gate fails here.
+const helperEvent = () => {
+  const window = state.helper.windows[state.helper.windows.length - 1];
+  return {
+    sender: state.helper.untrustedSender || !window ? {} : window.webContents,
+    senderFrame: state.helper.untrustedFrame || !window ? {} : window.webContents.mainFrame,
+  };
+};
 export const BrowserWindow = class {
+  constructor(options) {
+    this.destroyed = false;
+    this.listeners = [];
+    this.webContents = {
+      mainFrame: { frameId: state.helper.windows.length },
+      send: (channel, ...args) =>
+        state.helper.effects.push("webContents.send " + channel + " " + JSON.stringify(args)),
+      startDrag: (drag) => {
+        if (state.helper.dragFails) throw new Error("synthetic drag failure");
+        state.helper.effects.push("startDrag " + drag.file);
+      },
+      setWindowOpenHandler: (handler) => state.helper.windowOpenHandlers.push(handler),
+      on: (type) => state.helper.webContentsEvents.push(type),
+    };
+    state.helper.windowOptions.push(options);
+    state.helper.windows.push(this);
+  }
+  on(type, handler) {
+    this.listeners.push({ type, handler });
+    state.helper.windowEvents.push({ type, handler });
+    state.helper.effects.push("window.on " + type);
+  }
+  once(type, handler) {
+    this.listeners.push({ type, handler });
+    state.helper.windowEvents.push({ type, handler });
+    state.helper.effects.push("window.once " + type);
+  }
+  removeListener(type, handler) {
+    const index = this.listeners.findIndex((entry) => entry.type === type && entry.handler === handler);
+    if (index >= 0) this.listeners.splice(index, 1);
+  }
+  emitClosed() {
+    for (const entry of this.listeners.slice()) {
+      if (entry.type === "closed") entry.handler();
+    }
+  }
+  isDestroyed() {
+    return this.destroyed;
+  }
+  destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    state.helper.effects.push("window.destroy");
+    this.emitClosed();
+  }
+  close() {
+    state.helper.effects.push("window.close");
+    this.destroy();
+  }
+  show() {
+    state.helper.effects.push("window.show");
+  }
+  focus() {
+    state.helper.effects.push("window.focus");
+  }
+  hide() {
+    state.helper.effects.push("window.hide");
+  }
+  showInactive() {
+    state.helper.effects.push("window.showInactive");
+  }
+  isVisible() {
+    return state.helper.visible;
+  }
+  isFocused() {
+    return state.helper.focused;
+  }
+  getBounds() {
+    return state.helper.bounds;
+  }
+  setBounds(bounds, animate) {
+    state.helper.effects.push("setBounds " + JSON.stringify(bounds) + " animate " + animate);
+  }
+  loadURL(url) {
+    state.helper.loadedUrls.push(String(url));
+    if (state.helper.loadFails) return Promise.reject(new Error("synthetic load failure"));
+    return Promise.resolve();
+  }
   static getFocusedWindow() {
     return state.badge.focused ? badgeWindow(state.badge.windows[0] ?? 1) : null;
   }
@@ -177,7 +362,16 @@ export const powerMonitor = { on: inert };
 export const powerSaveBlocker = { start: () => 0, stop: inert, isStarted: () => false };
 export const Tray = class {};
 export const nativeImage = {
-  createFromPath: () => ({}),
+  createFromPath: (iconPath) => {
+    state.helper.effects.push("createFromPath " + iconPath);
+    return {
+      isEmpty: () => state.helper.iconEmpty,
+      resize: (size) => {
+        state.helper.effects.push("resize " + JSON.stringify(size));
+        return { toDataURL: () => "data:image/png;base64,AAAA" };
+      },
+    };
+  },
   createFromDataURL: (dataUrl) => {
     state.badge.effects.push("createFromDataURL " + String(dataUrl).slice(0, 24));
     return { isEmpty: () => state.badge.emptyImage };
@@ -186,13 +380,37 @@ export const nativeImage = {
 export const protocol = { handle: inert, registerFileProtocol: inert };
 export const clipboard = { readText: () => "", writeText: inert, write: inert };
 export const globalShortcut = { register: () => true, unregisterAll: inert };
-export const systemPreferences = { getMediaAccessStatus: () => "unknown", askForMediaAccess: async () => false };
+export const systemPreferences = {
+  getMediaAccessStatus: (kind) => {
+    state.helper.effects.push("getMediaAccessStatus " + kind);
+    return state.helper.mediaAccessStatus;
+  },
+  isTrustedAccessibilityClient: (prompt) => {
+    state.helper.effects.push("isTrustedAccessibilityClient " + prompt);
+    return state.helper.accessibilityTrusted;
+  },
+  askForMediaAccess: async () => false,
+};
 export const desktopCapturer = { getSources: async () => [] };
 export const net = { request: () => ({}) };
 `;
 
 const clerkStub = `
 export const exposeClerkBridge = () => {};
+`;
+
+/**
+ * `watchMacSettingsWindow` spawns a long-lived `osascript` process, which a report cannot depend
+ * on. The shipped geometry helper is re-exported from the real module so its constants still run.
+ */
+const macSettingsWindowStub = `
+const state = globalThis.__lmcsMigrationPreloadIpc;
+export { settingsHelperBounds } from "${macSettingsWindowUrl}";
+export const watchMacSettingsWindow = (onChange, onUnavailable) => {
+  state.helper.watchers.push({ onChange, onUnavailable });
+  state.helper.effects.push("watchMacSettingsWindow");
+  return () => state.helper.effects.push("stopTracking");
+};
 `;
 
 const updaterStub = `
@@ -235,7 +453,7 @@ const patchDesktopIpcSource = (source: string): string => {
 
 const installStubLoader = () => {
   NodeModule.registerHooks({
-    resolve(specifier, _context, nextResolve) {
+    resolve(specifier, context, nextResolve) {
       if (
         specifier === "electron" ||
         specifier === "@clerk/electron/preload" ||
@@ -243,6 +461,13 @@ const installStubLoader = () => {
       ) {
         return {
           url: `${STUB_MARK}?name=${encodeURIComponent(specifier)}`,
+          shortCircuit: true,
+          format: "module",
+        };
+      }
+      if (specifier === "./MacSettingsWindow.ts" && context?.parentURL === macPermissionHelperUrl) {
+        return {
+          url: `${STUB_MARK}?name=macSettingsWindow`,
           shortCircuit: true,
           format: "module",
         };
@@ -259,7 +484,9 @@ const installStubLoader = () => {
               ? electronStub
               : name === "electron-updater"
                 ? updaterStub
-                : clerkStub,
+                : name === "macSettingsWindow"
+                  ? macSettingsWindowStub
+                  : clerkStub,
           shortCircuit: true,
         };
       }
@@ -277,23 +504,115 @@ const installStubLoader = () => {
 
 const installRendererGlobals = () => {
   const state = globalThis.__lmcsMigrationPreloadIpc!;
-  const listen = (target: string) => (type: string, handler: (event: SyntheticEvent) => void) => {
-    state.domListeners.push({ target, type, handler });
+  const listen =
+    (target: string) =>
+    (type: string, handler: (event: SyntheticEvent) => void, capture?: unknown) => {
+      state.domListeners.push({ target, type, handler, capture: capture === true });
+    };
+  const unlisten = (target: string) => (type: string, handler: unknown) => {
+    const index = state.domListeners.findIndex(
+      (entry) => entry.target === target && entry.type === type && entry.handler === handler,
+    );
+    if (index >= 0) state.domListeners.splice(index, 1);
+    state.guest.effects.push(`removeEventListener ${type}`);
+  };
+  // The recording cursor writes through `style.setProperty`, `setAttribute` and `remove`; those stay
+  // off the enumerable surface so the pinned element snapshots read as plain data.
+  const makeElement = (tag: string) => {
+    const element: GuestElement = {
+      tag,
+      attrs: {},
+      style: {},
+      textContent: "",
+      innerHTML: "",
+      removed: false,
+    };
+    Object.defineProperty(element.style, "setProperty", {
+      value: (name: string, value: string) => {
+        element.style[name] = value;
+      },
+    });
+    Object.defineProperty(element, "setAttribute", {
+      value: (name: string, value: string) => {
+        element.attrs[name] = value;
+      },
+    });
+    Object.defineProperty(element, "remove", {
+      value: () => {
+        element.removed = true;
+        state.guest.effects.push(`remove ${tag}`);
+      },
+    });
+    state.guest.elements.push(element);
+    return element;
   };
   (globalThis as { document?: unknown }).document = {
-    documentElement: { style: { setProperty: () => {} } },
+    documentElement: {
+      tag: "html",
+      style: { setProperty: () => {} },
+      append: (...elements: GuestElement[]) => {
+        state.guest.effects.push(`append ${elements.map((element) => element.tag).join(",")}`);
+      },
+    },
     addEventListener: listen("document"),
-    removeEventListener: () => {},
+    removeEventListener: unlisten("document"),
+    get activeElement() {
+      return state.guest.activeElement;
+    },
+    createElement: makeElement,
     getElementById: (id: string) => {
       state.elementLookups.push(id);
       // Only the panel's own buttons exist; anything else behaves like a missing element.
       return id === "app" || id === "close" ? { addEventListener: listen(`#${id}`) } : null;
     },
   };
-  (globalThis as { window?: unknown }).window = {
+  const windowStub = {
     addEventListener: listen("window"),
-    removeEventListener: () => {},
+    removeEventListener: unlisten("window"),
+    get innerWidth() {
+      return state.guest.innerWidth;
+    },
+    get innerHeight() {
+      return state.guest.innerHeight;
+    },
+    navigator: {
+      get platform() {
+        return state.guest.platform;
+      },
+    },
+    requestAnimationFrame: (callback: () => void) => {
+      const id = state.guest.frames.length + 1;
+      state.guest.frames.push({ id, callback, cancelled: false });
+      return id;
+    },
+    cancelAnimationFrame: (id: number) => {
+      const frame = state.guest.frames.find((entry) => entry.id === id);
+      if (frame !== undefined) frame.cancelled = true;
+    },
+    setTimeout: (callback: () => void, ms: number) => {
+      const id = state.guest.timers.length + 1;
+      state.guest.timers.push({ id, ms, callback, cleared: false });
+      return id;
+    },
+    clearTimeout: (id: number) => {
+      const timer = state.guest.timers.find((entry) => entry.id === id);
+      if (timer !== undefined) timer.cleared = true;
+    },
   };
+  (globalThis as { window?: unknown }).window = windowStub;
+  // `react-grab`'s freeze-updates module, which the pick preload pulls in for its React context
+  // lookup, captures `Object.getOwnPropertyDescriptor(Window.prototype, "requestAnimationFrame")?.value
+  // ?? window.requestAnimationFrame` at import time and then overwrites both window hooks with
+  // wrappers around what it captured. The prototype therefore has to hold the stub's own functions by
+  // value: a method that delegated back to `windowStub` would recurse into react-grab's wrapper.
+  const WindowStub = function Window() {
+    throw new Error("The preload IPC corpus never constructs a Window.");
+  };
+  Object.assign(WindowStub.prototype, {
+    requestAnimationFrame: windowStub.requestAnimationFrame,
+    cancelAnimationFrame: windowStub.cancelAnimationFrame,
+  });
+  (globalThis as { Window?: unknown }).Window ??= WindowStub;
 };
 
 /** Fires the listeners the shipped preloads registered on window/document/elements. */
@@ -348,8 +667,41 @@ async function buildReport() {
       destroyed: false,
       failing: false,
     },
+    helper: {
+      effects: [],
+      loadedUrls: [],
+      windowOptions: [],
+      windows: [],
+      windowEvents: [],
+      webContentsEvents: [],
+      windowOpenHandlers: [],
+      listeners: [],
+      watchers: [],
+      exePath: "/Applications/LMCS Code (Nightly).app/Contents/MacOS/LMCS Code",
+      mediaAccessStatus: "denied",
+      accessibilityTrusted: false,
+      iconEmpty: false,
+      dragFails: false,
+      loadFails: false,
+      deliver: false,
+      untrustedSender: false,
+      untrustedFrame: false,
+      visible: false,
+      focused: false,
+      bounds: { x: 0, y: 0, width: 800, height: 600 },
+    },
     domListeners: [],
     elementLookups: [],
+    guest: {
+      effects: [],
+      elements: [],
+      frames: [],
+      timers: [],
+      activeElement: null,
+      platform: "MacIntel",
+      innerWidth: 1440,
+      innerHeight: 900,
+    },
   };
   installStubLoader();
   installRendererGlobals();
@@ -1593,6 +1945,797 @@ async function buildReport() {
     },
   );
 
+  // The macOS permission panel is the one classified IPC surface whose main-process half is a plain
+  // `ipcMain.on` listener instead of a `DesktopIpc` method, so the shipped helper runs here: its
+  // permission probe, its panel window and HTML, its identity gate, its Settings tracking and its
+  // release path. Only the `osascript` watcher is replaced, and the real bounds maths is re-exported.
+  const HelperModule = await import("../src/permissions/MacPermissionHelper.ts");
+  const helperDefaults = {
+    exePath: "/Applications/LMCS Code (Nightly).app/Contents/MacOS/LMCS Code",
+    mediaAccessStatus: "denied",
+    accessibilityTrusted: false,
+    iconEmpty: false,
+    dragFails: false,
+    loadFails: false,
+    deliver: false,
+    untrustedSender: false,
+    untrustedFrame: false,
+    visible: false,
+    focused: false,
+    bounds: { x: 0, y: 0, width: 800, height: 600 },
+  };
+  const resetHelper = (setup: Partial<typeof helperDefaults> = {}) => {
+    for (const key of [
+      "effects",
+      "loadedUrls",
+      "windowOptions",
+      "windows",
+      "windowEvents",
+      "webContentsEvents",
+      "windowOpenHandlers",
+      "listeners",
+      "watchers",
+    ] as const) {
+      state.helper[key].length = 0;
+    }
+    Object.assign(state.helper, helperDefaults, setup);
+  };
+
+  const makeOwner = () => {
+    const events: { type: string; handler: () => void }[] = [];
+    return {
+      events,
+      isDestroyed: () => false,
+      show: () => {
+        state.helper.effects.push("owner.show");
+      },
+      focus: () => {
+        state.helper.effects.push("owner.focus");
+      },
+      once: (type: string, handler: () => void) => {
+        events.push({ type, handler });
+      },
+      removeListener: (type: string, handler: () => void) => {
+        const index = events.findIndex((entry) => entry.type === type && entry.handler === handler);
+        if (index >= 0) events.splice(index, 1);
+        state.helper.effects.push("owner.removeListener " + type);
+      },
+    };
+  };
+
+  type HelperPermission = "screen-recording" | "accessibility" | "full-disk-access";
+  const openPanel = async (
+    permission: HelperPermission,
+    setup: Partial<typeof helperDefaults> = {},
+    isGranted?: () => boolean | Promise<boolean>,
+  ) => {
+    resetHelper(setup);
+    const helper = new HelperModule.MacPermissionHelper();
+    const owner = makeOwner();
+    let thrown: string | null = null;
+    try {
+      await helper.show(
+        permission,
+        "/bundle/mac-permission-preload.cjs",
+        owner as unknown as Parameters<typeof helper.show>[2],
+        ["/bundle/resources/app.asar/icon.png", "/bundle/prod-resources/icon.png"],
+        isGranted,
+      );
+    } catch (error) {
+      thrown = firstFailureLine(error);
+    }
+    return {
+      helper,
+      owner,
+      thrown,
+      effects: [...state.helper.effects],
+      windows: state.helper.windows.length,
+      listeners: state.helper.listeners.length,
+      watchers: state.helper.watchers.length,
+      html: panelHtml(),
+      windowOptions: JSON.parse(JSON.stringify(state.helper.windowOptions)) as Record<
+        string,
+        unknown
+      >[],
+      webContentsEvents: [...state.helper.webContentsEvents],
+      windowEvents: state.helper.windowEvents.map((entry) => entry.type),
+      windowOpenHandlers: state.helper.windowOpenHandlers.length,
+    };
+  };
+
+  /** Pulls the shipped panel HTML back out of the `data:` URL the helper loaded. */
+  const panelHtml = () => {
+    const url = state.helper.loadedUrls[state.helper.loadedUrls.length - 1] ?? "";
+    const html = decodeURIComponent(url.replace("data:text/html;charset=utf-8,", ""));
+    const match = (pattern: RegExp) => pattern.exec(html)?.[1] ?? null;
+    return {
+      prefix: url.slice(0, 29),
+      csp: match(/Content-Security-Policy" content="([^"]+)"/),
+      title: match(/<title>([^<]+)<\/title>/),
+      header: match(/<header>([^<]+)<\/header>/),
+      icon: match(/<img src="([^"]*)"/),
+      closeLabel: match(/aria-label="([^"]*)"/),
+      draggable: html.includes('id="app" draggable="true"'),
+      scripts: (html.match(/<script/g) ?? []).length,
+    };
+  };
+
+  const lastHelperWindow = () =>
+    state.helper.windows[state.helper.windows.length - 1] as
+      | { webContents: { mainFrame: unknown } }
+      | undefined;
+
+  /** A frame that is a real object but never the panel's own, so the gate has something to reject. */
+  const helperDecoyFrame = { frameId: "decoy" };
+
+  const drivePanelAction = (
+    raw: unknown,
+    identity: {
+      sender: "own" | "other";
+      senderFrame: "own" | "other" | "missing";
+    } = { sender: "own", senderFrame: "own" },
+    extraArgs: unknown[] = [],
+  ) => {
+    state.helper.effects.length = 0;
+    const listener = state.helper.listeners[0];
+    if (listener === undefined) return { outcome: "noListener" as const, effects: [] };
+    const event = {
+      sender: identity.sender === "own" ? lastHelperWindow()?.webContents : {},
+      senderFrame:
+        identity.senderFrame === "own"
+          ? lastHelperWindow()?.webContents.mainFrame
+          : identity.senderFrame === "other"
+            ? helperDecoyFrame
+            : undefined,
+    };
+    try {
+      listener.handler(event, raw, ...extraArgs);
+      return { outcome: "returned" as const, effects: [...state.helper.effects] };
+    } catch (error) {
+      return {
+        outcome: "threw" as const,
+        message: firstFailureLine(error),
+        effects: [...state.helper.effects],
+      };
+    }
+  };
+
+  /** Drives the shipped panel preload, whose sends the stub delivers into the live helper listener. */
+  const drivePanelDom = async (target: string, type: string, key?: string) => {
+    const panel = await openPanel("screen-recording");
+    state.helper.deliver = true;
+    const start = state.sends.length;
+    state.helper.effects.length = 0;
+    fire(state, target, type, key);
+    state.helper.deliver = false;
+    return {
+      opened: panel.windows,
+      sends: state.sends.slice(start).map((entry) => entry.args.join(",")),
+      effects: [...state.helper.effects],
+    };
+  };
+
+  const driveWatcher = (drive: "settings" | "unavailable", settings?: unknown) => {
+    state.helper.effects.length = 0;
+    const watcher = state.helper.watchers[state.helper.watchers.length - 1];
+    if (watcher === undefined) return { outcome: "noWatcher" as const, effects: [] };
+    if (drive === "settings") watcher.onChange(settings);
+    else watcher.onUnavailable();
+    return { outcome: "returned" as const, effects: [...state.helper.effects] };
+  };
+
+  const fireWindowEvent = (type: string) => {
+    state.helper.effects.length = 0;
+    for (const entry of state.helper.windowEvents) {
+      if (entry.type === type) entry.handler();
+    }
+    return [...state.helper.effects];
+  };
+
+  const sendsBeforeHelper = state.sends.length;
+  const helperOpen = await openPanel("screen-recording");
+  const helperTitles: Record<string, unknown> = {};
+  for (const permission of ["screen-recording", "accessibility", "full-disk-access"] as const) {
+    const panel = await openPanel(permission);
+    helperTitles[permission] = {
+      title: panel.html.title,
+      probe: panel.effects.filter(
+        (effect) =>
+          effect.startsWith("getMediaAccessStatus") ||
+          effect.startsWith("isTrustedAccessibilityClient"),
+      ),
+    };
+  }
+  const summarizePanel = (panel: Awaited<ReturnType<typeof openPanel>>) => ({
+    thrown: panel.thrown,
+    effects: panel.effects,
+    windows: panel.windows,
+    listeners: panel.listeners,
+    watchers: panel.watchers,
+  });
+  const helperShortCircuits = {
+    "screen recording granted": summarizePanel(
+      await openPanel("screen-recording", { mediaAccessStatus: "granted" }),
+    ),
+    "accessibility granted": summarizePanel(
+      await openPanel("accessibility", { accessibilityTrusted: true }),
+    ),
+    "accessibility probe": summarizePanel(await openPanel("accessibility")),
+    "non bundle executable": summarizePanel(
+      await openPanel("screen-recording", { exePath: "/usr/local/bin/electron" }),
+    ),
+    "missing packaged icon": summarizePanel(
+      await openPanel("screen-recording", { iconEmpty: true }),
+    ),
+    "panel page fails to load": summarizePanel(
+      await openPanel("screen-recording", { loadFails: true }),
+    ),
+  };
+
+  // The shipped guard closes over the helper's own generation counter: a panel whose initial probe
+  // resolves after `close()` must not open.
+  const helperSuperseded = await (async () => {
+    resetHelper({});
+    const helper = new HelperModule.MacPermissionHelper();
+    let releaseProbe = () => {};
+    const pending = helper.show(
+      "screen-recording",
+      "/bundle/mac-permission-preload.cjs",
+      null,
+      ["/bundle/prod-resources/icon.png"],
+      () =>
+        new Promise<boolean>((resolve) => {
+          releaseProbe = () => {
+            resolve(false);
+          };
+        }),
+    );
+    helper.close();
+    releaseProbe();
+    let thrown: string | null = null;
+    try {
+      await pending;
+    } catch (error) {
+      thrown = firstFailureLine(error);
+    }
+    return {
+      thrown,
+      effects: [...state.helper.effects],
+      windows: state.helper.windows.length,
+      listeners: state.helper.listeners.length,
+    };
+  })();
+
+  const helperDomActions = {
+    dragstart: await drivePanelDom("#app", "dragstart"),
+    click: await drivePanelDom("#app", "click"),
+    close: await drivePanelDom("#close", "click"),
+    escape: await drivePanelDom("document", "keydown", "Escape"),
+    otherKey: await drivePanelDom("document", "keydown", "a"),
+  };
+
+  const helperIdentityGate = await (async () => {
+    const rows: Record<string, unknown> = {};
+    const drive = async (
+      label: string,
+      raw: unknown,
+      identity?: Parameters<typeof drivePanelAction>[1],
+      extraArgs?: unknown[],
+    ) => {
+      await openPanel("screen-recording");
+      rows[label] = drivePanelAction(raw, identity, extraArgs);
+    };
+    await drive("own sender and own frame", "drag");
+    await drive("other sender", "drag", { sender: "other", senderFrame: "own" });
+    await drive("other frame", "drag", { sender: "own", senderFrame: "other" });
+    await drive("missing frame", "drag", { sender: "own", senderFrame: "missing" });
+    await drive("both other", "drag", { sender: "other", senderFrame: "other" });
+    await drive("finder through the gate", "finder");
+    await drive("extra positional arguments", "close", undefined, ["drag", {}]);
+    await drive("close through the gate", "close");
+    // No re-arm here: the row above closed the panel, so this is what a stale send looks like.
+    rows["action after the panel closed"] = drivePanelAction("drag");
+    await openPanel("screen-recording", { dragFails: true });
+    rows["native drag throwing"] = drivePanelAction("drag");
+    state.helper.dragFails = false;
+    return rows;
+  })();
+
+  const helperMalformed = await (async () => {
+    const rows: Record<string, unknown> = {};
+    for (const raw of [
+      "drag",
+      "finder",
+      "close",
+      "DRAG",
+      "drag ",
+      "",
+      "close all",
+      42,
+      0,
+      true,
+      false,
+      null,
+      undefined,
+      {},
+      { action: "close" },
+      ["close"],
+    ]) {
+      await openPanel("screen-recording");
+      rows[JSON.stringify(raw) ?? "undefined"] = drivePanelAction(raw);
+    }
+    return rows;
+  })();
+
+  await openPanel("screen-recording");
+  const helperTracking = {
+    "settings window in front": driveWatcher("settings", {
+      x: 100,
+      y: 200,
+      width: 1200,
+      height: 900,
+      frontmost: true,
+    }),
+    "settings window not frontmost": driveWatcher("settings", {
+      x: 100,
+      y: 200,
+      width: 1200,
+      height: 900,
+      frontmost: false,
+    }),
+    "panel focused while settings is not": (() => {
+      state.helper.focused = true;
+      const row = driveWatcher("settings", {
+        x: 100,
+        y: 200,
+        width: 1200,
+        height: 900,
+        frontmost: false,
+      });
+      state.helper.focused = false;
+      return row;
+    })(),
+    "narrow settings window": driveWatcher("settings", {
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 400,
+      frontmost: true,
+    }),
+    "already at the target bounds": (() => {
+      const row = driveWatcher("settings", {
+        x: 100,
+        y: 200,
+        width: 1200,
+        height: 900,
+        frontmost: true,
+      });
+      state.helper.bounds = { x: 528, y: 944, width: 560, height: 140 };
+      const settled = driveWatcher("settings", {
+        x: 100,
+        y: 200,
+        width: 1200,
+        height: 900,
+        frontmost: true,
+      });
+      state.helper.bounds = helperDefaults.bounds;
+      return { moved: row, settled };
+    })(),
+    "already visible": (() => {
+      state.helper.visible = true;
+      const row = driveWatcher("settings", {
+        x: 100,
+        y: 200,
+        width: 1200,
+        height: 900,
+        frontmost: true,
+      });
+      state.helper.visible = false;
+      return row;
+    })(),
+    "blur resyncs while the panel is alive": fireWindowEvent("blur"),
+    "tracking unavailable": driveWatcher("unavailable"),
+    "settings window disappeared": driveWatcher("settings", null),
+    "blur after the panel closed": fireWindowEvent("blur"),
+  };
+
+  const helperClose = await (async () => {
+    const panel = await openPanel("screen-recording");
+    const ownerClosed = (() => {
+      state.helper.effects.length = 0;
+      for (const entry of panel.owner.events) {
+        if (entry.type === "closed") entry.handler();
+      }
+      return [...state.helper.effects];
+    })();
+    const afterOwnerClose = drivePanelAction("close");
+    const reopened = await openPanel("screen-recording");
+    const closed = (() => {
+      state.helper.effects.length = 0;
+      reopened.helper.close();
+      return [...state.helper.effects];
+    })();
+    return {
+      ownerClosed,
+      afterOwnerClose,
+      reopenedWindows: reopened.windows,
+      closed,
+      afterClose: drivePanelAction("close"),
+      listeners: state.helper.listeners.length,
+    };
+  })();
+  state.sends.length = sendsBeforeHelper;
+
+  check(
+    "mac-permission-helper-opens-one-panel-and-arms-its-listener",
+    "mac permission helper panel",
+    {
+      effects: helperOpen.effects,
+      html: helperOpen.html,
+      window: helperOpen.windowOptions,
+      webContentsEvents: helperOpen.webContentsEvents,
+      windowEvents: helperOpen.windowEvents,
+      windowOpenHandlers: helperOpen.windowOpenHandlers,
+      titles: helperTitles,
+    },
+    {
+      effects: [
+        "getMediaAccessStatus screen",
+        "createFromPath /bundle/resources/app.asar/icon.png",
+        "createFromPath /bundle/prod-resources/icon.png",
+        'resize {"width":64,"height":64}',
+        "window.on blur",
+        "ipcMain.on desktop:mac-permission-helper",
+        "window.once closed",
+        "watchMacSettingsWindow",
+      ],
+      html: {
+        prefix: "data:text/html;charset=utf-8,",
+        csp: "default-src 'none'; img-src data:; style-src 'unsafe-inline'",
+        title: "Set up Screen Recording",
+        header: "↑ Drag LMCS Code into the list above",
+        icon: "data:image/png;base64,AAAA",
+        closeLabel: "Close permission helper",
+        draggable: true,
+        scripts: 0,
+      },
+      window: [
+        {
+          width: 560,
+          height: 140,
+          show: false,
+          frame: false,
+          transparent: true,
+          roundedCorners: false,
+          backgroundColor: "#00000000",
+          hasShadow: false,
+          resizable: false,
+          minimizable: false,
+          maximizable: false,
+          fullscreenable: false,
+          alwaysOnTop: true,
+          skipTaskbar: true,
+          title: "Set up Screen Recording",
+          webPreferences: {
+            preload: "/bundle/mac-permission-preload.cjs",
+            sandbox: true,
+            contextIsolation: true,
+            nodeIntegration: false,
+          },
+        },
+      ],
+      webContentsEvents: ["will-navigate"],
+      windowEvents: ["blur", "closed"],
+      windowOpenHandlers: 1,
+      titles: {
+        "screen-recording": {
+          title: "Set up Screen Recording",
+          probe: ["getMediaAccessStatus screen"],
+        },
+        accessibility: {
+          title: "Set up Accessibility",
+          probe: ["isTrustedAccessibilityClient false"],
+        },
+        "full-disk-access": { title: "Set up Full Disk Access", probe: [] },
+      },
+    },
+  );
+  check(
+    "mac-permission-helper-short-circuits-before-opening-a-panel",
+    "mac permission helper gates",
+    helperShortCircuits,
+    {
+      "screen recording granted": {
+        thrown: null,
+        effects: ["getMediaAccessStatus screen"],
+        windows: 0,
+        listeners: 0,
+        watchers: 0,
+      },
+      "accessibility granted": {
+        thrown: null,
+        effects: ["isTrustedAccessibilityClient false"],
+        windows: 0,
+        listeners: 0,
+        watchers: 0,
+      },
+      "accessibility probe": {
+        thrown: null,
+        effects: [
+          "isTrustedAccessibilityClient false",
+          "createFromPath /bundle/resources/app.asar/icon.png",
+          "createFromPath /bundle/prod-resources/icon.png",
+          'resize {"width":64,"height":64}',
+          "window.on blur",
+          "ipcMain.on desktop:mac-permission-helper",
+          "window.once closed",
+          "watchMacSettingsWindow",
+        ],
+        windows: 1,
+        listeners: 1,
+        watchers: 1,
+      },
+      "non bundle executable": {
+        thrown: null,
+        effects: ["getMediaAccessStatus screen"],
+        windows: 0,
+        listeners: 0,
+        watchers: 0,
+      },
+      "missing packaged icon": {
+        thrown: "The packaged LMCS Code icon is missing.",
+        effects: [
+          "getMediaAccessStatus screen",
+          "createFromPath /bundle/resources/app.asar/icon.png",
+          "createFromPath /bundle/prod-resources/icon.png",
+        ],
+        windows: 0,
+        listeners: 0,
+        watchers: 0,
+      },
+      "panel page fails to load": {
+        thrown: "synthetic load failure",
+        effects: [
+          "getMediaAccessStatus screen",
+          "createFromPath /bundle/resources/app.asar/icon.png",
+          "createFromPath /bundle/prod-resources/icon.png",
+          'resize {"width":64,"height":64}',
+          "window.on blur",
+          "ipcMain.on desktop:mac-permission-helper",
+          "window.once closed",
+          "window.destroy",
+          "ipcMain.removeListener desktop:mac-permission-helper",
+          "owner.removeListener closed",
+        ],
+        windows: 1,
+        listeners: 0,
+        watchers: 0,
+      },
+    },
+  );
+  check(
+    "mac-permission-helper-does-not-reopen-a-superseded-panel",
+    "mac permission helper generation",
+    helperSuperseded,
+    { thrown: null, effects: [], windows: 0, listeners: 0 },
+  );
+  check(
+    "mac-permission-preload-actions-reach-the-real-handler",
+    "mac permission helper actions",
+    helperDomActions,
+    {
+      dragstart: {
+        opened: 1,
+        sends: ["drag"],
+        effects: ["startDrag /Applications/LMCS Code (Nightly).app"],
+      },
+      click: {
+        opened: 1,
+        sends: ["finder"],
+        effects: ["showItemInFolder /Applications/LMCS Code (Nightly).app"],
+      },
+      close: {
+        opened: 1,
+        sends: ["close"],
+        effects: [
+          "window.close",
+          "window.destroy",
+          "stopTracking",
+          "ipcMain.removeListener desktop:mac-permission-helper",
+          "owner.removeListener closed",
+          "owner.show",
+          "owner.focus",
+        ],
+      },
+      escape: {
+        opened: 1,
+        sends: ["close"],
+        effects: [
+          "window.close",
+          "window.destroy",
+          "stopTracking",
+          "ipcMain.removeListener desktop:mac-permission-helper",
+          "owner.removeListener closed",
+          "owner.show",
+          "owner.focus",
+        ],
+      },
+      otherKey: { opened: 1, sends: [], effects: [] },
+    },
+  );
+  check(
+    "mac-permission-helper-identity-gate-drops-other-renderers",
+    "mac permission helper sender gate",
+    helperIdentityGate,
+    {
+      "own sender and own frame": {
+        outcome: "returned",
+        effects: ["startDrag /Applications/LMCS Code (Nightly).app"],
+      },
+      "other sender": { outcome: "returned", effects: [] },
+      "other frame": { outcome: "returned", effects: [] },
+      "missing frame": { outcome: "returned", effects: [] },
+      "both other": { outcome: "returned", effects: [] },
+      "finder through the gate": {
+        outcome: "returned",
+        effects: ["showItemInFolder /Applications/LMCS Code (Nightly).app"],
+      },
+      "extra positional arguments": {
+        outcome: "returned",
+        effects: [
+          "window.close",
+          "window.destroy",
+          "stopTracking",
+          "ipcMain.removeListener desktop:mac-permission-helper",
+          "owner.removeListener closed",
+          "owner.show",
+          "owner.focus",
+        ],
+      },
+      "close through the gate": {
+        outcome: "returned",
+        effects: [
+          "window.close",
+          "window.destroy",
+          "stopTracking",
+          "ipcMain.removeListener desktop:mac-permission-helper",
+          "owner.removeListener closed",
+          "owner.show",
+          "owner.focus",
+        ],
+      },
+      "action after the panel closed": { outcome: "noListener", effects: [] },
+      "native drag throwing": {
+        outcome: "returned",
+        effects: ["showItemInFolder /Applications/LMCS Code (Nightly).app"],
+      },
+    },
+  );
+  check(
+    "mac-permission-helper-ignores-actions-outside-its-three-strings",
+    "mac permission helper action validation",
+    helperMalformed,
+    {
+      '"drag"': {
+        outcome: "returned",
+        effects: ["startDrag /Applications/LMCS Code (Nightly).app"],
+      },
+      '"finder"': {
+        outcome: "returned",
+        effects: ["showItemInFolder /Applications/LMCS Code (Nightly).app"],
+      },
+      '"close"': {
+        outcome: "returned",
+        effects: [
+          "window.close",
+          "window.destroy",
+          "stopTracking",
+          "ipcMain.removeListener desktop:mac-permission-helper",
+          "owner.removeListener closed",
+          "owner.show",
+          "owner.focus",
+        ],
+      },
+      '"DRAG"': { outcome: "returned", effects: [] },
+      '"drag "': { outcome: "returned", effects: [] },
+      '""': { outcome: "returned", effects: [] },
+      '"close all"': { outcome: "returned", effects: [] },
+      "42": { outcome: "returned", effects: [] },
+      "0": { outcome: "returned", effects: [] },
+      true: { outcome: "returned", effects: [] },
+      false: { outcome: "returned", effects: [] },
+      null: { outcome: "returned", effects: [] },
+      undefined: { outcome: "returned", effects: [] },
+      "{}": { outcome: "returned", effects: [] },
+      '{"action":"close"}': { outcome: "returned", effects: [] },
+      '["close"]': { outcome: "returned", effects: [] },
+    },
+  );
+  check(
+    "mac-permission-helper-tracks-the-settings-window",
+    "mac permission helper tracking",
+    helperTracking,
+    {
+      "settings window in front": {
+        outcome: "returned",
+        effects: [
+          'setBounds {"x":528,"y":944,"width":560,"height":140} animate false',
+          "window.showInactive",
+        ],
+      },
+      "settings window not frontmost": { outcome: "returned", effects: ["window.hide"] },
+      "panel focused while settings is not": {
+        outcome: "returned",
+        effects: [
+          'setBounds {"x":528,"y":944,"width":560,"height":140} animate false',
+          "window.showInactive",
+        ],
+      },
+      "narrow settings window": {
+        outcome: "returned",
+        effects: [
+          'setBounds {"x":232,"y":244,"width":352,"height":140} animate false',
+          "window.showInactive",
+        ],
+      },
+      "already at the target bounds": {
+        moved: {
+          outcome: "returned",
+          effects: [
+            'setBounds {"x":528,"y":944,"width":560,"height":140} animate false',
+            "window.showInactive",
+          ],
+        },
+        settled: { outcome: "returned", effects: ["window.showInactive"] },
+      },
+      "already visible": {
+        outcome: "returned",
+        effects: ['setBounds {"x":528,"y":944,"width":560,"height":140} animate false'],
+      },
+      "blur resyncs while the panel is alive": [
+        'setBounds {"x":528,"y":944,"width":560,"height":140} animate false',
+        "window.showInactive",
+      ],
+      "tracking unavailable": { outcome: "returned", effects: ["window.hide"] },
+      "settings window disappeared": {
+        outcome: "returned",
+        effects: [
+          "window.close",
+          "window.destroy",
+          "stopTracking",
+          "ipcMain.removeListener desktop:mac-permission-helper",
+          "owner.removeListener closed",
+          "owner.show",
+          "owner.focus",
+        ],
+      },
+      "blur after the panel closed": [],
+    },
+  );
+  check(
+    "mac-permission-helper-releases-its-listener-when-the-panel-closes",
+    "mac permission helper release",
+    helperClose,
+    {
+      ownerClosed: [
+        "window.destroy",
+        "stopTracking",
+        "ipcMain.removeListener desktop:mac-permission-helper",
+        "owner.removeListener closed",
+      ],
+      afterOwnerClose: { outcome: "noListener", effects: [] },
+      reopenedWindows: 1,
+      closed: [
+        "window.destroy",
+        "stopTracking",
+        "ipcMain.removeListener desktop:mac-permission-helper",
+        "owner.removeListener closed",
+      ],
+      afterClose: { outcome: "noListener", effects: [] },
+      listeners: 0,
+    },
+  );
+
   // The main process registers `(event, raw) => handler(raw, event)`, so only the first positional
   // argument of a request ever reaches the declared payload codec.
   const codecsByChannel = new Map<string, CapturedCodec>();
@@ -2262,6 +3405,881 @@ async function buildReport() {
     },
   );
 
+  // The preview pick preload is the fourth entry point and speaks a separate `preview:*` guest
+  // protocol that the desktop channel inventory does not cover at all. Its recording cursor runs for
+  // real against the stubbed DOM, so the `preview:recording-input` payloads pinned below are the ones
+  // the shipped guest emits, not fixtures the corpus invented.
+  const GuestProtocol = await import("../src/preview/GuestProtocol.ts");
+  const guestConstantByChannel = new Map<string, string>();
+  for (const [name, channel] of Object.entries(GuestProtocol as Record<string, unknown>)) {
+    if (name.endsWith("_CHANNEL") && typeof channel === "string") {
+      guestConstantByChannel.set(channel, name);
+    }
+  }
+  const guestChannel = (name: string): string => {
+    const channel = (GuestProtocol as Record<string, string>)[name];
+    if (channel === undefined) throw new Error(`Missing guest channel constant: ${name}`);
+    return channel;
+  };
+  const guestConstant = (channel: string) => guestConstantByChannel.get(channel) ?? channel;
+  const recordingInputChannel = guestChannel("RECORDING_INPUT_CHANNEL");
+  const guestSends = (start: number, only?: string) =>
+    state.sends
+      .slice(start)
+      .filter((entry) => only === undefined || entry.channel === only)
+      .map((entry) => ({ channel: guestConstant(entry.channel), args: jsonSafe(entry.args) }));
+  const driveGuestWindow = (type: string, event: Record<string, unknown> = {}) => {
+    const sends = state.sends.length;
+    const effects = state.guest.effects.length;
+    const listeners = state.domListeners.filter(
+      (entry) => entry.target === "window" && entry.type === type,
+    );
+    const prevented: string[] = [];
+    const stopped: string[] = [];
+    for (const entry of listeners) {
+      entry.handler({
+        preventDefault: () => prevented.push(type),
+        stopImmediatePropagation: () => stopped.push(type),
+        ...event,
+        type,
+      });
+    }
+    return {
+      listeners: listeners.length,
+      prevented: prevented.length,
+      stopped: stopped.length,
+      sends: guestSends(sends),
+      effects: state.guest.effects.slice(effects),
+    };
+  };
+  const driveGuestChannel = (name: string, args: unknown[]) => {
+    const channel = guestChannel(name);
+    const sends = state.sends.length;
+    const effects = state.guest.effects.length;
+    const entries = state.registrations.filter((entry) => entry.channel === channel);
+    for (const entry of entries) entry.handler({ sender: null }, ...args);
+    return {
+      listeners: entries.length,
+      sends: guestSends(sends),
+      effects: state.guest.effects.slice(effects),
+    };
+  };
+  const flushGuestFrames = () => {
+    const pending = state.guest.frames.filter((frame) => !frame.cancelled);
+    state.guest.frames.length = 0;
+    const sends = state.sends.length;
+    for (const frame of pending) frame.callback();
+    return { ran: pending.length, sends: guestSends(sends, recordingInputChannel) };
+  };
+  const cursorElements = () =>
+    state.guest.elements.slice(-3).map((element) => ({
+      tag: element.tag,
+      attrs: jsonSafe(element.attrs),
+      style: jsonSafe(element.style),
+      textContent: element.textContent,
+      svg: element.innerHTML.startsWith("<svg"),
+      removed: element.removed,
+    }));
+  const cursorProjection = () =>
+    state.guest.elements.slice(-3).map((element) => ({
+      tag: element.tag,
+      display: element.style.display ?? "",
+      opacity: element.style.opacity ?? "",
+      transform: element.style.transform ?? "",
+      removed: element.removed,
+    }));
+
+  const registrationsBeforeGuest = state.registrations.length;
+  const listenersBeforeGuest = state.domListeners.length;
+  const sendsBeforeGuest = state.sends.length;
+  await import("../src/preview-pick-preload.ts");
+  check(
+    "preview-pick-preload-registers-its-guest-channels",
+    "previewPickPreload",
+    {
+      channels: state.registrations
+        .slice(registrationsBeforeGuest)
+        .map((entry) => guestConstant(entry.channel)),
+      window: state.domListeners
+        .slice(listenersBeforeGuest)
+        .map((entry) => `${entry.type} capture ${entry.capture}`),
+      declared: [...guestConstantByChannel.values()].sort(byString),
+    },
+    {
+      channels: [
+        "RECORDING_CURSOR_CHANNEL",
+        "RECORDING_CONTROLLER_CHANNEL",
+        "RECORDING_KEY_CHANNEL",
+        "RECORDING_POINTER_CHANNEL",
+        "START_PICK_CHANNEL",
+        "ANNOTATION_THEME_CHANNEL",
+        "CANCEL_PICK_CHANNEL",
+      ],
+      window: [
+        "pointerdown capture true",
+        "keydown capture true",
+        "mousedown capture true",
+        "mouseup capture true",
+        "auxclick capture true",
+      ],
+      declared: [
+        "ANNOTATION_CAPTURED_CHANNEL",
+        "ANNOTATION_THEME_CHANNEL",
+        "CANCEL_PICK_CHANNEL",
+        "ELEMENT_PICKED_CHANNEL",
+        "HUMAN_INPUT_CHANNEL",
+        "MOUSE_NAVIGATE_CHANNEL",
+        "RECORDING_CONTROLLER_CHANNEL",
+        "RECORDING_CURSOR_CHANNEL",
+        "RECORDING_INPUT_CHANNEL",
+        "RECORDING_KEY_CHANNEL",
+        "RECORDING_POINTER_CHANNEL",
+        "START_PICK_CHANNEL",
+      ],
+    },
+  );
+
+  const installed = driveGuestChannel("RECORDING_CURSOR_CHANNEL", [
+    true,
+    { showKeyPresses: true, showMousePresses: true },
+    "none",
+  ]);
+  const installedElements = cursorElements();
+  // `recordingCursor ??=` keeps the first installation, so a later activation with different options
+  // does not reinstall — but the controller and theme it carries are still applied to the live one.
+  const reactivated = driveGuestChannel("RECORDING_CURSOR_CHANNEL", [
+    true,
+    "not-an-object",
+    "agent",
+  ]);
+  const reactivatedElements = cursorElements();
+  const disposed = driveGuestChannel("RECORDING_CURSOR_CHANNEL", [false]);
+  const disposedElements = cursorElements();
+  check(
+    "preview-recording-cursor-channel-installs-reuses-and-disposes-its-cursor",
+    "previewPickPreload",
+    {
+      installed,
+      installedElements,
+      reactivated,
+      reactivatedElements,
+      disposed,
+      disposedElements,
+      timers: state.guest.timers.map((timer) => ({ ms: timer.ms, cleared: timer.cleared })),
+      frames: state.guest.frames.length,
+    },
+    {
+      installed: { listeners: 1, sends: [], effects: ["append style,div,div"] },
+      installedElements: [
+        {
+          tag: "style",
+          attrs: {},
+          style: {},
+          textContent:
+            "html, html * { cursor: none !important; } @media (prefers-reduced-motion: reduce) { [data-t3code-recording-agent-cursor] { transition: none !important; } }",
+          svg: false,
+          removed: false,
+        },
+        {
+          tag: "div",
+          attrs: { "aria-hidden": "true", "data-t3code-recording-cursor": "" },
+          style: {
+            cssText:
+              "position:fixed;left:0;top:0;width:16px;height:24px;pointer-events:none;z-index:2147483647;display:none;",
+          },
+          textContent: "",
+          svg: true,
+          removed: false,
+        },
+        {
+          tag: "div",
+          attrs: { "aria-hidden": "true", "data-t3code-recording-agent-cursor": "" },
+          style: {
+            cssText:
+              "position:fixed;left:0;top:0;width:20px;height:20px;pointer-events:none;z-index:2147483647;display:none;filter:drop-shadow(0 1px 2px #0003);transition:transform 150ms ease-out,opacity 150ms ease-out;",
+            "--recording-cursor-primary": "#2563eb",
+            "--recording-cursor-background": "white",
+            opacity: "0.35",
+          },
+          textContent: "",
+          svg: true,
+          removed: false,
+        },
+      ],
+      reactivated: { listeners: 1, sends: [], effects: [] },
+      reactivatedElements: [
+        {
+          tag: "style",
+          attrs: {},
+          style: {},
+          textContent:
+            "html, html * { cursor: none !important; } @media (prefers-reduced-motion: reduce) { [data-t3code-recording-agent-cursor] { transition: none !important; } }",
+          svg: false,
+          removed: false,
+        },
+        {
+          tag: "div",
+          attrs: { "aria-hidden": "true", "data-t3code-recording-cursor": "" },
+          style: {
+            cssText:
+              "position:fixed;left:0;top:0;width:16px;height:24px;pointer-events:none;z-index:2147483647;display:none;",
+            display: "none",
+          },
+          textContent: "",
+          svg: true,
+          removed: false,
+        },
+        {
+          tag: "div",
+          attrs: { "aria-hidden": "true", "data-t3code-recording-agent-cursor": "" },
+          style: {
+            cssText:
+              "position:fixed;left:0;top:0;width:20px;height:20px;pointer-events:none;z-index:2147483647;display:none;filter:drop-shadow(0 1px 2px #0003);transition:transform 150ms ease-out,opacity 150ms ease-out;",
+            "--recording-cursor-primary": "#2563eb",
+            "--recording-cursor-background": "white",
+            opacity: "0.35",
+          },
+          textContent: "",
+          svg: true,
+          removed: false,
+        },
+      ],
+      disposed: {
+        listeners: 1,
+        sends: [],
+        effects: [
+          "removeEventListener pointermove",
+          "removeEventListener pointerdown",
+          "removeEventListener pointerup",
+          "removeEventListener pointercancel",
+          "removeEventListener keydown",
+          "removeEventListener keyup",
+          "removeEventListener pointerout",
+          "removeEventListener blur",
+          "remove div",
+          "remove div",
+          "remove style",
+        ],
+      },
+      disposedElements: [
+        {
+          tag: "style",
+          attrs: {},
+          style: {},
+          textContent:
+            "html, html * { cursor: none !important; } @media (prefers-reduced-motion: reduce) { [data-t3code-recording-agent-cursor] { transition: none !important; } }",
+          svg: false,
+          removed: true,
+        },
+        {
+          tag: "div",
+          attrs: { "aria-hidden": "true", "data-t3code-recording-cursor": "" },
+          style: {
+            cssText:
+              "position:fixed;left:0;top:0;width:16px;height:24px;pointer-events:none;z-index:2147483647;display:none;",
+            display: "none",
+          },
+          textContent: "",
+          svg: true,
+          removed: true,
+        },
+        {
+          tag: "div",
+          attrs: { "aria-hidden": "true", "data-t3code-recording-agent-cursor": "" },
+          style: {
+            cssText:
+              "position:fixed;left:0;top:0;width:20px;height:20px;pointer-events:none;z-index:2147483647;display:none;filter:drop-shadow(0 1px 2px #0003);transition:transform 150ms ease-out,opacity 150ms ease-out;",
+            "--recording-cursor-primary": "#2563eb",
+            "--recording-cursor-background": "white",
+            opacity: "0.35",
+          },
+          textContent: "",
+          svg: true,
+          removed: true,
+        },
+      ],
+      timers: [],
+      frames: 0,
+    },
+  );
+
+  // Reinstall with both options on and the human controller, then drive the real DOM listeners.
+  driveGuestChannel("RECORDING_CURSOR_CHANNEL", [
+    true,
+    { showKeyPresses: true, showMousePresses: true },
+    "human",
+  ]);
+  const recordingPayloads: unknown[] = [];
+  const keyRow = (event: Record<string, unknown>, activeElement: unknown, platform: string) => {
+    state.guest.activeElement = activeElement;
+    state.guest.platform = platform;
+    const sendsStart = state.sends.length;
+    const driven = driveGuestWindow("keydown", { isTrusted: true, ...event });
+    const recording = guestSends(sendsStart, recordingInputChannel);
+    for (const send of recording) recordingPayloads.push(...(send.args as unknown[]));
+    return {
+      listeners: driven.listeners,
+      humanInputSends: driven.sends.length - recording.length,
+      recording,
+    };
+  };
+  const plainElement = null;
+  const passwordElement = {
+    tagName: "INPUT",
+    getAttribute: (name: string) => (name === "type" ? "password" : null),
+  };
+  const customElement = { tagName: "MY-EDITOR", getAttribute: () => null };
+  const frameElement = { tagName: "IFRAME", getAttribute: () => null };
+  const shadowElement = { tagName: "DIV", shadowRoot: { activeElement: passwordElement } };
+  const keyRows = {
+    macPlainKey: keyRow({ key: "k", code: "KeyK" }, plainElement, "MacIntel"),
+    macControlChord: keyRow({ key: "k", code: "KeyK", ctrlKey: true }, plainElement, "MacIntel"),
+    macMetaAlone: keyRow({ key: "Meta", code: "MetaLeft" }, plainElement, "MacIntel"),
+    macEnter: keyRow({ key: "Enter", code: "Enter" }, plainElement, "MacIntel"),
+    deadKey: keyRow({ key: "Dead", code: "Backquote" }, plainElement, "MacIntel"),
+    windowsControlChord: keyRow({ key: "k", code: "KeyK", ctrlKey: true }, plainElement, "Win32"),
+    windowsMetaChord: keyRow({ key: "k", code: "KeyK", metaKey: true }, plainElement, "Win32"),
+    passwordField: keyRow({ key: "s", code: "KeyS" }, passwordElement, "MacIntel"),
+    customElementFocus: keyRow({ key: "s", code: "KeyS" }, customElement, "MacIntel"),
+    iframeFocus: keyRow({ key: "s", code: "KeyS" }, frameElement, "MacIntel"),
+    shadowPasswordFocus: keyRow({ key: "s", code: "KeyS" }, shadowElement, "MacIntel"),
+    composing: keyRow({ key: "k", code: "KeyK", isComposing: true }, plainElement, "MacIntel"),
+    repeat: keyRow({ key: "k", code: "KeyK", repeat: true }, plainElement, "MacIntel"),
+    // The cursor's own keydown listener does not gate on isTrusted, so a synthetic key event is
+    // still recorded even though the human-input reporter drops it.
+    untrusted: keyRow({ key: "k", code: "KeyK", isTrusted: false }, plainElement, "MacIntel"),
+  };
+  state.guest.activeElement = plainElement;
+  state.guest.platform = "MacIntel";
+  // `keyup` reports the last label it computed, or null when focus is sensitive at release time.
+  const keyUpRow = (activeElement: unknown) => {
+    state.guest.activeElement = activeElement;
+    const sendsStart = state.sends.length;
+    driveGuestWindow("keyup", {});
+    const recording = guestSends(sendsStart, recordingInputChannel);
+    for (const send of recording) recordingPayloads.push(...(send.args as unknown[]));
+    return recording;
+  };
+  const keyUpRows = {
+    released: keyUpRow(plainElement),
+    releasedOverPassword: keyUpRow(passwordElement),
+  };
+  state.guest.activeElement = plainElement;
+  const pointerRows = {
+    down: driveGuestWindow("pointerdown", {
+      isTrusted: true,
+      clientX: 10,
+      clientY: 20,
+      button: 0,
+      pointerType: "mouse",
+    }),
+    // Two moves before the frame coalesce into one emit carrying the last coordinates.
+    firstMove: driveGuestWindow("pointermove", {
+      isTrusted: true,
+      clientX: 11,
+      clientY: 21,
+      pointerType: "mouse",
+    }),
+    secondMove: driveGuestWindow("pointermove", {
+      isTrusted: true,
+      clientX: 12,
+      clientY: 22,
+      pointerType: "mouse",
+    }),
+    flushedMoves: flushGuestFrames(),
+    touchMove: driveGuestWindow("pointermove", {
+      isTrusted: true,
+      clientX: 13,
+      clientY: 23,
+      pointerType: "touch",
+    }),
+    up: driveGuestWindow("pointerup", {
+      isTrusted: true,
+      clientX: 12,
+      clientY: 22,
+      pointerType: "mouse",
+    }),
+    moveAfterRelease: driveGuestWindow("pointermove", {
+      isTrusted: true,
+      clientX: 30,
+      clientY: 40,
+      pointerType: "mouse",
+    }),
+    blur: driveGuestWindow("blur", {}),
+    pointerOutWithRelatedTarget: driveGuestWindow("pointerout", { relatedTarget: {} }),
+    pointerOutToNull: driveGuestWindow("pointerout", { relatedTarget: null }),
+  };
+  for (const send of [
+    ...pointerRows.down.sends,
+    ...pointerRows.flushedMoves.sends,
+    ...pointerRows.up.sends,
+    ...pointerRows.blur.sends,
+    ...pointerRows.pointerOutToNull.sends,
+  ]) {
+    if (send.channel === "RECORDING_INPUT_CHANNEL")
+      recordingPayloads.push(...(send.args as unknown[]));
+  }
+  check(
+    "preview-recording-input-payloads-are-what-the-guest-emits",
+    "previewPickPreload",
+    jsonSafe({ keyRows, keyUpRows, pointerRows }),
+    jsonSafe({
+      keyRows: {
+        macPlainKey: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: "K", held: true, width: 1440 }],
+            },
+          ],
+        },
+        macControlChord: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: "⌃K", held: true, width: 1440 }],
+            },
+          ],
+        },
+        macMetaAlone: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: "⌘", held: true, width: 1440 }],
+            },
+          ],
+        },
+        macEnter: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: "↵", held: true, width: 1440 }],
+            },
+          ],
+        },
+        deadKey: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: null, held: true, width: 1440 }],
+            },
+          ],
+        },
+        windowsControlChord: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: "Ctrl + K", held: true, width: 1440 }],
+            },
+          ],
+        },
+        windowsMetaChord: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: "Win + K", held: true, width: 1440 }],
+            },
+          ],
+        },
+        passwordField: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: null, held: true, width: 1440 }],
+            },
+          ],
+        },
+        customElementFocus: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: null, held: true, width: 1440 }],
+            },
+          ],
+        },
+        iframeFocus: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: null, held: true, width: 1440 }],
+            },
+          ],
+        },
+        shadowPasswordFocus: {
+          listeners: 2,
+          humanInputSends: 1,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: null, held: true, width: 1440 }],
+            },
+          ],
+        },
+        composing: { listeners: 2, humanInputSends: 1, recording: [] },
+        repeat: { listeners: 2, humanInputSends: 1, recording: [] },
+        untrusted: {
+          listeners: 2,
+          humanInputSends: 0,
+          recording: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "key", label: "K", held: true, width: 1440 }],
+            },
+          ],
+        },
+      },
+      keyUpRows: {
+        released: [
+          {
+            channel: "RECORDING_INPUT_CHANNEL",
+            args: [{ type: "key", label: "K", held: false, width: 1440 }],
+          },
+        ],
+        releasedOverPassword: [
+          {
+            channel: "RECORDING_INPUT_CHANNEL",
+            args: [{ type: "key", label: null, held: false, width: 1440 }],
+          },
+        ],
+      },
+      pointerRows: {
+        down: {
+          listeners: 2,
+          prevented: 0,
+          stopped: 0,
+          effects: [],
+          sends: [
+            {
+              channel: "HUMAN_INPUT_CHANNEL",
+              args: [{ kind: "pointer", x: 10, y: 20, button: 0 }],
+            },
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "pointer", phase: "down", x: 10, y: 20, width: 1440, height: 900 }],
+            },
+          ],
+        },
+        firstMove: { listeners: 1, prevented: 0, stopped: 0, effects: [], sends: [] },
+        secondMove: { listeners: 1, prevented: 0, stopped: 0, effects: [], sends: [] },
+        flushedMoves: {
+          ran: 1,
+          sends: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "pointer", phase: "move", x: 12, y: 22, width: 1440, height: 900 }],
+            },
+          ],
+        },
+        touchMove: { listeners: 1, prevented: 0, stopped: 0, effects: [], sends: [] },
+        up: {
+          listeners: 1,
+          prevented: 0,
+          stopped: 0,
+          effects: [],
+          sends: [
+            {
+              channel: "RECORDING_INPUT_CHANNEL",
+              args: [{ type: "pointer", phase: "up", x: 12, y: 22, width: 1440, height: 900 }],
+            },
+          ],
+        },
+        moveAfterRelease: { listeners: 1, prevented: 0, stopped: 0, effects: [], sends: [] },
+        blur: {
+          listeners: 1,
+          prevented: 0,
+          stopped: 0,
+          effects: [],
+          sends: [{ channel: "RECORDING_INPUT_CHANNEL", args: [{ type: "clear" }] }],
+        },
+        pointerOutWithRelatedTarget: {
+          listeners: 1,
+          prevented: 0,
+          stopped: 0,
+          effects: [],
+          sends: [],
+        },
+        pointerOutToNull: {
+          listeners: 1,
+          prevented: 0,
+          stopped: 0,
+          effects: [],
+          sends: [{ channel: "RECORDING_INPUT_CHANNEL", args: [{ type: "clear" }] }],
+        },
+      },
+    }),
+  );
+  check(
+    "preview-recording-input-payloads-satisfy-the-declared-schema",
+    "previewPickPreload",
+    {
+      payloads: recordingPayloads.length,
+      rejectedBySchema: recordingPayloads
+        .map((payload, index) => ({
+          index,
+          schemaAccepts: decodeAccepted(DesktopPreviewRecordingInputSchema, payload),
+        }))
+        .filter((row) => !row.schemaAccepts),
+    },
+    { payloads: 19, rejectedBySchema: [] },
+  );
+
+  const guardRow = (name: string, args: unknown[]) => {
+    const before = cursorProjection();
+    const driven = driveGuestChannel(name, args);
+    return {
+      listeners: driven.listeners,
+      sends: driven.sends,
+      effects: driven.effects,
+      cursorChanged: JSON.stringify(before) !== JSON.stringify(cursorProjection()),
+    };
+  };
+  check(
+    "preview-recording-guards-reject-malformed-guest-payloads",
+    "previewPickPreload",
+    jsonSafe({
+      controllerAgentWithPoint: guardRow("RECORDING_CONTROLLER_CHANNEL", ["agent", { x: 1, y: 2 }]),
+      controllerHumanWithoutPoint: guardRow("RECORDING_CONTROLLER_CHANNEL", ["human"]),
+      controllerUnknownString: guardRow("RECORDING_CONTROLLER_CHANNEL", ["robot"]),
+      controllerNonFinitePoint: guardRow("RECORDING_CONTROLLER_CHANNEL", [
+        "human",
+        { x: Number.NaN, y: 2 },
+      ]),
+      controllerPointMissingY: guardRow("RECORDING_CONTROLLER_CHANNEL", ["human", { x: 1 }]),
+      keyValid: guardRow("RECORDING_KEY_CHANNEL", [{ key: "a", shiftKey: true }]),
+      keyMissingKey: guardRow("RECORDING_KEY_CHANNEL", [{ shiftKey: true }]),
+      keyNonStringKey: guardRow("RECORDING_KEY_CHANNEL", [{ key: 7 }]),
+      keyNonObject: guardRow("RECORDING_KEY_CHANNEL", ["a"]),
+      keyNull: guardRow("RECORDING_KEY_CHANNEL", [null]),
+      pointerClick: guardRow("RECORDING_POINTER_CHANNEL", [{ x: 3, y: 4, phase: "click" }]),
+      pointerUnknownPhase: guardRow("RECORDING_POINTER_CHANNEL", [{ x: 3, y: 4, phase: "drag" }]),
+      pointerInfiniteX: guardRow("RECORDING_POINTER_CHANNEL", [
+        { x: Number.POSITIVE_INFINITY, y: 4 },
+      ]),
+      pointerStringCoordinates: guardRow("RECORDING_POINTER_CHANNEL", [{ x: "3", y: "4" }]),
+      // Any first argument that is not the literal `true` takes the disposal branch.
+      cursorUnknownActivation: guardRow("RECORDING_CURSOR_CHANNEL", ["true"]),
+      cursorDeactivation: guardRow("RECORDING_CURSOR_CHANNEL", [false]),
+    }),
+    jsonSafe({
+      controllerAgentWithPoint: { listeners: 1, sends: [], effects: [], cursorChanged: true },
+      controllerHumanWithoutPoint: { listeners: 1, sends: [], effects: [], cursorChanged: true },
+      controllerUnknownString: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      controllerNonFinitePoint: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      controllerPointMissingY: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      keyValid: {
+        listeners: 1,
+        sends: [
+          {
+            channel: "RECORDING_INPUT_CHANNEL",
+            args: [{ type: "key", label: "⇧A", held: false, width: 1440 }],
+          },
+        ],
+        effects: [],
+        cursorChanged: false,
+      },
+      keyMissingKey: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      keyNonStringKey: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      keyNonObject: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      keyNull: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      pointerClick: {
+        listeners: 1,
+        sends: [
+          {
+            channel: "RECORDING_INPUT_CHANNEL",
+            args: [{ type: "pointer", phase: "click", x: 3, y: 4, width: 1440, height: 900 }],
+          },
+        ],
+        effects: [],
+        cursorChanged: true,
+      },
+      // An unknown phase is coerced to "move", which the cursor then drops because no button is held.
+      pointerUnknownPhase: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      pointerInfiniteX: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      pointerStringCoordinates: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      cursorUnknownActivation: {
+        listeners: 1,
+        sends: [],
+        effects: [
+          "removeEventListener pointermove",
+          "removeEventListener pointerdown",
+          "removeEventListener pointerup",
+          "removeEventListener pointercancel",
+          "removeEventListener keydown",
+          "removeEventListener keyup",
+          "removeEventListener pointerout",
+          "removeEventListener blur",
+          "remove div",
+          "remove div",
+          "remove style",
+        ],
+        cursorChanged: true,
+      },
+      cursorDeactivation: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+    }),
+  );
+
+  const themed = driveGuestChannel("ANNOTATION_THEME_CHANNEL", [
+    { primary: "#ff0000", background: "#00ff00" },
+  ]);
+  const themedWithoutCursor = (() => {
+    const before = cursorProjection();
+    const driven = driveGuestChannel("ANNOTATION_THEME_CHANNEL", [
+      { primary: "#123456", background: "#654321" },
+    ]);
+    return {
+      listeners: driven.listeners,
+      sends: driven.sends,
+      effects: driven.effects,
+      cursorChanged: JSON.stringify(before) !== JSON.stringify(cursorProjection()),
+    };
+  })();
+  check(
+    "preview-annotation-theme-and-cancel-pick-reach-the-guest",
+    "previewPickPreload",
+    jsonSafe({
+      // No cursor is installed here: the theme is stored and only reaches CSS variables through the
+      // cursor installed by the next activation.
+      themed,
+      themedWithoutCursor,
+      cancelWithoutSession: driveGuestChannel("CANCEL_PICK_CHANNEL", []),
+      reactivateAppliesStoredTheme: driveGuestChannel("RECORDING_CURSOR_CHANNEL", [
+        true,
+        { showKeyPresses: false, showMousePresses: false },
+        "none",
+      ]),
+      reactivatedAgentCursorStyle: state.guest.elements.slice(-1)[0]?.style,
+      defaultOptionsEmitNothing: (() => {
+        const sendsStart = state.sends.length;
+        driveGuestWindow("keydown", { isTrusted: true, key: "k", code: "KeyK" });
+        driveGuestWindow("pointerdown", {
+          isTrusted: true,
+          clientX: 1,
+          clientY: 2,
+          button: 0,
+          pointerType: "mouse",
+        });
+        driveGuestWindow("blur", {});
+        return guestSends(sendsStart);
+      })(),
+    }),
+    jsonSafe({
+      themed: { listeners: 1, sends: [], effects: [] },
+      themedWithoutCursor: { listeners: 1, sends: [], effects: [], cursorChanged: false },
+      cancelWithoutSession: { listeners: 1, sends: [], effects: [] },
+      reactivateAppliesStoredTheme: { listeners: 1, sends: [], effects: ["append style,div,div"] },
+      reactivatedAgentCursorStyle: {
+        cssText:
+          "position:fixed;left:0;top:0;width:20px;height:20px;pointer-events:none;z-index:2147483647;display:none;filter:drop-shadow(0 1px 2px #0003);transition:transform 150ms ease-out,opacity 150ms ease-out;",
+        "--recording-cursor-primary": "#123456",
+        "--recording-cursor-background": "#654321",
+        opacity: "0.35",
+      },
+      defaultOptionsEmitNothing: [
+        { channel: "HUMAN_INPUT_CHANNEL", args: [{ kind: "key", key: "k", code: "KeyK" }] },
+        { channel: "HUMAN_INPUT_CHANNEL", args: [{ kind: "pointer", x: 1, y: 2, button: 0 }] },
+      ],
+    }),
+  );
+
+  // With the cursor disposed only the pick preload's own window listeners remain, so the trusted-event
+  // gate and the thumb-button navigation are visible on their own.
+  driveGuestChannel("RECORDING_CURSOR_CHANNEL", [false]);
+  state.guest.effects.length = 0;
+  const trustedRow = (type: string, event: Record<string, unknown>) => {
+    const driven = driveGuestWindow(type, event);
+    return {
+      listeners: driven.listeners,
+      prevented: driven.prevented,
+      stopped: driven.stopped,
+      sends: driven.sends,
+    };
+  };
+  check(
+    "preview-guest-human-input-and-navigation-sends-require-trusted-events",
+    "previewPickPreload",
+    jsonSafe({
+      untrustedPointer: trustedRow("pointerdown", {
+        isTrusted: false,
+        clientX: 5,
+        clientY: 6,
+        button: 0,
+      }),
+      trustedPointer: trustedRow("pointerdown", {
+        isTrusted: true,
+        clientX: 5,
+        clientY: 6,
+        button: 1,
+      }),
+      untrustedKey: trustedRow("keydown", { isTrusted: false, key: "a", code: "KeyA" }),
+      trustedKey: trustedRow("keydown", { isTrusted: true, key: "a", code: "KeyA" }),
+      leftMouseDown: trustedRow("mousedown", { isTrusted: true, button: 0 }),
+      backButtonDown: trustedRow("mousedown", { isTrusted: true, button: 3 }),
+      forwardButtonUp: trustedRow("mouseup", { isTrusted: true, button: 4 }),
+      backButtonUp: trustedRow("mouseup", { isTrusted: true, button: 3 }),
+      middleButtonUp: trustedRow("mouseup", { isTrusted: true, button: 1 }),
+      untrustedThumbUp: trustedRow("mouseup", { isTrusted: false, button: 4 }),
+      auxclickThumb: trustedRow("auxclick", { isTrusted: true, button: 4 }),
+    }),
+    jsonSafe({
+      untrustedPointer: { listeners: 1, prevented: 0, stopped: 0, sends: [] },
+      trustedPointer: {
+        listeners: 1,
+        prevented: 0,
+        stopped: 0,
+        sends: [
+          { channel: "HUMAN_INPUT_CHANNEL", args: [{ kind: "pointer", x: 5, y: 6, button: 1 }] },
+        ],
+      },
+      untrustedKey: { listeners: 1, prevented: 0, stopped: 0, sends: [] },
+      trustedKey: {
+        listeners: 1,
+        prevented: 0,
+        stopped: 0,
+        sends: [
+          { channel: "HUMAN_INPUT_CHANNEL", args: [{ kind: "key", key: "a", code: "KeyA" }] },
+        ],
+      },
+      leftMouseDown: { listeners: 1, prevented: 0, stopped: 0, sends: [] },
+      backButtonDown: { listeners: 1, prevented: 1, stopped: 1, sends: [] },
+      forwardButtonUp: {
+        listeners: 1,
+        prevented: 1,
+        stopped: 1,
+        sends: [{ channel: "MOUSE_NAVIGATE_CHANNEL", args: [{ direction: "forward" }] }],
+      },
+      backButtonUp: {
+        listeners: 1,
+        prevented: 1,
+        stopped: 1,
+        sends: [{ channel: "MOUSE_NAVIGATE_CHANNEL", args: [{ direction: "back" }] }],
+      },
+      middleButtonUp: { listeners: 1, prevented: 0, stopped: 0, sends: [] },
+      untrustedThumbUp: { listeners: 1, prevented: 0, stopped: 0, sends: [] },
+      auxclickThumb: { listeners: 1, prevented: 1, stopped: 1, sends: [] },
+    }),
+  );
+  state.sends.length = sendsBeforeGuest;
+
   const coveredEventChannels = asConstants(eventChannels);
   const coveredRequestChannels = asConstants(requestChannels);
   check(
@@ -2275,21 +4293,21 @@ async function buildReport() {
 
   return {
     interpretation:
-      "Executed the real preload listeners captured from apps/desktop/src/preload.ts and apps/desktop/src/preview-pip-preload.ts, plus the macOS permission panel preload DOM bridge, inside a Node child process with an in-memory electron stub. Deliveries are what a renderer callback received, sends are what a panel posted to the main process, requests are the channel plus argument envelope each bridge method hands to ipcRenderer.invoke or sendSync, requestPayloadCodecs is the payload contract the shipped main-process factories declare for all 99 request channels, the framing checks drive synthetic methods through the shipped DesktopIpc registration so main-side decode, handler input, result encode and listener replacement are executed rather than only described, and the badge checks run the one real main-process installer whose codec cannot be reached any other way. No BrowserWindow, real ipcRenderer transport, main-process sender, handler service or Rust implementation is exercised. These snapshots characterize the shipped guards, wrappers, declared contracts and request framing, not an approved contract.",
+      "Executed the real preload listeners captured from apps/desktop/src/preload.ts, apps/desktop/src/preview-pip-preload.ts and apps/desktop/src/preview-pick-preload.ts, plus the macOS permission panel preload DOM bridge, inside a Node child process with an in-memory electron stub. Deliveries are what a renderer callback received, sends are what a panel or guest posted to the main process, requests are the channel plus argument envelope each bridge method hands to ipcRenderer.invoke or sendSync, requestPayloadCodecs is the payload contract the shipped main-process factories declare for all 99 request channels, the framing checks drive synthetic methods through the shipped DesktopIpc registration so main-side decode, handler input, result encode and listener replacement are executed rather than only described, the badge checks run the one real main-process installer whose codec cannot be reached any other way, the permission checks run the shipped MacPermissionHelper end to end so the panel preload's own sends are delivered into its live ipcMain listener, and the guest checks run the shipped preview pick preload and its real recording cursor against a stubbed DOM so the separate `preview:*` guest protocol is pinned from the emitting side and compared against the schema the host validates it with. No BrowserWindow, real ipcRenderer transport, real DOM, main-process sender, handler service, osascript Settings watcher or Rust implementation is exercised. These snapshots characterize the shipped guards, wrappers, declared contracts, request framing, the permission panel's main-process handler and the recording guest's own emits, not an approved contract.",
     fixturePolicy:
-      "Payloads are synthetic literals. The stub records channel registrations and re-emits through the captured wrapper, so each check exercises the shipped typeof/object guard and any payload reconstruction. A missing payload entry in an emit array still calls the wrapper, which is how argument-count rejections are observed. Request methods are driven with `length` positional `s0/s1/...` strings, and sendSync/invoke return values are scripted per channel to observe the wrapper's own result conversion. The declared payload and result codecs are captured by inserting two `codecs.push` statements into src/ipc/DesktopIpc.ts at load time; the corpus fails if either anchor is missing. Framing fixtures register service-free codecs of the author's choosing (a `{tabId: string}` struct, booleans, a string, `Schema.Void`) through `DesktopIpc.make(ipcMainStub)` and call the listener the shipped registration installed; each listener promise is settled in the tick it is created so a rejected request is recorded instead of killing the child. The badge fixtures install `installNotificationBadge` for real over that same in-memory `ipcMain`, with the platform pinned through `HostProcessPlatform`, an `ElectronApp` stub whose only implemented member is `on`, and the electron stub's window/badge members recording their calls as strings; their logger output is captured because the shipped error path only logs, and the logger's timestamp and fiber id are stripped from what is pinned.",
+      "Payloads are synthetic literals. The stub records channel registrations and re-emits through the captured wrapper, so each check exercises the shipped typeof/object guard and any payload reconstruction. A missing payload entry in an emit array still calls the wrapper, which is how argument-count rejections are observed. Request methods are driven with `length` positional `s0/s1/...` strings, and sendSync/invoke return values are scripted per channel to observe the wrapper's own result conversion. The declared payload and result codecs are captured by inserting two `codecs.push` statements into src/ipc/DesktopIpc.ts at load time; the corpus fails if either anchor is missing. Framing fixtures register service-free codecs of the author's choosing (a `{tabId: string}` struct, booleans, a string, `Schema.Void`) through `DesktopIpc.make(ipcMainStub)` and call the listener the shipped registration installed; each listener promise is settled in the tick it is created so a rejected request is recorded instead of killing the child. The badge fixtures install `installNotificationBadge` for real over that same in-memory `ipcMain`, with the platform pinned through `HostProcessPlatform`, an `ElectronApp` stub whose only implemented member is `on`, and the electron stub's window/badge members recording their calls as strings; their logger output is captured because the shipped error path only logs, and the logger's timestamp and fiber id are stripped from what is pinned. The permission fixtures construct the real `MacPermissionHelper` against electron stubs whose members record their calls as strings: `app.getPath('exe')` returns a packaged bundle, `nativeImage` returns a non-empty resizable icon, `shell.showItemInFolder` and `webContents.startDrag` record, and `systemPreferences` answers the shipped probe. `./MacSettingsWindow.ts` is replaced only for `watchMacSettingsWindow`, which would spawn a long-lived `osascript` here; the stub re-exports the shipped `settingsHelperBounds`, so the panel geometry constants are still computed by production code. Each action row re-opens the panel first, because closing it removes the listener the next row needs. The guest fixtures install the shipped recording cursor against a stubbed `document`/`window` whose `setTimeout` and `requestAnimationFrame` are captured instead of scheduled, so the 700ms agent-cursor reset and the pointer coalescing frame only run when the corpus flushes them; `document.activeElement` and `navigator.platform` are set per row because the shipped key labeller and its sensitive-focus check read both. Window listeners are driven with the union of the fields the shipped handlers read, `stopImmediatePropagation` is counted rather than honored, and a `keydown` row driven while the cursor is installed reports the recording send separately from the human-input send the same event also produces.",
     declaredSchemaComparison:
       "Where a runtime Schema exists (snap-shot event, update state, activation request, recording input), the same payload is checked with Schema.is. Divergences are recorded as-is: the port must reproduce the guard behavior unless the project decides to tighten it. Note that decoding ignores unknown properties, so a payload carrying an extra field can satisfy both the guard and the Schema while the Schema's Type does not include that field. On the request side every channel now has a declared payload codec, so the shipped envelope is compared with that contract structurally: required and optional keys of the shipped `Objects` AST against the keys the wrapper actually builds. Framing then shows what that structural claim is worth at runtime: an unknown key is silently dropped by the decode, a wrong-typed key rejects the whole request before the handler runs, and the handler result is encoded back through the declared result codec, so a value outside that codec rejects the reply too.",
     knownLimitations: [
-      "The preload modules are evaluated outside a renderer, so document/window/webFrame/Clerk bridge behavior is stubbed; only the macOS permission panel's own element and key listeners are driven.",
+      "The preload modules are evaluated outside a renderer, so document/window/webFrame/Clerk bridge behavior is stubbed; the only listeners driven are the macOS permission panel's own element and key listeners and the preview pick guest's window listeners.",
       "Serialization boundaries of Electron IPC (structured clone, unsupported types, sender identity) are not modeled; the stub calls the wrapper with plain JavaScript values, and `__undefined__` marks an `undefined` value that JSON could not carry.",
       "Framing is exercised with synthetic service-free codecs, not with the 98 captured per-channel codecs: those codecs are still read rather than run through their real handler, and the registered business handler and its services never execute.",
       "Object envelopes are audited by key set, not by value. Driving each bridge method with `s0` placeholder strings means field types cannot be decoded against the codec without inventing the renderer's real arguments, so a wrong-typed field value would not be caught by this corpus.",
       "desktop:set-notification-badge is the one request channel whose real installer and handler run here, because its payload codec is built inside the installer. The other 98 channels contribute their declared codecs only; their handlers, the services those handlers need and the main-process producers that call them are not executed.",
-      "The macOS permission helper is only covered on its preload send side; the main-process sender/frame checks and action validation are not executed here.",
+      "The macOS permission helper runs here, but against stubbed Electron and a stubbed Settings watcher: no real drag image, no real System Tracking window, no `osascript`, and the sender/frame gate is judged by object identity the corpus builds rather than by Electron's own webContents identity. The onboarding callers that decide which permission to show, and the Full Disk Access probe that the shipped `permissionGranted` leaves as a constant false, are not covered.",
       "No main-process producer is executed, so a payload the real main process can never send is still characterized by the guard.",
       "Interfaces without a runtime Schema (ssh prompt, preview frame, pointer event, tab state) cannot be compared against a declared contract here.",
-      "The preview pick preload and the guest preview channels are outside this corpus.",
+      "The preview pick preload runs here against a stubbed document/window: no layout, no real events, `setTimeout` and `requestAnimationFrame` are captured rather than scheduled, and `stopImmediatePropagation` is counted rather than honored. Its `preview:start-pick` handler and the annotation overlay it builds are never driven, so the cursor guards and the human-input reporters are the only guest paths executed. No host-side producer runs either, so `preview/Manager`'s `isRecordingInput` gate and its forwarding to `desktop:preview-recording-input` are characterized by the schema comparison alone, and `react-grab`'s React-context lookup is not reached.",
     ],
     coveredEventChannels,
     coveredRequestChannels,

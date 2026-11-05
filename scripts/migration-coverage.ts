@@ -711,7 +711,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/desktop/src/permissions/MacPermissionHelper.test.ts",
     ],
     parityRequirement:
-      "The corpus pins the panel's DOM bridge and that only drag/finder/close strings reach desktop:mac-permission-helper; parity still needs malformed actions, other senders, subframes, drag fallback and listener removal after close on macOS.",
+      "The corpus runs the shipped MacPermissionHelper: the sender/mainFrame identity gate, the three declared actions, 13 malformed values, the drag fallback, the Full Disk Access no-probe path, the shipped settings-window geometry and listener removal after close are all executed against an in-memory Electron stub; parity still needs the real macOS transport (webContents identity, native drag image, the System Tracking window and its osascript watcher) and the onboarding callers that choose which permission to show.",
   },
   {
     code: "ipc-schema-not-declared",
@@ -741,7 +741,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/desktop/src/preview/Manager.test.ts",
     ],
     parityRequirement:
-      "The corpus pins the exact desktop channel, that the preload envelope is object-checked only and that the shipped main-side framing decodes before the handler and encodes before replying; parity still needs the complete {tabId,input} envelope through this channel's real handler, tab gates and unsubscribe behavior. Upstream guest validation alone is not event parity.",
+      "The corpus pins the exact desktop channel, that the preload envelope is object-checked only and that the shipped main-side framing decodes before the handler and encodes before replying. It also runs the guest emitter that produces the nested input — the preview pick preload and its real recording cursor against a stubbed DOM — and decodes all 19 payloads that guest emits with the same DesktopPreviewRecordingInputSchema the host's isRecordingInput gate uses, so the upstream validation is executed rather than only described. Parity still needs the complete {tabId,input} envelope through this channel's real handler, the Manager's tab/capture gates and its unsubscribe behavior, and the real guest webContents transport.",
   },
   {
     code: "raw-http-schema-not-declared",
