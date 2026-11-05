@@ -10,6 +10,7 @@ const rpcFile = "packages/core/src/contracts/rpc.ts";
 const httpFile = "packages/core/src/contracts/environmentHttp.ts";
 const authFile = "apps/server/src/auth/RpcAuthorization.ts";
 const channelsFile = "apps/desktop/src/ipc/channels.ts";
+const guestChannelsFile = "apps/desktop/src/preview/GuestProtocol.ts";
 const ignored = new Set([
   "node_modules",
   "dist",
@@ -541,6 +542,100 @@ export async function buildMigrationInventory(root: string) {
     if (!entry.modes.length) issue("unclassified-ipc-channel", entry.symbol);
     if (!entry.factories.length) issue("ipc-schema-not-declared", entry.symbol);
   }
+  // The preview guest protocol is a second IPC surface: `preview:*` channels declared outside
+  // `channels.ts`, used by `PickPreload` through `ipcRenderer` inside the guest webContents and by
+  // `Manager` through `webContents`/`webContents.ipc` in the main process. None of them reaches a
+  // `DesktopIpc` factory, so no codec exists for any of them and the desktop channel inventory
+  // would otherwise miss the boundary entirely. Direction comes from which side emits.
+  const guestIpc: {
+    symbol: string;
+    channel: string | null;
+    definition: ReturnType<typeof evidence>;
+    usages: { source: Location; operation: string; method: string; side: string }[];
+    methods: string[];
+    direction: string;
+  }[] = [];
+  const guestSource = files.get(guestChannelsFile);
+  const guestNodes = new Map<string, ts.Node>();
+  if (guestSource) {
+    for (const statement of guestSource.statements) {
+      if (
+        !ts.isVariableStatement(statement) ||
+        !statement.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+      )
+        continue;
+      for (const decl of statement.declarationList.declarations) {
+        if (!ts.isIdentifier(decl.name) || !decl.name.text.endsWith("_CHANNEL")) continue;
+        const channel = literal(decl.initializer);
+        if (!channel) issue("unresolved-ipc-channel", decl.name.text, decl);
+        guestNodes.set(decl.name.text, decl);
+        guestIpc.push({
+          symbol: decl.name.text,
+          channel,
+          definition: evidence(decl),
+          usages: [],
+          methods: [],
+          direction: "unemitted",
+        });
+      }
+    }
+    const guestBySymbol = new Map(guestIpc.map((entry) => [entry.symbol, entry]));
+    const guestImports = new Map<string, Map<string, (typeof guestIpc)[number]>>();
+    for (const [file, source] of files) {
+      if (file === guestChannelsFile) continue;
+      const local = new Map<string, (typeof guestIpc)[number]>();
+      for (const statement of source.statements) {
+        if (!ts.isImportDeclaration(statement)) continue;
+        if (!literal(statement.moduleSpecifier)?.endsWith("GuestProtocol.ts")) continue;
+        const bindings = statement.importClause?.namedBindings;
+        if (!bindings || !ts.isNamedImports(bindings)) continue;
+        for (const element of bindings.elements) {
+          const entry = guestBySymbol.get(element.propertyName?.text ?? element.name.text);
+          if (entry) local.set(element.name.text, entry);
+        }
+      }
+      if (local.size) guestImports.set(file, local);
+    }
+    for (const call of calls) {
+      const local = guestImports.get(call.getSourceFile().fileName);
+      if (!local) continue;
+      const operation = callName(call);
+      const method = ts.isPropertyAccessExpression(call.expression)
+        ? call.expression.name.text
+        : operation;
+      if (!["send", "sendAll", "on", "once", "off", "removeListener"].includes(method)) continue;
+      const side = operation.startsWith("ipcRenderer.") ? "guest" : "host";
+      for (const arg of call.arguments) {
+        const target = unwrap(arg);
+        if (!ts.isIdentifier(target)) continue;
+        const entry = local.get(target.text);
+        if (!entry) continue;
+        entry.usages.push({ source: location(call), operation, method, side });
+      }
+    }
+    const subjects: Record<string, string> = {
+      "guest-to-host": "PREVIEW_GUEST_TO_HOST_CHANNELS",
+      "host-to-guest": "PREVIEW_HOST_TO_GUEST_CHANNELS",
+    };
+    for (const entry of guestIpc) {
+      entry.methods = [...new Set(entry.usages.map((usage) => usage.method))].sort();
+      const emitted = entry.usages.filter((usage) => ["send", "sendAll"].includes(usage.method));
+      const sides = [...new Set(emitted.map((usage) => usage.side))];
+      entry.direction =
+        sides.length === 1
+          ? sides[0] === "guest"
+            ? "guest-to-host"
+            : "host-to-guest"
+          : sides.length > 1
+            ? "both"
+            : "unemitted";
+      if (!(entry.direction in subjects))
+        issue("unclassified-ipc-channel", entry.symbol, guestNodes.get(entry.symbol));
+    }
+    for (const [direction, subject] of Object.entries(subjects))
+      if (guestIpc.some((entry) => entry.direction === direction))
+        issue("ipc-schema-not-declared", subject, guestSource);
+  }
   return {
     formatVersion: 1 as const,
     evidencePolicy: {
@@ -568,10 +663,16 @@ export async function buildMigrationInventory(root: string) {
     },
     http: { typed: typedHttp, raw: rawHttp },
     desktopIpc,
+    guestIpc,
     registrationEvidence: {
       rpc: registrations("RpcServer.make", "WsRpcGroup"),
       http: registrations("HttpApiBuilder.layer", "EnvironmentHttpApi"),
       desktop: { status: "factory-definitions-and-call-references; installation-unverified" },
+      guest: {
+        status: "call-references-only; no factory and no codec exists for any preview:* channel",
+        directionRule:
+          "The side of the emitting call decides direction: `ipcRenderer.send` is guest-to-host, any other `send`/`sendAll` is host-to-guest. Listener references do not decide direction.",
+      },
     },
     sources: [...files].map(([file, source]) => ({ file, fingerprint: hash(text(source)) })),
     issues,

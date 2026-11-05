@@ -181,6 +181,77 @@ it("extracts helper-based IPC signatures and does not mistake sync payload omiss
   );
 });
 
+it("inventories the preview guest protocol as a second IPC surface", async () => {
+  const result = await inventory;
+  const guest = await import("../apps/desktop/src/preview/GuestProtocol.ts");
+  assert.deepEqual(
+    sorted(result.guestIpc.map((entry) => entry.channel!)),
+    sorted(
+      Object.entries(guest)
+        .filter(([name]) => name.endsWith("_CHANNEL"))
+        .map(([, channel]) => channel as string),
+    ),
+  );
+  // The guest namespace is disjoint from the desktop channel list, so it needs its own findings.
+  const desktop = new Set(result.desktopIpc.map((entry) => entry.channel));
+  assert.deepEqual(
+    result.guestIpc.filter((entry) => desktop.has(entry.channel)),
+    [],
+  );
+  assert.deepEqual(
+    result.guestIpc.filter((entry) => entry.usages.length === 0).map((entry) => entry.symbol),
+    [],
+  );
+  const byDirection = (direction: string) =>
+    sorted(
+      result.guestIpc.filter((entry) => entry.direction === direction).map((entry) => entry.symbol),
+    );
+  assert.deepEqual(byDirection("guest-to-host"), [
+    "ELEMENT_PICKED_CHANNEL",
+    "HUMAN_INPUT_CHANNEL",
+    "MOUSE_NAVIGATE_CHANNEL",
+    "RECORDING_INPUT_CHANNEL",
+  ]);
+  assert.lengthOf(byDirection("host-to-guest"), 8);
+  assert.deepEqual([byDirection("both"), byDirection("unemitted")], [[], []]);
+  // Direction comes from the emitting side, not from the listeners.
+  const recordingInput = result.guestIpc.find(
+    (entry) => entry.symbol === "RECORDING_INPUT_CHANNEL",
+  )!;
+  assert.deepEqual(recordingInput.methods, ["off", "on", "send"]);
+  assert.deepEqual(
+    recordingInput.usages.filter((usage) => usage.method === "send").map((usage) => usage.side),
+    ["guest"],
+  );
+  assert.deepEqual(
+    result.issues
+      .filter(
+        (entry) => entry.subject.startsWith("PREVIEW_") && entry.subject.endsWith("_CHANNELS"),
+      )
+      .map((entry) => [entry.code, entry.subject, entry.source?.file]),
+    [
+      [
+        "ipc-schema-not-declared",
+        "PREVIEW_GUEST_TO_HOST_CHANNELS",
+        "apps/desktop/src/preview/GuestProtocol.ts",
+      ],
+      [
+        "ipc-schema-not-declared",
+        "PREVIEW_HOST_TO_GUEST_CHANNELS",
+        "apps/desktop/src/preview/GuestProtocol.ts",
+      ],
+    ],
+  );
+  assert.deepEqual(
+    result.issues.filter(
+      (entry) =>
+        entry.code === "unclassified-ipc-channel" &&
+        result.guestIpc.some((channel) => channel.symbol === entry.subject),
+    ),
+    [],
+  );
+});
+
 it("is deterministic, JSON-compatible, and contains no host-specific paths", async () => {
   const first = await inventory;
   const second = await buildMigrationInventory(root);
@@ -297,6 +368,8 @@ it("uses AST membership, preserves same-method routes, and reports unresolved so
       ["call", "event", "unused", null],
     );
     assert.equal(result.desktopIpc[0]!.factories[0]!.helper!.symbol, "tabMethod");
+    // The fixture tree has no GuestProtocol.ts, so the guest surface inventories nothing.
+    assert.deepEqual(result.guestIpc, []);
     for (const code of [
       "missing-rpc-scope",
       "unresolved-rpc-member",

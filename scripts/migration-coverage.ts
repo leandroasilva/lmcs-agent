@@ -328,6 +328,14 @@ const reviewedSources = {
     "apps/desktop/src/preview/GuestProtocol.ts",
     "46fad383bbbd7e8700cc43d881600baf7c09cbf84580448001ff678b07e9b2a8",
   ],
+  pickPreload: [
+    "apps/desktop/src/preview/PickPreload.ts",
+    "ccfdc468882b6207936cb664befce36aeb22ad2aa1ce0e1f1868d2ed992e9053",
+  ],
+  recordingCursor: [
+    "apps/desktop/src/preview/RecordingCursor.ts",
+    "67b2c90b12956f3fe732b38ad2c5937fd7354991a4fb061bffb30f41a75c1ca9",
+  ],
   cli: [
     "apps/server/src/cloud/CliTokenManager.ts",
     "3845cd6d70c7e0d5027fb60209450ae590fae93e76c1f9cf72ef1e07dc02583e",
@@ -742,6 +750,48 @@ export const migrationContractClassifications: readonly ContractClassification[]
     ],
     parityRequirement:
       "The corpus pins the exact desktop channel, that the preload envelope is object-checked only and that the shipped main-side framing decodes before the handler and encodes before replying. It also runs the guest emitter that produces the nested input — the preview pick preload and its real recording cursor against a stubbed DOM — and decodes all 19 payloads that guest emits with the same DesktopPreviewRecordingInputSchema the host's isRecordingInput gate uses, so the upstream validation is executed rather than only described. Parity still needs the complete {tabId,input} envelope through this channel's real handler, the Manager's tab/capture gates and its unsubscribe behavior, and the real guest webContents transport.",
+  },
+  {
+    code: "ipc-schema-not-declared",
+    subject: "PREVIEW_GUEST_TO_HOST_CHANNELS",
+    owner: "preview",
+    resources: ["preview-webcontents", "preview-recordings"],
+    representation: "partially-decoded",
+    direction: "renderer-to-main",
+    authorization:
+      "The guest webContents sends through ipcRenderer and the main process listens on webContents.ipc inside the owning tab's listener scope; there is no server RPC scope and no sender-identity check beyond that closure.",
+    contract:
+      "Four preview:* channels the guest emits — element-picked, human-input, mouse-navigate and recording-input — declared in GuestProtocol.ts, so none of them is one of the 113 desktop channels and none reaches a DesktopIpc factory or codec. This is one namespace-level subject rather than one per channel because the four share a single declaration file, a single guest producer and a single main-process consumer, unlike the desktop channels, which each own a factory. Only recording-input has a runtime Schema: Manager gates it with Schema.is(DesktopPreviewRecordingInputSchema). The other three are hand-guarded per positional argument: isPreviewInputSignal for human-input, an exact 'back'/'forward' string comparison for mouse-navigate, and isPreviewAnnotationPayload plus normalizeCaptureRect and an args[2] === 'send' coercion for element-picked's three positional arguments.",
+    effects:
+      "recording-input feeds the recording-input subscribers behind the tab and capture-consumer gates; element-picked captures an annotation screenshot and settles the pick, resolving null when the payload is rejected; mouse-navigate drives webContents.navigationHistory back/forward. human-input has the widest effect and the weakest guard: a payload that fails isPreviewInputSignal still falls through to bumping the tab's control epoch and setting controller 'human', so any value on that channel takes control away from the agent.",
+    evidence: evidence("guest", "pickPreload", "preview", "ipc", "channels"),
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/preview/Manager.test.ts",
+    ],
+    parityRequirement:
+      "The corpus runs the shipped guest emitter: the preview pick preload and its real recording cursor against a stubbed DOM, with all 19 preview:recording-input payloads it produces decoded against the same Schema the host gate uses, and the human-input and mouse-navigate sends pinned including the trusted-event requirement and the thumb-button preventDefault. Parity still needs the host half executed — isPreviewInputSignal, consumeExpectedAgentInput, the control-epoch takeover that a malformed human-input payload still triggers, isPreviewAnnotationPayload, normalizeCaptureRect, the send/attach coercion and the navigation-history guards — over a real guest webContents transport, plus a decision on whether that unguarded takeover is intended behavior or a defect.",
+  },
+  {
+    code: "ipc-schema-not-declared",
+    subject: "PREVIEW_HOST_TO_GUEST_CHANNELS",
+    owner: "preview",
+    resources: ["preview-webcontents", "preview-recordings"],
+    representation: "manual-validation",
+    direction: "main-to-renderer",
+    authorization:
+      "The main process sends to the target preview webContents; the guest receives through ipcRenderer with no scope and no origin check, so anything the main process emits is trusted by construction.",
+    contract:
+      "Eight preview:* channels the main process emits into the guest — start-pick, cancel-pick, annotation-captured, annotation-theme, recording-cursor, recording-controller, recording-pointer and recording-key — declared in GuestProtocol.ts and absent from the 113-channel desktop list, so no DesktopIpc factory or codec covers any of them. This is one namespace-level subject for the same reason as the guest-to-host group. Nothing validates what arrives on this leg: annotation-captured carries no payload at all, and the annotation theme was decoded on the earlier renderer-to-main leg by DesktopPreviewAnnotationThemeInputSchema but is forwarded to the guest without re-validation, so DesktopPreviewAnnotationThemeSchema is never a gate on this boundary. Validation is the guest's own guards in PickPreload, which read positional arguments: recording-cursor takes (active, options, controller) and routes any first argument that is not the literal true to disposal, recording-controller takes (controller, point), and recording-key and recording-pointer each take one hand-checked object.",
+    effects:
+      "start-pick and cancel-pick open and tear down the annotation session, annotation-theme and annotation-captured drive the overlay, recording-cursor installs or disposes the shipped recording cursor (a style element plus two document elements and eight window listeners in capture phase), recording-controller and recording-pointer move the agent cursor, and recording-key labels a key press. Malformed values are dropped rather than rejected, so a wrong-typed theme or point silently leaves the previous state, and a second recording-cursor activation reuses the live cursor instead of applying the new options.",
+    evidence: evidence("guest", "pickPreload", "recordingCursor", "preview", "ipc", "channels"),
+    tests: [
+      "apps/desktop/scripts/migration-preload-ipc.test.ts",
+      "apps/desktop/src/preview/Manager.test.ts",
+    ],
+    parityRequirement:
+      "The corpus runs the shipped guest half for real: the recording-cursor install, reuse and dispose lifecycle, the malformed recording-controller, recording-key and recording-pointer payloads that leave the cursor untouched, the stored-theme application on reactivation and the no-session cancel-pick, all against a stubbed DOM with captured timers and animation frames. Parity still needs the main-process half executed — which tab receives which send, the recording-cursor restore on dom-ready, the controller patch and human point Manager sends, and the annotation theme lifecycle — plus a real DOM, real Chromium capture, the never-driven start-pick overlay, and a decision on whether the theme should be re-validated on this leg.",
   },
   {
     code: "raw-http-schema-not-declared",

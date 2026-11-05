@@ -209,19 +209,32 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
         entry.tests.includes("apps/desktop/scripts/migration-preload-ipc.test.ts"),
     )
     .map((entry: { subject: string }) => entry.subject);
-  assert.lengthOf(ipcSubjects, 14);
+  assert.lengthOf(ipcSubjects, 16);
   const coveredEventConstants: string[] = report.preloadIpc.coveredEventChannels.map(
     (entry: { constant: string }) => entry.constant,
   );
   const coveredRequestConstants: string[] = report.preloadIpc.coveredRequestChannels.map(
     (entry: { constant: string }) => entry.constant,
   );
+  // Two of them are namespace-level subjects for the preview guest protocol, whose preview:*
+  // channels GuestProtocol.ts declares outside the desktop channel list, so they are not constants.
+  const guestSubjects = ipcSubjects.filter(
+    (subject: string) => !coveredEventConstants.includes(subject),
+  );
+  assert.deepEqual(guestSubjects, [
+    "PREVIEW_GUEST_TO_HOST_CHANNELS",
+    "PREVIEW_HOST_TO_GUEST_CHANNELS",
+  ]);
+  const channelSubjects = ipcSubjects.filter((subject: string) =>
+    coveredEventConstants.includes(subject),
+  );
+  assert.lengthOf(channelSubjects, 14);
   assert.sameMembers(
-    ipcSubjects,
-    coveredEventConstants.filter((constant: string) => ipcSubjects.includes(constant)),
+    channelSubjects,
+    coveredEventConstants.filter((constant: string) => channelSubjects.includes(constant)),
   );
   assert.deepEqual(
-    coveredEventConstants.filter((constant: string) => !ipcSubjects.includes(constant)),
+    coveredEventConstants.filter((constant: string) => !channelSubjects.includes(constant)),
     ["SET_NOTIFICATION_BADGE_CHANNEL"],
   );
   assert.lengthOf(report.preloadIpc.requestMethods, 99);
@@ -233,13 +246,13 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
   // The schema gap is exclusively on the event side: every request channel the shipped preload
   // invokes is a declared constant that the inventory did not flag as schema-less.
   assert.deepEqual(
-    coveredRequestConstants.filter((constant: string) => ipcSubjects.includes(constant)),
+    coveredRequestConstants.filter((constant: string) => channelSubjects.includes(constant)),
     [],
   );
   assert.isAbove(report.inventory.rpc.length, 0);
   assert.isAbove(report.coverage.notExercisedBySyntheticBaseline.length, 0);
   assert.deepEqual(report.contractCoverage.reviewIssues, []);
-  assert.lengthOf(report.contractCoverage.pendingParity, 25);
+  assert.lengthOf(report.contractCoverage.pendingParity, 27);
   assert.isTrue(
     report.contractCoverage.pendingParity.every(
       (entry: { status: string }) => entry.status === "not-run",
