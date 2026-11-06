@@ -18,6 +18,7 @@ const ready = {
   failedUploadHttpCases: 0,
   failedAssetHttpCases: 0,
   failedDeviceHubHttpCases: 0,
+  failedDeviceHubWsCases: 0,
   failedPreloadIpcCases: 0,
   knownRouteDefects: 0,
   oracleMatchesGolden: true,
@@ -44,6 +45,7 @@ it("requires all parity criteria before declaring the gate ready", () => {
     { failedUploadHttpCases: 1 },
     { failedAssetHttpCases: 1 },
     { failedDeviceHubHttpCases: 1 },
+    { failedDeviceHubWsCases: 1 },
     { failedPreloadIpcCases: 1 },
     { knownRouteDefects: 1 },
     { oracleMatchesGolden: false },
@@ -66,13 +68,14 @@ it("requires all parity criteria before declaring the gate ready", () => {
       failedUploadHttpCases: 1,
       failedAssetHttpCases: 1,
       failedDeviceHubHttpCases: 1,
+      failedDeviceHubWsCases: 1,
       failedPreloadIpcCases: 1,
       knownRouteDefects: 1,
       oracleMatchesGolden: false,
       ownershipIssues: 1,
       unexercisedAreas: 1,
     }).blockers,
-    15,
+    16,
   );
 });
 
@@ -144,9 +147,10 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
       )
       .map((entry: { subject: string }) => entry.subject),
   );
-  assert.lengthOf(report.staticHttp.results, 19);
+  assert.lengthOf(report.staticHttp.results, 30);
   assert.isTrue(report.staticHttp.results.every((entry: { passed: boolean }) => entry.passed));
   assert.include(report.staticHttp.interpretation, "does not prove a secure static policy");
+  assert.include(report.staticHttp.interpretation, "hand-rolls its own If-None-Match");
   assert.sameMembers(
     [...new Set(report.staticHttp.results.map((entry: { subject: string }) => entry.subject))],
     report.contractCoverage.pendingParity
@@ -160,9 +164,11 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
       blocker.includes("known raw route defects must be resolved"),
     ),
   );
-  assert.lengthOf(report.assetHttp.results, 15);
+  assert.lengthOf(report.assetHttp.results, 24);
   assert.isTrue(report.assetHttp.results.every((entry: { passed: boolean }) => entry.passed));
   assert.include(report.assetHttp.interpretation, "not an approved contract");
+  assert.include(report.assetHttp.interpretation, "never emits 304");
+  assert.include(report.assetHttp.interpretation, "presence rather than validated");
   assert.sameMembers(
     [...new Set(report.assetHttp.results.map((entry: { subject: string }) => entry.subject))],
     report.contractCoverage.pendingParity
@@ -192,6 +198,20 @@ it("emits clean JSON and exits 2 for a blocked parity gate", () => {
     report.contractCoverage.pendingParity
       .filter((entry: { tests: string[] }) =>
         entry.tests.includes("apps/server/scripts/migration-device-hub-http.test.ts"),
+      )
+      .map((entry: { subject: string }) => entry.subject),
+  );
+  assert.lengthOf(report.deviceHubWs.results, 25);
+  assert.isTrue(report.deviceHubWs.results.every((entry: { passed: boolean }) => entry.passed));
+  assert.include(report.deviceHubWs.interpretation, "not an approved contract");
+  assert.include(report.deviceHubWs.interpretation, "real ephemeral loopback listener");
+  assert.include(report.deviceHubWs.interpretation, "no close frame at all");
+  assert.isAbove(report.deviceHubWs.knownLimitations.length, 0);
+  assert.sameMembers(
+    [...new Set(report.deviceHubWs.results.map((entry: { subject: string }) => entry.subject))],
+    report.contractCoverage.pendingParity
+      .filter((entry: { tests: string[] }) =>
+        entry.tests.includes("apps/server/scripts/migration-device-hub-ws.test.ts"),
       )
       .map((entry: { subject: string }) => entry.subject),
   );

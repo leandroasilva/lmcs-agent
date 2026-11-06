@@ -520,11 +520,11 @@ export async function runMigrationDeviceHubHttp() {
 
   return {
     interpretation:
-      "Executed the real * /api/device-hub/* handler through HttpRouter.toWebHandler with stubbed EnvironmentAuth and DeviceService plus a recording in-memory HttpClient. No listener, real hub, WebSocket upgrade, cookie/bearer/DPoP validation, readiness lifecycle, middleware or Rust implementation is exercised. These snapshots characterize the source at this revision; they are not an approved contract.",
+      "Executed the real * /api/device-hub/* handler through HttpRouter.toWebHandler with stubbed EnvironmentAuth and DeviceService plus a recording in-memory HttpClient. No listener, real hub, cookie/bearer/DPoP validation, readiness lifecycle, middleware or Rust implementation is exercised here; the WebSocket upgrade branch cannot be carried by a Web Request at all and runs in migration-device-hub-ws.ts instead. These snapshots characterize the source at this revision; they are not an approved contract.",
     fixturePolicy:
       "Authentication, host readiness and the upstream response are fixed per fixture; every upstream call is recorded with method, URL, headers and body. The corpus only asserts the dropped-header set, one forwarded custom header, the rewritten Origin and explicit response headers, not a full header dump.",
     knownLimitations: [
-      "WebSocket upgrades cannot be carried by a Web Request: only the 403 scope denial is exercised, while frame pumping, close propagation and upstream dialing remain untested.",
+      "WebSocket upgrades cannot be carried by a Web Request, so only the 403 scope denial is exercised here; migration-device-hub-ws.ts drives the upgrade branch against a real listener and a real ws hub.",
       "The 400 response for an unparsable request URL is unreachable because the web handler requires a valid absolute URL.",
       "Authentication is stubbed at the EnvironmentAuth service boundary; no real ticket, cookie, bearer or DPoP validation is performed.",
       "Host readiness is stubbed, so hub lifecycle, SSH/remote hosts and multi-host routing are not exercised.",

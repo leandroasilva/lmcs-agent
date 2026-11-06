@@ -27,6 +27,11 @@ const SIGNING_SECRET = Uint8Array.from({ length: 32 }, (_, index) => 32 - index)
 const BYTES = [97, 98, 99, 100, 101, 102];
 const BODY_TEXT = "abcdef";
 
+// Validators derive from size and mtime, so a pinned mtime is what makes the raw header values
+// byte-identical across runs instead of only their shape being checkable.
+// @effect-diagnostics-next-line globalDate:off - a fixed fixture timestamp, not a clock read
+const FIXED_MTIME = new Date(1_700_000_000_000);
+
 const byteLength = (value: string) => new TextEncoder().encode(value).byteLength;
 
 const config = (overrides: Partial<ServerConfig.ServerConfig["Service"]>) =>
@@ -157,13 +162,17 @@ export async function runMigrationAssetHttp() {
   const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "lmcs-migration-asset-"));
   const attachmentsDir = NodePath.join(root, "attachments");
   await NodeFSP.mkdir(attachmentsDir, { recursive: true });
+  const fixMtime = (name: string) =>
+    NodeFSP.utimes(NodePath.join(attachmentsDir, name), FIXED_MTIME, FIXED_MTIME);
 
   const imageId = createPendingAttachmentId();
   const videoId = createPendingAttachmentId(".mp4");
   const pdfId = createPendingAttachmentId(".pdf");
   const htmlId = createPendingAttachmentId(".html");
-  for (const name of [`${imageId}.png`, `${videoId}.mp4`, `${pdfId}.pdf`, `${htmlId}.html`]) {
+  const fixtureNames = [`${imageId}.png`, `${videoId}.mp4`, `${pdfId}.pdf`, `${htmlId}.html`];
+  for (const name of fixtureNames) {
     await NodeFSP.writeFile(NodePath.join(attachmentsDir, name), Uint8Array.from(BYTES));
+    await fixMtime(name);
   }
 
   const service = await config({ attachmentsDir });
@@ -193,6 +202,20 @@ export async function runMigrationAssetHttp() {
         ? new TextDecoder().decode(Uint8Array.from(bodyBytes))
         : bodyBytes,
     };
+  };
+
+  // The snapshot above collapses validators to booleans; conditional requests need the raw values.
+  const validators = async (path: string) => {
+    const response = await handler(new Request(`http://migration.invalid${path}`));
+    return {
+      etag: response.headers.get("etag"),
+      lastModified: response.headers.get("last-modified"),
+    };
+  };
+
+  const emittedValidators = {
+    etag: `"${BYTES.length.toString(16)}-${FIXED_MTIME.getTime().toString(16)}"`,
+    lastModified: FIXED_MTIME.toUTCString(),
   };
 
   try {
@@ -246,6 +269,7 @@ export async function runMigrationAssetHttp() {
       NodePath.join(attachmentsDir, `${imageId}.png`),
       Uint8Array.from(BYTES),
     );
+    await fixMtime(`${imageId}.png`);
 
     const imageResponse = fileResponse({
       contentType: "image/png",
@@ -262,15 +286,12 @@ export async function runMigrationAssetHttp() {
       body: [],
     });
 
-    check(
-      "video-is-private-no-store",
-      await read(video.relativeUrl),
-      fileResponse({
-        contentType: "video/mp4",
-        cacheControl: "private, no-store",
-        acceptRanges: "bytes",
-      }),
-    );
+    const videoResponse = fileResponse({
+      contentType: "video/mp4",
+      cacheControl: "private, no-store",
+      acceptRanges: "bytes",
+    });
+    check("video-is-private-no-store", await read(video.relativeUrl), videoResponse);
     check(
       "video-range-returns-partial-content",
       await read(video.relativeUrl, { headers: { range: "bytes=2-4" } }),
@@ -301,6 +322,66 @@ export async function runMigrationAssetHttp() {
         etagIsStrongSizeMtime: null,
         body: [],
       },
+    );
+
+    check(
+      "image-validators-are-strong-size-mtime",
+      await validators(image.relativeUrl),
+      emittedValidators,
+    );
+    check(
+      "video-carries-validators-despite-no-store",
+      await validators(video.relativeUrl),
+      emittedValidators,
+    );
+
+    // The route never reads If-None-Match or If-Modified-Since: HttpServerResponse.file has no
+    // access to the request, and the conditional logic in Effect lives only in HttpStaticServer.
+    // A client that caches on the emitted strong ETag therefore re-downloads every attachment.
+    check(
+      "if-none-match-with-the-emitted-etag-still-returns-200",
+      await read(image.relativeUrl, { headers: { "if-none-match": emittedValidators.etag } }),
+      imageResponse,
+    );
+    check(
+      "if-none-match-star-still-returns-200",
+      await read(image.relativeUrl, { headers: { "if-none-match": "*" } }),
+      imageResponse,
+    );
+    check(
+      "if-modified-since-with-the-emitted-date-still-returns-200",
+      await read(image.relativeUrl, {
+        headers: { "if-modified-since": emittedValidators.lastModified },
+      }),
+      imageResponse,
+    );
+    check(
+      "head-with-if-none-match-still-returns-200",
+      await read(image.relativeUrl, {
+        method: "HEAD",
+        headers: { "if-none-match": emittedValidators.etag },
+      }),
+      { ...imageResponse, body: [] },
+    );
+
+    // If-Range is tested for presence, not validated, so any value at all — including the exact
+    // ETag the route just emitted — downgrades the pinned 206 above to a full 200.
+    check(
+      "if-range-with-a-matching-validator-suppresses-the-range",
+      await read(video.relativeUrl, {
+        headers: { range: "bytes=2-4", "if-range": emittedValidators.etag },
+      }),
+      videoResponse,
+    );
+    check(
+      "if-range-with-a-stale-validator-also-suppresses-the-range",
+      await read(video.relativeUrl, { headers: { range: "bytes=2-4", "if-range": '"stale"' } }),
+      videoResponse,
+    );
+    check(
+      "if-range-without-range-is-ignored",
+      await read(video.relativeUrl, { headers: { "if-range": emittedValidators.etag } }),
+      videoResponse,
     );
 
     const download = {
@@ -355,13 +436,13 @@ export async function runMigrationAssetHttp() {
 
   return {
     interpretation:
-      "Executed the real GET /api/assets/* handler through HttpRouter.toWebHandler with attachment claims minted by the production issueAssetUrl path, a fixed signing secret, a synthetic attachments directory and the Node HTTP platform. No listener, workspace-file or native-app claims, GitHub media fetching, authentication middleware, browser rendering or Rust implementation is exercised. Headers and statuses characterize the source at this revision, not an approved contract.",
+      "Executed the real GET /api/assets/* handler through HttpRouter.toWebHandler with attachment claims minted by the production issueAssetUrl path, a fixed signing secret, a synthetic attachments directory and the Node HTTP platform. No listener, workspace-file or native-app claims, GitHub media fetching, authentication middleware, browser rendering or Rust implementation is exercised. Two conditional-request behaviours are recorded, not approved: the route never emits 304, because If-None-Match and If-Modified-Since are not read at all and HttpServerResponse.file has no access to the request, so a client that caches on the emitted strong ETag re-downloads every attachment; and If-Range is tested for presence rather than validated, so any value — including the exact ETag the route just emitted — turns the pinned 206 into a full 200. Headers and statuses characterize the source at this revision, not an approved contract.",
     fixturePolicy:
-      "Attachment ids come from createPendingAttachmentId; every file holds the ASCII bytes abcdef so ranges, lengths and text bodies are exact. Expired and tampered tokens are re-signed with the same fixed secret. ETags are validated by shape because they derive from file size and mtime.",
+      "Attachment ids come from createPendingAttachmentId; every file holds the ASCII bytes abcdef so ranges, lengths and text bodies are exact. Expired and tampered tokens are re-signed with the same fixed secret. Every fixture file is pinned to a fixed mtime, including after the delete-and-rewrite row, so the emitted ETag and Last-Modified are byte-identical across runs and can be pinned as raw values rather than only as a shape.",
     knownLimitations: [
       "Only attachment claims are exercised; workspace-file, media-file-exact, project-favicon, native-app-icon and github-media claim kinds are not covered.",
       "File responses carry a strong size-mtime ETag and Last-Modified even for private, no-store video, which contradicts the media-cache intent recorded in the source; this corpus records the observed headers without approving them.",
-      "Conditional requests (If-Range, If-None-Match), descriptor lifetime and cancellation are covered by helper tests, not by this route corpus.",
+      "Conditional request headers are exercised, but descriptor lifetime, cancellation mid-range and the weak ETag the same helper emits for host media files are covered by helper tests, not by this route corpus.",
       "Compression middleware, CORS and authentication are not mounted in this isolated router.",
     ],
     results,

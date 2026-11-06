@@ -834,10 +834,11 @@ export const migrationContractClassifications: readonly ContractClassification[]
     ),
     tests: [
       "apps/server/scripts/migration-device-hub-http.test.ts",
+      "apps/server/scripts/migration-device-hub-ws.test.ts",
       "apps/server/src/device/DeviceHubProxy.test.ts",
     ],
     parityRequirement:
-      "Cover successful WS pumps/close, header/body fidelity, host selection, readiness errors and the full scope matrix beyond a stubbed hub; the corpus characterizes path/method gating, read/operate denial, ticket stripping, header hygiene, readiness and response rewriting, but no upgrade or real upstream.",
+      "The isolated HTTP corpus covers path/method gating, read/operate denial, ticket stripping, header hygiene, readiness and response rewriting against a stubbed upstream. The upgrade corpus now executes the shipped WS branch for real: an ephemeral loopback listener built by NodeHttpServer with the production perMessageDeflate setting, dialing a real ws hub, so request.upgrade, Socket.makeWebSocket, the pumpFrames loop, raceFirst and the scope teardown all run. It pins the allowlist and scope gates before any dial, the wsTicket/hostId strip, that the upgrade leg forwards no request headers at all (unlike the HTTP leg, which forwards everything outside its drop list and rewrites Origin), frames crossing unchanged in both directions as text and binary, and the close asymmetry: a closing client closes the upstream with a real 1000 through teardown, while a closing or refusing hub ends the client socket with no close frame, so the client observes 1005 and the hub's own code and reason never cross the proxy. Parity still needs a real expo-device-hub, real wsTicket/cookie/bearer/DPoP validation, host selection and readiness lifecycle, large or fragmented H.264 frames with backpressure and mid-stream cancellation, the mounted middleware and response-write guard, and a decision on whether dropping the upstream close code is intended behaviour or a defect.",
   },
   {
     code: "raw-http-schema-not-declared",
@@ -953,7 +954,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/server/src/server.test.ts",
     ],
     parityRequirement:
-      "The isolated corpus covers attachment claims: forged, expired and deleted-file 404s, inline images ignoring ranges, private no-store video with 206/416 and Accept-Ranges, download disposition with RFC 5987 file names, sandboxed inline HTML and invalid Host. Workspace-file, media-file-exact, project-favicon, native-app-icon and github-media claims, conditional requests, cancellation and helper-level descriptor lifetime remain untested at the route.",
+      "The isolated corpus covers attachment claims: forged, expired and deleted-file 404s, inline images ignoring ranges, private no-store video with 206/416 and Accept-Ranges, download disposition with RFC 5987 file names, sandboxed inline HTML and invalid Host. Fixture files are pinned to a fixed mtime, so the emitted strong size-mtime ETag and Last-Modified are pinned as raw values and reused as conditional request headers. Two behaviours are recorded as findings rather than approved: the handler never emits 304 because it does not read If-None-Match or If-Modified-Since at all, and If-Range is tested for presence instead of validated, so any value downgrades the pinned 206 to a full 200. A port must decide both deliberately. Workspace-file, media-file-exact, project-favicon, native-app-icon and github-media claims, the weak ETag emitted for host media files, cancellation, helper-level descriptor lifetime, compression and mounted CORS/auth middleware remain untested at the route.",
   },
   {
     code: "raw-http-schema-not-declared",
@@ -996,7 +997,7 @@ export const migrationContractClassifications: readonly ContractClassification[]
       "apps/server/src/server.test.ts",
     ],
     parityRequirement:
-      "The isolated corpus covers SPA/HTML fallback, manifest-gated immutable caching, revalidation, 304/HEAD, encoded parent-segment rejection, invalid Host, dev redirect/proxied prefixes and the no-static 503. Compression, ranges, media streaming, packaged-build drift, proxy loops and cancellation remain untested.",
+      "The isolated corpus covers SPA/HTML fallback, manifest-gated immutable caching, revalidation, 304/HEAD, encoded parent-segment rejection, invalid Host, dev redirect/proxied prefixes and the no-static 503. Fixture files are pinned to a fixed mtime, so the emitted weak size-mtime ETag and Last-Modified are pinned as raw values and round-tripped as conditional headers: the exact validator 304s, the strong form of the same value 304s because both sides strip W/, a candidate list 304s, a stale validator and an older or unparsable date return the full body, a present If-None-Match short-circuits the date branch, HTML carries no validator so it can never 304, and a 304 keeps Cache-Control/ETag/Last-Modified plus Vary while dropping the body. The parity risk is that this route hand-rolls its own conditional comparison in http.ts instead of using Effect's HttpStaticServer, while the asset route reads neither header and can never 304 — so the server honours a weak validator on one path and ignores a strong one on the other, and neither path uses the third implementation Effect already ships unused. A port must settle on one policy rather than inherit the divergence. Compression, ranges, media streaming, conditional HEAD, conditionals on the index.html fallback path, packaged-build drift, proxy loops and cancellation remain untested.",
   },
   {
     code: "raw-http-schema-not-declared",

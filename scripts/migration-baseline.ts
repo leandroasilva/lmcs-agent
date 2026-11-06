@@ -14,6 +14,7 @@ import oracleGolden from "../apps/server/scripts/fixtures/migration-oracle.json"
 import { runMigrationAssetHttp } from "../apps/server/scripts/migration-asset-http.ts";
 import { runMigrationDeviceHttp } from "../apps/server/scripts/migration-device-http.ts";
 import { runMigrationDeviceHubHttp } from "../apps/server/scripts/migration-device-hub-http.ts";
+import { runMigrationDeviceHubWs } from "../apps/server/scripts/migration-device-hub-ws.ts";
 import { runMigrationOtlpHttp } from "../apps/server/scripts/migration-otlp-http.ts";
 import { runMigrationStaticHttp } from "../apps/server/scripts/migration-static-http.ts";
 import { runMigrationUploadHttp } from "../apps/server/scripts/migration-upload-http.ts";
@@ -42,6 +43,7 @@ export function baselineGate(input: {
   failedUploadHttpCases: number;
   failedAssetHttpCases: number;
   failedDeviceHubHttpCases: number;
+  failedDeviceHubWsCases: number;
   failedPreloadIpcCases: number;
   knownRouteDefects: number;
   oracleMatchesGolden: boolean;
@@ -78,6 +80,10 @@ export function baselineGate(input: {
   if (input.failedDeviceHubHttpCases)
     blockers.push(
       `${input.failedDeviceHubHttpCases} device hub proxy checks differ from the Node baseline.`,
+    );
+  if (input.failedDeviceHubWsCases)
+    blockers.push(
+      `${input.failedDeviceHubWsCases} device hub upgrade checks differ from the Node baseline.`,
     );
   if (input.failedPreloadIpcCases)
     blockers.push(
@@ -125,6 +131,7 @@ export async function buildMigrationBaseline() {
   const uploadHttp = await runMigrationUploadHttp();
   const assetHttp = await runMigrationAssetHttp();
   const deviceHubHttp = await runMigrationDeviceHubHttp();
+  const deviceHubWs = await runMigrationDeviceHubWs();
   const preloadIpc = await runMigrationPreloadIpc();
   const gate = baselineGate({
     inventoryIssues: contractCoverage.unresolved.length,
@@ -137,6 +144,7 @@ export async function buildMigrationBaseline() {
     failedUploadHttpCases: uploadHttp.results.filter((result) => !result.passed).length,
     failedAssetHttpCases: assetHttp.results.filter((result) => !result.passed).length,
     failedDeviceHubHttpCases: deviceHubHttp.results.filter((result) => !result.passed).length,
+    failedDeviceHubWsCases: deviceHubWs.results.filter((result) => !result.passed).length,
     failedPreloadIpcCases: preloadIpc.results.filter((result) => !result.passed).length,
     knownRouteDefects: otlpHttp.knownDefects.length,
     oracleMatchesGolden,
@@ -170,6 +178,7 @@ export async function buildMigrationBaseline() {
     uploadHttp,
     assetHttp,
     deviceHubHttp,
+    deviceHubWs,
     preloadIpc,
     wire: {
       interpretation: "Schema decode/encode only, not token verification or provider execution.",

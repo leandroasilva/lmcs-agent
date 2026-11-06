@@ -12,8 +12,8 @@ const actualOf = (
 
 it("characterizes the asset route against synthetic attachments", async () => {
   const report = await runMigrationAssetHttp();
-  assert.lengthOf(report.results, 15);
-  assert.equal(new Set(report.results.map((result) => result.id)).size, 15);
+  assert.lengthOf(report.results, 24);
+  assert.equal(new Set(report.results.map((result) => result.id)).size, 24);
   assert.deepEqual(
     report.results.filter((result) => !result.passed),
     [],
@@ -24,6 +24,8 @@ it("characterizes the asset route against synthetic attachments", async () => {
   );
   assert.include(report.interpretation, "not an approved contract");
   assert.include(report.interpretation, "No listener, workspace-file");
+  assert.include(report.interpretation, "never emits 304");
+  assert.include(report.interpretation, "presence rather than validated");
   assert.isAbove(report.knownLimitations.length, 0);
 });
 
@@ -86,5 +88,37 @@ it("pins range, caching and disposition behavior", async () => {
   assert.equal(
     actualOf(report, "html-inline-is-sandboxed").contentSecurityPolicy,
     "sandbox allow-scripts allow-forms allow-popups allow-modals",
+  );
+});
+
+it("pins that conditional request headers never shorten the response", async () => {
+  const report = await runMigrationAssetHttp();
+  const validators = report.results.find(
+    (result) => result.id === "image-validators-are-strong-size-mtime",
+  )?.actual as { etag: string; lastModified: string };
+  assert.match(validators.etag, /^"[0-9a-f]+-[0-9a-f]+"$/);
+
+  for (const id of [
+    "if-none-match-with-the-emitted-etag-still-returns-200",
+    "if-none-match-star-still-returns-200",
+    "if-modified-since-with-the-emitted-date-still-returns-200",
+    "head-with-if-none-match-still-returns-200",
+    "if-range-with-a-matching-validator-suppresses-the-range",
+    "if-range-with-a-stale-validator-also-suppresses-the-range",
+    "if-range-without-range-is-ignored",
+  ]) {
+    const row = actualOf(report, id);
+    assert.equal(row.status, 200, id);
+    assert.equal(row.contentRange, null, id);
+  }
+
+  // The same Range header alone is a 206, so If-Range downgrades rather than refines it.
+  assert.deepEqual(
+    {
+      withIfRange: actualOf(report, "if-range-with-a-matching-validator-suppresses-the-range")
+        .contentLength,
+      withoutIfRange: actualOf(report, "video-range-returns-partial-content").contentLength,
+    },
+    { withIfRange: "6", withoutIfRange: "3" },
   );
 });
