@@ -5,7 +5,7 @@ import * as NodePath from "node:path";
 import ts from "typescript-legacy";
 
 const roots = ["packages/core/src", "apps/server/src", "apps/desktop/src"];
-const referenceRoots = ["packages/client/src", "apps/web/src", "apps/mobile/src"];
+const referenceRoots = ["packages/client/src", "apps/web/src"];
 const rpcFile = "packages/core/src/contracts/rpc.ts";
 const httpFile = "packages/core/src/contracts/environmentHttp.ts";
 const authFile = "apps/server/src/auth/RpcAuthorization.ts";

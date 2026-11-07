@@ -15,12 +15,6 @@ node_modules
 .vite-hooks
 **/.vite-plus
 
-# Mobile build artifacts (not part of server image)
-apps/mobile/.expo
-apps/mobile/ios/build
-apps/mobile/android/app/build
-apps/mobile/android/.gradle
-
 # Desktop app (server image does not include Electron)
 apps/desktop
 

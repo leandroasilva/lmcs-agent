@@ -94,7 +94,7 @@ it("retains unregistered project declarations and scopes their reference evidenc
       ),
     );
   }
-  for (const path of ["packages/client/src", "apps/web/src", "apps/mobile/src"]) {
+  for (const path of ["packages/client/src", "apps/web/src"]) {
     assert.include(result.unregisteredMethodEvidence.scannedRoots, path);
     assert.isTrue(
       result.unregisteredMethodEvidence.additionalSources.some((source) =>
@@ -329,8 +329,8 @@ const fixtureFiles: Record<string, string> = {
     const view = <div>{WS_METHODS.orphanMethod}</div>;
     HttpRouter.add("GET", "/not-a-server-route", handler);
   `,
-  "apps/mobile/src/usage.ts": "send(`orphan`);",
-  "apps/mobile/src/ignored.test.ts": 'send("orphan");',
+  "packages/client/src/orphan.ts": "send(`orphan`);",
+  "packages/client/src/ignored.test.ts": 'send("orphan");',
 };
 
 async function withFixture(run: (directory: string) => Promise<void>) {
@@ -439,7 +439,7 @@ it("records AST reference candidates across clients without treating names as re
       2,
     );
     assert.lengthOf(
-      candidates.filter((entry) => entry.source.file === "apps/mobile/src/usage.ts"),
+      candidates.filter((entry) => entry.source.file === "packages/client/src/orphan.ts"),
       1,
     );
     assert.lengthOf(candidates, 7);
@@ -465,7 +465,7 @@ it("records AST reference candidates across clients without treating names as re
 it("detects new client reference candidates without changing server contract evidence", async () => {
   await withFixture(async (directory) => {
     const before = await buildMigrationInventory(directory);
-    const path = "apps/mobile/src/usage.ts";
+    const path = "packages/client/src/orphan.ts";
     await NodeFSP.writeFile(
       NodePath.join(directory, path),
       'send(WS_METHODS.orphanMethod); send("orphan");',
@@ -511,7 +511,7 @@ it("does not let reference-only client globals resolve missing server contracts"
 
 it("keeps reference-source parse failures visible instead of claiming an empty usage set", async () => {
   await withFixture(async (directory) => {
-    const path = "apps/mobile/src/usage.ts";
+    const path = "packages/client/src/orphan.ts";
     await NodeFSP.writeFile(NodePath.join(directory, path), "const broken = (");
     const result = await buildMigrationInventory(directory);
     assert.isTrue(
