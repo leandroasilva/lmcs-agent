@@ -3,6 +3,10 @@
 
 use std::collections::VecDeque;
 
+mod tail;
+
+pub use tail::{HistoryTail, Restored, history_tail, restore};
+
 pub const DEFAULT_MAX_LINES: usize = 5_000;
 pub const DEFAULT_MAX_BYTES: usize = 8 * 1024 * 1024;
 
@@ -38,10 +42,9 @@ fn floor_char_boundary(bytes: &[u8], pos: usize) -> usize {
     cursor
 }
 
-fn is_continuation(byte: u8) -> bool {
+pub(crate) fn is_continuation(byte: u8) -> bool {
     byte & 0xc0 == 0x80
 }
-
 fn code_point_len(lead: u8) -> usize {
     if lead < 0x80 || is_continuation(lead) {
         1
