@@ -1,4 +1,4 @@
-import * as TerminalManager from "../../../apps/server/src/terminal/Manager.ts";
+import * as TerminalManager from "../src/terminal/Manager.ts";
 
 const FRAGMENTS = [
   "",

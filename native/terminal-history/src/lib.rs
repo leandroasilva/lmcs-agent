@@ -3,8 +3,10 @@
 
 use std::collections::VecDeque;
 
+mod sanitize;
 mod tail;
 
+pub use sanitize::{Sanitized, sanitize};
 pub use tail::{HistoryTail, Restored, history_tail, restore};
 
 pub const DEFAULT_MAX_LINES: usize = 5_000;

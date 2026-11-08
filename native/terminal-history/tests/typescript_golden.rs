@@ -4,7 +4,7 @@
 //!
 //! Set `LMCS_TERMINAL_HISTORY_TRACE` to a trace file; the test skips when unset.
 //! Regenerate one with:
-//! `node native/terminal-history/tools/generate-typescript-trace.ts > /tmp/trace.txt`
+//! `node apps/server/scripts/terminal-history-trace.ts > /tmp/trace.txt`
 
 use lmcs_terminal_history::{BoundedHistory, UNLIMITED_BYTES};
 
