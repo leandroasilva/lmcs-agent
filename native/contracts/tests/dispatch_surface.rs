@@ -79,16 +79,20 @@ fn every_declared_key_is_a_distinct_identifier() {
 
 fn table(value: &serde_json::Value, field: &str) -> Vec<(String, String)> {
     value[field]
-        .as_object()
-        .unwrap_or_else(|| panic!("{field} is an object"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{field} is an array"))
         .iter()
-        .map(|(key, tag)| {
-            (
-                key.clone(),
-                tag.as_str()
-                    .unwrap_or_else(|| panic!("{field}.{key} is a string"))
-                    .to_owned(),
-            )
+        .map(|pair| {
+            let pair = pair
+                .as_array()
+                .unwrap_or_else(|| panic!("{field} holds [key, tag] pairs"));
+            let text = |slot: usize| {
+                pair[slot]
+                    .as_str()
+                    .unwrap_or_else(|| panic!("{field} entry {pair:?} has a string at {slot}"))
+                    .to_owned()
+            };
+            (text(0), text(1))
         })
         .collect()
 }
@@ -113,8 +117,8 @@ fn replays_the_golden_dumped_from_the_shipped_tables() {
     let text = std::fs::read_to_string(&path).expect("the golden file is readable");
     let golden: serde_json::Value = serde_json::from_str(&text).expect("the golden is JSON");
 
-    // `preserve_order` keeps the TypeScript declaration order, which is part of
-    // what the ported tables claim to reproduce.
+    // Declaration order is part of what the ported tables claim to reproduce, and the
+    // generator emits it as an array so no parser feature has to preserve it.
     assert_eq!(table(&golden, "wsMethods"), owned(WS_METHODS));
     assert_eq!(
         table(&golden, "orchestrationWsMethods"),

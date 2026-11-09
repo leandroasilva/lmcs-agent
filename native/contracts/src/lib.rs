@@ -1,10 +1,15 @@
-//! The RPC dispatch surface, ported from `packages/core/src/contracts`.
+//! The RPC surface, ported from `packages/core/src/contracts`.
+//!
+//! [`base`] holds the codec primitives the payload schemas are built from; the rest of
+//! this comment is about the dispatch tables.
 //!
 //! Two tables declare method tags and `WsRpcGroup` registers a subset of them.
 //! `projects.list`, `projects.add` and `projects.remove` are declared but never
 //! registered, and nothing outside the declaration refers to them; the port
 //! keeps all three so the tables stay a faithful copy of the source, and
 //! `UNREGISTERED` names the gap instead of hiding it.
+
+pub mod base;
 
 /// `(key, tag)` pairs from `WS_METHODS` in `contracts/rpc.ts`.
 pub const WS_METHODS: &[(&str, &str)] = &[
