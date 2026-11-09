@@ -54,6 +54,29 @@
 //! - `RpcSchema.Stream` is **not a codec**. It is `Schema.declare(Stream.isStream)` with
 //!   the element schemas hanging off it, so it never reaches the wire and needs no type
 //!   here; framing stream chunks is the transport's job.
+//! - `Schema.makeFilter` needs no type either: it is [`Check`] with a message the schema
+//!   author wrote, which is what [`Check::describe`] exists to carry. The trap is the
+//!   JavaScript idiom it is built from — `shortcut.metaKey || … || "requires a modifier."`
+//!   — where the trailing **string is a failure with that message**, not a truthy value that
+//!   passes. `.check` gates the outbound direction as well as the inbound one.
+//! - `Schema.decodeTo` is likewise not a primitive: it is the case where the Encoded and Type
+//!   sides differ, and in Rust that is simply two hand-written impls rather than one derive.
+//!   The crate has been porting it since the first fatia — `TrimmedString`,
+//!   `DurationFromMillis` and the three forward-compatible helpers are all `decodeTo` — and
+//!   the settings fields add the flavour none of those had: an encode that is **not** the
+//!   decode backwards. `makeBinaryPathSetting` maps `""` to a fallback on the way in and
+//!   writes `""` on the way out, and `LegacyConfirmQuit` cannot encode `"double-click"` at
+//!   all (its union member never runs, because the canonical member answers first).
+//! - `Schema.withDecodingDefault` — 205 sites, most of `settings.ts` — makes the key optional
+//!   on both sides and **substitutes the default for an absent key only**. A present value of
+//!   the wrong shape still fails, so the port is `#[serde(default = …)]` on the field and
+//!   never an `unwrap_or` over the value: the second would turn a corrupt settings file into
+//!   a file of defaults, silently.
+//! - `Schema.annotateKey` and `Schema.annotate` (41 sites, all of them form metadata for the
+//!   settings screen) have no wire effect at all — measured through a field whose
+//!   `annotateKey` carries three annotations at once. They are a UI obligation, not a codec
+//!   one. `Schema.deepPartial` has 1 site repo-wide and it is a comment saying it is not
+//!   used, so there is nothing to port.
 //!
 //! The TypeScript-only shapes collapse here, and that is deliberate rather than a gap:
 //! `Schema.optionalKey` differs from `Schema.optional` only in whether `{v: undefined}`

@@ -235,6 +235,225 @@ fn weights_encode(raw: &Value) -> Result<Value, ()> {
     serde_json::to_value(Record(built)).map_err(|_| ())
 }
 
+// ---------------------------------------------------------------------------
+// settings.ts — the three constructs that file contributes and no earlier subject
+// reached: `Schema.makeFilter` over a struct, and `Schema.decodeTo` under
+// `Schema.withDecodingDefault` in both of its flavours (a lossy legacy union member and a
+// decode-only fallback). None of them is a new primitive; each is `Checked`, `Trimmed` and
+// a pair of hand-written serde impls, which is the finding.
+// ---------------------------------------------------------------------------
+
+/// `KeybindingValue` (`keybindings.ts:114`): `TrimmedString.check(isMinLength(1),
+/// isMaxLength(64))`. Wrapping [`Trimmed`] rather than a `String` is what makes the two
+/// directions disagree the way the shipped codec does — a decode measures the trimmed text,
+/// so `"    "` fails the floor, while an encode measures the raw text it was handed, so
+/// `"    "` passes it, the trim then empties it, and nothing re-checks.
+type KeybindingValue = Checked<Trimmed, (MinLength<1>, MaxLength<64>)>;
+
+/// `KeybindingShortcut` (`keybindings.ts:135`) — six declared fields, and undeclared ones
+/// dropped rather than rejected, which is serde's default behaviour already.
+#[derive(Deserialize, Serialize)]
+struct KeybindingShortcut {
+    key: KeybindingValue,
+    #[serde(rename = "metaKey")]
+    meta_key: bool,
+    #[serde(rename = "ctrlKey")]
+    ctrl_key: bool,
+    #[serde(rename = "shiftKey")]
+    shift_key: bool,
+    #[serde(rename = "altKey")]
+    alt_key: bool,
+    #[serde(rename = "modKey")]
+    mod_key: bool,
+}
+
+/// The `Schema.makeFilter` behind `SnapShotKeyChord` (`settings.ts:185`). The filter returns
+/// `shortcut.metaKey || … || "Snapshot shortcut requires a modifier."`, and that trailing
+/// string is a **failure carrying that message**, not a truthy value that passes — so the
+/// rule is "any one of the five modifiers" and the message is the error.
+///
+/// This is the first check in the crate whose [`Check::describe`] text was written by the
+/// schema author rather than generated from a bound, which is what makes `makeFilter`
+/// different from `isBetween`: nothing about the *shape* of the predicate is new.
+struct HasModifier;
+
+impl Check<KeybindingShortcut> for HasModifier {
+    fn passes(value: &KeybindingShortcut) -> bool {
+        value.meta_key || value.ctrl_key || value.shift_key || value.alt_key || value.mod_key
+    }
+
+    fn describe() -> String {
+        "Snapshot shortcut requires a modifier.".to_owned()
+    }
+}
+
+/// The encode side of `SnapShotKeyChord`, built field by field instead of through
+/// [`round`]: decoding first would run `isMinLength` on the *trimmed* key, and the shipped
+/// encoder runs it on the raw one. Every field is wrapped unchecked so both checks land on
+/// the way out, outer filter first and inner length second, exactly as TypeScript layers
+/// `.check` over a `Struct` whose field is itself a `check`.
+fn chord_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let shortcut = KeybindingShortcut {
+        key: Checked::wrap(Trimmed(text(fields, "key")?.to_owned())),
+        meta_key: flag(fields, "metaKey")?,
+        ctrl_key: flag(fields, "ctrlKey")?,
+        shift_key: flag(fields, "shiftKey")?,
+        alt_key: flag(fields, "altKey")?,
+        mod_key: flag(fields, "modKey")?,
+    };
+    serde_json::to_value(Checked::<_, HasModifier>::wrap(shortcut)).map_err(|_| ())
+}
+
+fn flag(fields: &Map<String, Value>, name: &str) -> Result<bool, ()> {
+    fields.get(name).and_then(Value::as_bool).ok_or(())
+}
+
+fn text<'a>(fields: &'a Map<String, Value>, name: &str) -> Result<&'a str, ()> {
+    fields.get(name).and_then(Value::as_str).ok_or(())
+}
+
+/// `QuitConfirmationMode` — the canonical form, and the whole Type side of the setting.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum QuitConfirmationMode {
+    Direct,
+    Hold,
+    DoubleClick,
+}
+
+/// The `Union([QuitConfirmationMode, LegacyConfirmQuit])` order, on the wire: the canonical
+/// literal first, so the legacy boolean only ever answers when no literal matched.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ConfirmQuitWire {
+    Mode(QuitConfirmationMode),
+    Legacy(bool),
+}
+
+const DEFAULT_QUIT_CONFIRMATION: QuitConfirmationMode = QuitConfirmationMode::Hold;
+
+fn confirm_quit_default() -> QuitConfirmationMode {
+    DEFAULT_QUIT_CONFIRMATION
+}
+
+/// `LegacyConfirmQuit`'s decode half: `true` meant "confirm", which is `"hold"`, and
+/// `false` meant "don't", which is `"direct"`.
+fn confirm_quit_from_wire<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<QuitConfirmationMode, D::Error> {
+    match ConfirmQuitWire::deserialize(deserializer)? {
+        ConfirmQuitWire::Mode(mode) => Ok(mode),
+        ConfirmQuitWire::Legacy(true) => Ok(QuitConfirmationMode::Hold),
+        ConfirmQuitWire::Legacy(false) => Ok(QuitConfirmationMode::Direct),
+    }
+}
+
+/// Decode side of the `confirmQuit` field. The key is optional on the wire — that is what
+/// `withDecodingDefault` buys — and the default is **substituted**, not left unset, so
+/// `{"confirmQuit": true}` decodes all the way to `{"confirmQuit": "hold"}`.
+#[derive(Serialize, Deserialize)]
+struct ConfirmQuitDec {
+    #[serde(
+        rename = "confirmQuit",
+        default = "confirm_quit_default",
+        deserialize_with = "confirm_quit_from_wire"
+    )]
+    confirm_quit: QuitConfirmationMode,
+}
+
+/// Encode side: the same key, but genuinely absent, because the default is a *decoding*
+/// default and `{}` is a legal Type value that has nothing to write. A legacy boolean is
+/// refused here — it is not in the Type — which is why this needs its own shape rather than
+/// [`round`] over [`ConfirmQuitDec`].
+#[derive(Serialize)]
+struct ConfirmQuitEnc {
+    #[serde(rename = "confirmQuit", skip_serializing_if = "Option::is_none")]
+    confirm_quit: Option<QuitConfirmationMode>,
+}
+
+fn confirm_quit_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let confirm_quit = match fields.get("confirmQuit") {
+        None => None,
+        Some(value) => {
+            Some(serde_json::from_value::<QuitConfirmationMode>(value.clone()).map_err(|_| ())?)
+        }
+    };
+    serde_json::to_value(ConfirmQuitEnc { confirm_quit }).map_err(|_| ())
+}
+
+/// `makeBinaryPathSetting(fallback)` (`settings.ts:540`): `TrimmedString` under a `decodeTo`
+/// whose decode is `value || fallback` and whose encode is the identity. The asymmetry is
+/// the whole subject — `""` decodes to `"codex"` while a Type-side `""` **encodes to `""`**,
+/// and `"  "` decodes to `"codex"` while encoding to `""`.
+///
+/// The fallback is a per-site string constant, so it is supplied where the decode runs
+/// instead of being carried in the type; the seven call sites differ only in that literal.
+#[derive(Debug, PartialEq)]
+struct BinaryPath(String);
+
+impl BinaryPath {
+    /// The decode half: trim, then `||`.
+    fn or_fallback(trimmed: String, fallback: &str) -> Self {
+        BinaryPath(if trimmed.is_empty() {
+            fallback.to_owned()
+        } else {
+            trimmed
+        })
+    }
+}
+
+impl Serialize for BinaryPath {
+    /// The encode half: the trim, and **not** the fallback.
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        Trimmed(self.0.clone()).serialize(serializer)
+    }
+}
+
+const CODEX_BINARY: &str = "codex";
+
+fn codex_binary_path() -> BinaryPath {
+    BinaryPath(CODEX_BINARY.to_owned())
+}
+
+/// Decode side of `CodexSettings.binaryPath`: an absent key or an empty path both become the
+/// fallback. A key that is present but not a string still **fails** — the default covers a
+/// missing key and nothing else, which is the one property an `unwrap_or(fallback)` port
+/// would get wrong across the 205 `withDecodingDefault` sites.
+#[derive(Serialize, Deserialize)]
+struct BinaryPathDec {
+    #[serde(
+        rename = "binaryPath",
+        default = "codex_binary_path",
+        deserialize_with = "binary_path_from_wire"
+    )]
+    binary_path: BinaryPath,
+}
+
+fn binary_path_from_wire<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<BinaryPath, D::Error> {
+    let trimmed = Trimmed::deserialize(deserializer)?;
+    Ok(BinaryPath::or_fallback(trimmed.0, CODEX_BINARY))
+}
+
+/// Encode side: identity over the trimmed text, no fallback, and an absent key stays absent.
+#[derive(Serialize)]
+struct BinaryPathEnc {
+    #[serde(rename = "binaryPath", skip_serializing_if = "Option::is_none")]
+    binary_path: Option<BinaryPath>,
+}
+
+fn binary_path_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let binary_path = match fields.get("binaryPath") {
+        None => None,
+        Some(value) => Some(BinaryPath(value.as_str().ok_or(())?.to_owned())),
+    };
+    serde_json::to_value(BinaryPathEnc { binary_path }).map_err(|_| ())
+}
+
 fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
     let mut map: BTreeMap<&'static str, (Codec, Codec)> = BTreeMap::new();
     map.insert(
@@ -562,6 +781,25 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         "voidSchema",
         (|raw| round::<Value>(raw), |raw| round::<Value>(raw)),
     );
+    // `SnapShotKeyChord` is the one subject where neither direction can share a shape: the
+    // check gates *both* ways, but on different texts. `round` is the decode path — struct
+    // first, then the modifier filter — and [`chord_encode`] the encode path, where the
+    // length floor sees the untrimmed key.
+    map.insert(
+        "snapShotKeyChord",
+        (
+            |raw| round::<Checked<KeybindingShortcut, HasModifier>>(raw),
+            chord_encode,
+        ),
+    );
+    map.insert(
+        "confirmQuitSetting",
+        (|raw| round::<ConfirmQuitDec>(raw), confirm_quit_encode),
+    );
+    map.insert(
+        "binaryPathSetting",
+        (|raw| round::<BinaryPathDec>(raw), binary_path_encode),
+    );
     map
 }
 
@@ -769,6 +1007,102 @@ fn holds_undefined(value: &Value) -> bool {
     }
 }
 
+/// `SnapShotKeyChord` as the port spells it: a filter over a struct whose field is itself a
+/// checked transform.
+type Chord = Checked<KeybindingShortcut, HasModifier>;
+
+fn chord(key: &str, [meta, ctrl, shift, alt, modifier]: [bool; 5]) -> Value {
+    json!({
+        "key": key,
+        "metaKey": meta,
+        "ctrlKey": ctrl,
+        "shiftKey": shift,
+        "altKey": alt,
+        "modKey": modifier,
+    })
+}
+
+/// The claims this slice is about, asserted in Rust so they hold without a golden to replay.
+#[test]
+fn the_settings_constructs_are_ported_as_layered_ones() {
+    // 1. `makeFilter`'s disjunction: each of the five operands carries the pass **alone**,
+    // and none of them present is a rejection — the trailing string in the `||` chain is a
+    // failure message, not a truthy value that lets the filter pass.
+    for index in 0..5 {
+        let mut flags = [false; 5];
+        flags[index] = true;
+        assert!(
+            serde_json::from_value::<Chord>(chord("s", flags)).is_ok(),
+            "modifier {index} alone should satisfy the chord rule"
+        );
+    }
+    assert!(serde_json::from_value::<Chord>(chord("s", [false; 5])).is_err());
+    // `.check` gates the way out too, so the very same value cannot be written.
+    assert!(chord_encode(&chord("s", [false; 5])).is_err());
+
+    // 2. A field the struct itself rejects fails even when the chord rule is satisfied, so
+    // the two layers cannot be conflated into one predicate.
+    assert!(
+        serde_json::from_value::<Chord>(chord("", [true, false, false, false, false])).is_err()
+    );
+    assert!(chord_encode(&chord("", [true, false, false, false, false])).is_err());
+
+    // 3. `isMinLength` measures the **trimmed** text arriving and the **raw** one leaving.
+    // A port that read the key into a `String` and trimmed on the way in only would accept
+    // what the last line writes here.
+    assert!(
+        serde_json::from_value::<Chord>(chord("    ", [true, false, false, false, false])).is_err()
+    );
+    assert_eq!(
+        chord_encode(&chord("    ", [true, false, false, false, false]))
+            .expect("four units clear the floor"),
+        chord("", [true, false, false, false, false]),
+    );
+
+    // 4. `withDecodingDefault` is the property a `unwrap_or(default)` port gets wrong: the
+    // default stands in for an **absent key** and nothing else, so corrupt settings still
+    // fail instead of quietly becoming the default.
+    assert_eq!(
+        round::<ConfirmQuitDec>(&json!({})).expect("absent decodes to the default"),
+        json!({ "confirmQuit": "hold" }),
+    );
+    assert!(serde_json::from_value::<ConfirmQuitDec>(json!({ "confirmQuit": "x" })).is_err());
+
+    // 5. The legacy boolean is decode-only, and the canonical union member answers first in
+    // both directions — which is what keeps `LegacyConfirmQuit`'s lossy encode (`"hold"` is
+    // the only mode it can write) off the wire entirely.
+    for (legacy, canonical) in [(true, "hold"), (false, "direct")] {
+        assert_eq!(
+            round::<ConfirmQuitDec>(&json!({ "confirmQuit": legacy }))
+                .expect("the legacy form decodes"),
+            json!({ "confirmQuit": canonical }),
+        );
+        assert!(confirm_quit_encode(&json!({ "confirmQuit": legacy })).is_err());
+    }
+    assert_eq!(
+        confirm_quit_encode(&json!({ "confirmQuit": "double-click" }))
+            .expect("a mode the legacy member could not write"),
+        json!({ "confirmQuit": "double-click" }),
+    );
+
+    // 6. `binaryPath` is the same default rule with a second asymmetry: `""` arrives as the
+    // fallback and leaves as `""`, so the decode is not reversible and the encode is not
+    // the decode backwards.
+    assert_eq!(
+        round::<BinaryPathDec>(&json!({ "binaryPath": "" })).expect("empty becomes the fallback"),
+        json!({ "binaryPath": CODEX_BINARY }),
+    );
+    assert_eq!(
+        binary_path_encode(&json!({ "binaryPath": "" })).expect("the Type side keeps its empty"),
+        json!({ "binaryPath": "" }),
+    );
+    assert!(serde_json::from_value::<BinaryPathDec>(json!({ "binaryPath": 0 })).is_err());
+    assert_eq!(
+        binary_path_encode(&json!({})).expect("absent is a legal Type value"),
+        json!({}),
+    );
+}
+
 #[test]
 fn replays_the_golden_codec_behaviour() {
     let Some(path) = env::var_os("LMCS_CONTRACTS_GOLDEN").map(PathBuf::from) else {
@@ -868,7 +1202,7 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 46, "ported subject count changed");
+    assert_eq!(table.len(), 49, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form"
@@ -884,9 +1218,9 @@ fn replays_the_golden_codec_behaviour() {
          voidSchema cases that yield bare `undefined`"
     );
     assert_eq!(
-        typed, 19,
+        typed, 22,
         "5 durationFromMillis encodes whose Type side is a `Duration`, and the 14 defect \
          encodes whose Type side is an `Error` — neither has a JSON spelling"
     );
-    assert!(replayed >= 680, "only replayed {replayed} cases");
+    assert!(replayed >= 755, "only replayed {replayed} cases");
 }

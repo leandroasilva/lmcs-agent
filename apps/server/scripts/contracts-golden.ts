@@ -12,6 +12,8 @@ import * as Schema from "effect/Schema";
 import * as RpcSchema from "effect/unstable/rpc/RpcSchema";
 
 import {
+  ClientSettingsSchema,
+  CodexSettings,
   ForwardCompatibleArray,
   ForwardCompatibleNullable,
   ForwardCompatibleOptional,
@@ -20,6 +22,7 @@ import {
   OmittedWhenNull,
   PortSchema,
   PositiveInt,
+  SnapShotKeyChord,
   ThreadId,
   TrimmedNonEmptyString,
   TrimmedString,
@@ -193,6 +196,22 @@ function recordTyped(name: string, schema: Schema.Top, encoded: unknown): void {
   } catch (cause) {
     cases.push({ ...base, error: issueOf(cause) });
   }
+}
+
+// A **field projection**: wrap one field of a shipped struct in a struct of its own, so a
+// case exercises the real declaration without dumping the other ~200 keys of
+// `ClientSettingsSchema` into the golden for every input.
+//
+// Reaching the field through `fields` rather than re-spelling it is the point. Both fields
+// recorded below are built from module-private schemas — `QuitConfirmationModeSetting` and
+// `makeBinaryPathSetting` are not exported — so a copy is the only alternative, and a copy
+// would silently drift from the `pipe`s it is supposed to be evidence about: the decoding
+// default, the trim, the `annotateKey`.
+function projectField(struct: Schema.Top, field: string): Schema.Top {
+  const fields = (struct as unknown as { fields?: Record<string, Schema.Top> }).fields;
+  const declared = fields?.[field];
+  if (declared === undefined) throw new Error(`${field} is not a field of the shipped struct`);
+  return Schema.Struct({ [field]: declared });
 }
 
 const scalars: Array<[string, Schema.Top]> = [
@@ -834,6 +853,138 @@ const Untagged: Schema.Top = Schema.Union([Schema.String, Schema.Int]);
 for (const input of ["x", 1, 1.5, true, null, {}, [], undefined]) {
   record("untaggedUnion", "decode", Untagged, input);
   record("untaggedUnion", "encode", Untagged, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.makeFilter` — 22 sites in `contracts/`, and the one in `settings.ts` is the
+// clearest: `SnapShotKeyChord` is `KeybindingShortcut.check(makeFilter(shortcut =>
+// shortcut.metaKey || … || shortcut.modKey || "Snapshot shortcut requires a modifier."))`.
+//
+// Two things make this worth its own subject rather than another row in `chainedChecks`.
+// First, the returned **string is a failure with that message**, not a truthy value that
+// passes — a port reading `||` as "the last operand is the result" gets the polarity
+// backwards. Second, this is the first check over a *struct* whose base codec can succeed,
+// so it is where the layer order is measurable: when `key` fails `isMinLength(1)` and the
+// modifier is also missing, which of the two rejects, and does the tag distinguish them.
+//
+// Encode is recorded because whether `.check` gates the outbound direction at all is a
+// property a `Deserialize`-only port cannot see.
+// ---------------------------------------------------------------------------
+
+const chord = (
+  key: string,
+  [metaKey, ctrlKey, shiftKey, altKey, modKey]: [boolean, boolean, boolean, boolean, boolean],
+) => ({
+  key,
+  metaKey,
+  ctrlKey,
+  shiftKey,
+  altKey,
+  modKey,
+});
+
+for (const input of [
+  // One modifier each: the disjunction has five operands and each has to be able to carry
+  // the pass on its own.
+  chord("s", [true, false, false, false, false]),
+  chord("s", [false, true, false, false, false]),
+  chord("s", [false, false, true, false, false]),
+  chord("s", [false, false, false, true, false]),
+  chord("s", [false, false, false, false, true]),
+  // None: the single thing the filter exists to reject.
+  chord("s", [false, false, false, false, false]),
+  // Base codec and filter both rejecting, and only the filter rejecting, so the failing
+  // layer is attributable.
+  chord("", [false, false, false, false, false]),
+  chord("", [true, false, false, false, false]),
+  // `TrimmedString` trims before `isMinLength` runs, so padding is invisible to the length
+  // floor on decode and present on encode — where the bound measures the raw text.
+  chord("  s  ", [true, false, false, false, false]),
+  chord("    ", [true, false, false, false, false]),
+  // `isMaxLength(64)` on a value that the filter is happy with, so a rejection is the
+  // struct's check and not the chord rule.
+  chord("x".repeat(64), [true, false, false, false, false]),
+  chord("x".repeat(65), [true, false, false, false, false]),
+  // Undeclared keys are dropped rather than rejected, and a declared one of the wrong type
+  // is the reverse.
+  { ...chord("s", [true, false, false, false, false]), unknown: 1 },
+  { key: "s" },
+  { key: "s", metaKey: "true", ctrlKey: false, shiftKey: false, altKey: false, modKey: false },
+  "s",
+  [],
+  null,
+]) {
+  record("snapShotKeyChord", "decode", SnapShotKeyChord, input);
+  record("snapShotKeyChord", "encode", SnapShotKeyChord, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.decodeTo` and `Schema.withDecodingDefault`, measured through the two settings
+// fields that use them — 13 and 205 sites in `contracts/`, so this pair of shapes covers
+// most of the settings surface.
+//
+// `confirmQuit` is the interesting one because its legacy half is **lossy**:
+// `LegacyConfirmQuit` is `Boolean.pipe(decodeTo(QuitConfirmationMode, …))` with
+// `encode: mode => mode === "hold"`, so the Type value `"double-click"` has no boolean
+// spelling. It never shows up as a failure though, because the field is
+// `Union([QuitConfirmationMode, LegacyConfirmQuit])` and member order decides that the
+// canonical member answers first in *both* directions. The `recordTyped` cases below are
+// the round trips that pin that order down.
+//
+// The absent-key and bad-key cases together answer the `withDecodingDefault` question: the
+// default substitutes for a **missing key only**. A present-but-invalid value still fails,
+// which a Rust `unwrap_or(DEFAULT)` would swallow.
+// ---------------------------------------------------------------------------
+
+const ConfirmQuitSetting = projectField(ClientSettingsSchema, "confirmQuit");
+for (const input of [
+  {},
+  { confirmQuit: "direct" },
+  { confirmQuit: "hold" },
+  { confirmQuit: "double-click" },
+  { confirmQuit: true },
+  { confirmQuit: false },
+  // Present but invalid: defaults must not reach here.
+  { confirmQuit: "x" },
+  { confirmQuit: null },
+  { confirmQuit: 1 },
+  { confirmQuit: {} },
+  { confirmQuit: [] },
+]) {
+  record("confirmQuitSetting", "decode", ConfirmQuitSetting, input);
+  record("confirmQuitSetting", "encode", ConfirmQuitSetting, input);
+}
+for (const encoded of [
+  { confirmQuit: "direct" },
+  { confirmQuit: "hold" },
+  // The lossy one: `LegacyConfirmQuit` alone would encode this to `false`, and a union that
+  // tried the legacy member first on the way out would too.
+  { confirmQuit: "double-click" },
+]) {
+  recordTyped("confirmQuitSetting", ConfirmQuitSetting, encoded);
+}
+
+// `binaryPath` stacks all four constructs on one field — `TrimmedString`, a `decodeTo` that
+// replaces an empty string with the provider's fallback, `withDecodingDefault`, and an
+// `annotateKey` carrying the settings-form metadata. The annotation is here so "annotations
+// have no wire effect" is measured against a field that definitely has one.
+const BinaryPathSetting = projectField(CodexSettings, "binaryPath");
+for (const input of [
+  {},
+  // Both empties: `""` straight, and whitespace that the trim turns into `""`.
+  { binaryPath: "" },
+  { binaryPath: "  " },
+  { binaryPath: "/usr/bin/codex" },
+  { binaryPath: "  /usr/bin/codex  " },
+  // Encode is where the asymmetry shows: `decode` maps `""` to the fallback, `encode` is
+  // the identity, so an empty Type value goes out empty rather than defaulting.
+  { binaryPath: null },
+  { binaryPath: 0 },
+  { binaryPath: false },
+  { binaryPath: [] },
+]) {
+  record("binaryPathSetting", "decode", BinaryPathSetting, input);
+  record("binaryPathSetting", "encode", BinaryPathSetting, input);
 }
 
 // The golden has to carry wire bytes, and two kinds of value do not survive
