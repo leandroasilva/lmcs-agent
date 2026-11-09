@@ -12,8 +12,11 @@ import * as Schema from "effect/Schema";
 import * as RpcSchema from "effect/unstable/rpc/RpcSchema";
 
 import {
+  AssistantCitation,
   ClientSettingsSchema,
   CodexSettings,
+  DesktopPreviewTabIdSchema,
+  EnvironmentThemeFile,
   ForwardCompatibleArray,
   ForwardCompatibleNullable,
   ForwardCompatibleOptional,
@@ -22,7 +25,10 @@ import {
   OmittedWhenNull,
   PortSchema,
   PositiveInt,
+  ProviderAuthResponse,
   SnapShotKeyChord,
+  TerminalOpenInput,
+  TerminalResizeInput,
   ThreadId,
   TrimmedNonEmptyString,
   TrimmedString,
@@ -986,6 +992,174 @@ for (const input of [
   record("binaryPathSetting", "decode", BinaryPathSetting, input);
   record("binaryPathSetting", "encode", BinaryPathSetting, input);
 }
+
+// ── The last four predicates, and the two `Record` key behaviours ──────────
+//
+// A census of every `Schema.is*` in `contracts` found four predicates the crate had no
+// primitive for: `isGreaterThanOrEqualTo` (26 sites — more than `isBetween` and `isNonEmpty`
+// each have), `isLessThanOrEqualTo` (14), `isTrimmed` (6) and `isMaxProperties` (2). The two
+// exclusive ones were already ported, so the risk was not a missing type but a **bound off
+// by one** at 40 sites, and `isTrimmed` was worse: it refuses edge whitespace where
+// `TrimmedString` — one line away in the same files — removes it.
+//
+// Chasing `isMaxProperties` into its two hosts turned up something the earlier `Record`
+// evidence had wrong. Both hosts key on a **plain refinement over `string`**
+// (`isPattern`, `isMaxLength`), and for such a key the shipped codec does not fail the
+// record at all — it drops the entry. `{"1BAD":"v"}` decodes to `{}` and
+// `{"GOOD":"v","1BAD":"w"}` to `{"GOOD":"v"}`, in both key orders. A key schema containing a
+// `decodeTo` (`TrimmedNonEmptyString`, and every id made by `makeEntityId`) still fails the
+// whole record. So "a bad key rejects the record" — which the 2.7 evidence said flatly —
+// holds for 29 of the 31 sites and is wrong for the 2 that are open vocabularies, where
+// dropping is the point: `server.ts:509` says a client "may publish roles a newer client
+// added without breaking an older one". The subjects below are the two shipped refinement-key
+// records plus a shipped transform-key one, so the split is measured rather than asserted.
+
+// Two `.check` calls in a row, which is how `terminal.ts:13` spells a bounded column count —
+// `Int.check(isGreaterThanOrEqualTo(1)).check(isLessThanOrEqualTo(1000))`. The subject is the
+// shipped field, reached through the struct that requires it.
+const TerminalCols = projectField(TerminalResizeInput, "cols");
+for (const input of [
+  {},
+  // Both bounds are inclusive, so these two must pass and the two after them must not.
+  { cols: 1 },
+  { cols: 1000 },
+  { cols: 0 },
+  { cols: 1001 },
+  { cols: 500 },
+  // `Schema.Int` is `Number.isSafeInteger`, so a fraction fails at the type layer and the
+  // bound never sees it — the distinction that makes `isInt` and the bound two filters.
+  { cols: 1.5 },
+  { cols: "80" },
+  { cols: null },
+  { cols: 9007199254740992 },
+]) {
+  record("terminalCols", "decode", TerminalCols, input);
+  record("terminalCols", "encode", TerminalCols, input);
+}
+
+// The `isLessThanOrEqualTo` that can never fire: `assistantCitations.ts:24` puts it on
+// `NonNegativeInt`, which is `Int.check(isGreaterThanOrEqualTo(0))`, and `Schema.Int` already
+// refuses anything above `MAX_SAFE_INTEGER`. Recorded so the redundancy is a measured fact
+// rather than an argument, and so a port that drops the filter cannot be accused of
+// changing behaviour.
+const CitationStart = projectField(AssistantCitation, "start");
+for (const input of [
+  {},
+  { start: 0 },
+  { start: -1 },
+  { start: 9007199254740991 },
+  // The type layer refuses this one, not the bound.
+  { start: 9007199254740992 },
+  { start: "0" },
+  { start: null },
+]) {
+  record("citationStart", "decode", CitationStart, input);
+  record("citationStart", "encode", CitationStart, input);
+}
+
+// `isTrimmed` as the shipped field uses it — `Schema.String.check(isTrimmed()).check(
+// isNonEmpty())` (`ipc.ts:655`). The contrast that matters is against the trimming transform:
+// `" a "` is a **failure** here and `"a"` out of `TrimmedString`.
+for (const input of [
+  "a",
+  " a ",
+  " ",
+  "",
+  // The BOM is JavaScript whitespace and not Unicode whitespace — the two-character set
+  // difference the port has to get right on both sides, here as a rejection rather than a
+  // trim.
+  "﻿a",
+  "a ",
+  "a\t",
+  1,
+  null,
+]) {
+  record("tabIdTrimmed", "decode", DesktopPreviewTabIdSchema, input);
+  record("tabIdTrimmed", "encode", DesktopPreviewTabIdSchema, input);
+}
+
+// `TerminalEnv` (`terminal.ts:24`) — a refinement-keyed record under `isMaxProperties(128)`,
+// reached through the field that carries it. Note `env` is `Schema.optional`, so an explicit
+// `null` is refused for reasons that have nothing to do with either construct.
+const TerminalEnvField = projectField(TerminalOpenInput, "env");
+const envEntries = (count: number, first = 0) =>
+  Object.fromEntries(Array.from({ length: count }, (_, i) => [`K${first + i}`, "v"]));
+for (const input of [
+  {},
+  { env: null },
+  { env: [] },
+  { env: "PATH=/usr/bin" },
+  { env: { PATH: "/usr/bin" } },
+  // The drop, twice: a key that fails the `isPattern` and one that fails the `isMaxLength`,
+  // each alone and each alongside a key that passes. Order is varied because the survivor
+  // set must not depend on it.
+  { env: { "1BAD": "v" } },
+  { env: { PATH: "/usr/bin", "1BAD": "v" } },
+  { env: { "1BAD": "v", PATH: "/usr/bin" } },
+  { env: { ["A".repeat(129)]: "v" } },
+  { env: { PATH: "/usr/bin", ["A".repeat(129)]: "v" } },
+  { env: { _a: "v", A: "v", z9: "v" } },
+  // A bad *value* still fails the whole record, which is the half the drop rule does not
+  // extend to.
+  { env: { PATH: "x".repeat(8193) } },
+  { env: { PATH: "/usr/bin", BAD: "x".repeat(8193) } },
+  // `isMaxProperties` counts what survived, not what arrived: 128 valid entries is exactly at
+  // the bound, 129 is over, and 128 valid plus 1 dropped stays at 128 and passes. That last
+  // case is the one an implementation that counted raw JSON keys gets wrong.
+  { env: envEntries(128) },
+  { env: envEntries(129) },
+  { env: { ...envEntries(128), "1BAD": "v" } },
+]) {
+  record("terminalEnv", "decode", TerminalEnvField, input);
+  record("terminalEnv", "encode", TerminalEnvField, input);
+}
+
+// `EnvironmentThemeColors` (`server.ts:514`) — the other refinement-keyed record, with a
+// pattern-only key and **no** `isMaxProperties`, so the drop rule is shown without the count
+// rule in front of it. Its values are the trimming transform, which is where the two key
+// behaviours differ on the way out.
+const ThemeColors = projectField(EnvironmentThemeFile, "colors");
+for (const input of [
+  {},
+  { colors: { accent: "oklch(0.5 0.1 200)" } },
+  { colors: { Accent: "red" } },
+  { colors: { ["a".repeat(65)]: "red", accent: "blue" } },
+  { colors: { accent: "  red  " } },
+  { colors: { accent: "   " } },
+  { colors: { accent: "x".repeat(65) } },
+  { colors: { "-bad": "red" } },
+]) {
+  record("themeColors", "decode", ThemeColors, input);
+  record("themeColors", "encode", ThemeColors, input);
+}
+
+// `ProviderAuthResponse`'s credentials branch — the **transform-keyed** record under
+// `isMaxProperties(16)` (`providerSetup.ts:79`). Same two constructs as `terminalEnv`,
+// opposite key behaviour, and it is the pair that makes the rule a rule instead of a
+// coincidence: `"  "` trims to `""` and then fails `isNonEmpty` **inside the key parse**, so
+// the record fails outright rather than losing the entry.
+for (const input of [
+  { type: "credentials", values: { login: "tok" } },
+  { type: "credentials", values: { "  ": "tok" } },
+  { type: "credentials", values: { login: "tok", "  ": "tok" } },
+  { type: "credentials", values: { "  ": "tok", login: "tok" } },
+  { type: "credentials", values: { login: "  tok  " } },
+  { type: "credentials", values: { login: "x".repeat(16_385) } },
+  { type: "credentials", values: {} },
+  { type: "credentials", values: envEntries(17) },
+  { type: "credentials", values: envEntries(16) },
+]) {
+  record("authCredentials", "decode", ProviderAuthResponse, input);
+  record("authCredentials", "encode", ProviderAuthResponse, input);
+}
+
+// `mutable` is the last construct `orchestration.ts` uses that no earlier subject reached,
+// and it needs no subject: it is a **type-level** marker that `effect` hangs off the AST
+// without touching the codec, so the two fields that use it (`SnapShotAccessibilityNode`'s
+// `actions` and `children`, `orchestration.ts:238` and `:242`) encode exactly as plain arrays
+// and the `isMaxLength` bounds sit outside them. Measured directly against the shipped
+// schema; recorded here so the census closes without a block of cases that would only
+// re-assert the array rules from 2.6a.
 
 // The golden has to carry wire bytes, and two kinds of value do not survive
 // `JSON.stringify` on their own:

@@ -41,9 +41,17 @@
 //!   internally tagged `_tag` map. serde's `#[serde(tag = "_tag")]` is already it, so
 //!   neither needs a type here — the 150 `TaggedError` sites collapse into the enum
 //!   pattern the payload schemas use anyway.
-//! - `Schema.Record` keys on a **schema**, not on a string, and its two directions disagree
-//!   about failure: decoding rejects the whole record, encoding drops only the entry whose
-//!   key cannot be encoded. See [`Record`].
+//! - `Schema.Record` keys on a **schema**, not on a string, and what a bad key costs is
+//!   decided by the *shape of that key schema* rather than by the record: a key schema
+//!   containing a `decodeTo` (`TrimmedNonEmptyString`, every `makeEntityId` brand) fails the
+//!   whole record, and a key schema that is only predicates over `string` drops the entry
+//!   and keeps the rest. Both occur on live wire fields. See [`Record`] and [`KeyRejection`].
+//! - The four numeric and text bounds `GreaterThan`/`LessThan`/`MaxLength` do not cover —
+//!   `isGreaterThanOrEqualTo` (26 sites), `isLessThanOrEqualTo` (14), `isTrimmed` (6) and
+//!   `isMaxProperties` (2) — are [`AtLeast`], [`AtMost`], [`NoEdgeWhitespace`] and
+//!   [`MaxProperties`]. `isTrimmed` is the one to be careful with: it **refuses** edge
+//!   whitespace, where `Trimmed` removes it, and the two spellings sit in adjacent lines of
+//!   the same files.
 //! - `Schema.Void` is declared `Bottom<void, void>` and still accepts *every* input,
 //!   discarding it. `Schema.Unknown` is identity in both directions, so it is plain
 //!   `serde_json::Value` and needs no type here. An untagged `Schema.Union` is
@@ -85,7 +93,7 @@
 //! same representation. Cases the TS type system rejects before the codec runs — an
 //! encode of `"z"` against `Literals(["a","b"])` — have no Rust input at all.
 
-use serde::de::{self, Deserializer, SeqAccess, Unexpected, Visitor};
+use serde::de::{self, DeserializeOwned, Deserializer, SeqAccess, Unexpected, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq, Serializer};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -551,6 +559,25 @@ impl<T: PartialEq, C: Check<T>> PartialEq for Checked<T, C> {
     }
 }
 
+impl<T: Eq, C: Check<T>> Eq for Checked<T, C> {}
+
+// A checked newtype is also a `Record` key, and `Record` orders its keys, so the ordering
+// has to follow the inner value rather than be refused. The check plays no part in any of
+// these three, which is the same reason [`PartialEq`] above ignores it: two values that
+// differ only in whether they would pass are still equal, and passing is the `Serialize`
+// impl's business.
+impl<T: PartialOrd, C: Check<T>> PartialOrd for Checked<T, C> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl<T: Ord, C: Check<T>> Ord for Checked<T, C> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
 impl<T: Serialize, C: Check<T>> Serialize for Checked<T, C> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         if !C::passes(&self.0) {
@@ -702,6 +729,136 @@ impl<const MIN: i64, const MAX: i64> Check<JsNumber> for Between<MIN, MAX> {
         format!("a number between {MIN} and {MAX}")
     }
 }
+
+/// `Schema.isGreaterThanOrEqualTo(N)` — 26 sites, the most-used numeric predicate in the
+/// repo and the **inclusive** half of a pair whose exclusive twin is [`GreaterThan`].
+///
+/// The two are not interchangeable and the difference is on the wire: 20 of the 26 sites
+/// sit at `0` or `1`, where the exclusive form rejects exactly one more value than the
+/// inclusive one. `PositiveInt` is `Int.check(isGreaterThanOrEqualTo(1))` and *accepts* 1;
+/// `Schema.Int.check(isGreaterThan(0))` — which appears separately, 18 times, e.g. on a
+/// timeout in milliseconds (`previewAutomation.ts:20`) — rejects it. Porting one as the
+/// other shifts the bound by a unit, which is invisible in a test that only tries
+/// obviously-valid values.
+///
+/// Compared as `f64` for the same reason [`GreaterThan`] is: 2 sites (`relay.ts:50`, `:51`)
+/// bound a `Schema.Int` to `18` and `24`, and `assets.ts:92`/`orchestration.ts:322` put a
+/// floor under a schema that is `Number` rather than `Int`, so a fractional value is legal
+/// underneath them and integer-ness is [`SafeInt`]'s business, not this one's.
+pub struct AtLeast<const N: i64>;
+
+impl<const N: i64> Check<JsNumber> for AtLeast<N> {
+    fn passes(value: &JsNumber) -> bool {
+        value.0.as_f64().is_some_and(|number| number >= N as f64)
+    }
+
+    fn describe() -> String {
+        format!("a value greater than or equal to {N}")
+    }
+}
+
+/// `Schema.isLessThanOrEqualTo(N)` — 14 sites, the inclusive twin of [`LessThan`].
+///
+/// Every bound is a real maximum rather than a formality: `1000` and `500` columns and rows
+/// (`terminal.ts:13-17`), `65_535` (`relay.ts:176`), `60_000` milliseconds
+/// (`previewAutomation.ts:21`), and four named constants
+/// (`PROJECT_SEARCH_ENTRIES_MAX_LIMIT`, `PROJECT_SEARCH_CONTENTS_MAX_LIMIT`,
+/// `GIT_LIST_BRANCHES_MAX_LIMIT`, `PROVIDER_SEND_TURN_MAX_{IMAGE,FILE}_BYTES`).
+///
+/// Two sites — `assistantCitations.ts:24` and `:25` — are **dead** and this crate ports
+/// them as if they were live, which is the safe direction. `NonNegativeInt` is already
+/// `Int.check(isGreaterThanOrEqualTo(0))`, and `Schema.Int` is
+/// `Number.isSafeInteger`, so no value can be an integer above `MAX_SAFE_INTEGER` and the
+/// `isLessThanOrEqualTo(Number.MAX_SAFE_INTEGER)` above it can never be the thing that
+/// fails. Measured: `9007199254740992` is refused by the integer check with "Expected an
+/// integer", not by this bound. A port that omitted the predicate would agree on every
+/// input, so the redundancy is recorded rather than optimized away.
+pub struct AtMost<const N: i64>;
+
+impl<const N: i64> Check<JsNumber> for AtMost<N> {
+    fn passes(value: &JsNumber) -> bool {
+        value.0.as_f64().is_some_and(|number| number <= N as f64)
+    }
+
+    fn describe() -> String {
+        format!("a value less than or equal to {N}")
+    }
+}
+
+/// `Schema.isTrimmed()` — 6 sites, and the only text predicate in the repo that **refuses**
+/// edge whitespace instead of removing it.
+///
+/// That makes it the opposite of [`Trimmed`] on the same bytes: `TrimmedString` decodes
+/// `" a "` to `"a"`, while `Schema.String.check(Schema.isTrimmed())` fails `" a "` with
+/// "Expected a string with no leading or trailing whitespace". A Rust field written as
+/// `Trimmed` where the TypeScript spells `check(isTrimmed())` would accept payloads the
+/// TypeScript server rejects, silently, and both spellings appear in adjacent lines of the
+/// same files — `previewAutomation.ts:14` uses this one while `:16`-adjacent schemas use
+/// `TrimmedNonEmptyString`.
+///
+/// All 6 sites are on a bare `Schema.String` and none is stacked on the trimming transform,
+/// so the two never meet; the check is therefore spelled over `String` and not over a
+/// trimmed newtype. Four of the 6 chain `isNonEmpty()` immediately after, which is a
+/// different pair of rejections: `"   "` fails *this* check in the 5 sites where it comes
+/// first, and would fail `isNonEmpty` in the one place it does not
+/// (`previewAutomation.ts:14` orders trimmed → non-empty → maxLength).
+///
+/// Measured against JavaScript's set, not Unicode's — see [`js_trim`], whose two-character
+/// disagreement with `str::trim` is exactly what this predicate inherits.
+pub struct NoEdgeWhitespace;
+
+impl Check<String> for NoEdgeWhitespace {
+    fn passes(value: &String) -> bool {
+        let text = value.as_str();
+        js_trim(text) == text
+    }
+
+    fn describe() -> String {
+        "a string with no leading or trailing whitespace".to_owned()
+    }
+}
+
+/// `Schema.isMaxProperties(N)` — 2 sites, both `Schema.Record(...).check(isMaxProperties(n))`
+/// with `n` of `128` (`terminal.ts:24`) and `16` (`providerSetup.ts:79`).
+///
+/// It counts **entries of the record**, and Effect's own message says "entries", which is
+/// where the ordering fact lives: the count runs on the entries the record actually holds,
+/// so for a [`LenientKeys`] record a key that was dropped never counts toward the bound.
+/// Measured against the shipped codec, with a bound of 4 and a rejecting key: 5 valid keys
+/// fail, 4 valid keys plus 1 rejected key **pass**. A port that counted raw JSON keys would
+/// reject a payload the TypeScript server accepts, and it would do so on the least likely
+/// input — a malformed key arriving alongside a full record.
+///
+/// The encode direction measures the map as handed over, before any key is dropped, because
+/// that is the Type side: 3 keys of which 1 fails the key predicate and a bound of 2
+/// **throws**. Same rule as every other check here, arriving by a different route.
+pub struct MaxProperties<const N: usize>;
+
+impl<const N: usize, K: Ord, V, Keys: KeyRejection> Check<Record<K, V, Keys>> for MaxProperties<N> {
+    fn passes(value: &Record<K, V, Keys>) -> bool {
+        value.len() <= N
+    }
+
+    fn describe() -> String {
+        format!("a value with at most {N} entries")
+    }
+}
+
+// `Schema.isFinite()` — 1 site (`settings.ts:527`, inside `UsageModelTokenPrice`) — and
+// `Schema.isInt()` spelled as its own filter rather than through `Schema.Int`, also 1 site
+// (`environmentHttp.ts:517`).
+//
+// Neither gets a primitive, and the reason is worth keeping beside the census rather than
+// losing. `isFinite` **cannot fail on this wire**: `JSON.stringify` renders `Infinity` and
+// `NaN` as `null`, and `null` is refused as a number before the filter runs — the same
+// vacuity `JsNumber` records for `Schema.Finite` versus `Schema.Number`. A check that can
+// never reject is not a codec rule, so `UsageModelTokenPrice` ports as
+// `Checked<JsNumber, AtLeast<0>>` and the `isFinite` is left where it is: unobservable.
+// `isInt()` is `SafeInt`, which already exists.
+//
+// `Schema.is(schema)` — 5 sites — is not a codec at all but a runtime type guard
+// (`providerInstance.ts:73`, `environment.ts:43`, and three tests), so it belongs to the
+// Rust code that calls it, not to this module.
 
 /// `Schema.DurationFromMillis` — 9 sites, all in `settings.ts`, all inside
 /// `Schema.optionalKey`.
@@ -935,7 +1092,48 @@ fn decode_json_error(mut fields: serde_json::Map<String, serde_json::Value>) -> 
     }
 }
 
-/// `Schema.Record(key, value)` — 23 sites, and not a plain map, because the **key is a
+/// What [`Record`] does with an entry whose **key** the key schema does not accept, and
+/// the one measured fact that decides it: whether the key schema contains a
+/// `Schema.decodeTo`.
+///
+/// Both spellings exist in `contracts`, and the difference is wire-visible, so the choice
+/// is per field rather than a policy the port can pick once:
+///
+/// - A key schema built by **transforming** a string — `TrimmedNonEmptyString`, and every
+///   entity id made by `makeEntityId` (`baseSchemas.ts:129`, which is
+///   `TrimmedNonEmptyString.pipe(Schema.brand(…))`), so `ProjectId`, `ThreadId`,
+///   `EnvironmentId` and the rest, plus `ProviderInstanceId`, `DeviceHostId` and
+///   `SetupOperationId`. The key is *parsed*, and a parse failure is a failure: the whole
+///   record is rejected with a `Composite` at the offending key. 29 of the 31 sites.
+/// - A key schema that is **only predicates over `string`** — `.check(isPattern(…))`,
+///   `.check(isMaxLength(…))`, with no `pipe`. The key is *tested*, and a key that fails
+///   test simply is not one of the record's keys: the entry is dropped and the rest of the
+///   record decodes. `{"1BAD":"v"}` gives `{}` and `{"GOOD":"v","1BAD":"w"}` gives
+///   `{"GOOD":"v"}`, in both key orders. Exactly 2 sites — `TerminalEnv`
+///   (`terminal.ts:21-25`) and `EnvironmentThemeColors` (`server.ts:514-517`) — but both
+///   are live wire fields, and both are the "open vocabulary" kind where dropping is the
+///   point: `server.ts:509` documents that a client "may publish roles a newer client
+///   added without breaking an older one".
+pub trait KeyRejection {
+    const DROPS_THE_ENTRY: bool;
+}
+
+/// [`Record`]'s default, and the majority: a key the key schema will not take fails the
+/// whole record.
+pub enum StrictKeys {}
+
+impl KeyRejection for StrictKeys {
+    const DROPS_THE_ENTRY: bool = false;
+}
+
+/// The 2 refinement-keyed sites: an unmatched key costs its own entry and nothing else.
+pub enum LenientKeys {}
+
+impl KeyRejection for LenientKeys {
+    const DROPS_THE_ENTRY: bool = true;
+}
+
+/// `Schema.Record(key, value)` — 31 sites, and not a plain map, because the **key is a
 /// schema**: `LoadBalancingWeights` (`settings.ts:314`) keys on `TrimmedNonEmptyString` and
 /// `providerModelPreferences` (`settings.ts:447`) keys on `ProviderInstanceId`. So a key is
 /// trimmed and checked like any other value, and `{" a ":50}` crosses back as `{"a":50}`.
@@ -943,32 +1141,46 @@ fn decode_json_error(mut fields: serde_json::Map<String, serde_json::Value>) -> 
 /// Two keys that trim to the same string collapse silently, the later one winning — the
 /// shipped codec reports no collision, so neither does this.
 ///
-/// The asymmetry that a `BTreeMap` field cannot express is what failure does, and it
-/// differs by direction:
+/// What a failure costs is [`KeyRejection`], and it differs by direction on top of that:
 ///
-/// - **Decoding** rejects the whole record for a bad key *or* a bad value.
+/// - **Decoding** rejects the whole record for a bad *value*. A bad *key* rejects it too
+///   for a [`StrictKeys`] record and drops one entry for a [`LenientKeys`] one.
 /// - **Encoding** rejects the whole record for a bad value, but a key that cannot be
 ///   encoded drops **only its own entry**: `{"":50, b:60}` encodes to `{"b":60}`, and both
-///   orders of that input give the same result.
+///   orders of that input give the same result. A key that encodes but fails a predicate
+///   is dropped the same way — `{"  ":50, b:60}` encodes to `{"":50,"b":60}` for
+///   `StrictKeys` (the trim is the transform, and the trailing `isNonEmpty` is never
+///   re-checked on the way out) and to `{"b":60}` for `LenientKeys`.
 ///
 /// Keys are held in a `BTreeMap`, so the wire order is sorted rather than insertion order.
 /// No JSON client may depend on key order, and the golden does not assert it.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Record<K, V>(pub std::collections::BTreeMap<K, V>);
+pub struct Record<K, V, Keys: KeyRejection = StrictKeys>(
+    pub std::collections::BTreeMap<K, V>,
+    PhantomData<fn() -> Keys>,
+);
 
-impl<K, V> Default for Record<K, V> {
+impl<K, V, Keys: KeyRejection> Default for Record<K, V, Keys> {
     fn default() -> Self {
-        Record(std::collections::BTreeMap::new())
+        Record(std::collections::BTreeMap::new(), PhantomData)
     }
 }
 
-impl<K, V> Record<K, V> {
+impl<K, V, Keys: KeyRejection> Record<K, V, Keys> {
+    pub fn new(entries: std::collections::BTreeMap<K, V>) -> Self {
+        Record(entries, PhantomData)
+    }
+
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
-impl<K: Serialize + Ord, V: Serialize> Serialize for Record<K, V> {
+impl<K: Serialize + Ord, V: Serialize, Keys: KeyRejection> Serialize for Record<K, V, Keys> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(Some(self.0.len()))?;
         for (key, value) in &self.0 {
@@ -984,11 +1196,33 @@ impl<K: Serialize + Ord, V: Serialize> Serialize for Record<K, V> {
     }
 }
 
-impl<'de, K: Deserialize<'de> + Ord, V: Deserialize<'de>> Deserialize<'de> for Record<K, V> {
+impl<'de, K: Deserialize<'de> + Ord, V: Deserialize<'de>> Deserialize<'de> for Record<K, V, StrictKeys> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Record(std::collections::BTreeMap::deserialize(
-            deserializer,
-        )?))
+        Ok(Record(
+            std::collections::BTreeMap::deserialize(deserializer)?,
+            PhantomData,
+        ))
+    }
+}
+
+/// The buffered path exists only to make one key's failure survivable: `BTreeMap`'s own
+/// deserializer aborts the whole map on the first key `K` refuses, which is the
+/// [`StrictKeys`] rule. A value that fails still rejects, as it does for every record.
+impl<'de, K: DeserializeOwned + Ord, V: DeserializeOwned> Deserialize<'de>
+    for Record<K, V, LenientKeys>
+{
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let raw = serde_json::Map::<String, serde_json::Value>::deserialize(deserializer)?;
+        let mut entries = std::collections::BTreeMap::new();
+        for (key, value) in raw {
+            let Ok(parsed) = serde_json::from_value::<K>(serde_json::Value::String(key)) else {
+                continue;
+            };
+            let parsed_value =
+                serde_json::from_value::<V>(value).map_err(de::Error::custom)?;
+            entries.insert(parsed, parsed_value);
+        }
+        Ok(Record(entries, PhantomData))
     }
 }
 
