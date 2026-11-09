@@ -384,3 +384,70 @@ pub const REGISTERED: &[&str] = &[
 
 /// Declared in a table but absent from `REGISTERED`.
 pub const UNREGISTERED: &[&str] = &["projects.list", "projects.add", "projects.remove"];
+
+/// Method **keys** declared with `stream: true`. `Rpc.make` moves the error schema inside
+/// the success schema for these and replaces `errorSchema` with `Schema.Never`, so the
+/// success channel is not a codec at all but an `RpcSchema.Stream` marker. Sorted, which
+/// is the order the golden emits.
+pub const STREAMED_METHODS: &[&str] = &[
+    "cloudInstallRelayClient",
+    "gitRunStackedAction",
+    "previewAutomationConnect",
+    "providerAuthSubscribe",
+    "providerInstallSubscribe",
+    "pullRequestsSubscribeRefreshes",
+    "serverUpdateServerWithProgress",
+    "subscribeAuthAccess",
+    "subscribeBackgroundPolicy",
+    "subscribeDeviceState",
+    "subscribeDiscoveredLocalServers",
+    "subscribePreviewEvents",
+    "subscribeProjectClones",
+    "subscribeProviderRuntimeEvents",
+    "subscribeResourceTelemetry",
+    "subscribeServerConfig",
+    "subscribeServerLifecycle",
+    "subscribeShell",
+    "subscribeTerminalEvents",
+    "subscribeTerminalMetadata",
+    "subscribeThread",
+    "subscribeVcsStatus",
+    "subscribeWorktreeSetup",
+    "terminalAttach",
+];
+
+/// Method **keys** whose success schema is `Schema.Void`: 12 that say so and 18 that omit
+/// `success:` and take `Rpc.make`'s default. A handler for one of these has no payload to
+/// build, and the Rust side must still send a success frame. Sorted.
+pub const VOID_SUCCESS_METHODS: &[&str] = &[
+    "attachmentsDelete",
+    "deviceClose",
+    "deviceShutdown",
+    "previewAutomationFocusHost",
+    "previewAutomationRespond",
+    "previewClose",
+    "previewRefresh",
+    "previewReportStatus",
+    "pullRequestsComment",
+    "pullRequestsInvalidate",
+    "pullRequestsReplyToThread",
+    "pullRequestsRequestReviewers",
+    "pullRequestsRunAction",
+    "pullRequestsSetFilesViewed",
+    "pullRequestsSetLabels",
+    "pullRequestsSetReaction",
+    "pullRequestsSetThreadResolution",
+    "pullRequestsSubmitReview",
+    "pullRequestsUpdate",
+    "pullRequestsUpdateComment",
+    "serverReportClientActivity",
+    "serverReportHostPowerState",
+    "shellOpenInEditor",
+    "terminalClear",
+    "terminalClose",
+    "terminalResize",
+    "terminalWrite",
+    "vcsDeleteBranch",
+    "vcsInit",
+    "vcsRemoveWorktree",
+];

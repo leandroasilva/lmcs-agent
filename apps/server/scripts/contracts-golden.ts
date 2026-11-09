@@ -9,6 +9,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import * as RpcSchema from "effect/unstable/rpc/RpcSchema";
 
 import {
   ForwardCompatibleArray,
@@ -46,6 +47,87 @@ const reconciliation = {
     .map(([key, tag]) => ({ key, tag })),
   registeredNotDeclared: registered.filter((tag) => !declaredSet.has(tag)),
   duplicateTags: declaredTags.filter((tag, index) => declaredTags.indexOf(tag) !== index),
+};
+
+// ---------------------------------------------------------------------------
+// The Rpc envelope
+//
+// `Rpc.make` defaults are what make the envelope worth dumping rather than
+// reading: `payload` falls back to `Schema.Void`, `success` to `Schema.Void`,
+// `error` to `Schema.Never`, and `defect` to `Schema.Defect()`. So a method that
+// simply omits `success:` returns nothing, and `stream: true` moves the error
+// channel *inside* the success schema and replaces `errorSchema` with `Never`.
+//
+// None of this is visible in the declaration site, which is exactly why the
+// golden carries it. Every fact below is measured off the shipped group at
+// runtime rather than transcribed from `rpc.ts`.
+//
+// Identity comparison is the only test that works here. These schemas are
+// constructor functions, so `_id` is undefined and `constructor.name` is
+// "Function" for all of them — but `Schema.Void`, `Schema.Never` and
+// `Schema.Defect()` are all interned singletons, and `Rpc.make` stores the very
+// object it defaulted to.
+// ---------------------------------------------------------------------------
+
+interface Envelope {
+  _tag: string;
+  key: string;
+  payloadSchema: Schema.Top;
+  successSchema: Schema.Top & { success?: Schema.Top; error?: Schema.Top };
+  errorSchema: Schema.Top;
+  defectSchema: Schema.Top;
+}
+
+// The declared key for a tag, so the census can be recorded by *key* — the name a
+// Rust server would branch on — rather than by the wire tag. Keyed on `string` for the
+// same reason `declaredSet` is: it gets searched with tags that came off the group at
+// runtime, which TypeScript only knows as `string`.
+const keyOfTag = new Map<string, string>(Object.entries(declared).map(([key, tag]) => [tag, key]));
+
+const streamed: string[] = [];
+const voidSuccess: string[] = [];
+let voidPayload = 0;
+let neverError = 0;
+let sharedDefect = 0;
+let derivedKey = 0;
+// A stream schema is `Schema.declare(Stream.isStream)` with the element schemas hanging
+// off it, so it is a *marker* and never a wire codec. These two count how many of the
+// streams degenerate to nothing on a channel; zero means every stream carries real
+// element schemas on both.
+let streamSuccessVoid = 0;
+let streamErrorNever = 0;
+
+for (const rpc of requests.values() as Iterable<Envelope>) {
+  const key = keyOfTag.get(rpc._tag);
+  if (key === undefined) throw new Error(`registered tag has no declaration: ${rpc._tag}`);
+  if (rpc.key === `effect/rpc/Rpc/${rpc._tag}`) derivedKey++;
+  if (rpc.payloadSchema === Schema.Void) voidPayload++;
+  if (rpc.errorSchema === Schema.Never) neverError++;
+  if (rpc.defectSchema === Schema.Defect()) sharedDefect++;
+  if (RpcSchema.isStreamSchema(rpc.successSchema)) {
+    streamed.push(key);
+    if (rpc.successSchema.success === Schema.Void) streamSuccessVoid++;
+    if (rpc.successSchema.error === Schema.Never) streamErrorNever++;
+  } else if (rpc.successSchema === Schema.Void) {
+    voidSuccess.push(key);
+  }
+}
+
+const envelope = {
+  total: registered.length,
+  // `Rpc.key` is derived from the tag, never overridden.
+  derivedKey,
+  // The three buckets are exhaustive and disjoint, which the replay asserts by summing.
+  streamed: streamed.length,
+  voidSuccess: voidSuccess.length,
+  plain: registered.length - streamed.length - voidSuccess.length,
+  voidPayload,
+  neverError,
+  sharedDefect,
+  streamSuccessVoid,
+  streamErrorNever,
+  streamedKeys: streamed.sort(),
+  voidSuccessKeys: voidSuccess.sort(),
 };
 
 // ---------------------------------------------------------------------------
@@ -719,6 +801,17 @@ for (const input of [undefined, null, {}, 0, "", false, []]) {
   record("voidSchema", "encode", Schema.Void, input);
 }
 
+// `Schema.Never` — the default `error` schema of `Rpc.make`, and therefore the error
+// channel of all 24 streaming methods, where `stream: true` moves the real error inside
+// the success schema and leaves `Never` behind. It is not a codec that ever carries a
+// value; it is the statement that the channel cannot produce one. Characterised anyway,
+// because "rejects everything" is a claim a port can get wrong by accepting `undefined`
+// the way `Void` does.
+for (const input of [undefined, null, {}, 0, "", false, [], { _tag: "x" }]) {
+  record("neverSchema", "decode", Schema.Never, input);
+  record("neverSchema", "encode", Schema.Never, input);
+}
+
 // ---------------------------------------------------------------------------
 // `Schema.Unknown` — 7 sites in `orchestration.ts`, deliberately loose so malformed
 // provider drafts still reach the transform (`orchestration.ts:82`). Characterised to
@@ -802,10 +895,14 @@ const encodeCase = (entry: Case): string => {
   return `{"case":"${entry.case}",${encodeInput(entry)},${outcome}}`;
 };
 
+const envelopeSummary =
+  `envelope: ${envelope.plain} plain + ${envelope.streamed} streamed` +
+  ` + ${envelope.voidSuccess} void-success`;
+
 process.stderr.write(
   `declared: ${declaredTags.length} (ws ${Object.keys(WS_METHODS).length} + orchestration ${
     Object.keys(ORCHESTRATION_WS_METHODS).length
-  }) registered: ${registered.length} codec cases: ${cases.length}\n`,
+  }) registered: ${registered.length} ${envelopeSummary} codec cases: ${cases.length}\n`,
 );
 
 const json = [
@@ -816,6 +913,7 @@ const json = [
   `  "orchestrationWsMethods": ${JSON.stringify(Object.entries(ORCHESTRATION_WS_METHODS))},`,
   `  "registered": ${JSON.stringify(registered)},`,
   `  "reconciliation": ${JSON.stringify(reconciliation)},`,
+  `  "rpcEnvelope": ${JSON.stringify(envelope)},`,
   `  "codecs": [${cases.map(encodeCase).join(",")}]`,
   "}",
 ].join("\n");

@@ -9,7 +9,7 @@
 
 use lmcs_contracts::base::{
     Absent, Between, Check, Checked, DateTimeUtc, Defect, DurationMillis, EffectOption,
-    GreaterThan, JsNumber, Lenient, LessThan, MaxLength, Maybe, MinLength, NonEmpty,
+    GreaterThan, JsNumber, Lenient, LessThan, MaxLength, Maybe, MinLength, Never, NonEmpty,
     NonNegativeInt, Nullable, Port, PositiveInt, Record, SafeInt, Trimmed,
 };
 use regex::Regex;
@@ -551,6 +551,13 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
     // replay still makes on those 12 pins down is the half that matters for the RPC
     // `success:` field: a Rust side must not reject a payload here either. `Value` is that,
     // and it is deliberately not `()`, which would refuse everything.
+    // `Schema.Never` rejects everything, `undefined` included — the one place it differs
+    // from `Void`. `round` fails on the deserialize half, which is also the right answer
+    // for the encode half: the Type side of `Never` has no inhabitant to encode either.
+    map.insert(
+        "neverSchema",
+        (|raw| round::<Never>(raw), |raw| round::<Never>(raw)),
+    );
     map.insert(
         "voidSchema",
         (|raw| round::<Value>(raw), |raw| round::<Value>(raw)),
@@ -861,15 +868,15 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 45, "ported subject count changed");
+    assert_eq!(table.len(), 46, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form"
     );
     assert_eq!(
-        skipped, 24,
-        "6 scalars take `undefined` outright and 18 shape cases take `{{v: undefined}}` — \
-         or, for Void/Unknown/Union, `undefined` itself"
+        skipped, 26,
+        "6 scalars take `undefined` outright and 20 shape cases take `{{v: undefined}}` — \
+         or, for Void/Unknown/Union/Never, `undefined` itself"
     );
     assert_eq!(
         incomparable, 14,
@@ -881,5 +888,5 @@ fn replays_the_golden_codec_behaviour() {
         "5 durationFromMillis encodes whose Type side is a `Duration`, and the 14 defect \
          encodes whose Type side is an `Error` — neither has a JSON spelling"
     );
-    assert!(replayed >= 660, "only replayed {replayed} cases");
+    assert!(replayed >= 680, "only replayed {replayed} cases");
 }

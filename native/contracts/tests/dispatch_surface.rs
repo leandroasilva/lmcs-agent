@@ -7,7 +7,10 @@
 
 use std::collections::BTreeSet;
 
-use lmcs_contracts::{ORCHESTRATION_WS_METHODS, REGISTERED, UNREGISTERED, WS_METHODS};
+use lmcs_contracts::{
+    ORCHESTRATION_WS_METHODS, REGISTERED, STREAMED_METHODS, UNREGISTERED, VOID_SUCCESS_METHODS,
+    WS_METHODS,
+};
 
 fn declared() -> Vec<&'static str> {
     WS_METHODS
@@ -54,6 +57,53 @@ fn the_tables_agree_with_the_registered_set() {
     let expected_unregistered: BTreeSet<_> = unique.difference(&registered).copied().collect();
     let actual: BTreeSet<&str> = UNREGISTERED.iter().copied().collect();
     assert_eq!(actual, expected_unregistered);
+}
+
+/// The two envelope buckets this crate names have to be real: disjoint, drawn from the
+/// declared keys, and not exhaustive — because the 94 methods that are neither are the
+/// ordinary request/response ones, and a list that swallowed them would be useless.
+#[test]
+fn the_envelope_buckets_are_disjoint_declared_keys() {
+    let declared = declared_keys();
+    for (name, list) in [
+        ("STREAMED_METHODS", STREAMED_METHODS),
+        ("VOID_SUCCESS_METHODS", VOID_SUCCESS_METHODS),
+    ] {
+        let unique: BTreeSet<&str> = list.iter().copied().collect();
+        assert_eq!(unique.len(), list.len(), "{name} repeats a key");
+        let undeclared: Vec<_> = list
+            .iter()
+            .filter(|key| !declared.contains(*key))
+            .copied()
+            .collect();
+        assert!(
+            undeclared.is_empty(),
+            "{name} names keys that no table declares: {undeclared:?}"
+        );
+    }
+    let overlap: BTreeSet<&str> = STREAMED_METHODS
+        .iter()
+        .copied()
+        .filter(|key| VOID_SUCCESS_METHODS.contains(key))
+        .collect();
+    assert!(
+        overlap.is_empty(),
+        "a method cannot both stream and return nothing: {overlap:?}"
+    );
+
+    let plain = REGISTERED.len() - STREAMED_METHODS.len() - VOID_SUCCESS_METHODS.len();
+    assert!(
+        plain > 0,
+        "the two buckets swallowed every registered method, so one of them is wrong"
+    );
+}
+
+fn declared_keys() -> Vec<&'static str> {
+    WS_METHODS
+        .iter()
+        .chain(ORCHESTRATION_WS_METHODS.iter())
+        .map(|(key, _)| *key)
+        .collect()
 }
 
 #[test]
@@ -167,5 +217,62 @@ fn replays_the_golden_dumped_from_the_shipped_tables() {
     assert!(
         !REGISTERED.is_empty() && REGISTERED.len() < declared().len(),
         "the declared-but-unregistered gap this crate records has changed shape"
+    );
+
+    // The envelope census. Every scalar below is an *invariant* rather than a number this
+    // crate hard-codes, so the assertions still mean something when a method is added: the
+    // three buckets have to partition the registered set, `Rpc.key` has to be derived from
+    // the tag for all of them, every method has to share the one interned `Schema.Defect()`,
+    // and the only methods with a `Never` error channel have to be exactly the streamed ones.
+    let envelope = &golden["rpcEnvelope"];
+    let count = |field: &str| {
+        envelope[field]
+            .as_u64()
+            .unwrap_or_else(|| panic!("{field} is a number")) as usize
+    };
+    let keys = |field: &str| -> Vec<String> {
+        envelope[field]
+            .as_array()
+            .unwrap_or_else(|| panic!("{field} is an array"))
+            .iter()
+            .map(|key| key.as_str().expect("a method key").to_owned())
+            .collect()
+    };
+
+    assert_eq!(count("total"), REGISTERED.len());
+    assert_eq!(keys("streamedKeys"), owned_tags(STREAMED_METHODS));
+    assert_eq!(keys("voidSuccessKeys"), owned_tags(VOID_SUCCESS_METHODS));
+    assert_eq!(count("streamed"), STREAMED_METHODS.len());
+    assert_eq!(count("voidSuccess"), VOID_SUCCESS_METHODS.len());
+    assert_eq!(
+        count("plain") + count("streamed") + count("voidSuccess"),
+        count("total"),
+        "the envelope buckets do not partition the registered methods"
+    );
+    assert_eq!(
+        count("derivedKey"),
+        count("total"),
+        "an Rpc.key was overridden"
+    );
+    assert_eq!(
+        count("sharedDefect"),
+        count("total"),
+        "a method carries its own defect schema, so the Defect port is no longer one behaviour"
+    );
+    assert_eq!(
+        count("neverError"),
+        count("streamed"),
+        "the methods with a `Never` error channel are exactly the streamed ones"
+    );
+    assert_eq!(count("voidPayload"), 0, "a method takes no payload");
+    assert_eq!(
+        count("streamSuccessVoid"),
+        0,
+        "a stream carries `Void` elements, so it can never emit"
+    );
+    assert_eq!(
+        count("streamErrorNever"),
+        0,
+        "a stream has a `Never` error channel, so it can never fail"
     );
 }

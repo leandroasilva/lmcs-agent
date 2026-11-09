@@ -48,6 +48,12 @@
 //!   discarding it. `Schema.Unknown` is identity in both directions, so it is plain
 //!   `serde_json::Value` and needs no type here. An untagged `Schema.Union` is
 //!   `#[serde(untagged)]`; only the rejection's tag differs.
+//! - `Schema.Never` is the empty enum, and unlike `Void` it really does reject everything
+//!   — `undefined` included. It is the default `error` schema of `Rpc.make`, so it is the
+//!   error channel of every streaming method. See [`Never`].
+//! - `RpcSchema.Stream` is **not a codec**. It is `Schema.declare(Stream.isStream)` with
+//!   the element schemas hanging off it, so it never reaches the wire and needs no type
+//!   here; framing stream chunks is the transport's job.
 //!
 //! The TypeScript-only shapes collapse here, and that is deliberate rather than a gap:
 //! `Schema.optionalKey` differs from `Schema.optional` only in whether `{v: undefined}`
@@ -960,5 +966,37 @@ impl<'de, K: Deserialize<'de> + Ord, V: Deserialize<'de>> Deserialize<'de> for R
         Ok(Record(std::collections::BTreeMap::deserialize(
             deserializer,
         )?))
+    }
+}
+
+/// `Schema.Never` — the default `error` schema of `Rpc.make`, and therefore the error
+/// channel of all 24 streaming methods, since `stream: true` moves the real error *inside*
+/// the success schema and leaves `Never` behind. Measured against the shipped codec: it
+/// rejects every input with `InvalidType`, **`undefined` included** — which is exactly
+/// where it differs from `Schema.Void`, which accepts everything and discards it.
+///
+/// The empty enum is the port rather than a stand-in for one. A value of this type cannot
+/// exist, and that impossibility is the whole claim: a handler typed against it cannot
+/// produce an error on that channel, and the compiler enforces it. `Serialize` has no case
+/// to write, and the visitor implements no `visit_*` method, so serde's defaults turn every
+/// input into an invalid-type error.
+pub enum Never {}
+
+impl Serialize for Never {
+    fn serialize<S: Serializer>(&self, _serializer: S) -> Result<S::Ok, S::Error> {
+        match *self {}
+    }
+}
+
+impl<'de> Deserialize<'de> for Never {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct NeverVisitor;
+        impl Visitor<'_> for NeverVisitor {
+            type Value = Never;
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("nothing: this channel cannot carry a value")
+            }
+        }
+        deserializer.deserialize_any(NeverVisitor)
     }
 }
