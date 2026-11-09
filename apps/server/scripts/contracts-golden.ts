@@ -689,6 +689,14 @@ for (const input of [
   { a: 101 },
   { a: "x" },
   { a: 50, b: 999 },
+  // The two failure modes side by side, because encode treats them differently: a key that
+  // cannot be encoded drops **its own entry** and leaves the rest, while a value that
+  // cannot be encoded takes the whole record down. Both orders, so the drop is not an
+  // artefact of which entry came last.
+  { "": 50, b: 60 },
+  { b: 60, "": 50 },
+  { b: 101, c: 60 },
+  { b: 60, c: 101 },
   "x",
   [],
   null,

@@ -10,7 +10,7 @@
 use lmcs_contracts::base::{
     Absent, Between, Check, Checked, DateTimeUtc, Defect, DurationMillis, EffectOption,
     GreaterThan, JsNumber, Lenient, LessThan, MaxLength, Maybe, MinLength, NonEmpty,
-    NonNegativeInt, Nullable, Port, PositiveInt, SafeInt, Trimmed,
+    NonNegativeInt, Nullable, Port, PositiveInt, Record, SafeInt, Trimmed,
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -214,6 +214,25 @@ where
         return Err(());
     };
     serde_json::to_value(wrap(number.clone())).map_err(|_| ())
+}
+
+/// The encode side of [`Weights`], and the one subject that cannot use [`round`] for it.
+/// `round` decodes first, and `NonEmpty`'s decoder trims and rejects — so a Type-side key
+/// of `"   "` would be refused before `Record`'s `Serialize` ever ran, when the shipped
+/// encoder accepts it and writes `""`. Every field is built unchecked here so the checks
+/// land where TypeScript puts them: on the way out.
+fn weights_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let built: BTreeMap<NonEmpty, Checked<JsNumber, (SafeInt, Between<0, 100>)>> = fields
+        .iter()
+        .map(|(key, value)| {
+            Ok((
+                NonEmpty(key.clone()),
+                Checked::wrap(JsNumber(value.as_number().ok_or(())?.clone())),
+            ))
+        })
+        .collect::<Result<_, ()>>()?;
+    serde_json::to_value(Record(built)).map_err(|_| ())
 }
 
 fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
@@ -513,7 +532,7 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
     // the padding, which is the whole reason this subject exists separately from `record`.
     map.insert(
         "recordCheckedKey",
-        (|raw| round::<Weights>(raw), |raw| round::<Weights>(raw)),
+        (|raw| round::<Weights>(raw), weights_encode),
     );
     map.insert(
         "unknownSchema",
@@ -527,10 +546,11 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         ),
     );
     // `Schema.Void` is `Bottom<void, void>` and yet accepts **every** input, yielding
-    // `undefined` — so all 14 of its cases are unportable and nothing is compared. What the
-    // `is_ok` assertion still pins down is the half that matters for the RPC `success:`
-    // field: a Rust side must not reject a payload here either. `Value` is that, and it is
-    // deliberately not `()`, which would refuse everything.
+    // `undefined` — so all 14 of its cases are unportable, 2 for want of a JSON input and
+    // 12 for want of a JSON output, and nothing is compared. What the `is_ok` assertion the
+    // replay still makes on those 12 pins down is the half that matters for the RPC
+    // `success:` field: a Rust side must not reject a payload here either. `Value` is that,
+    // and it is deliberately not `()`, which would refuse everything.
     map.insert(
         "voidSchema",
         (|raw| round::<Value>(raw), |raw| round::<Value>(raw)),
@@ -620,14 +640,10 @@ enum Boom {
 }
 
 /// `Schema.Record(TrimmedNonEmptyString, Int.check(isBetween(0, 100)))` — the shape of
-/// `LoadBalancingWeights` (`settings.ts:314`), and the reason `Record` is not a plain
-/// `HashMap<String, V>`: the **key is a schema**, so it is trimmed and checked on the way
-/// through. `NonEmpty` already does both, which is what makes this a one-liner.
-///
-/// Two keys that trim to the same string collapse with the later one winning, because a
-/// `BTreeMap` insert overwrites — which is what the shipped codec does too, and it does it
-/// silently rather than reporting the collision.
-type Weights = BTreeMap<NonEmpty, Checked<JsNumber, (SafeInt, Between<0, 100>)>>;
+/// `LoadBalancingWeights` (`settings.ts:314`), and the reason `Record` is a primitive of its
+/// own rather than a `BTreeMap` field: the key is a schema, so `{" a ":50}` crosses back as
+/// `{"a":50}`, and encoding a key that cannot be encoded drops only its own entry.
+type Weights = Record<NonEmpty, Checked<JsNumber, (SafeInt, Between<0, 100>)>>;
 
 /// `Schema.Union([String, Int])` — the untagged case, which `Viewport` does not cover.
 /// `#[serde(untagged)]` tries the variants in order, so a bad member reports "did not match
@@ -845,24 +861,25 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    eprintln!("COUNTERS replayed={replayed} skipped={skipped} incomparable={incomparable} unrepresentable={unrepresentable} typed={typed} subjects={} table={}", subjects.len(), table.len());
-    assert_eq!(table.len(), 41, "ported subject count changed");
+    assert_eq!(table.len(), 45, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form"
     );
     assert_eq!(
-        skipped, 18,
-        "6 scalars take `undefined` outright and 12 shape cases take `{{v: undefined}}`"
+        skipped, 24,
+        "6 scalars take `undefined` outright and 18 shape cases take `{{v: undefined}}` — \
+         or, for Void/Unknown/Union, `undefined` itself"
     );
     assert_eq!(
-        incomparable, 2,
-        "the two forwardCompatibleOptional decodes that yield `{{v: undefined}}`"
+        incomparable, 14,
+        "the two forwardCompatibleOptional decodes that yield `{{v: undefined}}`, and the 12 \
+         voidSchema cases that yield bare `undefined`"
     );
     assert_eq!(
         typed, 19,
         "5 durationFromMillis encodes whose Type side is a `Duration`, and the 14 defect \
          encodes whose Type side is an `Error` — neither has a JSON spelling"
     );
-    assert!(replayed >= 600, "only replayed {replayed} cases");
+    assert!(replayed >= 660, "only replayed {replayed} cases");
 }

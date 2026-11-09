@@ -41,6 +41,13 @@
 //!   internally tagged `_tag` map. serde's `#[serde(tag = "_tag")]` is already it, so
 //!   neither needs a type here — the 150 `TaggedError` sites collapse into the enum
 //!   pattern the payload schemas use anyway.
+//! - `Schema.Record` keys on a **schema**, not on a string, and its two directions disagree
+//!   about failure: decoding rejects the whole record, encoding drops only the entry whose
+//!   key cannot be encoded. See [`Record`].
+//! - `Schema.Void` is declared `Bottom<void, void>` and still accepts *every* input,
+//!   discarding it. `Schema.Unknown` is identity in both directions, so it is plain
+//!   `serde_json::Value` and needs no type here. An untagged `Schema.Union` is
+//!   `#[serde(untagged)]`; only the rejection's tag differs.
 //!
 //! The TypeScript-only shapes collapse here, and that is deliberate rather than a gap:
 //! `Schema.optionalKey` differs from `Schema.optional` only in whether `{v: undefined}`
@@ -896,5 +903,62 @@ fn decode_json_error(mut fields: serde_json::Map<String, serde_json::Value>) -> 
         name,
         message,
         cause,
+    }
+}
+
+/// `Schema.Record(key, value)` — 23 sites, and not a plain map, because the **key is a
+/// schema**: `LoadBalancingWeights` (`settings.ts:314`) keys on `TrimmedNonEmptyString` and
+/// `providerModelPreferences` (`settings.ts:447`) keys on `ProviderInstanceId`. So a key is
+/// trimmed and checked like any other value, and `{" a ":50}` crosses back as `{"a":50}`.
+///
+/// Two keys that trim to the same string collapse silently, the later one winning — the
+/// shipped codec reports no collision, so neither does this.
+///
+/// The asymmetry that a `BTreeMap` field cannot express is what failure does, and it
+/// differs by direction:
+///
+/// - **Decoding** rejects the whole record for a bad key *or* a bad value.
+/// - **Encoding** rejects the whole record for a bad value, but a key that cannot be
+///   encoded drops **only its own entry**: `{"":50, b:60}` encodes to `{"b":60}`, and both
+///   orders of that input give the same result.
+///
+/// Keys are held in a `BTreeMap`, so the wire order is sorted rather than insertion order.
+/// No JSON client may depend on key order, and the golden does not assert it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Record<K, V>(pub std::collections::BTreeMap<K, V>);
+
+impl<K, V> Default for Record<K, V> {
+    fn default() -> Self {
+        Record(std::collections::BTreeMap::new())
+    }
+}
+
+impl<K, V> Record<K, V> {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl<K: Serialize + Ord, V: Serialize> Serialize for Record<K, V> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for (key, value) in &self.0 {
+            // Probing the key rather than trusting `serialize_entry` is what makes the
+            // drop possible at all: once `serialize_entry` has failed the map is half
+            // written and cannot be continued, so the failure has to be found before the
+            // entry is started.
+            if serde_json::to_value(key).is_ok() {
+                map.serialize_entry(key, value)?;
+            }
+        }
+        map.end()
+    }
+}
+
+impl<'de, K: Deserialize<'de> + Ord, V: Deserialize<'de>> Deserialize<'de> for Record<K, V> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(Record(std::collections::BTreeMap::deserialize(
+            deserializer,
+        )?))
     }
 }
