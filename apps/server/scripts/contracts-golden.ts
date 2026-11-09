@@ -5,6 +5,7 @@
 //
 // `node apps/server/scripts/contracts-golden.ts > /tmp/contracts-golden.json`
 
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -34,8 +35,10 @@ const registered = [...requests.keys()];
 
 const declared = { ...WS_METHODS, ...ORCHESTRATION_WS_METHODS };
 const declaredTags = Object.values(declared);
-const registeredSet = new Set(registered);
-const declaredSet = new Set(declaredTags);
+const registeredSet = new Set<string>(registered);
+// Widened to `string` because the point of the set is to be searched with tags that came
+// off the group at runtime, which TypeScript only knows as `string`.
+const declaredSet = new Set<string>(declaredTags);
 
 const reconciliation = {
   declaredNotRegistered: Object.entries(declared)
@@ -56,10 +59,21 @@ const reconciliation = {
 type Case = {
   case: string;
   input?: unknown;
+  typedInput?: unknown;
   undefinedInput?: true;
 } & ({ ok: unknown } | { error: string });
 
 const cases: Case[] = [];
+
+// `Schema.Top` is the loosest schema type and the codec entry points ask for a
+// `ConstraintDecoder<unknown, never>`, so these two are the only places the two meet.
+// Funnelled through helpers rather than called at each site so the looseness is two
+// diagnostics instead of one per function that records.
+const decoderFor = (schema: Schema.Top) => Schema.decodeUnknownSync(schema);
+const encoderFor = (schema: Schema.Top) => Schema.encodeUnknownSync(schema);
+
+const issueOf = (cause: unknown): string =>
+  (cause as { issue?: { _tag?: string } }).issue?._tag ?? "?";
 
 function record(
   name: string,
@@ -68,13 +82,34 @@ function record(
   input: unknown,
   isUndefined = false,
 ): void {
-  const run = op === "decode" ? Schema.decodeUnknownSync(schema) : Schema.encodeUnknownSync(schema);
-  const base = { case: `${name}.${op}`, ...(isUndefined ? { undefinedInput: true } : { input }) };
+  const run = op === "decode" ? decoderFor(schema) : encoderFor(schema);
+  const base = {
+    case: `${name}.${op}`,
+    ...(isUndefined ? { undefinedInput: true as const } : { input }),
+  };
   try {
     cases.push({ ...base, ok: run(input) });
   } catch (cause) {
-    const issue = (cause as { issue?: { _tag?: string } }).issue?._tag ?? "?";
-    cases.push({ ...base, error: issue });
+    cases.push({ ...base, error: issueOf(cause) });
+  }
+}
+
+// Some Type-side values cannot be spelled in JSON at all, so an encode case taking one as
+// input has nothing to put in the golden. A `Duration` renders through `Inspectable`, a
+// JavaScript `Error` keeps `message` non-enumerable so `JSON.stringify` gives `"{}"`, and a
+// `DateTime` only renders through its `toJSON`. Rather than invent a sentinel per type, the
+// golden names the **Encoded** JSON and the replay decodes it first — which also makes the
+// case a genuine round trip instead of a one-sided assertion.
+//
+// The decode is not wrapped: an input that does not decode has no Type value, so there is
+// no encode behaviour to record, and crashing here is better than silently dropping a case.
+function recordTyped(name: string, schema: Schema.Top, encoded: unknown): void {
+  const typed = decoderFor(schema)(encoded);
+  const base = { case: `${name}.encode`, typedInput: encoded };
+  try {
+    cases.push({ ...base, ok: encoderFor(schema)(typed) });
+  } catch (cause) {
+    cases.push({ ...base, error: issueOf(cause) });
   }
 }
 
@@ -273,6 +308,232 @@ for (const input of [{ a: 1, b: 2 }, { a: "x" }, {}, [], null, { "": 1 }]) {
   record("record", "encode", RecordSchema, input);
 }
 
+// ---------------------------------------------------------------------------
+// Numeric bases. `Schema.Number` (110 sites) is already covered by `between`, but the
+// `isGreaterThan(0)` sites sit on three different bases — `Schema.Int` ×14,
+// `Schema.Finite` ×3 and `Schema.Number` ×1 — and `Schema.Int` (82 sites) and
+// `Schema.Finite` (12 sites) are primitives in their own right.
+// ---------------------------------------------------------------------------
+
+// `Schema.Finite` rejects `Infinity` and `NaN`, and **neither has a JSON spelling**:
+// `JSON.stringify` turns both into `null`. So for any input that can arrive on the wire,
+// `Finite` and `Number` accept and reject exactly the same set, and a Rust port does not
+// need two types. These cases are here to make that an observed fact rather than an
+// argument — if a future Effect version gave `Finite` a wire-visible difference, the
+// golden would show it.
+const Finite = Schema.Finite;
+for (const input of [1, 1.5, 0, -1, Number.MAX_SAFE_INTEGER, "1", null, true]) {
+  record("finite", "decode", Finite, input);
+  record("finite", "encode", Finite, input);
+}
+
+// `Schema.Int` is where a JSON number can genuinely fail, and the interesting inputs are
+// the ones where "integer" is ambiguous. JavaScript has one number type, so `1.0` and `1`
+// are the same value and cannot be separated in JSON; `MAX_SAFE_INTEGER + 1` still passes
+// `Number.isInteger` even though it is no longer exactly representable, so a Rust port on
+// `i64` and one on `f64` both accept it while a port that checks representability would
+// not. `1.5` is the plain rejection.
+const Int = Schema.Int;
+const IntPositive = Schema.Int.pipe(Schema.check(Schema.isGreaterThan(0)));
+for (const [name, schema, inputs] of [
+  [
+    "int",
+    Int,
+    [1, 0, -1, 1.5, -1.5, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER + 1, "1", null],
+  ],
+  ["intGreaterThanZero", IntPositive, [1, 0, -1, 1.5, Number.MAX_SAFE_INTEGER, "1"]],
+] as Array<[string, Schema.Top, ReadonlyArray<unknown>]>) {
+  for (const input of inputs) {
+    record(name, "decode", schema, input);
+    record(name, "encode", schema, input);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Numeric and length bounds. 46 `isGreaterThan` + 2 `isLessThan` + 6 `isMinLength`
+// sites, and the shape of the call is uniform enough that the only open questions
+// are measurement questions.
+// ---------------------------------------------------------------------------
+
+// Every `isGreaterThan` in the contracts is `isGreaterThan(0)` and both `isLessThan` are
+// `isLessThan(65536)`, so the bound is never in doubt — only its strictness is. The
+// parameter is named `exclusiveMinimum` / `exclusiveMaximum` in the Effect source, and `0`
+// and `65536` are here to confirm that empirically rather than trust the name.
+//
+// These two sit on a bare `Schema.Number`, the loosest of the three bases, so they isolate
+// the check from the base: `0.5` is accepted here and rejected by `intGreaterThanZero`
+// above, which is the same check on `Schema.Int`. `MAX_SAFE_INTEGER` is the other end of
+// the integer mistake. `Infinity` and `-0` are deliberately absent: neither survives
+// `JSON.stringify` (`null` and `0` respectively), so a case carrying one would silently
+// test a different input.
+const GreaterThanZero = Schema.Number.pipe(Schema.check(Schema.isGreaterThan(0)));
+const LessThanPort = Schema.Number.pipe(Schema.check(Schema.isLessThan(65536)));
+for (const [name, schema, inputs] of [
+  [
+    "greaterThanZero",
+    GreaterThanZero,
+    [1, 0, -1, 0.5, -0.5, Number.MAX_SAFE_INTEGER, "1", null, true],
+  ],
+  ["lessThanPort", LessThanPort, [65535, 65536, 65537, 0, -1, 1.5, "65535", null]],
+] as Array<[string, Schema.Top, ReadonlyArray<unknown>]>) {
+  for (const input of inputs) {
+    record(name, "decode", schema, input);
+    record(name, "encode", schema, input);
+  }
+}
+
+// `isMinLength` measures `.length`, so it applies to a string in UTF-16 code units and to
+// an array in elements — and the contracts use both: 3 string sites (`keybindings.ts:115`
+// and `:120`, `orchestration.ts:2300`) and 3 array sites (`git.ts:167`,
+// `pullRequest.ts:1225` and `:1237`). `"😀"` is 1 codepoint, 2 code units and 4 bytes, so
+// it separates all three readings against a bound of 2 exactly as it did for `isMaxLength`.
+const MinLength1 = Schema.String.pipe(Schema.check(Schema.isMinLength(1)));
+const MinLength2 = Schema.String.pipe(Schema.check(Schema.isMinLength(2)));
+const NonEmptyArray = Schema.Array(Schema.String).check(Schema.isMinLength(1));
+for (const [name, schema, inputs] of [
+  ["minLength1", MinLength1, ["", "a", "ab", "😀", " a ", 1, null]],
+  ["minLength2", MinLength2, ["", "a", "ab", "😀", "a😀", 1]],
+  ["minLengthArray", NonEmptyArray, [[], ["a"], ["a", "b"], "a", {}, null]],
+] as Array<[string, Schema.Top, ReadonlyArray<unknown>]>) {
+  for (const input of inputs) {
+    record(name, "decode", schema, input);
+    record(name, "encode", schema, input);
+  }
+}
+
+// `.check(a, b)` chains, and 3 sites do it (`pullRequest.ts:1225` and `:1237`,
+// `keybindings.ts:99`). The question a single-check port cannot answer is which one fails
+// first, because that decides the error a client sees: `[]` is under the minimum and
+// `["a","b","c","d"]` is over the maximum, while `["a", 1]` fails the *element* schema
+// before either bound is reached.
+const BoundedArray = Schema.Array(Schema.String).check(
+  Schema.isMinLength(1),
+  Schema.isMaxLength(3),
+);
+for (const input of [[], ["a"], ["a", "b", "c"], ["a", "b", "c", "d"], ["a", 1]]) {
+  record("chainedChecks", "decode", BoundedArray, input);
+  record("chainedChecks", "encode", BoundedArray, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.DurationFromMillis` — 9 sites, all in `settings.ts`, all inside
+// `Schema.optionalKey`. Encoded is a number of milliseconds, Type is a `Duration`.
+// ---------------------------------------------------------------------------
+
+// `1.5` is the discriminator. `Duration.millis` takes a `number`, and a fractional one
+// becomes the `Nanos` variant rather than the `Millis` one — so a Rust port holding `i64`
+// millis would reject a value the shipped codec accepts, and one holding `f64` would
+// accept it but might write back `1.5` where the shipped codec writes `1.5` only if
+// `Duration.toMillis` round-trips it. Negative durations are legal in Effect, so `-1` is
+// recorded rather than assumed away.
+const DurationShape = Schema.Struct({ every: Schema.DurationFromMillis });
+for (const input of [
+  { every: 0 },
+  { every: 1 },
+  { every: 1000 },
+  { every: 1.5 },
+  { every: -1 },
+  { every: Number.MAX_SAFE_INTEGER },
+  { every: "1000" },
+  { every: null },
+  {},
+]) {
+  record("durationFromMillis", "decode", DurationShape, input);
+}
+for (const millis of [0, 1, 1000, 1.5, -1]) {
+  recordTyped("durationFromMillis", DurationShape, { every: millis });
+}
+
+// `Schema.NonEmptyString` — Effect's built-in, used at 4 sites and embedded in
+// `SCRIPT_RUN_COMMAND_PATTERN`. It is **not** the repo's `TrimmedNonEmptyString`, and the
+// difference is whether a blank counts as empty: `" "` has `length` 1, so `isMinLength(1)`
+// accepts it, where the trimmed variant would reject it. Recorded on its own so that the
+// template-literal case below does not have to carry the answer.
+const NonEmptyString = Schema.NonEmptyString;
+for (const input of ["", "a", " ", "   ", "\u{feff}", "😀", 1, null]) {
+  record("nonEmptyString", "decode", NonEmptyString, input);
+  record("nonEmptyString", "encode", NonEmptyString, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.TemplateLiteral` — 2 sites: `SCRIPT_RUN_COMMAND_PATTERN`
+// (`keybindings.ts:99`) and `["acp.", Schema.String, ".extension"]`
+// (`providerRuntime.ts:32`). A template literal compiles to a regular expression, and
+// the two things a port has to get right are anchoring and greediness.
+// ---------------------------------------------------------------------------
+
+// `"acp.a.extension.extension"` separates a full-match reading from a search, and from a
+// *greedy* full match: an anchored `acp\.(.*)\.extension` accepts it with `a.extension`
+// captured, while `acp\.(.*?)\.extension` accepts it with `a` captured. Both accept, so
+// the case is about which reading a Rust port must not accidentally narrow. `"acp..extension"`
+// separates `Schema.String` (accepts `""`) from a `.+` reading. `"xacp.foo.extension"`
+// separates an anchored match from `RegExp.test`'s default substring search — the same
+// trap `isPattern` has.
+const AcpExtension = Schema.TemplateLiteral(["acp.", Schema.String, ".extension"]);
+for (const input of [
+  "acp.foo.extension",
+  "acp..extension",
+  "acp.a.extension.extension",
+  "acp.foo",
+  "xacp.foo.extension",
+  "acp.foo.extensionx",
+  "",
+  1,
+]) {
+  record("templateLiteral", "decode", AcpExtension, input);
+  record("templateLiteral", "encode", AcpExtension, input);
+}
+
+// The other site embeds a **checked** schema in the middle of the literal:
+// `NonEmptyString.check(isMaxLength(N), isPattern(/^[a-z0-9][a-z0-9-]*$/))`. Whether the
+// check runs against the captured slice or against the whole assembled string is not
+// guessable from the call, and `"script.ab.run"` versus `"script..run"` versus a
+// too-long id separates the readings.
+const ScriptRun = Schema.TemplateLiteral([
+  Schema.Literal("script."),
+  Schema.NonEmptyString.check(Schema.isMaxLength(8), Schema.isPattern(/^[a-z0-9][a-z0-9-]*$/)),
+  Schema.Literal(".run"),
+]);
+for (const input of [
+  "script.ab.run",
+  "script..run",
+  "script.a.run",
+  "script.abcdefghijklmnop.run",
+  "script.AB.run",
+  "script.a-b.run",
+]) {
+  record("templateLiteralChecked", "decode", ScriptRun, input);
+  record("templateLiteralChecked", "encode", ScriptRun, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.suspend` — 3 sites, all self-recursive: `SnapShotAccessibilityNode`
+// (`orchestration.ts:244`), `KeybindingWhenNodeRef` (`keybindings.ts:145`) and
+// `ContextMenuItemSchema` (`ipc.ts:78`). Recursion is a shape question rather than a
+// codec one, so what gets recorded is whether depth is bounded and whether a wrong
+// member at depth is reported or swallowed. A cycle cannot be spelled in JSON, so it is
+// not tested here.
+// ---------------------------------------------------------------------------
+
+const Tree: Schema.Top = Schema.Struct({
+  name: Schema.String,
+  children: Schema.Array(Schema.suspend((): Schema.Top => Tree)),
+});
+const deep = (depth: number): unknown =>
+  depth === 0 ? { name: "leaf", children: [] } : { name: `n${depth}`, children: [deep(depth - 1)] };
+for (const input of [
+  { name: "a", children: [] },
+  deep(1),
+  deep(20),
+  { name: "a", children: [{}] },
+  { name: "a", children: [{ name: "b", children: "x" }] },
+  { children: [] },
+  { name: "a" },
+]) {
+  record("suspendTree", "decode", Tree, input);
+  record("suspendTree", "encode", Tree, input);
+}
+
 // The golden has to carry wire bytes, and two kinds of value do not survive
 // `JSON.stringify` on their own:
 //
@@ -287,7 +548,10 @@ for (const input of [{ a: 1, b: 2 }, { a: "x" }, {}, [], null, { "": 1 }]) {
 //
 // A `Date` (and therefore a `DateTime.Utc`) has to pass through as itself: `JSON.stringify`
 // runs its `toJSON` to produce the wire form, and rebuilding it from its own enumerable
-// entries would yield `{}`.
+// entries would yield `{}`. A `Duration` is the same case with a sharper edge — its internal
+// `value.nanos` is a `BigInt`, so walking it does not merely lose information, it throws.
+// Passing it through yields `{_id, _tag, millis}` or `{_id, _tag, nanos}` with the bigint
+// already stringified by `Duration`'s own `toJSON`, which is lossless and machine-stable.
 const toWire = (value: unknown): unknown => {
   if (value === undefined) return { $undefined: true };
   if (Option.isOption(value)) {
@@ -298,16 +562,18 @@ const toWire = (value: unknown): unknown => {
   }
   if (value === null || typeof value !== "object") return value;
   if (value instanceof Date) return value;
+  if (Duration.isDuration(value)) return value;
   if (Array.isArray(value)) return value.map(toWire);
   const rebuilt: Record<string, unknown> = {};
   for (const [key, member] of Object.entries(value)) rebuilt[key] = toWire(member);
   return rebuilt;
 };
 
-const encodeInput = (entry: Case): string =>
-  "undefinedInput" in entry
-    ? '"undefinedInput":true'
-    : `"input":${JSON.stringify(toWire(entry.input))}`;
+const encodeInput = (entry: Case): string => {
+  if ("undefinedInput" in entry) return '"undefinedInput":true';
+  if ("typedInput" in entry) return `"typedInput":${JSON.stringify(toWire(entry.typedInput))}`;
+  return `"input":${JSON.stringify(toWire(entry.input))}`;
+};
 
 const encodeCase = (entry: Case): string => {
   const outcome =

@@ -8,8 +8,9 @@
 //! `LMCS_CONTRACTS_GOLDEN=/tmp/contracts-golden.json cargo test`
 
 use lmcs_contracts::base::{
-    Absent, Between, Check, Checked, DateTimeUtc, EffectOption, JsNumber, Lenient, MaxLength,
-    Maybe, NonEmpty, NonNegativeInt, Nullable, Port, PositiveInt, Trimmed,
+    Absent, Between, Check, Checked, DateTimeUtc, DurationMillis, EffectOption, GreaterThan,
+    JsNumber, Lenient, LessThan, MaxLength, Maybe, MinLength, NonEmpty, NonNegativeInt, Nullable,
+    Port, PositiveInt, SafeInt, Trimmed,
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -398,6 +399,100 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
             |raw| round::<BTreeMap<String, JsNumber>>(raw),
         ),
     );
+    // `Schema.Finite` gets `JsNumber` and no check of its own: nothing JSON can spell is
+    // infinite, so there is no wire-visible difference to reproduce.
+    map.insert(
+        "finite",
+        (
+            |raw| round::<JsNumber>(raw),
+            |raw| number_like(raw, JsNumber),
+        ),
+    );
+    map.insert(
+        "int",
+        (
+            |raw| round::<SafeInteger>(raw),
+            |raw| number_like(raw, |number| SafeInteger::wrap(JsNumber(number))),
+        ),
+    );
+    map.insert(
+        "intGreaterThanZero",
+        (
+            |raw| round::<SafePositiveInteger>(raw),
+            |raw| number_like(raw, |number| SafePositiveInteger::wrap(JsNumber(number))),
+        ),
+    );
+    map.insert(
+        "greaterThanZero",
+        (
+            |raw| round::<PositiveNumber>(raw),
+            |raw| number_like(raw, |number| PositiveNumber::wrap(JsNumber(number))),
+        ),
+    );
+    map.insert(
+        "lessThanPort",
+        (
+            |raw| round::<BelowPortBound>(raw),
+            |raw| number_like(raw, |number| BelowPortBound::wrap(JsNumber(number))),
+        ),
+    );
+    map.insert(
+        "minLength1",
+        (
+            |raw| round::<AtLeast1>(raw),
+            |raw| string_like(raw, AtLeast1::wrap),
+        ),
+    );
+    map.insert(
+        "minLength2",
+        (
+            |raw| round::<AtLeast2>(raw),
+            |raw| string_like(raw, AtLeast2::wrap),
+        ),
+    );
+    map.insert(
+        "nonEmptyString",
+        (
+            |raw| round::<EffectNonEmptyString>(raw),
+            |raw| string_like(raw, EffectNonEmptyString::wrap),
+        ),
+    );
+    map.insert(
+        "minLengthArray",
+        (
+            |raw| round::<NonEmptyList>(raw),
+            |raw| round::<NonEmptyList>(raw),
+        ),
+    );
+    map.insert(
+        "chainedChecks",
+        (
+            |raw| round::<BoundedList>(raw),
+            |raw| round::<BoundedList>(raw),
+        ),
+    );
+    // The encode side arrives as a `typedInput`: a `Duration` has no JSON spelling, so the
+    // golden names the Encoded value and this round trip decodes it first. That is also
+    // the whole of the finding — on the wire `DurationFromMillis` is `JsNumber`, and the
+    // `Millis`/`Nanos` split never leaves the TypeScript process.
+    map.insert(
+        "durationFromMillis",
+        (
+            |raw| {
+                decode_as::<DurationShape, _>(
+                    raw,
+                    |shape| json!({ "every": duration_repr(&shape.every) }),
+                )
+            },
+            |raw| round::<DurationShape>(raw),
+        ),
+    );
+    map.insert("templateLiteral", (acp_extension, acp_extension));
+    map.insert("templateLiteralChecked", (script_run, script_run));
+    map.insert(
+        "suspendTree",
+        (|raw| round::<Tree>(raw), |raw| round::<Tree>(raw)),
+    );
     map
 }
 
@@ -405,6 +500,121 @@ type MaxLen = Checked<String, MaxLength<3>>;
 type TrimmedMaxLen = Checked<NonEmpty, MaxLength<3>>;
 type Patterned = Checked<String, Lowercase>;
 type Bounded = Checked<JsNumber, Between<1, 3>>;
+
+type SafeInteger = Checked<JsNumber, SafeInt>;
+type SafePositiveInteger = Checked<JsNumber, (SafeInt, GreaterThan<0>)>;
+type PositiveNumber = Checked<JsNumber, GreaterThan<0>>;
+type BelowPortBound = Checked<JsNumber, LessThan<65_536>>;
+type AtLeast1 = Checked<String, MinLength<1>>;
+type AtLeast2 = Checked<String, MinLength<2>>;
+type NonEmptyList = Checked<Vec<String>, MinLength<1>>;
+type BoundedList = Checked<Vec<String>, (MinLength<1>, MaxLength<3>)>;
+
+/// `Schema.NonEmptyString` is **not** the repo's `TrimmedNonEmptyString`, and the golden is
+/// what shows it: `" "`, `"   "` and `"\u{feff}"` are all members, because the built-in is
+/// `isMinLength(1)` with no transform and JavaScript's `trim` would have stripped the last
+/// one to nothing. So it needs no type of its own — [`AtLeast1`] is it, untrimmed.
+type EffectNonEmptyString = AtLeast1;
+
+/// `SCRIPT_RUN_COMMAND_PATTERN`'s middle member:
+/// `NonEmptyString.check(isMaxLength(8), isPattern(/^[a-z0-9][a-z0-9-]*$/))`. The nested
+/// tuple is the three chained predicates; only a 2-tuple impl of [`Check`] exists, and
+/// nesting is enough because a tuple of checks is itself a check.
+type ScriptId = Checked<String, ((MinLength<1>, MaxLength<8>), ScriptIdPattern)>;
+
+static SCRIPT_ID: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new("^[a-z0-9][a-z0-9-]*$").expect("valid"));
+
+struct ScriptIdPattern;
+
+impl Check<String> for ScriptIdPattern {
+    fn passes(value: &String) -> bool {
+        SCRIPT_ID.is_match(value)
+    }
+
+    fn describe() -> String {
+        "a script id".to_owned()
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct DurationShape {
+    every: DurationMillis,
+}
+
+/// `Schema.suspend`'s only visible property is that the recursion is unbounded, so the port
+/// is a plain recursive struct — `Vec` already provides the indirection that lets `Tree`
+/// name itself. `children` is required, not `#[serde(default)]`, because the golden rejects
+/// `{name:"a"}`.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct Tree {
+    name: String,
+    children: Vec<Tree>,
+}
+
+/// The Type side of a `Duration`, rendered the way Effect's own `toJSON` renders it and
+/// therefore the way the golden carries it.
+///
+/// `Duration.make` picks the `Millis` variant for an integer and `Nanos` for anything else,
+/// and `roundMillisToNanos` is `roundTiesAwayFromZero(millis * 1e6)` — which `f64::round`
+/// already is, since Rust rounds half away from zero too. The `nanos` field is a *string*
+/// because Effect stringifies its `BigInt` there.
+fn duration_repr(value: &DurationMillis) -> Value {
+    let millis = value.millis();
+    if millis.fract() == 0.0 {
+        // The original literal rather than `millis`, because an `f64` renders `1000` as
+        // `1000.0` where Effect writes the integer it was given.
+        return json!({
+            "_id": "Duration",
+            "_tag": "Millis",
+            "millis": Value::Number(value.0 .0.clone()),
+        });
+    }
+    json!({
+        "_id": "Duration",
+        "_tag": "Nanos",
+        "nanos": ((millis * 1_000_000.0).round() as i128).to_string(),
+    })
+}
+
+/// A `Schema.TemplateLiteral` whose parts are two literal bounds and one captured member.
+///
+/// Spelled as a strip rather than as a regular expression because that is what an anchored
+/// literal-bounded template reduces to, and it keeps the non-overlap requirement explicit:
+/// both bounds have to fit side by side, which is what rejects `"acp.extension"` — a case a
+/// naive prefix-then-suffix test would accept.
+///
+/// The captured slice is what the member schema validates, not the assembled string — the
+/// golden pins that with a 16-character id against a bound of 8 — but the **result is the
+/// whole string**, not the capture. A template literal is a string schema; its parts are
+/// constraints on it, not a decomposition of it.
+fn templated<T: Serialize>(
+    raw: &Value,
+    prefix: &str,
+    suffix: &str,
+    wrap: impl FnOnce(String) -> T,
+) -> Result<Value, ()> {
+    let text = raw.as_str().ok_or(())?;
+    if !text.starts_with(prefix)
+        || !text.ends_with(suffix)
+        || text.len() < prefix.len() + suffix.len()
+    {
+        return Err(());
+    }
+    let middle = &text[prefix.len()..text.len() - suffix.len()];
+    // Serializing is what runs the member's checks, so the value is built and then
+    // discarded; the string that crosses the wire is the one that arrived.
+    serde_json::to_value(wrap(middle.to_owned())).map_err(|_| ())?;
+    Ok(Value::String(text.to_owned()))
+}
+
+fn acp_extension(raw: &Value) -> Result<Value, ()> {
+    templated(raw, "acp.", ".extension", |middle| middle)
+}
+
+fn script_run(raw: &Value) -> Result<Value, ()> {
+    templated(raw, "script.", ".run", ScriptId::wrap)
+}
 
 /// Golden subjects that have **no** Rust input, because their Encoded side is not a JSON
 /// value. Named rather than silently skipped, so the gap is a list a reader can check
@@ -464,6 +674,7 @@ fn replays_the_golden_codec_behaviour() {
     let table = codecs();
 
     let mut replayed = 0usize;
+    let mut typed = 0usize;
     let mut skipped = 0usize;
     let mut incomparable = 0usize;
     let mut unrepresentable = 0usize;
@@ -504,7 +715,16 @@ fn replays_the_golden_codec_behaviour() {
         }
         replayed += 1;
 
-        let input = &case["input"];
+        // A `typedInput` case names the **Encoded** JSON because the Type-side value has no
+        // JSON spelling at all, so the subject's encode codec is the round trip that decodes
+        // it first. `durationFromMillis` is the only such subject today.
+        let input = match case.get("typedInput") {
+            Some(encoded) => {
+                typed += 1;
+                encoded
+            }
+            None => &case["input"],
+        };
         let actual = run(input);
         match case.get("ok") {
             Some(expected) => assert_eq!(
@@ -538,7 +758,7 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 24, "ported subject count changed");
+    assert_eq!(table.len(), 38, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form"
@@ -551,5 +771,9 @@ fn replays_the_golden_codec_behaviour() {
         incomparable, 2,
         "the two forwardCompatibleOptional decodes that yield `{{v: undefined}}`"
     );
-    assert!(replayed >= 350, "only replayed {replayed} cases");
+    assert_eq!(
+        typed, 5,
+        "the durationFromMillis encodes, whose Type side is a `Duration` and so has no JSON spelling"
+    );
+    assert!(replayed >= 550, "only replayed {replayed} cases");
 }

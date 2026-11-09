@@ -27,6 +27,14 @@
 //!   literals", so they port to a check plus a set membership test.
 //! - `Schema.Option` crosses the wire in Effect's own internal spelling, so
 //!   [`EffectOption`] is not interchangeable with [`Nullable`].
+//! - Length is one predicate over two kinds of value: `isMinLength` and `isMaxLength` are
+//!   both `input.length`, so they measure a string in UTF-16 code units and an array in
+//!   elements. [`Length`] covers both halves.
+//! - `Schema.Int` is `Number.isSafeInteger`, not `Number.isInteger`, so it rejects
+//!   `2^53` — a value an `i64` holds easily. See [`SafeInt`].
+//! - `Schema.Finite` and `Schema.Number` are the same codec for every input JSON can
+//!   spell, because `Infinity` and `NaN` cannot cross the wire at all.
+//! - `Schema.DurationFromMillis` is [`JsNumber`] on the wire; only its Type side differs.
 //!
 //! The TypeScript-only shapes collapse here, and that is deliberate rather than a gap:
 //! `Schema.optionalKey` differs from `Schema.optional` only in whether `{v: undefined}`
@@ -403,26 +411,58 @@ pub trait Check<T> {
     fn describe() -> String;
 }
 
-/// Anything a text check can measure.
-pub trait Text {
-    fn text(&self) -> &str;
-}
+/// `.check(a, b)` — 3 sites chain two predicates (`pullRequest.ts:1225` and `:1237`,
+/// `keybindings.ts:99`). A tuple of checks is itself a check, so the chain reads
+/// `Checked<Vec<T>, (MinLength<1>, MaxLength<25>)>` instead of needing a second
+/// combinator or a nesting of [`Checked`].
+///
+/// Conjunction with no ordering, and that is deliberate: the golden shows all three
+/// failure modes of a chained check — under the minimum, over the maximum, and a bad
+/// element — reporting the *same* `Composite` issue tag, so which predicate rejected is
+/// not observable on the wire and does not have to be reproduced.
+impl<T, A: Check<T>, B: Check<T>> Check<T> for (A, B) {
+    fn passes(value: &T) -> bool {
+        A::passes(value) && B::passes(value)
+    }
 
-impl Text for String {
-    fn text(&self) -> &str {
-        self
+    fn describe() -> String {
+        format!("{} and {}", A::describe(), B::describe())
     }
 }
 
-impl Text for Trimmed {
-    fn text(&self) -> &str {
-        &self.0
+/// Anything `isMinLength` / `isMaxLength` can measure.
+///
+/// Both TypeScript predicates are spelled `input.length`, which makes one rule cover two
+/// kinds of value: a string, where `length` is UTF-16 code units, and an array, where it
+/// is elements. The contracts use both — `isMinLength` has 3 string sites
+/// (`keybindings.ts:115` and `:120`, `orchestration.ts:2300`) and 3 array sites
+/// (`git.ts:167`, `pullRequest.ts:1225` and `:1237`) — so a port that only models the
+/// string half silently skips half the sites.
+pub trait Length {
+    fn length(&self) -> usize;
+}
+
+impl Length for String {
+    fn length(&self) -> usize {
+        utf16_len(self)
     }
 }
 
-impl Text for NonEmpty {
-    fn text(&self) -> &str {
-        &self.0
+impl Length for Trimmed {
+    fn length(&self) -> usize {
+        utf16_len(&self.0)
+    }
+}
+
+impl Length for NonEmpty {
+    fn length(&self) -> usize {
+        utf16_len(&self.0)
+    }
+}
+
+impl<T> Length for Vec<T> {
+    fn length(&self) -> usize {
+        self.len()
     }
 }
 
@@ -488,20 +528,99 @@ impl<'de, T: Deserialize<'de>, C: Check<T>> Deserialize<'de> for Checked<T, C> {
     }
 }
 
-/// `Schema.isMaxLength(N)` — 164 sites, measured in UTF-16 code units.
+/// `Schema.isMaxLength(N)` — 164 sites, measured through [`Length`].
 pub struct MaxLength<const N: usize>;
 
-impl<const N: usize, T: Text> Check<T> for MaxLength<N> {
+impl<const N: usize, T: Length> Check<T> for MaxLength<N> {
     fn passes(value: &T) -> bool {
-        utf16_len(value.text()) <= N
+        value.length() <= N
     }
 
     fn describe() -> String {
-        format!("a string of at most {N} UTF-16 code units")
+        format!("at most {N} long")
     }
 }
 
-/// `Schema.Number` — 109 sites.
+/// `Schema.isMinLength(N)` — 6 sites, measured through [`Length`] exactly as the maximum
+/// is. Effect floors and clamps the bound (`Math.max(0, Math.floor(minLength))`), which is
+/// unobservable here because all 6 sites spell an integer literal.
+pub struct MinLength<const N: usize>;
+
+impl<const N: usize, T: Length> Check<T> for MinLength<N> {
+    fn passes(value: &T) -> bool {
+        value.length() >= N
+    }
+
+    fn describe() -> String {
+        format!("at least {N} long")
+    }
+}
+
+/// `Schema.isInt()`, which is `Number.isSafeInteger` and **not** `Number.isInteger`. The
+/// difference is wire-visible and 82 sites depend on it: `9007199254740991` is accepted and
+/// `9007199254740992` is rejected, though both are integers and both fit in an `i64` with
+/// room to spare. A port that read these into `i64` would accept the second one, so a Rust
+/// server would take a payload the TypeScript server refuses — the direction of divergence
+/// that is hardest to notice, because nothing fails.
+pub struct SafeInt;
+
+/// `Number.MAX_SAFE_INTEGER`, exactly representable as an `f64`.
+const MAX_SAFE_INTEGER: f64 = 9_007_199_254_740_991.0;
+
+impl Check<JsNumber> for SafeInt {
+    fn passes(value: &JsNumber) -> bool {
+        value
+            .0
+            .as_f64()
+            .is_some_and(|number| number.fract() == 0.0 && number.abs() <= MAX_SAFE_INTEGER)
+    }
+
+    fn describe() -> String {
+        "a safe integer".to_owned()
+    }
+}
+
+/// `Schema.isGreaterThan(N)` — 46 sites, every one of them `isGreaterThan(0)`. Exclusive:
+/// the Effect parameter is named `exclusiveMinimum` and the golden confirms `0` is
+/// rejected.
+///
+/// Compared as `f64` rather than as an integer because the 46 sites sit on three different
+/// bases — `Schema.Int` ×14, `Schema.Finite` ×3, `Schema.Number` ×1 for the `(0)` bound —
+/// and on the latter two `0.5` is a legal value. Integer-ness is [`SafeInt`]'s job, not
+/// this predicate's, which is why the two compose instead of one subsuming the other.
+pub struct GreaterThan<const N: i64>;
+
+impl<const N: i64> Check<JsNumber> for GreaterThan<N> {
+    fn passes(value: &JsNumber) -> bool {
+        value.0.as_f64().is_some_and(|number| number > N as f64)
+    }
+
+    fn describe() -> String {
+        format!("a number greater than {N}")
+    }
+}
+
+/// `Schema.isLessThan(N)` — 2 sites, both `isLessThan(65536)` on a port. Exclusive, so
+/// `65536` itself is rejected.
+pub struct LessThan<const N: i64>;
+
+impl<const N: i64> Check<JsNumber> for LessThan<N> {
+    fn passes(value: &JsNumber) -> bool {
+        value.0.as_f64().is_some_and(|number| number < N as f64)
+    }
+
+    fn describe() -> String {
+        format!("a number less than {N}")
+    }
+}
+
+/// `Schema.Number` — 109 sites — and `Schema.Finite` — 12 more, which need no type of
+/// their own.
+///
+/// `Finite` rejects `Infinity` and `NaN`, and neither has a JSON spelling: `JSON.stringify`
+/// renders both as `null`. So on any input that can actually arrive, `Finite` and `Number`
+/// accept and reject the same set, and the golden records that as an observed fact rather
+/// than leaving it as an argument.
 ///
 /// Held as the JSON literal rather than an `f64` because an `f64` re-serializes `1` as
 /// `1.0`, and a Rust server has to write the same bytes a TypeScript one wrote. Numeric
@@ -539,6 +658,42 @@ impl<const MIN: i64, const MAX: i64> Check<JsNumber> for Between<MIN, MAX> {
 
     fn describe() -> String {
         format!("a number between {MIN} and {MAX}")
+    }
+}
+
+/// `Schema.DurationFromMillis` — 9 sites, all in `settings.ts`, all inside
+/// `Schema.optionalKey`.
+///
+/// It is `Number.pipe(decodeTo(Duration, …))` and the transformation cannot fail, so **on
+/// the wire this is indistinguishable from [`JsNumber`]**: every JSON number is accepted,
+/// `1.5` round-trips to `1.5` and `-1` to `-1`. The only difference lives on the Type
+/// side, where Effect picks a `Millis` variant for an integer and a `Nanos` one for
+/// anything else — and that choice never reaches the wire.
+///
+/// Holds the literal rather than an `f64` for the same reason [`JsNumber`] does: `1000`
+/// has to come back out as `1000`, not `1000.0`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DurationMillis(pub JsNumber);
+
+impl DurationMillis {
+    /// The count in milliseconds, fractional if the wire said so.
+    ///
+    /// `f64` rather than an integer because `1.5` is legal on this schema and 1 of the 9
+    /// sites is a user-editable setting.
+    pub fn millis(&self) -> f64 {
+        self.0.0.as_f64().unwrap_or(f64::NAN)
+    }
+}
+
+impl Serialize for DurationMillis {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for DurationMillis {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        JsNumber::deserialize(deserializer).map(DurationMillis)
     }
 }
 
