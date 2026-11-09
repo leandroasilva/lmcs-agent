@@ -456,6 +456,126 @@ for (const input of ["", "a", " ", "   ", "\u{feff}", "😀", 1, null]) {
 }
 
 // ---------------------------------------------------------------------------
+// `Schema.Defect()` — 59 sites in the contracts, 90 across the repo, and **every single
+// call passes no options**, so `includeStack` and `excludeCause` are both false everywhere.
+// That collapses what looks like a family into one behaviour.
+//
+// `Defect` is `Json` on the wire and `unknown` in the Type, and it is *not* an identity
+// codec. A JSON object carrying a string `message` decodes into a JavaScript `Error`, and
+// encoding that Error writes `{name, message}` — a `name` key the input never had. A port
+// that treats the wire as pass-through is wrong in the direction that is invisible until a
+// client reads `cause.name`.
+//
+// `stack` is deliberately absent from every case. It embeds absolute paths and line numbers,
+// so a golden carrying one would not be reproducible on another machine — and since no site
+// passes `includeStack`, a stack never reaches the wire in either direction anyway.
+// ---------------------------------------------------------------------------
+
+const DefectSchema = Schema.Defect();
+for (const input of [
+  // The error shape, and the three ways `name` can be spelled: absent, a custom value, and
+  // literally `"Error"` — which `decodeJsonError` skips assigning because it is already the
+  // default, so all three have to land on the same encoded bytes.
+  { message: "boom" },
+  { message: "boom", name: "CustomError" },
+  { message: "boom", name: "Error" },
+  { message: "boom", name: 5 },
+  // `message` present but not a string: `isJsonError` requires `typeof message === "string"`,
+  // so this is *not* an error and passes through untouched.
+  { message: 1 },
+  // `cause` is recursed into; `Object.hasOwn` rather than `!== undefined` decides, so an
+  // explicit `null` is a cause and is written back.
+  { message: "boom", cause: { message: "inner" } },
+  { message: "boom", cause: null },
+  { message: "boom", cause: "plain" },
+  // An unknown key is dropped, because the value round-trips through an `Error` that has no
+  // slot for it. This is the lossy case a pass-through port would get wrong.
+  { message: "boom", extra: 1 },
+  // A nested error-shaped object is **not** decoded: `decodeDefect` recurses only through
+  // `cause`, not through arbitrary members.
+  { detail: { message: "inner" } },
+  // Everything that is not an error-shaped object at all.
+  {},
+  "plain",
+  5,
+  null,
+  true,
+  [1, { message: "x" }],
+]) {
+  record("defect", "decode", DefectSchema, input);
+}
+// The encode side takes an `Error`, whose `message` is non-enumerable and so has no JSON
+// spelling; `recordTyped` names the Encoded value and decodes it first.
+for (const encoded of [
+  { message: "boom" },
+  { message: "boom", name: "CustomError" },
+  { message: "boom", cause: { message: "inner" } },
+  { message: "boom", cause: null },
+  { message: "boom", extra: 1 },
+  { message: 1 },
+  { detail: { message: "inner" } },
+  {},
+  "plain",
+  5,
+  null,
+  [1, { message: "x" }],
+]) {
+  recordTyped("defect", DefectSchema, encoded);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.TaggedStruct` (24 sites) and `Schema.TaggedError` (126). The latter is
+// `Error(identifier ?? tag)(TaggedStruct(tag, fields))`, so **on the wire the two are the
+// same shape** — `Struct({_tag: Literal(tag), ...fields})` — and one subject covers all 150.
+//
+// Field order is *not* asserted, and that is a decision rather than an oversight: the replay
+// compares `serde_json::Value`, whose `Map` is a `BTreeMap` without the `preserve_order`
+// feature, so key order is not observable in the test. Number formatting *is* observable and
+// *is* asserted (`1` must not come back as `1.0`). Key order is not something a JSON client
+// may depend on, so it is not something the port has to reproduce.
+// ---------------------------------------------------------------------------
+
+const Fill = Schema.TaggedStruct("fill", { detail: Schema.String });
+const Idle = Schema.TaggedStruct("Idle", {});
+const Viewport = Schema.Union([Fill, Idle]);
+for (const input of [
+  { _tag: "fill", detail: "x" },
+  // Tag last, to confirm the member is picked by the `_tag` value and not by its position.
+  { detail: "x", _tag: "fill" },
+  { _tag: "Idle" },
+  // An extra key on the empty variant: structs are not exact, so it is dropped.
+  { _tag: "Idle", detail: "x" },
+  // Unknown member, missing payload, and no tag at all.
+  { _tag: "nope" },
+  { _tag: "fill" },
+  { detail: "x" },
+  { _tag: "fill", detail: "x", extra: 1 },
+  { _tag: "fill", detail: 1 },
+]) {
+  record("taggedStruct", "decode", Viewport, input);
+  record("taggedStruct", "encode", Viewport, input);
+}
+
+// The combination that actually ships: all 59 `Defect()` sites are the payload of an error
+// struct, usually as `cause`. This is where the two primitives meet, and where a port that
+// got each one separately right can still compose them wrong.
+const Boom = Schema.TaggedStruct("Boom", { cause: Schema.Defect() });
+for (const input of [
+  { _tag: "Boom", cause: { message: "inner" } },
+  { _tag: "Boom", cause: "plain" },
+  { _tag: "Boom", cause: null },
+  { _tag: "Boom" },
+]) {
+  record("defectInTaggedStruct", "decode", Boom, input);
+}
+for (const encoded of [
+  { _tag: "Boom", cause: { message: "inner" } },
+  { _tag: "Boom", cause: "plain" },
+]) {
+  recordTyped("defectInTaggedStruct", Boom, encoded);
+}
+
+// ---------------------------------------------------------------------------
 // `Schema.TemplateLiteral` — 2 sites: `SCRIPT_RUN_COMMAND_PATTERN`
 // (`keybindings.ts:99`) and `["acp.", Schema.String, ".extension"]`
 // (`providerRuntime.ts:32`). A template literal compiles to a regular expression, and
@@ -534,6 +654,87 @@ for (const input of [
   record("suspendTree", "encode", Tree, input);
 }
 
+// ---------------------------------------------------------------------------
+// `Schema.Record` with a **schema-validated key**. The plain `Schema.Record(String, Number)`
+// case is already the `record` subject above, and it shows a plain map. This one is the
+// 23-site reality: `LoadBalancingWeights` (`settings.ts:314`) keys on
+// `TrimmedNonEmptyString`, and `providerModelPreferences` (`settings.ts:447`) keys on
+// `ProviderInstanceId`. So the key is transformed and checked like any other value, and
+// the questions a `HashMap<String, V>` port cannot answer are: does the trimmed key reach
+// the wire in place of the arrived one, what happens when two keys trim to the same
+// string, and does a rejected key or value drop that entry (which is what
+// `ForwardCompatibleArray` does) or take the whole record down.
+// ---------------------------------------------------------------------------
+
+const Weights: Schema.Top = Schema.Record(
+  TrimmedNonEmptyString,
+  Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 100 })),
+);
+for (const input of [
+  {},
+  { a: 50 },
+  // Does the key get trimmed, and does the trimmed form reach the wire?
+  { " a ": 50 },
+  // Two keys collapsing to one after the trim. The literal is written padded-key-first on
+  // purpose: the replay parses the golden through `serde_json::Value`, which sorts keys,
+  // and `" a "` sorts before `"a"` — so this order is the one where JavaScript's insertion
+  // order and the replay's iteration order agree, and "the later entry wins" means the same
+  // thing on both sides. What is being pinned down is that they collapse **silently**, one
+  // value lost with no error; which of the two wins is an order question the harness cannot
+  // carry for an arbitrary literal.
+  { " a ": 2, a: 1 },
+  { "": 50 },
+  { "   ": 50 },
+  // A rejected value: does the entry drop or does the record fail?
+  { a: 101 },
+  { a: "x" },
+  { a: 50, b: 999 },
+  "x",
+  [],
+  null,
+]) {
+  record("recordCheckedKey", "decode", Weights, input);
+  record("recordCheckedKey", "encode", Weights, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.Void` — 12 sites, every one of them the `success:` field of an RPC in `rpc.ts`.
+// This is the highest-value unknown in the file, because it decides what a Rust server
+// writes for a successful call that returns nothing. TypeScript's `void` is `undefined`,
+// which has no JSON spelling at all, so the three possible answers are: accept only
+// `undefined` (and the wire form has to be something else), accept `null`, or accept
+// anything and discard it.
+// ---------------------------------------------------------------------------
+
+for (const input of [undefined, null, {}, 0, "", false, []]) {
+  record("voidSchema", "decode", Schema.Void, input);
+  record("voidSchema", "encode", Schema.Void, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.Unknown` — 7 sites in `orchestration.ts`, deliberately loose so malformed
+// provider drafts still reach the transform (`orchestration.ts:82`). Characterised to
+// confirm it really is identity in both directions and never rejects, because a port that
+// made it `serde_json::Value` would be right only if that holds.
+// ---------------------------------------------------------------------------
+
+for (const input of [undefined, null, 0, "", false, [], { a: 1 }, { a: { b: [1, null] } }]) {
+  record("unknownSchema", "decode", Schema.Unknown, input);
+  record("unknownSchema", "encode", Schema.Unknown, input);
+}
+
+// ---------------------------------------------------------------------------
+// `Schema.Union` — 81 sites in `rpc.ts` alone. `taggedStruct` already covers the tagged
+// case; this covers an **untagged** one, where the interesting properties are which member
+// wins when two could match and what the rejection is called when none does.
+// ---------------------------------------------------------------------------
+
+const Untagged: Schema.Top = Schema.Union([Schema.String, Schema.Int]);
+for (const input of ["x", 1, 1.5, true, null, {}, [], undefined]) {
+  record("untaggedUnion", "decode", Untagged, input);
+  record("untaggedUnion", "encode", Untagged, input);
+}
+
 // The golden has to carry wire bytes, and two kinds of value do not survive
 // `JSON.stringify` on their own:
 //
@@ -552,6 +753,13 @@ for (const input of [
 // `value.nanos` is a `BigInt`, so walking it does not merely lose information, it throws.
 // Passing it through yields `{_id, _tag, millis}` or `{_id, _tag, nanos}` with the bigint
 // already stringified by `Duration`'s own `toJSON`, which is lossless and machine-stable.
+//
+// An `Error` is the third case, and the one that loses data rather than merely needing a
+// detour: `message` and `stack` are non-enumerable, so `Object.entries` gives `{}` and
+// `JSON.stringify` gives `"{}"`. It is rendered here in exactly the shape `encodeJsonError`
+// writes — `name` then `message`, then `cause` when there is one — so the golden's decode
+// output and its encode output are the same projection of the same value. `stack` is left
+// out on purpose; see the `Defect` section.
 const toWire = (value: unknown): unknown => {
   if (value === undefined) return { $undefined: true };
   if (Option.isOption(value)) {
@@ -563,6 +771,11 @@ const toWire = (value: unknown): unknown => {
   if (value === null || typeof value !== "object") return value;
   if (value instanceof Date) return value;
   if (Duration.isDuration(value)) return value;
+  if (value instanceof Error) {
+    const rendered: Record<string, unknown> = { name: value.name, message: value.message };
+    if (value.cause !== undefined) rendered.cause = toWire(value.cause);
+    return rendered;
+  }
   if (Array.isArray(value)) return value.map(toWire);
   const rebuilt: Record<string, unknown> = {};
   for (const [key, member] of Object.entries(value)) rebuilt[key] = toWire(member);

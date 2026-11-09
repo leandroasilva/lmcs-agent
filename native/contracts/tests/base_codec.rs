@@ -8,9 +8,9 @@
 //! `LMCS_CONTRACTS_GOLDEN=/tmp/contracts-golden.json cargo test`
 
 use lmcs_contracts::base::{
-    Absent, Between, Check, Checked, DateTimeUtc, DurationMillis, EffectOption, GreaterThan,
-    JsNumber, Lenient, LessThan, MaxLength, Maybe, MinLength, NonEmpty, NonNegativeInt, Nullable,
-    Port, PositiveInt, SafeInt, Trimmed,
+    Absent, Between, Check, Checked, DateTimeUtc, Defect, DurationMillis, EffectOption,
+    GreaterThan, JsNumber, Lenient, LessThan, MaxLength, Maybe, MinLength, NonEmpty,
+    NonNegativeInt, Nullable, Port, PositiveInt, SafeInt, Trimmed,
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -493,6 +493,48 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         "suspendTree",
         (|raw| round::<Tree>(raw), |raw| round::<Tree>(raw)),
     );
+    // Both directions are the same round trip. A decoded `Defect` re-encodes to exactly
+    // what the golden records for the decode, because the golden renders a decoded
+    // `Error` through `toWire` — `{name, message}` — which is the encoding.
+    map.insert(
+        "defect",
+        (|raw| round::<Defect>(raw), |raw| round::<Defect>(raw)),
+    );
+    map.insert(
+        "taggedStruct",
+        (|raw| round::<Viewport>(raw), |raw| round::<Viewport>(raw)),
+    );
+    map.insert(
+        "defectInTaggedStruct",
+        (|raw| round::<Boom>(raw), |raw| round::<Boom>(raw)),
+    );
+    // The key is a schema, so it is `NonEmpty` and not `String`: `{" a ":50}` arrives with
+    // a padded key and crosses back as `{"a":50}`. A `BTreeMap<String, _>` port would keep
+    // the padding, which is the whole reason this subject exists separately from `record`.
+    map.insert(
+        "recordCheckedKey",
+        (|raw| round::<Weights>(raw), |raw| round::<Weights>(raw)),
+    );
+    map.insert(
+        "unknownSchema",
+        (|raw| round::<Value>(raw), |raw| round::<Value>(raw)),
+    );
+    map.insert(
+        "untaggedUnion",
+        (
+            |raw| round::<StringOrInt>(raw),
+            |raw| round::<StringOrInt>(raw),
+        ),
+    );
+    // `Schema.Void` is `Bottom<void, void>` and yet accepts **every** input, yielding
+    // `undefined` — so all 14 of its cases are unportable and nothing is compared. What the
+    // `is_ok` assertion still pins down is the half that matters for the RPC `success:`
+    // field: a Rust side must not reject a payload here either. `Value` is that, and it is
+    // deliberately not `()`, which would refuse everything.
+    map.insert(
+        "voidSchema",
+        (|raw| round::<Value>(raw), |raw| round::<Value>(raw)),
+    );
     map
 }
 
@@ -550,6 +592,51 @@ struct DurationShape {
 struct Tree {
     name: String,
     children: Vec<Tree>,
+}
+
+/// `Schema.TaggedStruct` needs no primitive of its own — it *is* serde's internally tagged
+/// enum. What the golden adds is the proof that the four properties making it that rather
+/// than an externally tagged one all hold: the tag's position in the input is irrelevant,
+/// a member drops the keys it does not declare, an unknown member and a missing `detail`
+/// both report `AnyOf` because it is the **union** doing the rejecting.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "_tag")]
+enum Viewport {
+    #[serde(rename = "fill")]
+    Fill {
+        detail: String,
+    },
+    Idle,
+}
+
+/// `Schema.TaggedError` crosses the wire identically, so the 150 sites using it collapse
+/// into the same pattern. This one exists to pin down a composition rather than a shape: a
+/// [`Defect`] field inside a tagged enum still rejects an absent key, and it reports
+/// `Composite` — the struct objecting to the missing `cause`, not the union.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "_tag")]
+enum Boom {
+    Boom { cause: Defect },
+}
+
+/// `Schema.Record(TrimmedNonEmptyString, Int.check(isBetween(0, 100)))` — the shape of
+/// `LoadBalancingWeights` (`settings.ts:314`), and the reason `Record` is not a plain
+/// `HashMap<String, V>`: the **key is a schema**, so it is trimmed and checked on the way
+/// through. `NonEmpty` already does both, which is what makes this a one-liner.
+///
+/// Two keys that trim to the same string collapse with the later one winning, because a
+/// `BTreeMap` insert overwrites — which is what the shipped codec does too, and it does it
+/// silently rather than reporting the collision.
+type Weights = BTreeMap<NonEmpty, Checked<JsNumber, (SafeInt, Between<0, 100>)>>;
+
+/// `Schema.Union([String, Int])` — the untagged case, which `Viewport` does not cover.
+/// `#[serde(untagged)]` tries the variants in order, so a bad member reports "did not match
+/// any variant" where the golden reports `AnyOf`; the tag differs, the rejection does not.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+enum StringOrInt {
+    Text(String),
+    Number(Checked<JsNumber, SafeInt>),
 }
 
 /// The Type side of a `Duration`, rendered the way Effect's own `toJSON` renders it and
@@ -758,7 +845,8 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 38, "ported subject count changed");
+    eprintln!("COUNTERS replayed={replayed} skipped={skipped} incomparable={incomparable} unrepresentable={unrepresentable} typed={typed} subjects={} table={}", subjects.len(), table.len());
+    assert_eq!(table.len(), 41, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form"
@@ -772,8 +860,9 @@ fn replays_the_golden_codec_behaviour() {
         "the two forwardCompatibleOptional decodes that yield `{{v: undefined}}`"
     );
     assert_eq!(
-        typed, 5,
-        "the durationFromMillis encodes, whose Type side is a `Duration` and so has no JSON spelling"
+        typed, 19,
+        "5 durationFromMillis encodes whose Type side is a `Duration`, and the 14 defect \
+         encodes whose Type side is an `Error` — neither has a JSON spelling"
     );
-    assert!(replayed >= 550, "only replayed {replayed} cases");
+    assert!(replayed >= 600, "only replayed {replayed} cases");
 }

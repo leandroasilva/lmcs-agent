@@ -35,6 +35,12 @@
 //! - `Schema.Finite` and `Schema.Number` are the same codec for every input JSON can
 //!   spell, because `Infinity` and `NaN` cannot cross the wire at all.
 //! - `Schema.DurationFromMillis` is [`JsNumber`] on the wire; only its Type side differs.
+//! - `Schema.Defect()` is **not** an identity codec, and its Type side is `unknown`.
+//!   See [`Defect`].
+//! - `Schema.TaggedStruct` and `Schema.TaggedError` are the same thing on the wire: an
+//!   internally tagged `_tag` map. serde's `#[serde(tag = "_tag")]` is already it, so
+//!   neither needs a type here — the 150 `TaggedError` sites collapse into the enum
+//!   pattern the payload schemas use anyway.
 //!
 //! The TypeScript-only shapes collapse here, and that is deliberate rather than a gap:
 //! `Schema.optionalKey` differs from `Schema.optional` only in whether `{v: undefined}`
@@ -44,7 +50,7 @@
 //! encode of `"z"` against `Literals(["a","b"])` — have no Rust input at all.
 
 use serde::de::{self, Deserializer, SeqAccess, Unexpected, Visitor};
-use serde::ser::{SerializeSeq, Serializer};
+use serde::ser::{SerializeMap, SerializeSeq, Serializer};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::marker::PhantomData;
@@ -778,5 +784,117 @@ impl<'de> Deserialize<'de> for DateTimeUtc {
             }
         }
         deserializer.deserialize_str(StampVisitor)
+    }
+}
+
+/// `Schema.Defect()` — 59 sites, and every one of them calls it with **no options**, so
+/// `includeStack` is false and `excludeCause` is false at all 59. It is one behaviour, not
+/// a family, and the port does not carry the options.
+///
+/// **This is not an identity codec**, which is the trap. A value that looks like an error
+/// is rebuilt through a JavaScript `Error` on the way in, so decoding `{message:"boom"}`
+/// and re-encoding it yields `{name:"Error",message:"boom"}` — a key that never arrived.
+/// The rebuild is lossy in the other direction too: `extra` is dropped because an `Error`
+/// carries only `name`, `message` and `cause`, and a `stack` key is read on decode but
+/// never written back, since `includeStack` is false everywhere.
+///
+/// What counts as an error is narrow: an **object** whose `message` is a **string**.
+/// `{message:1}` is held verbatim, and so is an array that merely *contains* something
+/// error-shaped — the recursion follows `cause` and nothing else, so
+/// `{detail:{message:"inner"}}` is never descended into.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Defect {
+    /// The rebuilt error. `name` is always present on the wire: a missing name, a
+    /// non-string one and an explicit `"Error"` all normalise to `"Error"`.
+    Error {
+        name: String,
+        message: String,
+        /// `Object.hasOwn(input, "cause")`, **not** `cause !== undefined`. An explicit
+        /// `"cause": null` is a present key and survives the round trip as
+        /// `Some(Other(null))`; only an absent key is `None`.
+        cause: Option<Box<Defect>>,
+    },
+    /// Anything the rebuild did not recognise, held exactly as it arrived.
+    Other(serde_json::Value),
+}
+
+impl Defect {
+    /// The message a decoded [`Defect::Error`] carries, for the callers that only need to
+    /// log it.
+    pub fn message(&self) -> Option<&str> {
+        match self {
+            Defect::Error { message, .. } => Some(message),
+            Defect::Other(_) => None,
+        }
+    }
+}
+
+impl Serialize for Defect {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Defect::Other(value) => value.serialize(serializer),
+            Defect::Error {
+                name,
+                message,
+                cause,
+            } => {
+                // A map rather than a struct because `cause` is written only when the key
+                // was present, and `serialize_map` is what makes that conditional.
+                let mut map = serializer.serialize_map(Some(2 + usize::from(cause.is_some())))?;
+                map.serialize_entry("name", name)?;
+                map.serialize_entry("message", message)?;
+                if let Some(cause) = cause {
+                    map.serialize_entry("cause", cause)?;
+                }
+                map.end()
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Defect {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // Buffering through `Value` for the same reason as `Maybe`: it asks for
+        // `deserialize_any`, so a missing key stays missing instead of decoding to a
+        // defect.
+        Ok(decode_defect(serde_json::Value::deserialize(deserializer)?))
+    }
+}
+
+fn decode_defect(value: serde_json::Value) -> Defect {
+    match value {
+        serde_json::Value::Object(fields) => decode_json_error(fields),
+        // `isObject` excludes arrays, so `[1,{message:"x"}]` is held verbatim rather than
+        // scanned for a member that looks like an error.
+        other => Defect::Other(other),
+    }
+}
+
+fn decode_json_error(mut fields: serde_json::Map<String, serde_json::Value>) -> Defect {
+    // `typeof input["message"] === "string"` is the whole recognition test. It is a peek
+    // rather than a `remove`, because the reject path has to hand the object back exactly
+    // as it arrived — `{message:1}` keeps its `message`.
+    let Some(message) = fields
+        .get("message")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_owned)
+    else {
+        return Defect::Other(serde_json::Value::Object(fields));
+    };
+    // `typeof input.name === "string" && input.name !== "Error"`, and everything else
+    // falls through to the `new Error(…)` default.
+    let name = match fields.get("name").and_then(serde_json::Value::as_str) {
+        Some(name) if name != "Error" => name.to_owned(),
+        _ => "Error".to_owned(),
+    };
+    let cause = fields
+        .remove("cause")
+        .map(|cause| Box::new(decode_defect(cause)));
+    // Whatever is left in `fields` — `extra`, `stack` — is dropped here by never being
+    // read, which is the lossiness the doc comment describes.
+    Defect::Error {
+        name,
+        message,
+        cause,
     }
 }
