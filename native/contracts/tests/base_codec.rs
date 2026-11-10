@@ -8,9 +8,10 @@
 //! `LMCS_CONTRACTS_GOLDEN=/tmp/contracts-golden.json cargo test`
 
 use lmcs_contracts::base::{
-    Absent, Between, Check, Checked, DateTimeUtc, Defect, DurationMillis, EffectOption,
-    GreaterThan, JsNumber, Lenient, LessThan, MaxLength, Maybe, MinLength, Never, NonEmpty,
-    NonNegativeInt, Nullable, Port, PositiveInt, Record, SafeInt, Trimmed,
+    Absent, AtLeast, AtMost, Between, Check, Checked, DateTimeUtc, Defect, DurationMillis,
+    EffectOption, GreaterThan, JsNumber, Lenient, LenientKeys, LessThan, MaxLength, MaxProperties,
+    Maybe, MinLength, Never, NoEdgeWhitespace, NonEmpty, NonNegativeInt, Nullable, Port,
+    PositiveInt, Record, SafeInt, StrictKeys, Trimmed,
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -232,7 +233,7 @@ fn weights_encode(raw: &Value) -> Result<Value, ()> {
             ))
         })
         .collect::<Result<_, ()>>()?;
-    serde_json::to_value(Record(built)).map_err(|_| ())
+    serde_json::to_value(Weights::new(built)).map_err(|_| ())
 }
 
 // ---------------------------------------------------------------------------
@@ -452,6 +453,196 @@ fn binary_path_encode(raw: &Value) -> Result<Value, ()> {
         Some(value) => Some(BinaryPath(value.as_str().ok_or(())?.to_owned())),
     };
     serde_json::to_value(BinaryPathEnc { binary_path }).map_err(|_| ())
+}
+
+// ---------------------------------------------------------------------------
+// Fatia 3c — the last four predicates, and what a `Record` key's failure costs
+// ---------------------------------------------------------------------------
+
+/// `TerminalColsSchema` (`terminal.ts:13`): `Int.check(isGreaterThanOrEqualTo(1))` and then
+/// `.check(isLessThanOrEqualTo(1000))`. Two `.check` calls in a row are two filters on one
+/// schema, which the tuple instance of [`Check`] already models — the interesting part is
+/// that both bounds are **inclusive**, so 1 and 1000 pass and 0 and 1001 do not. Getting
+/// that backwards by one unit is the failure mode these 40 sites exist to catch.
+///
+/// `Schema.Int` and both filters are predicate-only, so Encoded and Type are the same
+/// `number` and one shape serves both directions: this subject is the rare case where the
+/// encode is exactly the decode backwards.
+#[derive(Deserialize, Serialize)]
+struct TerminalResizeCols {
+    cols: Checked<JsNumber, (SafeInt, (AtLeast<1>, AtMost<1000>))>,
+}
+
+/// `assistantCitations.ts:24`'s `start` — `NonNegativeInt.check(isLessThanOrEqualTo(
+/// Number.MAX_SAFE_INTEGER))`. The bound is **dead**: `Schema.Int` is
+/// `Number.isSafeInteger`, so nothing above it can be an integer, and the value that would
+/// test it (`9007199254740992`) is refused by the integer filter instead. Ported anyway,
+/// because the census says 26 and 14 sites and a reader should be able to find all of them.
+#[derive(Deserialize, Serialize)]
+struct AssistantCitationStart {
+    start: Checked<JsNumber, (SafeInt, (AtLeast<0>, AtMost<9_007_199_254_740_991>))>,
+}
+
+/// `DesktopPreviewTabIdSchema` (`ipc.ts:655`) — `String.check(isTrimmed()).check(isNonEmpty())`
+/// on a **bare** string, so this is the rejection and not the trim: `" a "` fails here where
+/// the same bytes cross the wire as `"a"` under `TrimmedString`. `isNonEmpty` over an
+/// untransformed string is `MinLength<1>` measured in UTF-16 units, which is why no new
+/// predicate is needed for it.
+type TabId = Checked<String, (NoEdgeWhitespace, MinLength<1>)>;
+
+/// `TerminalEnvSchema` (`terminal.ts:21-25`), reached through `TerminalOpenInput.env`. The
+/// key is `String.check(isPattern(…)).check(isMaxLength(128))` — predicates over `string` and
+/// no `decodeTo` — which is the shape whose failures **drop the entry** instead of failing
+/// the record.
+static ENV_KEY_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[A-Za-z_][A-Za-z0-9_]*$").expect("valid"));
+
+struct EnvKeyPattern;
+
+impl Check<String> for EnvKeyPattern {
+    fn passes(value: &String) -> bool {
+        ENV_KEY_PATTERN.is_match(value)
+    }
+
+    fn describe() -> String {
+        "a shell variable name".to_owned()
+    }
+}
+
+type EnvKey = Checked<String, (EnvKeyPattern, MaxLength<128>)>;
+type EnvValue = Checked<String, MaxLength<8_192>>;
+type Env = Checked<Record<EnvKey, EnvValue, LenientKeys>, MaxProperties<128>>;
+
+#[derive(Deserialize, Serialize)]
+struct TerminalOpenEnv {
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    env: Absent<Env>,
+}
+
+/// The encode side builds every key **unchecked**, because that is where TypeScript puts
+/// its checks: on the way out. `Checked::wrap` is what makes an over-long or badly-shaped
+/// key representable at all, and `Record`'s `Serialize` then drops exactly those entries —
+/// after `MaxProperties` has counted them, which is the asymmetry the golden shows.
+fn env_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let env: Absent<Env> = match fields.get("env") {
+        None => Absent(None),
+        // `Schema.optional` refuses an explicit `null`, so this is a failure and not an
+        // absence — `Absent` is the only field type that gets that distinction.
+        Some(Value::Null) => return Err(()),
+        Some(entry) => {
+            let entries = entry.as_object().ok_or(())?;
+            let mut built: BTreeMap<EnvKey, EnvValue> = BTreeMap::new();
+            for (key, value) in entries {
+                built.insert(
+                    Checked::wrap(key.clone()),
+                    Checked::wrap(value.as_str().ok_or(())?.to_owned()),
+                );
+            }
+            Absent(Some(Checked::wrap(Record::new(built))))
+        }
+    };
+    serde_json::to_value(TerminalOpenEnv { env }).map_err(|_| ())
+}
+
+/// `EnvironmentThemeColors` (`server.ts:514`), the other `LenientKeys` record. Its key is a
+/// pattern **only** — the 64-character cap is inside the pattern, not an `isMaxLength` — and
+/// it has no `isMaxProperties`, so the drop rule stands here on its own. Its values are the
+/// trimming transform, which is what makes the encode side interesting: `"   "` is a decode
+/// failure and encodes to `""`.
+static THEME_KEY_PATTERN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[a-zA-Z][a-zA-Z0-9]{0,63}$").expect("valid"));
+
+struct ThemeKeyPattern;
+
+impl Check<String> for ThemeKeyPattern {
+    fn passes(value: &String) -> bool {
+        THEME_KEY_PATTERN.is_match(value)
+    }
+
+    fn describe() -> String {
+        "a CSS custom-property-style role name".to_owned()
+    }
+}
+
+type ThemeKey = Checked<String, ThemeKeyPattern>;
+type ThemeRole = Checked<NonEmpty, MaxLength<64>>;
+type ThemeColors = Record<ThemeKey, ThemeRole, LenientKeys>;
+
+#[derive(Deserialize, Serialize)]
+struct ThemeFileColors {
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    colors: Absent<ThemeColors>,
+}
+
+fn theme_colors_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let colors: Absent<ThemeColors> = match fields.get("colors") {
+        None => Absent(None),
+        Some(Value::Null) => return Err(()),
+        Some(entry) => {
+            let entries = entry.as_object().ok_or(())?;
+            let mut built: BTreeMap<ThemeKey, ThemeRole> = BTreeMap::new();
+            for (key, value) in entries {
+                built.insert(
+                    Checked::wrap(key.clone()),
+                    Checked::wrap(NonEmpty(value.as_str().ok_or(())?.to_owned())),
+                );
+            }
+            Absent(Some(Record::new(built)))
+        }
+    };
+    serde_json::to_value(ThemeFileColors { colors }).map_err(|_| ())
+}
+
+/// `ProviderAuthResponse`'s credentials branch (`providerSetup.ts:76-81`) — the `StrictKeys`
+/// counterpart of [`Env`], and the case that makes the key rule a rule instead of a
+/// coincidence. `SetupOperationId` is `TrimmedNonEmptyString.check(isMaxLength(128))`, so the
+/// key is *parsed* rather than *tested*: on the way **in**, `{"  ": "tok"}` trims to `""`,
+/// fails `isNonEmpty` inside the key parse, and takes the whole record down with it —
+/// measured as `AnyOf`, because the union cannot name which member failed.
+///
+/// On the way **out** it does not, which is the difference between a key that is parsed and a
+/// value that is tested: `encodeSync` runs the trim and never re-runs the assertion, so the
+/// same input writes `{"": "tok"}`. That makes this the second subject needing a real encode
+/// builder rather than [`round`], for the same reason [`weights_encode`] does.
+///
+/// Same `isMaxProperties` as `env`, and it counts the same way, but nothing is ever dropped
+/// first, so there is no ordering to get wrong.
+type SetupKeyId = Checked<NonEmpty, MaxLength<128>>;
+type SetupToken = Checked<String, MaxLength<16_384>>;
+type SetupValues = Checked<Record<SetupKeyId, SetupToken, StrictKeys>, MaxProperties<16>>;
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum CredentialsTag {
+    Credentials,
+}
+
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+struct AuthCredentials {
+    #[serde(rename = "type")]
+    kind: CredentialsTag,
+    values: SetupValues,
+}
+
+fn auth_credentials_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let kind: CredentialsTag =
+        serde_json::from_value(fields.get("type").cloned().ok_or(())?).map_err(|_| ())?;
+    let entries = fields.get("values").and_then(Value::as_object).ok_or(())?;
+    let mut built: BTreeMap<SetupKeyId, SetupToken> = BTreeMap::new();
+    for (key, value) in entries {
+        built.insert(
+            Checked::wrap(NonEmpty(key.clone())),
+            Checked::wrap(value.as_str().ok_or(())?.to_owned()),
+        );
+    }
+    serde_json::to_value(AuthCredentials {
+        kind,
+        values: Checked::wrap(Record::new(built)),
+    })
+    .map_err(|_| ())
 }
 
 fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
@@ -800,6 +991,48 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         "binaryPathSetting",
         (|raw| round::<BinaryPathDec>(raw), binary_path_encode),
     );
+    // The two inclusive integer bounds, and the predicate-only schema where encode really is
+    // the decode backwards.
+    map.insert(
+        "terminalCols",
+        (
+            |raw| round::<TerminalResizeCols>(raw),
+            |raw| round::<TerminalResizeCols>(raw),
+        ),
+    );
+    map.insert(
+        "citationStart",
+        (
+            |raw| round::<AssistantCitationStart>(raw),
+            |raw| round::<AssistantCitationStart>(raw),
+        ),
+    );
+    // `isTrimmed` on a bare string — the rejection, not the trim. Both directions take the
+    // string as it stands, so one shape serves them.
+    map.insert(
+        "tabIdTrimmed",
+        (
+            |raw| round::<TabId>(raw),
+            |raw| string_like(raw, TabId::wrap),
+        ),
+    );
+    // The two records whose keys are predicates only: a bad key costs an entry, not the
+    // payload. `themeColors` has no `isMaxProperties`, so it isolates the drop rule.
+    map.insert(
+        "terminalEnv",
+        (|raw| round::<TerminalOpenEnv>(raw), env_encode),
+    );
+    map.insert(
+        "themeColors",
+        (|raw| round::<ThemeFileColors>(raw), theme_colors_encode),
+    );
+    // The counterpart: a key with a `decodeTo` in it, so the same bad-shaped key takes the
+    // whole record down on the way in — and writes an empty key on the way out, which is
+    // what [`auth_credentials_encode`] is for.
+    map.insert(
+        "authCredentials",
+        (|raw| round::<AuthCredentials>(raw), auth_credentials_encode),
+    );
     map
 }
 
@@ -1103,6 +1336,145 @@ fn the_settings_constructs_are_ported_as_layered_ones() {
     );
 }
 
+/// The four predicates this fatia adds, and the `Record` key rule it corrects 2.7 with —
+/// asserted in-crate, so the finding survives without the golden.
+#[test]
+fn the_last_predicates_and_the_key_rule_hold_their_measured_shape() {
+    // 1. `isGreaterThanOrEqualTo`/`isLessThanOrEqualTo` are **inclusive**, so the pair
+    // brackets its endpoints. Reading them as the exclusive `GreaterThan`/`LessThan` next to
+    // them shifts both bounds by one and still passes every ordinary terminal size.
+    for good in [1, 500, 1000] {
+        assert_eq!(
+            round::<TerminalResizeCols>(&json!({ "cols": good })).expect("inside the bracket"),
+            json!({ "cols": good }),
+        );
+    }
+    for bad in [0, 1001] {
+        assert!(
+            serde_json::from_value::<TerminalResizeCols>(json!({ "cols": bad })).is_err(),
+            "{bad} is outside the bracket"
+        );
+    }
+    assert!(round::<TerminalResizeCols>(&json!({ "cols": 1.5 })).is_err());
+    assert!(
+        round::<TerminalResizeCols>(&json!({})).is_err(),
+        "required both ways"
+    );
+
+    // 2. The `Number.MAX_SAFE_INTEGER` upper bound on `NonNegativeInt` is **dead** and the
+    // measurement shows why: the integer filter is `Number.isSafeInteger`, so the first value
+    // the bound would catch is already not an integer. Ported for the census, unreachable on
+    // the wire.
+    assert_eq!(
+        round::<AssistantCitationStart>(&json!({ "start": 0 })).expect("inclusive at the floor"),
+        json!({ "start": 0 }),
+    );
+    assert!(serde_json::from_value::<AssistantCitationStart>(json!({ "start": -1 })).is_err());
+    assert_eq!(
+        round::<AssistantCitationStart>(&json!({ "start": 9_007_199_254_740_991i64 }))
+            .expect("the largest safe integer, which is the bound itself"),
+        json!({ "start": 9_007_199_254_740_991i64 }),
+    );
+    assert!(
+        serde_json::from_value::<AssistantCitationStart>(
+            json!({ "start": 9_007_199_254_740_992i64 })
+        )
+        .is_err(),
+        "2^53 fails as a non-integer, not as an overflow"
+    );
+
+    // 3. The two spellings that sit in adjacent lines of the same files do different things:
+    // `TrimmedString` **rewrites** the value, `isTrimmed` **refuses** it.
+    assert_eq!(
+        round::<Trimmed>(&json!("  a  ")).expect("the transform trims"),
+        json!("a"),
+    );
+    assert!(serde_json::from_value::<TabId>(json!(" a ")).is_err());
+    assert_eq!(
+        round::<TabId>(&json!("a")).expect("no edges to refuse"),
+        json!("a")
+    );
+    assert!(
+        serde_json::from_value::<TabId>(json!("")).is_err(),
+        "isNonEmpty"
+    );
+    assert!(serde_json::from_value::<TabId>(json!(" ")).is_err());
+
+    // 4. The correction to fatia 2.7's evidence, in one pair of assertions. A key schema that
+    // is only predicates over `string` is *tested*, so an unmatched key costs its own entry
+    // and the rest of the record decodes; a key schema containing a `decodeTo` is *parsed*,
+    // so the same-looking key takes the whole record down. Both orders, so the drop cannot be
+    // an artefact of iteration.
+    for payload in [
+        json!({ "env": { "1BAD": "v", "GOOD": "w" } }),
+        json!({ "env": { "GOOD": "w", "1BAD": "v" } }),
+    ] {
+        assert_eq!(
+            round::<TerminalOpenEnv>(&payload)
+                .expect("the unmatched key is dropped, its neighbour survives"),
+            json!({ "env": { "GOOD": "w" } }),
+        );
+    }
+    assert!(
+        serde_json::from_value::<AuthCredentials>(
+            json!({ "type": "credentials", "values": { "  ": "tok" } })
+        )
+        .is_err(),
+        "the key trims to empty and fails inside its own parse"
+    );
+
+    // 5. Outbound, the drop is the same but a parsed key's assertion is not re-run: the trim
+    // happens and the empty result goes on the wire. A port that decoded before encoding —
+    // `round` for both directions — writes nothing where the shipped codec writes `""`.
+    assert_eq!(
+        env_encode(&json!({ "env": { "1BAD": "v", "GOOD": "w" } })).expect("encode drops too"),
+        json!({ "env": { "GOOD": "w" } }),
+    );
+    assert_eq!(
+        auth_credentials_encode(&json!({ "type": "credentials", "values": { "  ": "tok" } }))
+            .expect("the trim runs and nothing re-checks"),
+        json!({ "type": "credentials", "values": { "": "tok" } }),
+    );
+    assert_eq!(
+        theme_colors_encode(&json!({ "colors": { "accent": "   " } }))
+            .expect("whitespace-only becomes empty on the way out"),
+        json!({ "colors": { "accent": "" } }),
+    );
+    assert!(
+        serde_json::from_value::<ThemeFileColors>(json!({ "colors": { "accent": "   " } }))
+            .is_err(),
+        "and is refused on the way in"
+    );
+
+    // 6. `isMaxProperties` counts **survivors** inbound and the **whole map** outbound, so one
+    // 129-key payload is legal in a direction and not the other. This only shows up where
+    // something can be dropped first, which is exactly the [`LenientKeys`] records — so the
+    // two findings of this fatia compose into a third.
+    let entries = |count: usize, bad: bool| -> Value {
+        let mut map = Map::new();
+        for index in 0..count {
+            map.insert(format!("K{index}"), json!("v"));
+        }
+        if bad {
+            map.insert("1BAD".to_owned(), json!("v"));
+        }
+        Value::Object(map)
+    };
+    let at_the_bound_plus_one_dropped = json!({ "env": entries(128, true) });
+    assert!(
+        serde_json::from_value::<TerminalOpenEnv>(at_the_bound_plus_one_dropped.clone()).is_ok(),
+        "129 arriving keys, 128 survivors"
+    );
+    assert!(
+        env_encode(&at_the_bound_plus_one_dropped).is_err(),
+        "129 keys is 129 to the encoder, which counts before it drops"
+    );
+    assert!(
+        serde_json::from_value::<TerminalOpenEnv>(json!({ "env": entries(129, false) })).is_err(),
+        "with nothing to drop the two directions agree"
+    );
+}
+
 #[test]
 fn replays_the_golden_codec_behaviour() {
     let Some(path) = env::var_os("LMCS_CONTRACTS_GOLDEN").map(PathBuf::from) else {
@@ -1202,10 +1574,11 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 49, "ported subject count changed");
+    assert_eq!(table.len(), 55, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
-        "dateTimeUtcBare was supposed to be the only subject with no JSON form"
+        "dateTimeUtcBare was supposed to be the only subject with no JSON form, and every \
+         subject contributes one case per direction"
     );
     assert_eq!(
         skipped, 26,
@@ -1219,8 +1592,17 @@ fn replays_the_golden_codec_behaviour() {
     );
     assert_eq!(
         typed, 22,
-        "5 durationFromMillis encodes whose Type side is a `Duration`, and the 14 defect \
-         encodes whose Type side is an `Error` — neither has a JSON spelling"
+        "5 durationFromMillis encodes whose Type side is a `Duration`, the 14 defect encodes \
+         whose Type side is an `Error`, and the 3 confirmQuitSetting encodes that \
+         `recordTyped` feeds as a Type-side mode — in all three the golden names the Encoded \
+         JSON and this replay decodes it first"
     );
-    assert!(replayed >= 755, "only replayed {replayed} cases");
+    // Every case is accounted for by exactly one of these five counts, so the sum is the
+    // golden's own `codec cases` line and the arithmetic is what a shrink would break.
+    assert_eq!(
+        replayed + skipped + incomparable + unrepresentable,
+        cases.len(),
+        "some case was neither replayed nor classified"
+    );
+    assert_eq!(replayed, 879, "only replayed {replayed} cases");
 }

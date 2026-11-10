@@ -1114,24 +1114,20 @@ fn decode_json_error(mut fields: serde_json::Map<String, serde_json::Value>) -> 
 ///   are live wire fields, and both are the "open vocabulary" kind where dropping is the
 ///   point: `server.ts:509` documents that a client "may publish roles a newer client
 ///   added without breaking an older one".
-pub trait KeyRejection {
-    const DROPS_THE_ENTRY: bool;
-}
+pub trait KeyRejection {}
 
 /// [`Record`]'s default, and the majority: a key the key schema will not take fails the
 /// whole record.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum StrictKeys {}
 
-impl KeyRejection for StrictKeys {
-    const DROPS_THE_ENTRY: bool = false;
-}
+impl KeyRejection for StrictKeys {}
 
 /// The 2 refinement-keyed sites: an unmatched key costs its own entry and nothing else.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LenientKeys {}
 
-impl KeyRejection for LenientKeys {
-    const DROPS_THE_ENTRY: bool = true;
-}
+impl KeyRejection for LenientKeys {}
 
 /// `Schema.Record(key, value)` — 31 sites, and not a plain map, because the **key is a
 /// schema**: `LoadBalancingWeights` (`settings.ts:314`) keys on `TrimmedNonEmptyString` and
@@ -1196,7 +1192,9 @@ impl<K: Serialize + Ord, V: Serialize, Keys: KeyRejection> Serialize for Record<
     }
 }
 
-impl<'de, K: Deserialize<'de> + Ord, V: Deserialize<'de>> Deserialize<'de> for Record<K, V, StrictKeys> {
+impl<'de, K: Deserialize<'de> + Ord, V: Deserialize<'de>> Deserialize<'de>
+    for Record<K, V, StrictKeys>
+{
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Ok(Record(
             std::collections::BTreeMap::deserialize(deserializer)?,
@@ -1218,8 +1216,7 @@ impl<'de, K: DeserializeOwned + Ord, V: DeserializeOwned> Deserialize<'de>
             let Ok(parsed) = serde_json::from_value::<K>(serde_json::Value::String(key)) else {
                 continue;
             };
-            let parsed_value =
-                serde_json::from_value::<V>(value).map_err(de::Error::custom)?;
+            let parsed_value = serde_json::from_value::<V>(value).map_err(de::Error::custom)?;
             entries.insert(parsed, parsed_value);
         }
         Ok(Record(entries, PhantomData))
