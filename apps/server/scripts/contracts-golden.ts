@@ -15,6 +15,8 @@ import {
   AssistantCitation,
   ClientSettingsSchema,
   CodexSettings,
+  ContextMenuItemSchema,
+  DesktopPreviewRecordingSaveInputSchema,
   DesktopPreviewTabIdSchema,
   EnvironmentThemeFile,
   ForwardCompatibleArray,
@@ -26,6 +28,7 @@ import {
   PortSchema,
   PositiveInt,
   ProviderAuthResponse,
+  PullRequestListCursors,
   SnapShotKeyChord,
   TerminalOpenInput,
   TerminalResizeInput,
@@ -1148,6 +1151,13 @@ for (const input of [
   { type: "credentials", values: {} },
   { type: "credentials", values: envEntries(17) },
   { type: "credentials", values: envEntries(16) },
+  // The encode half of the key rule, which the trim makes invisible unless the raw key is
+  // empty: `"  "` passes the Type-side check (it is not empty yet) and reaches the wire as
+  // `""`, while `""` fails it and **drops its entry** — silently, with the rest intact. A
+  // port that only ever trims and validates in that order cannot tell the two apart, and a
+  // port that rejects rather than drops takes the whole response down over one bad key.
+  { type: "credentials", values: { "": "tok" } },
+  { type: "credentials", values: { "": "tok", login: "tok" } },
 ]) {
   record("authCredentials", "decode", ProviderAuthResponse, input);
   record("authCredentials", "encode", ProviderAuthResponse, input);
@@ -1160,6 +1170,118 @@ for (const input of [
 // and the `isMaxLength` bounds sit outside them. Measured directly against the shipped
 // schema; recorded here so the census closes without a block of cases that would only
 // re-assert the array rules from 2.6a.
+
+// ---------------------------------------------------------------------------
+// 3d: `pullRequest.ts` and `ipc.ts` — the two files the census left, and between them
+// exactly one construct no earlier subject reached.
+// ---------------------------------------------------------------------------
+
+// `PullRequestListCursors` (`pullRequest.ts:547`) — a transform-keyed record, so it belongs
+// with `weights` and `authCredentials`. It earns its own subject for two reasons. Its value
+// is the only live `isMaxLength` on the *trimming* key family, which puts the bound and the
+// trim in an order the two directions disagree about: decode measures the trimmed text, so
+// 4 spaces over a 4096-character cursor fits, while encode measures what it was handed, so
+// the same string is over the bound and the whole record fails. And a cursor is opaque, so
+// nothing here is a shape the port can guess.
+const cursorLong = "x".repeat(4096);
+const cursorOver = "x".repeat(4097);
+const cursorPadded = `${" ".repeat(4)}${cursorLong}`;
+for (const input of [
+  {},
+  { a: "b" },
+  { "  ": "b" },
+  // The empty key, alone and beside one that survives — the encode drop, see above.
+  { "": "b" },
+  { "": "b", a: "c" },
+  { a: "  " },
+  { a: cursorLong },
+  { a: cursorOver },
+  // Trim-then-bound versus bound-then-trim, the pair that makes the order visible.
+  { a: cursorPadded },
+  // The key carries no `isMaxLength` at all, so this is over the *value's* bound and fits.
+  { [cursorPadded]: "b" },
+  { a: 1 },
+  { a: null },
+  [],
+  null,
+  "ab",
+]) {
+  record("pullRequestCursors", "decode", PullRequestListCursors, input);
+  record("pullRequestCursors", "encode", PullRequestListCursors, input);
+}
+
+// `ContextMenuItemSchema` (`ipc.ts:69`) — one of the 22 sites that annotate a value with
+// `Schema.Codec<T>`, which is a type assertion and nothing more (its `.ast._tag` is
+// `Objects`, the struct underneath). What is worth recording is the recursion: the field
+// is `optionalKey(Array(suspend(…)))`, and a failure inside it is reported by the path
+// through `children`, at any depth. An unbounded `Vec` port either gets that path wrong or
+// flattens it.
+const menu = (extra: Record<string, unknown>) => ({ id: "a", label: "L", ...extra });
+for (const input of [
+  menu({}),
+  { id: "a" },
+  { label: "L" },
+  {},
+  menu({ children: [] }),
+  menu({ children: [{ id: "b", label: "M" }] }),
+  // One level and two, because a nested failure is reported by the *path* to it —
+  // `["children"][0]["label"]` — and a port that flattens the recursion loses which entry
+  // on the menu was broken, which is the only thing that tells the user why.
+  menu({ children: [{ id: "b" }] }),
+  menu({ children: [menu({ id: "b", children: [{ id: "c" }] })] }),
+  menu({ children: { 0: menu({}) } }),
+  menu({ children: [null] }),
+  menu({ children: "x" }),
+  menu({ destructive: "yes" }),
+  menu({ icon: 1 }),
+  menu({ label: 1 }),
+  // Undeclared keys drop rather than reject, and `optionalKey` means an own key holding
+  // `undefined` is the one input this shape can express that JSON cannot — see `$undefined`.
+  menu({ extra: 1 }),
+  menu({ checked: undefined }),
+  menu({
+    destructive: true,
+    disabled: false,
+    header: true,
+    icon: "x",
+    separatorBefore: true,
+    checked: true,
+  }),
+  null,
+  [],
+]) {
+  record("contextMenu", "decode", ContextMenuItemSchema, input);
+  record("contextMenu", "encode", ContextMenuItemSchema, input);
+}
+
+// `DesktopPreviewRecordingSaveInputSchema` (`ipc.ts:1090`) — `Schema.Uint8Array`, the only
+// such site in the repo, and the reason this fatia needed measuring rather than guessing:
+// the codec's Encoded side *is* the byte sequence, so it rejects every JSON spelling of one
+// including the `{"0":1,…}` object `JSON.stringify` writes for it. There is no round trip
+// through JSON to port. The inputs that arrive as `{$bytes: […]}` therefore cannot run
+// against the Rust side at all, and the ones that arrive as array, base64, `null` or that
+// object can: they are recorded as refusals on both sides, which is the whole behaviour a
+// JSON-seeing implementation could ever claim. A Node `Buffer` is included as the second
+// spelling the shipped codec accepts, so the golden says "one value" where a port might
+// invent "two".
+const saveBytes = new Uint8Array([1, 2, 3]);
+for (const input of [
+  { tabId: "t", mimeType: "m", data: saveBytes },
+  { tabId: "t", mimeType: "m", data: Buffer.from([9]) },
+  { tabId: "t", mimeType: "m", data: [1, 2, 3] },
+  { tabId: "t", mimeType: "m", data: "AQID" },
+  { tabId: "t", mimeType: "m", data: null },
+  { tabId: "t", mimeType: "m", data: { 0: 1, 1: 2, 2: 3 } },
+  { tabId: "t", mimeType: "m" },
+  { tabId: " t ", mimeType: "m", data: [1] },
+  { tabId: "t", mimeType: " m ", data: [1] },
+  { tabId: "t", mimeType: "", data: [1] },
+  { tabId: "t", mimeType: "  ", data: [1] },
+  {},
+]) {
+  record("recordingSave", "decode", DesktopPreviewRecordingSaveInputSchema, input);
+  record("recordingSave", "encode", DesktopPreviewRecordingSaveInputSchema, input);
+}
 
 // The golden has to carry wire bytes, and two kinds of value do not survive
 // `JSON.stringify` on their own:
@@ -1186,6 +1308,15 @@ for (const input of [
 // writes — `name` then `message`, then `cause` when there is one — so the golden's decode
 // output and its encode output are the same projection of the same value. `stack` is left
 // out on purpose; see the `Defect` section.
+//
+// A byte sequence is the fourth case, and unlike the three above it has **no** JSON form:
+// `Schema.Uint8Array`'s Encoded side *is* the `Uint8Array`, and the schema rejects the
+// `{"0":1,"1":2,"2":3}` object that `Object.entries` would build for it — so walking it
+// normally would produce an input the shipped codec refuses and record that as its
+// behaviour. `{$bytes: […]}` is named instead, and the replay classifies any case carrying
+// it as one JSON cannot express. A Node `Buffer` is the same value to the codec (it is a
+// `Uint8Array` subclass) and renders identically here, which is what the golden should show:
+// one wire value, not two.
 const toWire = (value: unknown): unknown => {
   if (value === undefined) return { $undefined: true };
   if (Option.isOption(value)) {
@@ -1197,6 +1328,7 @@ const toWire = (value: unknown): unknown => {
   if (value === null || typeof value !== "object") return value;
   if (value instanceof Date) return value;
   if (Duration.isDuration(value)) return value;
+  if (value instanceof Uint8Array) return { $bytes: Array.from(value) };
   if (value instanceof Error) {
     const rendered: Record<string, unknown> = { name: value.name, message: value.message };
     if (value.cause !== undefined) rendered.cause = toWire(value.cause);

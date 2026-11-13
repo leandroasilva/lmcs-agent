@@ -59,6 +59,17 @@
 //! - `Schema.Never` is the empty enum, and unlike `Void` it really does reject everything
 //!   — `undefined` included. It is the default `error` schema of `Rpc.make`, so it is the
 //!   error channel of every streaming method. See [`Never`].
+//! - `Schema.Uint8Array` is the crate's first type with **no JSON spelling at all**. It is a
+//!   `Declaration`, so its Encoded side *is* the byte sequence and both directions are
+//!   identity — measured: `decode(bytes) === bytes` and `encode(bytes) === bytes`. And it
+//!   rejects every JSON value that could stand for one: the array `[1,2,3]`, a base64 string,
+//!   `null`, and notably the `{"0":1,"1":2,"2":3}` object that `JSON.stringify` writes for it.
+//!   So a round trip through JSON is not merely lossy, it is impossible. Its one site
+//!   (`ipc.ts:1093`) never goes through JSON: it crosses `ipcMain.handle`, which is structured
+//!   clone. In Rust that channel is an in-process call, so neither impl runs — but the type
+//!   must still not be silently encodable. See [`Bytes`]. (`Buffer` decodes too and renders as
+//!   a *second* JSON spelling, `{"type":"Buffer","data":[…]}`; it is deliberately not
+//!   modelled, since modelling it would add a wire form the port cannot reach.)
 //! - `RpcSchema.Stream` is **not a codec**. It is `Schema.declare(Stream.isStream)` with
 //!   the element schemas hanging off it, so it never reaches the wire and needs no type
 //!   here; framing stream chunks is the transport's job.
@@ -75,6 +86,12 @@
 //!   decode backwards. `makeBinaryPathSetting` maps `""` to a fallback on the way in and
 //!   writes `""` on the way out, and `LegacyConfirmQuit` cannot encode `"double-click"` at
 //!   all (its union member never runs, because the canonical member answers first).
+//! - `Schema.Codec<T>` — 22 sites, 19 of them in `ipc.ts` — is a *type* annotation, not a
+//!   construction: measured through `ContextMenuItemSchema`, whose `.ast._tag` is `Objects`
+//!   like the struct it annotates. So there is nothing to port and nothing gained by
+//!   pretending there is. The trap it sets is the belief that naming a codec as `Codec<A, A>`
+//!   makes it symmetric: `TrimmedString` *is* `Codec<string, string>` and still trims one way
+//!   and refuses the other. Asymmetry lives in the transforms, never in the annotation.
 //! - `Schema.withDecodingDefault` — 205 sites, most of `settings.ts` — makes the key optional
 //!   on both sides and **substitutes the default for an absent key only**. A present value of
 //!   the wrong shape still fails, so the port is `#[serde(default = …)]` on the field and
@@ -87,11 +104,15 @@
 //!   used, so there is nothing to port.
 //!
 //! The TypeScript-only shapes collapse here, and that is deliberate rather than a gap:
-//! `Schema.optionalKey` differs from `Schema.optional` only in whether `{v: undefined}`
-//! is encodable, and `ForwardCompatibleOptional` differs from `OmittedWhenNull` only in
-//! whether `null` is in the Type. Rust has no `undefined`, so both pairs land on the
-//! same representation. Cases the TS type system rejects before the codec runs — an
-//! encode of `"z"` against `Literals(["a","b"])` — have no Rust input at all.
+//! `Schema.optionalKey` differs from `Schema.optional` in how an own key holding `undefined`
+//! is treated, and it differs **in both directions** — `optional` accepts `{v: undefined}` and
+//! re-encodes without the key, `optionalKey` rejects it outright. Measured on a pair of
+//! otherwise identical structs, because the difference is not the encode half alone.
+//! `ForwardCompatibleOptional` differs from `OmittedWhenNull` only in whether `null` is in the
+//! Type. Rust has no `undefined`, so both pairs land on the same representation: a field the
+//! caller can leave out, which cannot be conjured into being present-but-unknown. Cases the TS
+//! type system rejects before the codec runs — an encode of `"z"` against `Literals(["a","b"])`
+//! — have no Rust input at all.
 
 use serde::de::{self, DeserializeOwned, Deserializer, SeqAccess, Unexpected, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq, Serializer};
@@ -1144,9 +1165,25 @@ impl KeyRejection for LenientKeys {}
 /// - **Encoding** rejects the whole record for a bad value, but a key that cannot be
 ///   encoded drops **only its own entry**: `{"":50, b:60}` encodes to `{"b":60}`, and both
 ///   orders of that input give the same result. A key that encodes but fails a predicate
-///   is dropped the same way — `{"  ":50, b:60}` encodes to `{"":50,"b":60}` for
-///   `StrictKeys` (the trim is the transform, and the trailing `isNonEmpty` is never
-///   re-checked on the way out) and to `{"b":60}` for `LenientKeys`.
+///   survives and is written transformed — `{"  ":50, b:60}` encodes to `{"":50,"b":60}`,
+///   because the trim is the transform and the trailing `isNonEmpty` is never re-checked on
+///   the way out. [`KeyRejection`] is a **decode** rule and nothing else: measured, both
+///   markers encode that input identically, so a port that branched on it here would be
+///   inventing a difference the shipped codec does not have.
+///
+/// So what gates the outbound direction depends on **where the assertion sits**, and it sits
+/// differently on the two sides of a key. A key's assertion runs against the text as it was
+/// handed over, **before** the trim: an empty key therefore fails and drops its entry
+/// (`{"":50, b:60}` → `{"b":60}`, measured on all three transform-keyed records) while a
+/// whitespace-only key *passes* — it is not empty yet — and the trim then empties it with
+/// nothing re-checking, so `PullRequestListCursors` (`pullRequest.ts:547`) writes `{"":"b"}`
+/// for `{"  ":"b"}`, exactly as `LoadBalancingWeights` and `ProviderAuthResponse` do. An
+/// assertion written on the **value** schema is re-run on the way out, and against the
+/// untrimmed text too: the same cursors schema throws on a 4097-character cursor in both
+/// directions, and takes the whole record down rather than losing one entry. The field
+/// comment says the cap is there because the value "arrives from the page and is unfolded
+/// into a host's own filter". A port that decoded before encoding gets all of this wrong at
+/// once, and silently.
 ///
 /// Keys are held in a `BTreeMap`, so the wire order is sorted rather than insertion order.
 /// No JSON client may depend on key order, and the golden does not assert it.
@@ -1252,5 +1289,53 @@ impl<'de> Deserialize<'de> for Never {
             }
         }
         deserializer.deserialize_any(NeverVisitor)
+    }
+}
+
+/// `Schema.Uint8Array` — 1 site repo-wide (`ipc.ts:1093`, the screen-recording save payload),
+/// and the crate's first type with **no JSON spelling at all**.
+///
+/// `Schema.Uint8Array` is a `Declaration` rather than a `Transformation`, so its Encoded side
+/// *is* `Uint8Array`: the shipped codec accepts a byte sequence and hands back **the same
+/// reference**, and rejects the array, the base64 string, `null`, and — this is the part worth
+/// stopping on — the `{"0":1,"1":2,"2":3}` object that `JSON.stringify` of a `Uint8Array`
+/// writes. The codec's own JSON rendering does not decode, which is what makes this a
+/// measurement rather than an opinion: there is no JSON this field can be carried in, in either
+/// direction.
+///
+/// Which is fine on the wire it actually sits on. `ipcMain.handle` receives a *structured
+/// clone*, so the bytes arrive intact and no serialiser is involved; the same field on the RPC
+/// transport would fail at every hop, and nothing in `contracts` puts it there. In the Rust
+/// product this channel is an in-process call, so the field is a plain `Vec<u8>` and neither
+/// impl below runs. They exist so that a `#[derive(Serialize, Deserialize)]` on a struct
+/// containing one cannot silently invent a representation.
+///
+/// Deliberately not modelled: a Node `Buffer` also passes, because it *is* a `Uint8Array`, and
+/// renders as `{"type":"Buffer","data":[…]}` — a second and different JSON spelling of the same
+/// declared value. That is a property of who calls the channel, not of the schema, and the Rust
+/// port has no `Buffer`.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Bytes(pub Vec<u8>);
+
+impl Serialize for Bytes {
+    fn serialize<S: Serializer>(&self, _serializer: S) -> Result<S::Ok, S::Error> {
+        Err(serde::ser::Error::custom(
+            "a byte sequence has no JSON form: see `Bytes`",
+        ))
+    }
+}
+
+impl<'de> Deserialize<'de> for Bytes {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct BytesVisitor;
+        impl Visitor<'_> for BytesVisitor {
+            type Value = Bytes;
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a byte sequence, which no JSON value is")
+            }
+        }
+        // No `visit_*` method, so serde's defaults turn every input into an invalid-type error —
+        // which is the measured behaviour, and why this is not `Vec<u8>` under a `serde(with)`.
+        deserializer.deserialize_any(BytesVisitor)
     }
 }

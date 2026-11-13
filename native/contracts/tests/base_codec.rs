@@ -8,7 +8,7 @@
 //! `LMCS_CONTRACTS_GOLDEN=/tmp/contracts-golden.json cargo test`
 
 use lmcs_contracts::base::{
-    Absent, AtLeast, AtMost, Between, Check, Checked, DateTimeUtc, Defect, DurationMillis,
+    Absent, AtLeast, AtMost, Between, Bytes, Check, Checked, DateTimeUtc, Defect, DurationMillis,
     EffectOption, GreaterThan, JsNumber, Lenient, LenientKeys, LessThan, MaxLength, MaxProperties,
     Maybe, MinLength, Never, NoEdgeWhitespace, NonEmpty, NonNegativeInt, Nullable, Port,
     PositiveInt, Record, SafeInt, StrictKeys, Trimmed,
@@ -645,6 +645,82 @@ fn auth_credentials_encode(raw: &Value) -> Result<Value, ()> {
     .map_err(|_| ())
 }
 
+/// `PullRequestListCursors` (`pullRequest.ts:547`) — the third transform-keyed record, and
+/// the one that adds a bound on the **value**. Its cursor is opaque ("only the provider that
+/// issued one knows what it means"), so the whole field is four things the port cannot infer
+/// and only the shipped codec can say:
+///
+/// - decode measures the bound **after** the trim, encode **before** it. Four spaces over a
+///   full-length cursor is a valid cursor on the way in and a rejected one on the way out,
+///   with the same text in hand either time.
+/// - the key has no bound at all, so that same 4100-character string is fine as a key.
+/// - an empty key on the way out costs **its entry** and nothing else, while a whitespace key
+///   survives and is written empty — see [`Record`].
+/// - a bad value on the way out takes the record down instead.
+type CursorsValue = Checked<NonEmpty, MaxLength<4_096>>;
+type Cursors = Record<NonEmpty, CursorsValue>;
+
+fn pull_request_cursors_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let mut built: BTreeMap<NonEmpty, CursorsValue> = BTreeMap::new();
+    for (key, value) in fields {
+        built.insert(
+            NonEmpty(key.clone()),
+            Checked::wrap(NonEmpty(value.as_str().ok_or(())?.to_owned())),
+        );
+    }
+    serde_json::to_value(Cursors::new(built)).map_err(|_| ())
+}
+
+/// `ContextMenuItemSchema` (`ipc.ts:69`) — the shape the desktop's right-click menu crosses
+/// in, and the only recursive schema `ipc.ts` declares: `children` is
+/// `optionalKey(Array(suspend(…)))`. The annotation `Schema.Codec<ContextMenuItemSchemaType>`
+/// is erased at runtime (`.ast._tag` is `Objects`, like the struct under it), so nothing about
+/// it is a codec construct; what is, is that a nested failure is reported at
+/// `["children"][0]["children"][0]["label"]` — a path, at any depth — and that a `Vec` port
+/// either reproduces or flattens.
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+struct ContextMenuItem {
+    id: String,
+    label: String,
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    destructive: Absent<bool>,
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    disabled: Absent<bool>,
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    header: Absent<bool>,
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    icon: Absent<String>,
+    #[serde(
+        rename = "separatorBefore",
+        default,
+        skip_serializing_if = "Absent::is_none"
+    )]
+    separator_before: Absent<bool>,
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    checked: Absent<bool>,
+    #[serde(default, skip_serializing_if = "Absent::is_none")]
+    children: Absent<Vec<ContextMenuItem>>,
+}
+
+/// `DesktopPreviewRecordingSaveInputSchema` (`ipc.ts:1090`) — the field that made this fatia a
+/// measurement rather than a guess. `tabId` and `mimeType` are both
+/// `String.check(isTrimmed()).check(isNonEmpty())`, already ported as [`TabId`], and neither is
+/// what the subject exists for. `data` is the repo's only `Schema.Uint8Array`, which has no
+/// JSON spelling: the two golden cases that carry a real byte sequence are classified as
+/// unrunnable, and the seven that carry an *attempted* one — array, base64, `null`, the object
+/// `JSON.stringify` writes — are the whole of what a JSON-seeing codec can claim about it.
+type RecordingSaveMimeType = TabId;
+
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+struct RecordingSave {
+    #[serde(rename = "tabId")]
+    tab_id: TabId,
+    #[serde(rename = "mimeType")]
+    mime_type: RecordingSaveMimeType,
+    data: Bytes,
+}
+
 fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
     let mut map: BTreeMap<&'static str, (Codec, Codec)> = BTreeMap::new();
     map.insert(
@@ -1033,6 +1109,32 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         "authCredentials",
         (|raw| round::<AuthCredentials>(raw), auth_credentials_encode),
     );
+    // The third transform-keyed record, reaching the two facts the first two could not: a
+    // bound on the value that sits on the *other* side of the trim, and an empty key that
+    // drops rather than rewrites.
+    map.insert(
+        "pullRequestCursors",
+        (|raw| round::<Cursors>(raw), pull_request_cursors_encode),
+    );
+    // Recursion and `Schema.Codec<T>`: identity in both directions, so no builder — which is
+    // the point of the second entry, not a shortcut.
+    map.insert(
+        "contextMenu",
+        (
+            |raw| round::<ContextMenuItem>(raw),
+            |raw| round::<ContextMenuItem>(raw),
+        ),
+    );
+    // The byte field. Both entries are `round`, and both can only ever be reached by an input
+    // whose `data` is something JSON *can* spell — which is exactly what the golden has them
+    // be.
+    map.insert(
+        "recordingSave",
+        (
+            |raw| round::<RecordingSave>(raw),
+            |raw| round::<RecordingSave>(raw),
+        ),
+    );
     map
 }
 
@@ -1221,13 +1323,29 @@ enum Unportable {
 }
 
 fn unportable_side(case: &Map<String, Value>) -> Unportable {
-    if case.contains_key("undefinedInput") || case.get("input").is_some_and(holds_undefined) {
+    if case.contains_key("undefinedInput")
+        || case
+            .get("input")
+            .is_some_and(|input| holds_undefined(input) || holds_bytes(input))
+    {
         return Unportable::Input;
     }
     if case.get("ok").is_some_and(holds_undefined) {
         return Unportable::Output;
     }
     Unportable::No
+}
+
+/// `$bytes` marks a position that held a byte sequence. Only the input side is tested, and
+/// only once: `Schema.Uint8Array`'s Encoded side *is* the bytes, so no JSON input can decode
+/// to a value that would put `$bytes` on the `ok` side without putting it on the input side
+/// first. An `ok`-only check would be a branch nothing can reach.
+fn holds_bytes(value: &Value) -> bool {
+    match value {
+        Value::Object(object) => object.contains_key("$bytes") || object.values().any(holds_bytes),
+        Value::Array(items) => items.iter().any(holds_bytes),
+        _ => false,
+    }
 }
 
 fn holds_undefined(value: &Value) -> bool {
@@ -1473,6 +1591,186 @@ fn the_last_predicates_and_the_key_rule_hold_their_measured_shape() {
         serde_json::from_value::<TerminalOpenEnv>(json!({ "env": entries(129, false) })).is_err(),
         "with nothing to drop the two directions agree"
     );
+
+    // 7. `KeyRejection` is a **decode** rule and nothing else. Outbound, both markers keep a
+    // key they can encode and drop one they cannot, identically. No live site can show this —
+    // both `LenientKeys` records key on predicates, never on a transform — so it is asserted
+    // here, and it is why the `Record` doc no longer claims the two differ on the way out.
+    type Weight = Checked<JsNumber, Between<0, 100>>;
+    let padded: BTreeMap<NonEmpty, Weight> = [("  ", 50), ("b", 60)]
+        .into_iter()
+        .map(|(key, value)| {
+            (
+                NonEmpty(key.to_owned()),
+                Checked::wrap(JsNumber(json!(value).as_number().unwrap().clone())),
+            )
+        })
+        .collect();
+    let both_ways = json!({ "": 50, "b": 60 });
+    assert_eq!(
+        serde_json::to_value(Record::<NonEmpty, Weight, StrictKeys>::new(padded.clone()))
+            .expect("strict"),
+        both_ways,
+    );
+    assert_eq!(
+        serde_json::to_value(Record::<NonEmpty, Weight, LenientKeys>::new(padded))
+            .expect("lenient"),
+        both_ways,
+        "the marker changes what a bad key costs on the way in, not on the way out"
+    );
+}
+
+/// The byte field, the opaque cursor and the recursive menu — the three things 3d measures,
+/// each with the half the golden cannot reach.
+#[test]
+fn the_byte_field_the_cursor_and_the_menu_hold_their_measured_shape() {
+    let cursor = "x".repeat(4_096);
+    let over = "x".repeat(4_097);
+    let padded = format!("    {cursor}");
+
+    // 1. `Bytes` refuses every JSON value, and that is the *whole* behaviour. The four
+    // spellings here are the four a port might be tempted to accept: `Vec<u8>`'s own, base64
+    // (which is what every other Rust serialiser would choose), `null`, and the object
+    // `JSON.stringify` writes for a byte sequence — the last being the one that would pass a
+    // `HashMap<String, u8>`-shaped reading of the schema. Even the golden's own `$bytes`
+    // sentinel is refused, which is the point: it names a value the codec cannot see, so
+    // nothing may decode *into* it either.
+    for rejected in [
+        json!([1, 2, 3]),
+        json!("AQID"),
+        json!(null),
+        json!({ "0": 1, "1": 2, "2": 3 }),
+        json!({ "$bytes": [1, 2, 3] }),
+        json!(""),
+        json!([]),
+    ] {
+        assert!(
+            serde_json::from_value::<Bytes>(rejected.clone()).is_err(),
+            "{rejected} is not a byte sequence to the shipped codec"
+        );
+    }
+
+    // 2. And it refuses to be *written*, which is the half that keeps a derived struct from
+    // inventing a form. Without this, `#[derive(Serialize)]` on a struct holding a `Vec<u8>`
+    // would silently write the array the schema rejects, and the failure would surface on the
+    // other side of the wire as a decode error in code that never calls a codec.
+    assert!(serde_json::to_value(Bytes(vec![1, 2, 3])).is_err());
+    assert!(
+        serde_json::to_value(RecordingSave {
+            tab_id: TabId::wrap("t".to_owned()),
+            mime_type: TabId::wrap("m".to_owned()),
+            data: Bytes(vec![1, 2, 3]),
+        })
+        .is_err(),
+        "the field that carries the bytes cannot be serialized either"
+    );
+
+    // 3. A wrong `data` is refused inside the struct, at the same position, and the two
+    // string fields still refuse on their own — which no case in the golden can show, because
+    // every input that gets past `data` carries a value JSON cannot spell.
+    let mut json_form = Map::new();
+    json_form.insert("tabId".into(), json!("t"));
+    json_form.insert("mimeType".into(), json!("m"));
+    json_form.insert("data".into(), json!({ "0": 1 }));
+    assert!(serde_json::from_value::<RecordingSave>(Value::Object(json_form)).is_err());
+    for (field, bad) in [
+        ("tabId", json!(" t ")),
+        ("mimeType", json!(" m ")),
+        ("mimeType", json!("")),
+        ("mimeType", json!("  ")),
+    ] {
+        let mut input = Map::new();
+        input.insert("tabId".into(), json!("t"));
+        input.insert("mimeType".into(), json!("m"));
+        input.insert(field.to_owned(), bad);
+        input.insert("data".into(), json!([1]));
+        assert!(
+            serde_json::from_value::<RecordingSave>(Value::Object(input)).is_err(),
+            "{field} is `isTrimmed` + `isNonEmpty`, the same pair the tab id already uses"
+        );
+    }
+
+    // 4. The cursor bound sits on the **far side** of the trim, and the two directions
+    // therefore disagree about the same four spaces: decode trims then measures, so a padded
+    // full-length cursor fits and comes back trimmed; encode measures what it was handed, so
+    // the same text is over the bound and takes the record down.
+    let entry = |key: &str, value: &str| {
+        let mut entries = Map::new();
+        entries.insert(key.to_owned(), json!(value));
+        Value::Object(entries)
+    };
+    assert_eq!(
+        round::<Cursors>(&entry("a", &padded)).expect("trimmed, then measured"),
+        json!({ "a": cursor }),
+    );
+    assert!(
+        pull_request_cursors_encode(&entry("a", &padded)).is_err(),
+        "measured first, then trimmed — the same text is over the bound"
+    );
+    assert!(round::<Cursors>(&entry("a", &over)).is_err());
+    // The bound is on the value only: the same 4100-character string is accepted as a key,
+    // trimmed, and accepted again on the way out.
+    assert_eq!(
+        round::<Cursors>(&entry(&padded, "b")).expect("keys have no bound"),
+        json!({ cursor.clone(): "b" }),
+    );
+    assert_eq!(
+        pull_request_cursors_encode(&entry(&padded, "b")).expect("and no bound outbound"),
+        json!({ cursor.clone(): "b" }),
+    );
+
+    // 5. The two empty-key outcomes, one field apart. Whitespace survives the outbound check
+    // (the text is not empty *yet*) and is written empty; an empty key fails it and drops the
+    // entry, taking nothing else with it. A port that validates after trimming gets the first
+    // wrong; one that rejects gets the second wrong, and loudly.
+    assert_eq!(
+        pull_request_cursors_encode(&json!({ "  ": "b" })).expect("not empty yet"),
+        json!({ "": "b" }),
+    );
+    assert_eq!(
+        pull_request_cursors_encode(&json!({ "": "b", "a": "c" })).expect("one entry dropped"),
+        json!({ "a": "c" }),
+    );
+    assert!(
+        round::<Cursors>(&json!({ "": "b" })).is_err(),
+        "inbound it is fatal"
+    );
+
+    // 6. The recursion has no depth the port chose: three levels in, three levels out, and a
+    // missing `label` at the bottom fails the whole menu however deep it is nested. The golden
+    // records the *path* TypeScript reports; what it cannot record is that this representation
+    // can express the tree at all, so that is asserted here.
+    let deep = json!({
+        "id": "a", "label": "L",
+        "children": [{ "id": "b", "label": "M", "children": [
+            { "id": "c", "label": "N", "children": [{ "id": "d", "label": "O" }] }] }],
+    });
+    assert_eq!(round::<ContextMenuItem>(&deep).expect("three levels"), deep);
+    for depth in 0..4 {
+        let mut broken = json!({ "id": "x" });
+        for _ in 0..depth {
+            broken = json!({ "id": "x", "label": "L", "children": [broken] });
+        }
+        assert!(
+            serde_json::from_value::<ContextMenuItem>(broken).is_err(),
+            "a missing label at depth {depth} still fails"
+        );
+    }
+
+    // 7. `Schema.Codec<T>` is an annotation, so nothing here is a construct — the proof being
+    // that an undeclared key is dropped rather than rejected, and that a value which is a
+    // legal Type in both fields is byte-identical in both directions.
+    assert_eq!(
+        round::<ContextMenuItem>(&json!({ "id": "a", "label": "L", "extra": 1 })).expect("dropped"),
+        json!({ "id": "a", "label": "L" }),
+    );
+    assert_eq!(
+        round::<ContextMenuItem>(
+            &json!({ "id": "a", "label": "L", "icon": "x", "separatorBefore": true, "checked": false })
+        )
+        .expect("every optionalKey present"),
+        json!({ "id": "a", "label": "L", "icon": "x", "separatorBefore": true, "checked": false }),
+    );
 }
 
 #[test]
@@ -1574,16 +1872,18 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 55, "ported subject count changed");
+    assert_eq!(table.len(), 58, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form, and every \
          subject contributes one case per direction"
     );
     assert_eq!(
-        skipped, 26,
-        "6 scalars take `undefined` outright and 20 shape cases take `{{v: undefined}}` — \
-         or, for Void/Unknown/Union/Never, `undefined` itself"
+        skipped, 32,
+        "6 scalars take `undefined` outright, 20 shape cases take `{{v: undefined}}` — or, \
+         for Void/Unknown/Union/Never, `undefined` itself — the 2 contextMenu cases take an \
+         `optionalKey` own key holding `undefined`, and the 4 recordingSave cases take an \
+         actual byte sequence"
     );
     assert_eq!(
         incomparable, 14,
@@ -1604,5 +1904,5 @@ fn replays_the_golden_codec_behaviour() {
         cases.len(),
         "some case was neither replayed nor classified"
     );
-    assert_eq!(replayed, 879, "only replayed {replayed} cases");
+    assert_eq!(replayed, 969, "only replayed {replayed} cases");
 }
