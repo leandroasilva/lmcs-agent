@@ -18,6 +18,7 @@ import {
   ContextMenuItemSchema,
   DesktopPreviewRecordingSaveInputSchema,
   DesktopPreviewTabIdSchema,
+  EnvironmentOrchestrationHttpApi,
   EnvironmentThemeFile,
   ForwardCompatibleArray,
   ForwardCompatibleNullable,
@@ -35,6 +36,7 @@ import {
   ThreadId,
   TrimmedNonEmptyString,
   TrimmedString,
+  UserInputQuestion,
   WS_METHODS,
   WsRpcGroup,
 } from "@lmcstools/core";
@@ -1281,6 +1283,184 @@ for (const input of [
 ]) {
   record("recordingSave", "decode", DesktopPreviewRecordingSaveInputSchema, input);
   record("recordingSave", "encode", DesktopPreviewRecordingSaveInputSchema, input);
+}
+
+// ---------------------------------------------------------------------------
+// The last constructs the census left, and the only one of them that needs a
+// primitive: `Schema.FiniteFromString`. The other two are recorded so that the
+// claim "nothing to port" is a measurement rather than an argument.
+// ---------------------------------------------------------------------------
+
+// `Number(text)` in both directions, which is not `str::parse` and not `f64::to_string`.
+// The decode inputs are the ones where a Rust port would reach for the standard library
+// and diverge: `""` and `"   "` are 0, `" 1 "` is trimmed, `"+1"` and `"1."` are legal,
+// `"0x10"` is 16 but `"-0x10"` is NaN because a radix prefix may not carry a sign,
+// `"1_000"` is NaN even though the same spelling is a legal JavaScript *literal*, and
+// `"1e309"` overflows to Infinity while `"1e-400"` underflows to 0 — the first refused,
+// the second accepted. `"Infinity"` is the case that separates this schema from its
+// sibling `NumberFromString`: a string is spellable in JSON where a bare Infinity is not,
+// so here the finite gate is a real inbound rule.
+const finiteFromStringInputs: unknown[] = [
+  "1",
+  "1.5",
+  "0",
+  "-1",
+  "-0",
+  " 1 ",
+  "\t\n1\r\n",
+  "\u{feff}1\u{feff}",
+  "1\u{85}",
+  "",
+  "   ",
+  "+1",
+  "1.",
+  ".5",
+  ".",
+  "1e3",
+  "1e",
+  "1e+",
+  "1e309",
+  "1e-400",
+  "0x10",
+  "-0x10",
+  "0X1f",
+  "0b101",
+  "0o17",
+  "0123",
+  "0x",
+  "0xFFFFFFFFFFFFFFFFFFFFFFFFFF",
+  "1_000",
+  "Infinity",
+  "-Infinity",
+  "  Infinity  ",
+  "infinity",
+  "NaN",
+  "abc",
+  "1 2",
+  "9007199254740993",
+  null,
+  true,
+  1,
+  1.5,
+  [],
+  {},
+];
+for (const input of finiteFromStringInputs) {
+  record("finiteFromString", "decode", Schema.FiniteFromString, input);
+  record("finiteFromString", "encode", Schema.FiniteFromString, input);
+}
+
+// The encode half on its own, over the ranges where `String(n)` and `f64::to_string`
+// disagree. JavaScript switches to exponential notation at 1e21 and below 1e-6 and Rust
+// never does, so both boundaries are swept from each side, and the pseudo-random spread
+// after them is there to catch a last-digit disagreement between the two shortest
+// round-trip algorithms rather than a formatting rule.
+const finiteEncodeSweep: number[] = [
+  0,
+  1,
+  -1,
+  10,
+  100,
+  1000,
+  0.1,
+  0.2,
+  1 / 3,
+  1.5,
+  -1.5,
+  1e19,
+  1e20,
+  1e21,
+  1e22,
+  1.5e21,
+  9.999999999999999e20,
+  1e-5,
+  1e-6,
+  1e-7,
+  1e-8,
+  1.5e-7,
+  -1.5e-7,
+  0.000001,
+  0.0000001,
+  Number.MAX_SAFE_INTEGER,
+  Number.MAX_SAFE_INTEGER + 1,
+  123456789012345678901,
+  1.2345678901234567,
+  123456789.123456789,
+  Number.MAX_VALUE,
+  Number.MIN_VALUE,
+  5e-324,
+  1e-323,
+  -Number.MAX_VALUE,
+];
+for (let index = 0; index < 48; index++) {
+  const mantissa = (index * 2654435761) % 100000000000000000;
+  const value = mantissa / 10 ** ((index * 7) % 40);
+  finiteEncodeSweep.push(index % 2 === 0 ? value : -value);
+}
+for (const input of finiteEncodeSweep) {
+  record("finiteFromString", "encode", Schema.FiniteFromString, input);
+}
+
+// The one live site, reached through the exported endpoint rather than re-spelled. The
+// query object itself (`EnvironmentOrchestrationThreadSnapshotQuery`) is module-private,
+// and on a GET it is declared as `payload:`, which the endpoint stores as a map from
+// content type to `{encoding, schemas}`. `schemas[0]` is the plain struct; reading through
+// the `FormUrlEncoded` wrapper is not porting it, which stays a transport concern.
+//
+// The checks run outbound as well as inbound — `{turnLimit: 0}` and `{turnLimit: 1.5}`
+// are refused on the way out — and `"0x10"` really does arrive as 16 at a live endpoint.
+const threadSnapshotPayload = EnvironmentOrchestrationHttpApi.endpoints.threadSnapshot
+  .payload as unknown as Map<string, { schemas: ReadonlyArray<Schema.Top> }>;
+const threadSnapshotQuery = threadSnapshotPayload.get("application/x-www-form-urlencoded")
+  ?.schemas[0];
+if (threadSnapshotQuery === undefined) throw new Error("threadSnapshot has no query schema");
+for (const input of [
+  {},
+  { turnLimit: "2" },
+  { turnLimit: "1" },
+  { turnLimit: "0" },
+  { turnLimit: "-1" },
+  { turnLimit: "1.5" },
+  { turnLimit: "abc" },
+  { turnLimit: "" },
+  { turnLimit: "Infinity" },
+  { turnLimit: "NaN" },
+  { turnLimit: " 2 " },
+  { turnLimit: "2e3" },
+  { turnLimit: "0x10" },
+  { turnLimit: "9007199254740993" },
+  { turnLimit: "9007199254740991" },
+  { turnLimit: null },
+  { turnLimit: 2 },
+  { turnLimit: undefined },
+  { reasoningMessages: "true", turnLimit: "3", beforeCursor: "  c  " },
+  { reasoningMessages: "false" },
+  { beforeCursor: "   " },
+]) {
+  record("turnLimit", "decode", threadSnapshotQuery, input);
+  record("turnLimit", "encode", threadSnapshotQuery, input);
+}
+
+// `Schema.withConstructorDefault` — 1 site — recorded against the plain optional it is
+// stacked on, under the *same* subject name. If the constructor default had any wire
+// effect the two schemas would disagree and one of them would fail the replay; they do
+// not. What it changes is `.make({})`, which fills the key in — a constructor obligation,
+// not a codec one, so the Rust field is the same `Absent<bool>` the plain optional gets.
+const ConstructorDefault = projectField(UserInputQuestion, "multiSelect");
+const ConstructorPlain = Schema.Struct({ multiSelect: Schema.optional(Schema.Boolean) });
+for (const input of [
+  {},
+  { multiSelect: true },
+  { multiSelect: false },
+  { multiSelect: null },
+  { multiSelect: undefined },
+  { multiSelect: "x" },
+  { multiSelect: 1 },
+]) {
+  for (const schema of [ConstructorDefault, ConstructorPlain]) {
+    record("constructorDefault", "decode", schema, input);
+    record("constructorDefault", "encode", schema, input);
+  }
 }
 
 // The golden has to carry wire bytes, and two kinds of value do not survive

@@ -34,6 +34,11 @@
 //!   `2^53` — a value an `i64` holds easily. See [`SafeInt`].
 //! - `Schema.Finite` and `Schema.Number` are the same codec for every input JSON can
 //!   spell, because `Infinity` and `NaN` cannot cross the wire at all.
+//!   `Schema.FiniteFromString` is the exception that proves the rule: its Encoded side is a
+//!   *string*, `"Infinity"` is spellable, and the finite gate really does reject it. Both
+//!   directions are JavaScript's own conversions, not Rust's — `Number("")` is `0`,
+//!   `Number("0x10")` is `16`, and `String(1e21)` is `"1e+21"` where `f64::to_string` writes
+//!   twenty-one digits. See [`FiniteFromString`].
 //! - `Schema.DurationFromMillis` is [`JsNumber`] on the wire; only its Type side differs.
 //! - `Schema.Defect()` is **not** an identity codec, and its Type side is `unknown`.
 //!   See [`Defect`].
@@ -97,6 +102,11 @@
 //!   the wrong shape still fails, so the port is `#[serde(default = …)]` on the field and
 //!   never an `unwrap_or` over the value: the second would turn a corrupt settings file into
 //!   a file of defaults, silently.
+//! - `Schema.withConstructorDefault` — 1 site (`providerRuntime.ts:489`) — has **no wire
+//!   effect at all**: measured against a plain `Schema.optional(Schema.Boolean)` on seven
+//!   inputs in both directions, every result is identical. It differs only in `.make({})`,
+//!   which fills the key in. So it is a constructor obligation, not a codec one, and the
+//!   Rust field is the same `Absent<bool>` the plain optional gets.
 //! - `Schema.annotateKey` and `Schema.annotate` (41 sites, all of them form metadata for the
 //!   settings screen) have no wire effect at all — measured through a field whose
 //!   `annotateKey` carries three annotations at once. They are a UI obligation, not a codec
@@ -537,6 +547,20 @@ impl<T> Length for Vec<T> {
     }
 }
 
+/// Anything the numeric predicates can measure, which is the same idea as [`Length`] one
+/// trait over: `isInt`, `isGreaterThan` and friends are spelled over the *number*, so they
+/// apply equally to a bare [`JsNumber`] and to a [`FiniteFromString`] that decoded one out
+/// of a string. Without this the six predicates would each need a second impl.
+pub trait Numeric {
+    fn as_number(&self) -> &serde_json::Number;
+}
+
+impl Numeric for JsNumber {
+    fn as_number(&self) -> &serde_json::Number {
+        &self.0
+    }
+}
+
 /// A value together with the check that gates it.
 ///
 /// Wrapping the *transformed* type is what makes the direction rule fall out instead of
@@ -657,10 +681,10 @@ pub struct SafeInt;
 /// `Number.MAX_SAFE_INTEGER`, exactly representable as an `f64`.
 const MAX_SAFE_INTEGER: f64 = 9_007_199_254_740_991.0;
 
-impl Check<JsNumber> for SafeInt {
-    fn passes(value: &JsNumber) -> bool {
+impl<T: Numeric> Check<T> for SafeInt {
+    fn passes(value: &T) -> bool {
         value
-            .0
+            .as_number()
             .as_f64()
             .is_some_and(|number| number.fract() == 0.0 && number.abs() <= MAX_SAFE_INTEGER)
     }
@@ -680,9 +704,12 @@ impl Check<JsNumber> for SafeInt {
 /// this predicate's, which is why the two compose instead of one subsuming the other.
 pub struct GreaterThan<const N: i64>;
 
-impl<const N: i64> Check<JsNumber> for GreaterThan<N> {
-    fn passes(value: &JsNumber) -> bool {
-        value.0.as_f64().is_some_and(|number| number > N as f64)
+impl<const N: i64, T: Numeric> Check<T> for GreaterThan<N> {
+    fn passes(value: &T) -> bool {
+        value
+            .as_number()
+            .as_f64()
+            .is_some_and(|number| number > N as f64)
     }
 
     fn describe() -> String {
@@ -694,9 +721,12 @@ impl<const N: i64> Check<JsNumber> for GreaterThan<N> {
 /// `65536` itself is rejected.
 pub struct LessThan<const N: i64>;
 
-impl<const N: i64> Check<JsNumber> for LessThan<N> {
-    fn passes(value: &JsNumber) -> bool {
-        value.0.as_f64().is_some_and(|number| number < N as f64)
+impl<const N: i64, T: Numeric> Check<T> for LessThan<N> {
+    fn passes(value: &T) -> bool {
+        value
+            .as_number()
+            .as_f64()
+            .is_some_and(|number| number < N as f64)
     }
 
     fn describe() -> String {
@@ -734,14 +764,273 @@ impl<'de> Deserialize<'de> for JsNumber {
     }
 }
 
+/// `Number(text)` — ECMAScript's string-to-number conversion, which is what
+/// `SchemaTransformation.numberFromString` decodes through. `None` stands for `NaN`.
+///
+/// Not `str::parse`, and the differences are all reachable from a query string: JavaScript
+/// trims first and reads `""` as `0`, accepts a leading `+`, a trailing `.`, and `0x`/`0b`/`0o`
+/// radix prefixes — but only without a sign, so `Number("-0x10")` is `NaN`. It refuses the
+/// underscores a JavaScript *literal* allows, and it refuses `inf`/`NaN` spellings that
+/// `str::parse` would take. Measured against the shipped codec on 36 inputs.
+fn js_number_from_str(text: &str) -> Option<f64> {
+    let text = js_trim(text);
+    if text.is_empty() {
+        return Some(0.0);
+    }
+    let (negative, body) = match text.as_bytes()[0] {
+        b'+' => (false, &text[1..]),
+        b'-' => (true, &text[1..]),
+        _ => (false, text),
+    };
+    if body == "Infinity" {
+        return Some(if negative {
+            f64::NEG_INFINITY
+        } else {
+            f64::INFINITY
+        });
+    }
+    if !negative {
+        for (prefix, radix) in [
+            ("0x", 16),
+            ("0X", 16),
+            ("0b", 2),
+            ("0B", 2),
+            ("0o", 8),
+            ("0O", 8),
+        ] {
+            if let Some(digits) = body.strip_prefix(prefix) {
+                return radix_value(digits, radix);
+            }
+        }
+    }
+    if !is_decimal_literal(body) {
+        return None;
+    }
+    text.parse::<f64>().ok()
+}
+
+/// The `StrDecimalLiteral` grammar: digits with an optional fraction and an optional
+/// exponent, or a fraction with no leading digits. At least one digit somewhere, which is
+/// what refuses `"."`, and at least one after the `e`, which is what refuses `"1e+"`.
+fn is_decimal_literal(body: &str) -> bool {
+    let bytes = body.as_bytes();
+    let mut index = 0;
+    let mut digits = 0;
+    while index < bytes.len() && bytes[index].is_ascii_digit() {
+        index += 1;
+        digits += 1;
+    }
+    if index < bytes.len() && bytes[index] == b'.' {
+        index += 1;
+        while index < bytes.len() && bytes[index].is_ascii_digit() {
+            index += 1;
+            digits += 1;
+        }
+    }
+    if digits == 0 {
+        return false;
+    }
+    if index < bytes.len() && bytes[index] | 0x20 == b'e' {
+        index += 1;
+        if index < bytes.len() && (bytes[index] == b'+' || bytes[index] == b'-') {
+            index += 1;
+        }
+        let start = index;
+        while index < bytes.len() && bytes[index].is_ascii_digit() {
+            index += 1;
+        }
+        if index == start {
+            return false;
+        }
+    }
+    index == bytes.len()
+}
+
+/// A radix literal's value, rounded to an `f64` the way JavaScript rounds it.
+///
+/// Every radix `Number()` accepts is a power of two, so the value is exactly a mantissa
+/// times a power of two and no decimal conversion is needed. Digits past what a `u128`
+/// holds are dropped into a sticky bit rather than accumulated, which keeps the rounding
+/// exact: 128 bits is far more than the 53 the mantissa is rounded to, so nothing that
+/// could change the answer is lost.
+fn radix_value(digits: &str, radix: u32) -> Option<f64> {
+    if digits.is_empty() {
+        return None;
+    }
+    let bits = radix.trailing_zeros();
+    let mut mantissa: u128 = 0;
+    let mut dropped = 0i32;
+    let mut sticky = false;
+    for character in digits.chars() {
+        let digit = character.to_digit(radix)?;
+        if mantissa >> (128 - bits) != 0 {
+            dropped += bits as i32;
+            sticky |= digit != 0;
+        } else {
+            mantissa = (mantissa << bits) | u128::from(digit);
+        }
+    }
+    if mantissa == 0 {
+        return Some(0.0);
+    }
+    let width = 128 - mantissa.leading_zeros();
+    if width > 53 {
+        let shift = width - 53;
+        let halfway = (mantissa >> (shift - 1)) & 1;
+        sticky |= mantissa & ((1u128 << (shift - 1)) - 1) != 0;
+        mantissa >>= shift;
+        dropped += shift as i32;
+        // Round half to even, and a carry out of the top bit renormalises the exponent.
+        if halfway == 1 && (sticky || mantissa & 1 == 1) {
+            mantissa += 1;
+            if mantissa == 1u128 << 53 {
+                mantissa >>= 1;
+                dropped += 1;
+            }
+        }
+    }
+    Some(scale_by_power_of_two(mantissa as f64, dropped))
+}
+
+/// `mantissa * 2^exponent`, in steps that never build a subnormal intermediate.
+///
+/// `2f64.powi` is not usable here: for a negative exponent it computes a reciprocal, and
+/// `2^1074` overflows to infinity, so the smallest scale would come back as `0` and take a
+/// representable result down with it.
+fn scale_by_power_of_two(mut value: f64, mut exponent: i32) -> f64 {
+    while exponent > 0 {
+        let step = exponent.min(1023);
+        value *= f64::from_bits(u64::from(1023 + step as u32) << 52);
+        exponent -= step;
+        if value.is_infinite() {
+            return value;
+        }
+    }
+    while exponent < 0 {
+        let step = (-exponent).min(1022);
+        value *= f64::from_bits(u64::from(1023 - step as u32) << 52);
+        exponent += step;
+        if value == 0.0 {
+            return value;
+        }
+    }
+    value
+}
+
+/// `String(number)` — ECMAScript's `Number::toString`, which is not `f64::to_string`.
+///
+/// Both pick the shortest digits that round-trip, but JavaScript switches to exponential
+/// notation outside `1e-6 … 1e21` and Rust never does, so `1e21` comes out as
+/// `"1000000000000000000000"` from `to_string` and as `"1e+21"` from the shipped codec.
+/// The four branches below are the specification's own, over the digit count `k` and the
+/// decimal point position `n`.
+fn js_number_to_string(value: f64) -> String {
+    // `String(-0)` is `"0"`, so the sign is dropped with the value.
+    if value == 0.0 {
+        return "0".to_owned();
+    }
+    let negative = value < 0.0;
+    let exponential = format!("{:e}", value.abs());
+    let (mantissa, exponent) = exponential.split_once('e').expect("LowerExp writes an e");
+    let exponent: i32 = exponent.parse().expect("LowerExp writes an integer");
+    let digits: String = mantissa
+        .chars()
+        .filter(|character| *character != '.')
+        .collect();
+    let count = digits.len() as i32;
+    let point = exponent + 1;
+    let mut text = String::new();
+    if count <= point && point <= 21 {
+        text.push_str(&digits);
+        text.push_str(&"0".repeat((point - count) as usize));
+    } else if 0 < point && point <= 21 {
+        text.push_str(&digits[..point as usize]);
+        text.push('.');
+        text.push_str(&digits[point as usize..]);
+    } else if -6 < point && point <= 0 {
+        text.push_str("0.");
+        text.push_str(&"0".repeat(-point as usize));
+        text.push_str(&digits);
+    } else {
+        text.push_str(&digits[..1]);
+        if count > 1 {
+            text.push('.');
+            text.push_str(&digits[1..]);
+        }
+        text.push('e');
+        text.push(if point > 0 { '+' } else { '-' });
+        text.push_str(&(point - 1).abs().to_string());
+    }
+    if negative { format!("-{text}") } else { text }
+}
+
+/// `Schema.FiniteFromString` — 1 site, the `turnLimit` query field of the windowed thread
+/// snapshot (`environmentHttp.ts:517`). Its sibling `Schema.NumberFromString` has **no**
+/// site in the contracts, so only the finite half is ported.
+///
+/// This is the one place where the `Finite`/`Number` collapse recorded on [`JsNumber`] does
+/// **not** hold. There, `Infinity` and `NaN` cannot cross the wire because `JSON.stringify`
+/// renders both as `null`. Here the Encoded side is a *string*, and `"Infinity"` is a
+/// perfectly spellable JSON string — measured, `NumberFromString` decodes it to `Infinity`
+/// while `FiniteFromString` refuses it. So the finite gate is a real inbound rule.
+///
+/// Outbound it is not: the Type side is a [`JsNumber`], which cannot hold a non-finite
+/// value in the first place, so `Serialize` has nothing to reject. The shipped encoder does
+/// reject `Infinity`, and that rejection is unreachable from Rust for the same reason
+/// `Bytes` cannot be serialized — the type makes the bad state unconstructible.
+///
+/// Holds the number rather than the text because the checks at the one site measure the
+/// number: `Checked<FiniteFromString, (SafeInt, AtLeast<1>)>` is the whole field, and both
+/// predicates run on **encode** as well as decode — measured, `{turnLimit: 0}` and
+/// `{turnLimit: 1.5}` are refused on the way out.
+#[derive(Clone, Debug, PartialEq)]
+pub struct FiniteFromString(pub JsNumber);
+
+impl Numeric for FiniteFromString {
+    fn as_number(&self) -> &serde_json::Number {
+        &self.0.0
+    }
+}
+
+impl Serialize for FiniteFromString {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let number = self.0.0.as_f64().ok_or_else(|| {
+            serde::ser::Error::custom("a string that will be decoded as a finite number")
+        })?;
+        serializer.serialize_str(&js_number_to_string(number))
+    }
+}
+
+impl<'de> Deserialize<'de> for FiniteFromString {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct FiniteVisitor;
+        impl Visitor<'_> for FiniteVisitor {
+            type Value = FiniteFromString;
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string that will be decoded as a finite number")
+            }
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<FiniteFromString, E> {
+                let number = js_number_from_str(value)
+                    .filter(|number| number.is_finite())
+                    .and_then(serde_json::Number::from_f64)
+                    .ok_or_else(|| {
+                        de::Error::custom("a string that will be decoded as a finite number")
+                    })?;
+                Ok(FiniteFromString(JsNumber(number)))
+            }
+        }
+        deserializer.deserialize_str(FiniteVisitor)
+    }
+}
+
 /// `Schema.isBetween({minimum, maximum})` — 24 sites, inclusive at both ends and all with
 /// integer bounds, so the bounds fit in a const parameter and the value does not.
 pub struct Between<const MIN: i64, const MAX: i64>;
 
-impl<const MIN: i64, const MAX: i64> Check<JsNumber> for Between<MIN, MAX> {
-    fn passes(value: &JsNumber) -> bool {
+impl<const MIN: i64, const MAX: i64, T: Numeric> Check<T> for Between<MIN, MAX> {
+    fn passes(value: &T) -> bool {
         value
-            .0
+            .as_number()
             .as_f64()
             .is_some_and(|number| number >= MIN as f64 && number <= MAX as f64)
     }
@@ -768,9 +1057,12 @@ impl<const MIN: i64, const MAX: i64> Check<JsNumber> for Between<MIN, MAX> {
 /// underneath them and integer-ness is [`SafeInt`]'s business, not this one's.
 pub struct AtLeast<const N: i64>;
 
-impl<const N: i64> Check<JsNumber> for AtLeast<N> {
-    fn passes(value: &JsNumber) -> bool {
-        value.0.as_f64().is_some_and(|number| number >= N as f64)
+impl<const N: i64, T: Numeric> Check<T> for AtLeast<N> {
+    fn passes(value: &T) -> bool {
+        value
+            .as_number()
+            .as_f64()
+            .is_some_and(|number| number >= N as f64)
     }
 
     fn describe() -> String {
@@ -796,9 +1088,12 @@ impl<const N: i64> Check<JsNumber> for AtLeast<N> {
 /// input, so the redundancy is recorded rather than optimized away.
 pub struct AtMost<const N: i64>;
 
-impl<const N: i64> Check<JsNumber> for AtMost<N> {
-    fn passes(value: &JsNumber) -> bool {
-        value.0.as_f64().is_some_and(|number| number <= N as f64)
+impl<const N: i64, T: Numeric> Check<T> for AtMost<N> {
+    fn passes(value: &T) -> bool {
+        value
+            .as_number()
+            .as_f64()
+            .is_some_and(|number| number <= N as f64)
     }
 
     fn describe() -> String {
@@ -875,11 +1170,25 @@ impl<const N: usize, K: Ord, V, Keys: KeyRejection> Check<Record<K, V, Keys>> fo
 // vacuity `JsNumber` records for `Schema.Finite` versus `Schema.Number`. A check that can
 // never reject is not a codec rule, so `UsageModelTokenPrice` ports as
 // `Checked<JsNumber, AtLeast<0>>` and the `isFinite` is left where it is: unobservable.
-// `isInt()` is `SafeInt`, which already exists.
+// `isInt()` is `SafeInt`, which already exists — measured rather than assumed: on
+// `Schema.Number.check(isInt())` and on `Schema.Int` alike, `9007199254740991` passes and
+// `9007199254740992` fails, so the filter is `Number.isSafeInteger` and not
+// `Number.isInteger`. The one site stacks it on [`FiniteFromString`], where it is the
+// difference between `"9007199254740993"` decoding to a rounded `9007199254740992` and
+// being refused.
 //
-// `Schema.is(schema)` — 5 sites — is not a codec at all but a runtime type guard
-// (`providerInstance.ts:73`, `environment.ts:43`, and three tests), so it belongs to the
-// Rust code that calls it, not to this module.
+// `Schema.UndefinedOr` — 1 site (`baseSchemas.ts:56`) — is inside `ForwardCompatibleOptional`,
+// which this crate already ports; `Schema.NumberFromString` has no site at all.
+//
+// The census, counted rather than asserted: 59 distinct `Schema.X` spellings across the 48
+// non-test files of `packages/core/src/contracts`. Seven carry no wire form — `Top` (a type),
+// `Codec`/`annotate` (annotations erased at runtime), `decodeSync`/`decodeUnknownOption`
+// (runtime decode calls, the latter inside the four `ForwardCompatible*`/`OmittedWhenNull`
+// helpers already ported), `is` (a type guard, so it belongs to the Rust code that calls it),
+// and `deepPartial`, which appears only in a comment at `settings.ts:1500` and has no call
+// site. Of the other 52, all but `mutable` are ported or recorded here; `mutable` is a
+// type-level marker, measured and recorded in the golden generator beside its two
+// `orchestration.ts` sites.
 
 /// `Schema.DurationFromMillis` — 9 sites, all in `settings.ts`, all inside
 /// `Schema.optionalKey`.

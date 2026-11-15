@@ -9,9 +9,9 @@
 
 use lmcs_contracts::base::{
     Absent, AtLeast, AtMost, Between, Bytes, Check, Checked, DateTimeUtc, Defect, DurationMillis,
-    EffectOption, GreaterThan, JsNumber, Lenient, LenientKeys, LessThan, MaxLength, MaxProperties,
-    Maybe, MinLength, Never, NoEdgeWhitespace, NonEmpty, NonNegativeInt, Nullable, Port,
-    PositiveInt, Record, SafeInt, StrictKeys, Trimmed,
+    EffectOption, FiniteFromString, GreaterThan, JsNumber, Lenient, LenientKeys, LessThan,
+    MaxLength, MaxProperties, Maybe, MinLength, Never, NoEdgeWhitespace, NonEmpty, NonNegativeInt,
+    Nullable, Port, PositiveInt, Record, SafeInt, StrictKeys, Trimmed,
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -180,6 +180,23 @@ where
 /// drop the key the TypeScript Type still holds.
 fn present(value: &Option<impl Serialize>) -> Value {
     json!({ "v": value })
+}
+
+/// `JSON.stringify` writes an integral number with no fraction, and `serde_json::Number`
+/// keeps `1` and `1.0` apart — so a decoded number is rendered the way the golden carries
+/// it rather than the way `from_f64` happened to store it. JavaScript has one number type
+/// and no such distinction to reproduce; the wire form is unaffected either way, because
+/// `FiniteFromString` serializes through `String(n)`.
+fn json_number(value: &JsNumber) -> Value {
+    let number = value.0.as_f64().unwrap_or(f64::NAN);
+    if number.fract() == 0.0 && number >= i64::MIN as f64 && number <= u64::MAX as f64 {
+        return if number < 0.0 {
+            json!(number as i64)
+        } else {
+            json!(number as u64)
+        };
+    }
+    Value::Number(value.0.clone())
 }
 
 /// Builds a string newtype straight from the raw JSON, without validation, so the
@@ -721,6 +738,102 @@ struct RecordingSave {
     data: Bytes,
 }
 
+/// `Schema.optional(Schema.Literal("true"))` — a one-member literal is the same serde enum
+/// pattern [`Lit`] uses, with one variant instead of two.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum ReasoningTrue {
+    True,
+}
+
+/// The `turnLimit` query field of the windowed thread snapshot (`environmentHttp.ts:514`),
+/// the repo's only `Schema.FiniteFromString` site. Both predicates run on **encode** too,
+/// so the field is `Checked` over the decoded number rather than over the text — which is
+/// also why `{turnLimit: 0}` is refused on the way out.
+type TurnLimit = Checked<FiniteFromString, (SafeInt, AtLeast<1>)>;
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct TurnLimitQuery {
+    #[serde(
+        rename = "reasoningMessages",
+        default,
+        skip_serializing_if = "Absent::is_none"
+    )]
+    reasoning_messages: Absent<ReasoningTrue>,
+    #[serde(rename = "turnLimit", default, skip_serializing_if = "Absent::is_none")]
+    turn_limit: Absent<TurnLimit>,
+    #[serde(
+        rename = "beforeCursor",
+        default,
+        skip_serializing_if = "Absent::is_none"
+    )]
+    before_cursor: Absent<NonEmpty>,
+}
+
+/// The Type side of the query, which is not what re-serializing it writes: `turnLimit`
+/// decodes to a *number* and the codec would write the string back.
+fn turn_limit_type(query: &TurnLimitQuery) -> Value {
+    let mut fields = Map::new();
+    if let Some(flag) = &query.reasoning_messages.0 {
+        fields.insert("reasoningMessages".to_owned(), json!(flag));
+    }
+    if let Some(limit) = &query.turn_limit.0 {
+        fields.insert("turnLimit".to_owned(), json_number(&limit.0.0));
+    }
+    if let Some(cursor) = &query.before_cursor.0 {
+        fields.insert("beforeCursor".to_owned(), json!(cursor.0));
+    }
+    Value::Object(fields)
+}
+
+/// The encode side, built by hand for the same reason [`pull_request_cursors_encode`] is:
+/// `round` decodes first, and the decoder only accepts a string where the Type side holds
+/// a number. `turnLimit` is therefore wrapped unchecked so the two predicates land on the
+/// way out, and `beforeCursor` keeps its padding for the same reason.
+fn turn_limit_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let mut query = TurnLimitQuery {
+        reasoning_messages: Absent(None),
+        turn_limit: Absent(None),
+        before_cursor: Absent(None),
+    };
+    for (key, value) in fields {
+        match key.as_str() {
+            "reasoningMessages" => {
+                query.reasoning_messages =
+                    Absent(Some(serde_json::from_value(value.clone()).map_err(|_| ())?));
+            }
+            "turnLimit" => {
+                let Value::Number(number) = value else {
+                    return Err(());
+                };
+                query.turn_limit = Absent(Some(Checked::wrap(FiniteFromString(JsNumber(
+                    number.clone(),
+                )))));
+            }
+            "beforeCursor" => {
+                query.before_cursor = Absent(Some(NonEmpty(value.as_str().ok_or(())?.to_owned())));
+            }
+            _ => {}
+        }
+    }
+    serde_json::to_value(query).map_err(|_| ())
+}
+
+/// `Schema.withConstructorDefault` (`providerRuntime.ts:489`) and the plain
+/// `Schema.optional(Schema.Boolean)` it is stacked on are the *same* Rust field: the
+/// constructor default fills `.make({})` in and never reaches the wire. The golden records
+/// both schemas under one subject name, so a wire effect would show up as a disagreement.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct ConstructorDefault {
+    #[serde(
+        rename = "multiSelect",
+        default,
+        skip_serializing_if = "Absent::is_none"
+    )]
+    multi_select: Absent<bool>,
+}
+
 fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
     let mut map: BTreeMap<&'static str, (Codec, Codec)> = BTreeMap::new();
     map.insert(
@@ -1133,6 +1246,30 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         (
             |raw| round::<RecordingSave>(raw),
             |raw| round::<RecordingSave>(raw),
+        ),
+    );
+    // The Type side is a number and the Encoded side a string, so neither direction is a
+    // round trip: decode renders the number it decoded, encode builds from a JSON number
+    // and writes the string. `number_like` is what refuses a string on the way out.
+    map.insert(
+        "finiteFromString",
+        (
+            |raw| decode_as::<FiniteFromString, _>(raw, |value| json_number(&value.0)),
+            |raw| number_like(raw, |number| FiniteFromString(JsNumber(number))),
+        ),
+    );
+    map.insert(
+        "turnLimit",
+        (
+            |raw| decode_as::<TurnLimitQuery, _>(raw, turn_limit_type),
+            turn_limit_encode,
+        ),
+    );
+    map.insert(
+        "constructorDefault",
+        (
+            |raw| round::<ConstructorDefault>(raw),
+            |raw| round::<ConstructorDefault>(raw),
         ),
     );
     map
@@ -1773,6 +1910,179 @@ fn the_byte_field_the_cursor_and_the_menu_hold_their_measured_shape() {
     );
 }
 
+/// The two constructs this fatia adds — a number that crosses the wire as a *string*, and a
+/// constructor default that turns out to have no wire effect at all — asserted in-crate, so
+/// the findings survive without the golden.
+#[test]
+fn the_string_number_and_the_constructor_default_hold_their_measured_shape() {
+    // 1. `FiniteFromString` is the one place the `Finite`/`Number` collapse does **not** hold.
+    // A bare JSON number has no spelling for `Infinity`, so the finite gate on `Schema.Finite`
+    // is unreachable; here the Encoded side is a string, `"Infinity"` is spellable, and the
+    // gate really does refuse it — along with the overflow that produces one.
+    for text in [
+        "Infinity",
+        "-Infinity",
+        "  Infinity  ",
+        "1e309",
+        "-1e309",
+        "NaN",
+        "abc",
+        "1e",
+        "1e+",
+        "1_000",
+        ".",
+        "1 2",
+        "0x",
+    ] {
+        assert!(
+            serde_json::from_value::<FiniteFromString>(json!(text)).is_err(),
+            "{text:?} is not a finite number"
+        );
+    }
+    assert!(
+        serde_json::from_value::<JsNumber>(json!("Infinity")).is_err(),
+        "and on the bare primitive the same text is not a number at all"
+    );
+
+    // 2. Decoding is JavaScript's `Number()`, not `str::parse::<f64>()`: the empty string is
+    // zero, radix prefixes are honoured, a leading `+` and a bare `.` fraction are legal, and
+    // `0123` is decimal rather than octal. Rust's own parser refuses the first two outright,
+    // which is the whole reason this primitive carries its own conversion.
+    assert!("".parse::<f64>().is_err());
+    assert!("0x10".parse::<f64>().is_err());
+    for (text, number) in [
+        ("", 0.0),
+        ("   ", 0.0),
+        ("0x10", 16.0),
+        ("0X1f", 31.0),
+        ("0b101", 5.0),
+        ("0o17", 15.0),
+        ("0123", 123.0),
+        ("1.", 1.0),
+        (".5", 0.5),
+        ("+1", 1.0),
+        (" 1 ", 1.0),
+        ("\t\n1\r\n", 1.0),
+    ] {
+        let decoded = serde_json::from_value::<FiniteFromString>(json!(text))
+            .unwrap_or_else(|_| panic!("{text:?} is a JavaScript number"));
+        assert_eq!(
+            decoded.0.0.as_f64().expect("a JSON number"),
+            number,
+            "Number({text:?})"
+        );
+    }
+
+    // 3. Encoding is `String(n)`, where the ECMAScript exponent thresholds live: 1e21 is the
+    // first large value written exponentially and 1e-7 the first small one. Rust's `Display`
+    // writes neither, so a port that reached for `to_string` would put twenty-one digits on
+    // the wire where the shipped codec puts five characters.
+    assert_eq!(format!("{}", 1e21f64), "1000000000000000000000");
+    assert_eq!(format!("{}", 1e-7f64), "0.0000001");
+    for (number, text) in [
+        (1e20, "100000000000000000000"),
+        (1e21, "1e+21"),
+        (1.5e21, "1.5e+21"),
+        (1e-6, "0.000001"),
+        (1e-7, "1e-7"),
+        (-1.5e-7, "-1.5e-7"),
+        (0.0, "0"),
+        (-0.0, "0"),
+        (1.0 / 3.0, "0.3333333333333333"),
+    ] {
+        let value = FiniteFromString(JsNumber(
+            serde_json::Number::from_f64(number).expect("finite"),
+        ));
+        assert_eq!(
+            serde_json::to_value(&value).expect("a finite number always encodes"),
+            json!(text),
+            "String({number})"
+        );
+    }
+
+    // 4. `turnLimit` is `isInt()` + `isGreaterThanOrEqualTo(1)` over the **decoded** number, so
+    // the predicates see 16 for `"0x10"` and 2000 for `"2e3"`. This is what the `Numeric` trait
+    // buys: without it the six checks would apply only to a bare `JsNumber` and this field
+    // could not carry them at all.
+    for (text, number) in [
+        ("1", 1),
+        ("2", 2),
+        (" 2 ", 2),
+        ("0x10", 16),
+        ("2e3", 2000),
+        ("9007199254740991", 9_007_199_254_740_991i64),
+    ] {
+        assert_eq!(
+            decode_as::<TurnLimitQuery, _>(&json!({ "turnLimit": text }), turn_limit_type)
+                .expect("a legal window"),
+            json!({ "turnLimit": number }),
+            "turnLimit {text:?}"
+        );
+    }
+    for text in [
+        "0",
+        "-1",
+        "1.5",
+        "abc",
+        "",
+        "Infinity",
+        "NaN",
+        "9007199254740993",
+    ] {
+        assert!(
+            serde_json::from_value::<TurnLimitQuery>(json!({ "turnLimit": text })).is_err(),
+            "{text:?} is not a positive safe integer"
+        );
+    }
+
+    // 5. All three fields are optional, and `reasoningMessages` is the *string* literal
+    // `"true"` — a boolean `true` is not it, and neither is `"false"`. Omitting everything
+    // keeps the full-snapshot behaviour the declaration's comment promises.
+    assert_eq!(
+        round::<TurnLimitQuery>(&json!({})).expect("every field optional"),
+        json!({}),
+    );
+    assert_eq!(
+        round::<TurnLimitQuery>(&json!({ "reasoningMessages": "true" })).expect("the literal"),
+        json!({ "reasoningMessages": "true" }),
+    );
+    for bad in [json!(true), json!("false"), json!(1)] {
+        assert!(
+            serde_json::from_value::<TurnLimitQuery>(json!({ "reasoningMessages": bad })).is_err(),
+            "reasoningMessages is one literal"
+        );
+    }
+    assert_eq!(
+        round::<TurnLimitQuery>(&json!({ "beforeCursor": "  c  " })).expect("trims, then checks"),
+        json!({ "beforeCursor": "c" }),
+    );
+    assert!(
+        serde_json::from_value::<TurnLimitQuery>(json!({ "beforeCursor": "   " })).is_err(),
+        "whitespace-only trims to empty"
+    );
+
+    // 6. `withConstructorDefault` is a constructor obligation, not a codec one: measured
+    // against a plain `Schema.optional(Schema.Boolean)` on seven inputs in both directions,
+    // every result is identical. It fills `.make({})`, never the wire — so the Rust field is
+    // the same `Absent<bool>` the plain optional gets. Reading it as `withDecodingDefault`
+    // would write `{"multiSelect":false}` for `{}`, which is the mutation this guards.
+    assert_eq!(
+        round::<ConstructorDefault>(&json!({})).expect("absent stays absent"),
+        json!({}),
+    );
+    assert_eq!(
+        round::<ConstructorDefault>(&json!({ "multiSelect": false }))
+            .expect("an explicit false is kept, not defaulted away"),
+        json!({ "multiSelect": false }),
+    );
+    for bad in [json!(null), json!("x"), json!(1)] {
+        assert!(
+            serde_json::from_value::<ConstructorDefault>(json!({ "multiSelect": bad })).is_err(),
+            "the default does not widen the field"
+        );
+    }
+}
+
 #[test]
 fn replays_the_golden_codec_behaviour() {
     let Some(path) = env::var_os("LMCS_CONTRACTS_GOLDEN").map(PathBuf::from) else {
@@ -1872,18 +2182,18 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 58, "ported subject count changed");
+    assert_eq!(table.len(), 61, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form, and every \
          subject contributes one case per direction"
     );
     assert_eq!(
-        skipped, 32,
+        skipped, 38,
         "6 scalars take `undefined` outright, 20 shape cases take `{{v: undefined}}` — or, \
-         for Void/Unknown/Union/Never, `undefined` itself — the 2 contextMenu cases take an \
-         `optionalKey` own key holding `undefined`, and the 4 recordingSave cases take an \
-         actual byte sequence"
+         for Void/Unknown/Union/Never, `undefined` itself — the 2 contextMenu, 2 turnLimit and \
+         4 constructorDefault cases take an `optionalKey` own key holding `undefined`, and the \
+         4 recordingSave cases take an actual byte sequence"
     );
     assert_eq!(
         incomparable, 14,
@@ -1904,5 +2214,5 @@ fn replays_the_golden_codec_behaviour() {
         cases.len(),
         "some case was neither replayed nor classified"
     );
-    assert_eq!(replayed, 969, "only replayed {replayed} cases");
+    assert_eq!(replayed, 1202, "only replayed {replayed} cases");
 }
