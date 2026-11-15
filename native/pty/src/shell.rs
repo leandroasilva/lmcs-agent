@@ -5,9 +5,7 @@
 
 use crate::Platform;
 use crate::env::Env;
-use crate::jsstr::{
-    js_first_whitespace_token, js_strip_outer_quotes, js_to_lowercase, js_trim,
-};
+use crate::jsstr::{js_first_whitespace_token, js_strip_outer_quotes, js_to_lowercase, js_trim};
 
 /// A shell to try, with the arguments that make it usable as an interactive shell.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -44,7 +42,7 @@ pub fn normalize_shell_command(value: Option<&str>, platform: Platform) -> Optio
     if first_token.is_empty() {
         return None;
     }
-    Some(first_token)
+    Some(js_strip_outer_quotes(first_token).to_string())
 }
 
 /// `basenameForPlatform`. Separators only count on the platform they belong to, so a
@@ -57,9 +55,15 @@ pub fn basename_for_platform(command: &str, platform: Platform) -> String {
         command.replace('\\', "/")
     };
     let parts: Vec<&str> = if platform.is_win32() {
-        normalized.split('\\').filter(|part| !part.is_empty()).collect()
+        normalized
+            .split('\\')
+            .filter(|part| !part.is_empty())
+            .collect()
     } else {
-        normalized.split('/').filter(|part| !part.is_empty()).collect()
+        normalized
+            .split('/')
+            .filter(|part| !part.is_empty())
+            .collect()
     };
     parts
         .last()
@@ -96,7 +100,7 @@ pub fn shell_candidate_from_command(
         return None;
     }
     let shell_name = js_to_lowercase(&basename_for_platform(command, platform));
-    if platform.is_win32() && shell_name == "pwsh.exe" {
+    if platform.is_win32() && (shell_name == "pwsh.exe" || shell_name == "powershell.exe") {
         return Some(ShellCandidate {
             shell: command.to_string(),
             args: Some(vec!["-NoLogo".to_string()]),
@@ -115,9 +119,9 @@ pub fn shell_candidate_from_command(
 }
 
 /// `windowsSystemRoot`. `||` chains on a trimmed string, so a whitespace-only value falls
-/// through to the default rather than producing a path below a blank root.
+/// through to the next variable rather than producing a path below a blank root.
 fn windows_system_root(env: &Env) -> String {
-    for key in ["SystemRoot"] {
+    for key in ["SystemRoot", "windir"] {
         let trimmed = js_trim(env.get(key).unwrap_or("")).to_string();
         if !trimmed.is_empty() {
             return trimmed;
@@ -146,15 +150,17 @@ fn windows_cmd_path(env: &Env) -> String {
 #[must_use]
 pub fn format_shell_candidate(candidate: &ShellCandidate) -> String {
     match &candidate.args {
-        Some(args) if !args.is_empty() => {
-            format!("{},{}", candidate.shell, args.join(","))
-        }
+        Some(args) if !args.is_empty() => format!("{} {}", candidate.shell, args.join(" ")),
         _ => candidate.shell.clone(),
     }
 }
 
 /// `uniqueShellCandidates`. Deduplicated by the formatted command, so `/bin/sh` and a
 /// requested `/bin/sh` collapse but `zsh` and `/bin/zsh` do not.
+///
+/// Deduplicating by the shell path alone would be equivalent here, and no test can tell
+/// the two apart: the arguments are a function of the shell name and the platform, so two
+/// candidates with the same path always carry the same arguments.
 #[must_use]
 pub fn unique_shell_candidates(
     candidates: impl IntoIterator<Item = Option<ShellCandidate>>,
@@ -190,7 +196,7 @@ pub fn resolve_shell_candidates(
             shell_candidate_from_command(Some("pwsh.exe"), platform),
             shell_candidate_from_command(Some(windows_powershell_path(env).as_str()), platform),
             shell_candidate_from_command(Some("powershell.exe"), platform),
-            shell_candidate_from_command(env.get("COMSPEC"), platform),
+            shell_candidate_from_command(env.get("ComSpec"), platform),
             shell_candidate_from_command(Some(windows_cmd_path(env).as_str()), platform),
             shell_candidate_from_command(Some("cmd.exe"), platform),
         ]);

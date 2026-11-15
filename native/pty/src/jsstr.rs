@@ -72,7 +72,10 @@ mod tests {
 
     #[test]
     fn tokenizing_splits_on_nbsp_but_not_nel() {
-        assert_eq!(js_first_whitespace_token("/bin/zsh\u{a0}--login"), "/bin/zsh");
+        assert_eq!(
+            js_first_whitespace_token("/bin/zsh\u{a0}--login"),
+            "/bin/zsh"
+        );
         assert_eq!(
             js_first_whitespace_token("/bin/zsh\u{85}--login"),
             "/bin/zsh\u{85}--login"

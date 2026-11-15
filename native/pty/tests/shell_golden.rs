@@ -9,7 +9,9 @@ use std::cell::RefCell;
 
 use lmcs_pty::env::Env;
 use lmcs_pty::spawn::{PtySpawnError, PtySpawnInput, SpawnCause, Spawner, try_spawn};
-use lmcs_pty::{Platform, create_terminal_spawn_env, normalized_runtime_env, resolve_shell_candidates};
+use lmcs_pty::{
+    Platform, create_terminal_spawn_env, normalized_runtime_env, resolve_shell_candidates,
+};
 use serde_json::Value;
 
 fn unhex(value: &str) -> String {
@@ -24,10 +26,9 @@ fn fail_cause(fail_mode: &str) -> SpawnCause {
     match fail_mode {
         // The shape `node-pty` produces on a missing executable: a message with a nested
         // message below it, neither of them an `Error` the manager could pattern-match.
-        "retryable" => SpawnCause::caused(
-            "posix_spawnp failed.",
-            SpawnCause::error("Extra detail."),
-        ),
+        "retryable" => {
+            SpawnCause::caused("posix_spawnp failed.", SpawnCause::error("Extra detail."))
+        }
         "fatal" => SpawnCause::error("EACCES: permission denied"),
         _ => SpawnCause::text("EACCES: permission denied"),
     }
@@ -42,10 +43,9 @@ impl Spawner for Scripted {
     type Process = ();
 
     fn spawn(&self, input: &PtySpawnInput) -> Result<(), PtySpawnError> {
-        self.seen.borrow_mut().push((
-            input.shell.to_string(),
-            input.args.map(<[String]>::to_vec),
-        ));
+        self.seen
+            .borrow_mut()
+            .push((input.shell.to_string(), input.args.map(<[String]>::to_vec)));
         if self.fail_mode == "none" {
             return Ok(());
         }
@@ -107,7 +107,9 @@ fn group(lines: &[&str]) -> Vec<Case> {
                 let text = unhex(payload);
                 match op {
                     "N" => case.input = serde_json::from_str(&text).expect("case input"),
-                    "A" => case.attempts.push(serde_json::from_str(&text).expect("spawn input")),
+                    "A" => case
+                        .attempts
+                        .push(serde_json::from_str(&text).expect("spawn input")),
                     "V" => case.environment = Some(serde_json::from_str(&text).expect("child env")),
                     "S" => case.snapshot = Some(serde_json::from_str(&text).expect("snapshot")),
                     "E" | "M" => case.errors.push(text),
@@ -129,7 +131,7 @@ fn replays_the_shipped_managers_shell_selection_and_child_environment() {
     let text = std::fs::read_to_string(&path).expect("the trace file is readable");
     let lines: Vec<&str> = text.lines().filter(|line| !line.is_empty()).collect();
     let cases = group(&lines);
-    assert_eq!(cases.len(), 19, "the trace has nineteen cases");
+    assert_eq!(cases.len(), 21, "the trace has twenty-one cases");
 
     let mut replayed_attempts = 0;
     let mut replayed_environment_entries = 0;
@@ -137,7 +139,9 @@ fn replays_the_shipped_managers_shell_selection_and_child_environment() {
     for case in &cases {
         let label = |what: &str| format!("{}: expected {what}", case.name);
         let platform = Platform::from_node_str(
-            case.input["platform"].as_str().expect(&label("a platform")),
+            case.input["platform"]
+                .as_str()
+                .unwrap_or_else(|| panic!("{}", label("a platform"))),
         );
         let base = Env::from_pairs(pairs(&case.input["baseEnv"]));
         let requested = match &case.input["shell"] {
@@ -166,7 +170,11 @@ fn replays_the_shipped_managers_shell_selection_and_child_environment() {
         };
         let runtime = normalized_runtime_env((!runtime.is_empty()).then_some(runtime));
         let spawned = create_terminal_spawn_env(&base, runtime.as_deref(), "<M>", platform);
-        let expected = pairs(case.environment.as_ref().expect(&label("a child environment")));
+        let expected = pairs(
+            case.environment
+                .as_ref()
+                .unwrap_or_else(|| panic!("{}", label("a child environment"))),
+        );
         assert_eq!(
             spawned.entries(),
             expected.as_slice(),
@@ -179,7 +187,7 @@ fn replays_the_shipped_managers_shell_selection_and_child_environment() {
         let spawner = Scripted {
             fail_mode: case.input["failMode"]
                 .as_str()
-                .expect(&label("a fail mode"))
+                .unwrap_or_else(|| panic!("{}", label("a fail mode")))
                 .to_string(),
             seen: RefCell::new(Vec::new()),
         };
@@ -221,12 +229,7 @@ fn replays_the_shipped_managers_shell_selection_and_child_environment() {
 
         match (result, case.snapshot.as_ref()) {
             (Ok(spawned_process), Some(snapshot)) => {
-                assert_eq!(
-                    snapshot["status"],
-                    Value::from("running"),
-                    "{}",
-                    case.name
-                );
+                assert_eq!(snapshot["status"], Value::from("running"), "{}", case.name);
                 let attempt = &case.attempts[0];
                 let expected_label = match attempt.get("args").and_then(Value::as_array) {
                     Some(args) => format!(
@@ -256,9 +259,9 @@ fn replays_the_shipped_managers_shell_selection_and_child_environment() {
         }
     }
 
-    assert_eq!(replayed_attempts, 102, "every attempt in the trace ran");
+    assert_eq!(replayed_attempts, 104, "every attempt in the trace ran");
     assert_eq!(
-        replayed_environment_entries, 56,
+        replayed_environment_entries, 62,
         "every child environment entry in the trace was compared"
     );
 }

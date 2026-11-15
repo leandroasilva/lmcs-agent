@@ -89,7 +89,10 @@ impl PtySpawnError {
             }
             _ => String::new(),
         };
-        format!("Failed to spawn PTY process{shell} with {}.{}", self.adapter, attempted)
+        format!(
+            "Failed to spawn PTY process{shell} with {}.{}",
+            self.adapter, attempted
+        )
     }
 
     /// Every message in the error and its causes, in the order the shipped walker

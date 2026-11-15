@@ -321,6 +321,33 @@ const cases: ReadonlyArray<Case> = [
     baseEnv: { SHELL: "/usr/local/bin/my shell" },
     failMode: "retryable",
   },
+  {
+    // The AppImage gate is on either marker, so `APPIMAGE` alone still scrubs the four
+    // markers — but with no `APPDIR` there is no mount root to cut out of PATH.
+    name: "posixAppImageMarkerOnly",
+    platform: "linux",
+    baseEnv: {
+      SHELL: "/bin/sh",
+      APPIMAGE: "/x/lmcs.AppImage",
+      ARGV0: "lmcs",
+      OWD: "/x",
+      PATH: "/usr/bin:/tmp/mount-XXXX/usr/bin",
+    },
+    failMode: "none",
+  },
+  {
+    // A PATH segment equal to the mount root itself, not merely below it, is a mount
+    // segment too; the segments under it are cut by the prefix rule.
+    name: "linuxAppImageMountRoot",
+    platform: "linux",
+    baseEnv: {
+      SHELL: "/bin/bash",
+      APPDIR: "/tmp/mount-XXXX",
+      PATH: "/tmp/mount-XXXX:/usr/bin:/tmp/mount-XXXX/bin:/tmp/other/bin",
+      XDG_DATA_DIRS: "/tmp/mount-XXXX",
+    },
+    failMode: "none",
+  },
 ];
 
 const run = Effect.gen(function* () {

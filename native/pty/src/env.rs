@@ -94,7 +94,7 @@ pub fn should_exclude_terminal_env_key(key: &str) -> bool {
 
 /// `isPathSegmentUnderAppDir`.
 fn is_path_segment_under_app_dir(segment: &str, app_dir: &str) -> bool {
-    segment.starts_with(&format!("{app_dir}/"))
+    segment == app_dir || segment.starts_with(&format!("{app_dir}/"))
 }
 
 /// `stripAppImageRuntimeEnv`. Gated on an actual AppImage launch so a non-AppImage
@@ -123,7 +123,9 @@ pub fn strip_appimage_runtime_env(env: &mut Env) {
         };
         let kept: Vec<&str> = value
             .split(':')
-            .filter(|segment| !segment.is_empty() && !is_path_segment_under_app_dir(segment, app_dir))
+            .filter(|segment| {
+                !segment.is_empty() && !is_path_segment_under_app_dir(segment, app_dir)
+            })
             .collect();
         if kept.is_empty() {
             env.remove(key);
@@ -144,7 +146,7 @@ pub fn normalized_runtime_env(env: Option<Vec<(String, String)>>) -> Option<Vec<
     if entries.is_empty() {
         return None;
     }
-    
+    entries.sort_by(|(left, _), (right, _)| left.cmp(right));
     Some(entries)
 }
 
@@ -158,7 +160,10 @@ fn expand_home_path(value: &str, home: &str, join_platform: Platform) -> String 
     if value == "~" {
         return home.to_string();
     }
-    if let Some(rest) = value.strip_prefix("~/").or_else(|| value.strip_prefix("~\\")) {
+    if let Some(rest) = value
+        .strip_prefix("~/")
+        .or_else(|| value.strip_prefix("~\\"))
+    {
         return node_path_join(home, rest, join_platform);
     }
     value.to_string()
@@ -278,7 +283,12 @@ mod tests {
 
     #[test]
     fn empty_appdir_removes_markers_without_touching_paths() {
-        let mut scrubbed = env(&[("APPDIR", ""), ("PATH", "/a:/b"), ("APPIMAGE", "/x.AppImage"), ("ARGV0", "lmcs")]);
+        let mut scrubbed = env(&[
+            ("APPDIR", ""),
+            ("PATH", "/a:/b"),
+            ("APPIMAGE", "/x.AppImage"),
+            ("ARGV0", "lmcs"),
+        ]);
         strip_appimage_runtime_env(&mut scrubbed);
         assert_eq!(scrubbed.get("APPIMAGE"), None);
         assert_eq!(scrubbed.get("ARGV0"), None);
@@ -313,10 +323,7 @@ mod tests {
             expand_home_path("~user/a", "/home/u", Platform::Linux),
             "~user/a"
         );
-        assert_eq!(
-            expand_home_path("a~/b", "/home/u", Platform::Linux),
-            "a~/b"
-        );
+        assert_eq!(expand_home_path("a~/b", "/home/u", Platform::Linux), "a~/b");
     }
 
     #[test]
