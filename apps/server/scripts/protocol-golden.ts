@@ -42,7 +42,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 // encodes — is the contracts golden's job, not this one.
 // ---------------------------------------------------------------------------
 
-class ProtocolGoldenError extends Schema.TaggedError()("ProtocolGoldenError", {
+class ProtocolGoldenError extends Schema.TaggedError<ProtocolGoldenError>()("ProtocolGoldenError", {
   why: Schema.String,
 }) {}
 
@@ -138,7 +138,19 @@ type Frame = {
   readonly input?: string;
 };
 
+// A WebSocket close is part of what the transport does but is not a frame, and pretending
+// otherwise would mean inventing text for it. `b.headersAbsent` measured exactly this: the
+// server answers an invalid envelope by taking the connection down.
+type WireEvent = {
+  readonly case: string;
+  readonly event: "close";
+  readonly code: number;
+  readonly reason: string;
+  readonly wasClean: boolean;
+};
+
 const frames: Frame[] = [];
+const events: WireEvent[] = [];
 const counts = new Map<string, number>();
 const record = (frame: Frame) => {
   frames.push(frame);
@@ -150,7 +162,11 @@ const record = (frame: Frame) => {
 // emitting a golden the Rust side cannot match.
 const TRACE_ID = "__TRACE_ID__";
 const SPAN_ID = "__SPAN_ID__";
-const FIBER_ID = "__FIBER_ID__";
+// `fiberId` is a JSON **number**, so the sentinel has to be one too — `"__FIBER_ID__"` would
+// make the recorded frame unparseable, which is the one thing a byte golden cannot afford.
+// `Number.MAX_SAFE_INTEGER` is unmistakable and, at sixteen digits, the value most likely to be
+// reformatted on its way through a parser.
+const FIBER_ID = "9007199254740991";
 
 const mask = (text: string): string => {
   const out = text
@@ -159,7 +175,8 @@ const mask = (text: string): string => {
     .replace(/"fiberId":\d+/g, `"fiberId":${FIBER_ID}`);
   if (
     /"traceId":"(?!__TRACE_ID__)[^"]*"/.test(out) ||
-    /"spanId":"(?!__SPAN_ID__)[^"]*"/.test(out)
+    /"spanId":"(?!__SPAN_ID__)[^"]*"/.test(out) ||
+    /"fiberId":(?!9007199254740991)/.test(out)
   ) {
     throw new Error(`frame carries a trace field the mask did not recognise: ${out}`);
   }
@@ -179,9 +196,9 @@ let currentInput: string | undefined;
 
 const observe = (direction: "c2s" | "s2c", data: unknown): void => {
   if (typeof data !== "string") {
-    throw new Error(
-      `${direction} frame was not text: ${data === null ? "null" : data.constructor?.name}`,
-    );
+    // `Object.prototype.toString` is the total form: it names a `Uint8Array` as well as a
+    // `null`, and a binary frame is exactly the thing this check exists to notice.
+    throw new Error(`${direction} frame was not text: ${Object.prototype.toString.call(data)}`);
   }
   if ((direction === "c2s" && data === PING) || (direction === "s2c" && data === PONG)) {
     const key = `${direction} ${data}`;
@@ -473,12 +490,193 @@ const pathB = Effect.gen(function* () {
     1,
     80,
   );
+  // `isNotification` is honoured only by the buffered HTTP path, which drops notification
+  // requests instead of answering them (`RpcServer.ts:1107-1111`). On a WebSocket, framing is
+  // included, so the question is whether the flag changes anything at all. It does not: the
+  // `id` is still required, and an answered notification still gets its `Exit`.
+  yield* send(
+    "b.notificationWithoutId",
+    '{"_tag":"Request","isNotification":true,"tag":"emptyInEmptyOut","payload":{},"headers":[]}',
+    1,
+    80,
+  );
+  yield* send(
+    "b.notificationWithId",
+    '{"_tag":"Request","id":9008,"isNotification":true,"tag":"emptyInEmptyOut","payload":{},"headers":[]}',
+    1,
+    80,
+  );
   yield* send("b.ackUnknownRequest", '{"_tag":"Ack","requestId":9999}', 0, 150);
   yield* send("b.interruptUnknownRequest", '{"_tag":"Interrupt","requestId":9998}', 0, 150);
   yield* send("b.eofFromClient", '{"_tag":"Eof"}', 0, 150);
   yield* send("b.pongFromClient", '{"_tag":"Pong"}', 1, 80);
   yield* send("b.chunkFromClient", '{"_tag":"Chunk","requestId":1,"values":[]}', 1, 80);
   yield* send("b.exitFromClient", '{"_tag":"Exit","requestId":1,"exit":{}}', 1, 80);
+
+  // The branches of `RpcServer.ts:764-820` that a well-formed client never reaches. Each one
+  // turns into a byte the Rust server has to reproduce, and the interesting part is the
+  // `String(...)` coercion inside the template: `null`, `true`, `[]` and `{}` all interpolate
+  // differently, and `[]` yields the empty string, so the frame ends with a trailing space.
+  //
+  // Each is followed by a canary request, because a frame that takes the connection down
+  // answers nothing and a count of zero would otherwise read as "rejected cleanly". The canary
+  // case records the canary only if the socket is still OPEN, so "no frames under `<name>.canary`"
+  // means the server closed, and never records a frame that was not really written.
+  const canary = { next: 0 };
+  const attempt = (name: string, frame: string) =>
+    Effect.gen(function* () {
+      if (ws.readyState !== globalThis.WebSocket.OPEN) {
+        // Nothing was written, so nothing is recorded under this case; the absence is the
+        // measurement saying the socket was already down.
+        scenarioFrames(name, { c2s: 0, s2c: 0 });
+        return;
+      }
+      const before = seen.length;
+      yield* Effect.sync(() => {
+        scenario(name, frame);
+        observe("c2s", frame);
+        ws.send(frame);
+      });
+      yield* sleep(120);
+      scenarioFrames(name, { c2s: 1, s2c: seen.length - before });
+    });
+  const probeLiveness = (name: string, input: string) =>
+    Effect.gen(function* () {
+      yield* attempt(name, input);
+      yield* attempt(
+        `${name}.canary`,
+        `{"_tag":"Request","id":${9200 + canary.next++},"tag":"voidSuccess","payload":{},"headers":[]}`,
+      );
+    });
+
+  yield* probeLiveness(
+    "b.requestWithoutTag",
+    '{"_tag":"Request","id":9010,"payload":{},"headers":[]}',
+  );
+  yield* probeLiveness(
+    "b.requestTagNumber",
+    '{"_tag":"Request","id":9011,"tag":123,"payload":{},"headers":[]}',
+  );
+  yield* probeLiveness(
+    "b.idNull",
+    '{"_tag":"Request","id":null,"tag":"emptyInEmptyOut","payload":{},"headers":[]}',
+  );
+  yield* probeLiveness(
+    "b.idTrue",
+    '{"_tag":"Request","id":true,"tag":"emptyInEmptyOut","payload":{},"headers":[]}',
+  );
+  yield* probeLiveness(
+    "b.idArray",
+    '{"_tag":"Request","id":[],"tag":"emptyInEmptyOut","payload":{},"headers":[]}',
+  );
+  yield* probeLiveness(
+    "b.idObject",
+    '{"_tag":"Request","id":{},"tag":"emptyInEmptyOut","payload":{},"headers":[]}',
+  );
+  // These reach the envelope **decoder**, which runs before the `switch` above, so they are a
+  // different failure class from the id and tag probes: `headers` is a required struct field
+  // that path A always writes, and the last four are not objects or not JSON at all. The first
+  // one measured as a connection teardown — nothing came back and the shared socket was closed
+  // afterwards — so each gets its own connection, and the close itself is recorded as an event
+  // rather than squeezed into a frame.
+  const probeIsolated = (name: string, input: string) =>
+    Effect.gen(function* () {
+      const sock = new globalThis.WebSocket(url);
+      const arrived: Array<string> = [];
+      // Captured locally and committed only before this file closes the socket itself, so the
+      // golden records the server's close and not the one this probe initiated.
+      let closedByServer: WireEvent | undefined;
+      yield* Effect.promise(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            sock.addEventListener("open", () => resolve());
+            sock.addEventListener("error", () => reject(new Error(`${name}: socket errored`)));
+          }),
+      );
+      sock.addEventListener("message", (event) => {
+        if (typeof event.data !== "string") {
+          throw new Error(`${name}: server sent a non-text frame`);
+        }
+        arrived.push(event.data);
+      });
+      sock.addEventListener("close", (event) => {
+        const close = event as unknown as {
+          readonly code?: number;
+          readonly reason?: string;
+          readonly wasClean?: boolean;
+        };
+        closedByServer ??= {
+          case: name,
+          event: "close",
+          code: close.code ?? -1,
+          reason: close.reason ?? "",
+          wasClean: close.wasClean ?? false,
+        };
+      });
+      scenario(name, input);
+      observe("c2s", input);
+      sock.send(input);
+      yield* sleep(250);
+      for (const text of arrived) observe("s2c", text);
+      scenarioFrames(name, { c2s: 1, s2c: arrived.length });
+      // Silence alone does not distinguish "closed the connection" from "dropped the frame and
+      // carried on", and the two need different servers. Ask the same socket.
+      const canaryCase = `${name}.canary`;
+      const canaryFrame = `{"_tag":"Request","id":${9300 + canary.next++},"tag":"voidSuccess","payload":{},"headers":[]}`;
+      if (sock.readyState === globalThis.WebSocket.OPEN) {
+        const before = arrived.length;
+        scenario(canaryCase, canaryFrame);
+        observe("c2s", canaryFrame);
+        sock.send(canaryFrame);
+        yield* sleep(250);
+        for (const text of arrived.slice(before)) observe("s2c", text);
+        scenarioFrames(canaryCase, { c2s: 1, s2c: arrived.length - before });
+      } else {
+        scenarioFrames(canaryCase, { c2s: 0, s2c: 0 });
+      }
+      // A close that arrives while the canary was in flight still belongs to this case.
+      yield* sleep(100);
+      if (closedByServer) events.push(closedByServer);
+      sock.close();
+      yield* sleep(20);
+    });
+
+  // What these really are, once `RpcSerialization.json.decode` is read (`RpcSerialization.ts:126-132`):
+  // `JSON.parse`, and **if the result is an array it is a batch**. Nothing in this path ever
+  // consults `RpcMessage.EncodedSchema` — that union is the *binary* serializer's envelope
+  // (`RpcSerialization.ts:549`) — so no frame here fails "schema validation". What fails is
+  // whichever field the server code touches: `id` through `typeof`, `tag` through a `Map.get`,
+  // `payload` through the rpc's own decoder, and `headers` through `Headers.fromInput`, which
+  // throws on `undefined` and takes the connection down with it.
+  //
+  // Each gets its own connection, because two of these do close, and the close itself is
+  // recorded as an event rather than squeezed into a frame.
+  yield* probeIsolated(
+    "b.headersAbsent",
+    '{"_tag":"Request","id":9012,"tag":"emptyInEmptyOut","payload":{}}',
+  );
+  yield* probeIsolated("b.notAnObject", "null");
+  // A batch, per the rule above: empty, of two real requests, of a non-message object, and of
+  // the one JSON value that throws when the server reads `._tag` off it.
+  yield* probeIsolated("b.arrayFrame", "[]");
+  yield* probeIsolated(
+    "b.batchOfTwo",
+    '[{"_tag":"Request","id":9400,"tag":"voidSuccess","payload":{},"headers":[]},{"_tag":"Request","id":9401,"tag":"scalarSuccess","payload":null,"headers":[]}]',
+  );
+  yield* probeIsolated("b.batchOfNonMessage", "[{}]");
+  yield* probeIsolated("b.batchWithNull", "[null]");
+  // Not an object and not an array: `._tag` on a number or a string is simply `undefined`.
+  yield* probeIsolated("b.scalarFrame", "42");
+  yield* probeIsolated("b.malformedJson", '{"_tag":');
+  yield* probeIsolated("b.emptyFrame", "");
+  // The shared socket only ever received inputs that were rejected in place, so it must still
+  // be answering here; that is the difference between a rejection and a teardown.
+  yield* send(
+    "b.aliveAfterRejects",
+    '{"_tag":"Request","id":9013,"tag":"emptyInEmptyOut","payload":{},"headers":[]}',
+    1,
+    120,
+  );
 
   // Does a broadcast `Defect` clear requests already in flight? Two 600 ms handlers are
   // started and a garbage frame lands between them.
@@ -534,15 +732,25 @@ const check = Effect.sync(() => {
   }
 
   // `Eof` is in the protocol union but the WebSocket transport never writes it — only
-  // `makeProtocolWithHttpEffect` does (`RpcServer.ts:1153`). `isNotification` is a
-  // JSON-RPC-serializer idea (`RpcSerialization.ts:322`) and never appears under `layerJson`.
-  // Asserting both turns "we did not happen to see one" into a claim about the golden.
+  // `makeProtocolWithHttpEffect` does (`RpcServer.ts:1153`). `isNotification` is written by the
+  // JSON-RPC serializer (`RpcSerialization.ts:322`), not by `layerJson`, and `b.notification*`
+  // shows the server tolerates the key rather than rejecting it, so the only way to learn that
+  // is to claim something about the peer that actually writes. Both claims are therefore about
+  // what the real peers write, and path B is excluded: this file fabricates
+  // `"isNotification":true` and `"_tag":"Eof"` frames on purpose to reach the rejection paths.
   if (frames.some((f) => f.direction === "s2c" && f.frame.includes('"_tag":"Eof"'))) {
     throw new Error("the server wrote an Eof frame on a WebSocket, contradicting the measurement");
   }
-  if (frames.some((f) => f.direction === "c2s" && f.frame.includes('"isNotification"'))) {
+  if (
+    frames.some(
+      (f) =>
+        f.direction === "c2s" &&
+        (f.case.startsWith("a.") || f.case === "keepalive") &&
+        f.frame.includes('"isNotification"'),
+    )
+  ) {
     throw new Error(
-      "the client wrote isNotification under layerJson, contradicting the measurement",
+      "the real client wrote isNotification under layerJson, contradicting the measurement",
     );
   }
   // Only path A counts: a `_tag`-less client frame is something this file fabricated on
@@ -564,6 +772,40 @@ const check = Effect.sync(() => {
     if (!frames.some((f) => f.frame.includes(sentinel))) {
       throw new Error(`sentinel ${sentinel} never appears: the mask or the shape moved`);
     }
+  }
+  // Two different instruments, and the distinction is the point: a message that is `null`
+  // throws when the server reads `._tag` off it and takes the connection down without a word,
+  // while a frame that fails to parse answers with a structured defect and carries on. Naming
+  // the groups here keeps that a claim of the golden rather than a reader's observation.
+  const teardowns = ["b.headersAbsent", "b.notAnObject", "b.batchWithNull"];
+  for (const name of teardowns) {
+    const answered = frames.some((f) => f.direction === "s2c" && f.case === name);
+    const closed = events.some((e) => e.case === name);
+    if (answered || !closed) {
+      throw new Error(
+        `${name}: expected silence plus a server close, got answered=${answered} closed=${closed}`,
+      );
+    }
+  }
+  const survivors = [
+    "b.arrayFrame",
+    "b.batchOfTwo",
+    "b.batchOfNonMessage",
+    "b.scalarFrame",
+    "b.malformedJson",
+    "b.emptyFrame",
+  ];
+  for (const name of survivors) {
+    if (!frames.some((f) => f.direction === "s2c" && f.case === `${name}.canary`)) {
+      throw new Error(`${name}: the socket should have survived to answer its canary`);
+    }
+    if (events.some((e) => e.case === name)) {
+      throw new Error(`${name}: the server closed a connection this run measured as alive`);
+    }
+  }
+  const closedCases = events.map((e) => e.case).filter((c) => !teardowns.includes(c));
+  if (closedCases.length > 0) {
+    throw new Error(`unexpected server close on ${JSON.stringify(closedCases)}`);
   }
   if (!keepaliveSeen.has("c2s " + PING) || !keepaliveSeen.has("s2c " + PONG)) {
     throw new Error("the keepalive pair was never observed on the real client");
@@ -597,11 +839,12 @@ const check = Effect.sync(() => {
     serverToClient: frames.filter((f) => f.direction === "s2c").length,
     scenarios: want.length,
     sentInputs: frames.filter((f) => f.input !== undefined).length,
+    closes: events.length,
     opcode: "text",
     serialization: "RpcSerialization.layerJson",
   };
   process.stderr.write(`${JSON.stringify(summary)}\n`);
-  process.stdout.write(`${JSON.stringify({ summary, frames }, undefined, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ summary, frames, events }, undefined, 2)}\n`);
 });
 
 const run = Effect.gen(function* () {
@@ -614,6 +857,12 @@ Effect.runPromise(run).then(
   () => process.exit(0),
   (cause) => {
     process.stderr.write(`protocol-golden failed: ${cause}\n`);
+    // A failing run still has to say what it saw, or extending the table is guesswork: the
+    // frames recorded before the throw go to stdout, and the exit code stays 1, so a redirect
+    // captures the partial measurement without ever mistaking it for a green one.
+    if (process.env.LMCS_PROTOCOL_GOLDEN_DEBUG) {
+      process.stdout.write(`${JSON.stringify({ frames, events }, undefined, 2)}\n`);
+    }
     process.exit(1);
   },
 );
