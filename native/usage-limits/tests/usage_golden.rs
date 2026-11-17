@@ -1,5 +1,5 @@
-//! Replays a trace captured from the shipped usage-limit mappers — the shared rules, the
-//! Claude sources and the Codex sources — so the Rust port is checked against the real code
+//! Replays a trace captured from the shipped usage-limit mappers — the shared rules and the
+//! Claude, Codex, Cursor and Grok sources — so the Rust port is checked against the real code
 //! rather than against a reading of it.
 //!
 //! Set `LMCS_USAGE_TRACE` to a trace file; the test skips when unset. Regenerate one with:
@@ -22,6 +22,8 @@ use lmcs_usage_limits::codex::{
     codex_rate_limits_to_update, codex_reset_credits_to_contract, codex_usage_limit_message,
     merge_codex_rate_limits,
 };
+use lmcs_usage_limits::cursor::cursor_usage_response_to_limits;
+use lmcs_usage_limits::grok::grok_usage_response_to_limits;
 use lmcs_usage_limits::limits::{
     self, Field, ResetCredits, UnavailableReason, UsageLimits, UsageLimitsUpdate, UsageWindow,
 };
@@ -228,6 +230,12 @@ fn checked_at(input: &Value) -> String {
     required_string(read::property(input, "checkedAt"), "checkedAt")
 }
 
+/// The Cursor and Grok mappers take the timestamp as a second argument, since their response
+/// body is the provider's own shape and has no room for one.
+fn second_argument(input: &Value) -> String {
+    required_string(&arg(input, 1), "checkedAt")
+}
+
 /// The three keys that are members of the shipped `WINDOWS` object through its prototype
 /// chain, and therefore draw a row there that the contract cannot describe.
 const PROTOTYPE_KEYS: [&str; 3] = ["constructor", "toString", "__proto__"];
@@ -381,6 +389,28 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
             )),
             None,
         ),
+        (
+            "cursor",
+            "cursorUsageResponseToLimits.billingCycleEnd" | "cursorUsageResponseToLimits.planUsage",
+        ) => (
+            canon_limits(&cursor_usage_response_to_limits(
+                &first,
+                &second_argument(input),
+            )),
+            None,
+        ),
+        (
+            "grok",
+            "grokUsageResponseToLimits.config"
+            | "grokUsageResponseToLimits.creditUsagePercent"
+            | "grokUsageResponseToLimits.currentPeriod",
+        ) => (
+            canon_limits(&grok_usage_response_to_limits(
+                &first,
+                &second_argument(input),
+            )),
+            None,
+        ),
         (module, name) => panic!("no port wired up for {module} {name}"),
     }
 }
@@ -421,12 +451,16 @@ fn records(text: &str) -> Vec<Record> {
 /// What the shipped code decides, per function. The counts are the trace's own partition: a
 /// fixture table that stops being replayed would otherwise lower the bar silently.
 const EXPECTED_COUNTS: &[(&str, usize)] = &[
+    ("cursor cursorUsageResponseToLimits.billingCycleEnd", 59),
     ("claude claudeRateLimitEventToUpdate", 44),
     ("claude claudeUsageResponseToLimits.resetsAt", 37),
     ("codex codexUsageLimitMessage", 36),
     ("codex codexRateLimitsToLimits", 31),
     ("codex codexRateLimitsToUpdate", 31),
+    ("grok grokUsageResponseToLimits.currentPeriod", 31),
+    ("cursor cursorUsageResponseToLimits.planUsage", 24),
     ("codex codexResetCreditsToContract", 20),
+    ("grok grokUsageResponseToLimits.creditUsagePercent", 17),
     ("claude claudeUsageResponseToLimits", 16),
     ("core applyUsageLimitsUpdate", 12),
     ("claude claudeUsageResponseToLimits.scopedId", 12),
@@ -436,13 +470,14 @@ const EXPECTED_COUNTS: &[(&str, usize)] = &[
     ("codex mergeCodexRateLimits", 7),
     ("codex codexRateLimitsFailureMessage", 7),
     ("core makeUnavailableUsageLimits", 4),
+    ("grok grokUsageResponseToLimits.config", 4),
     ("core makeUsageLimits.sort", 1),
     ("core makeUsageLimits.idOrder", 1),
     ("core makeUsageLimits.emptyIterable", 1),
     ("codex codexRateLimitsToLimits.byLimitId", 1),
     ("codex codexRateLimitsToLimits.emptyLimitIdMap", 1),
 ];
-const EXPECTED_TOTAL: usize = 290;
+const EXPECTED_TOTAL: usize = 425;
 
 #[test]
 fn replays_the_shipped_usage_limit_decisions() {

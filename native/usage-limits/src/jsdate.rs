@@ -30,7 +30,8 @@ fn is_js_whitespace(character: char) -> bool {
     character == '\u{feff}' || (character.is_whitespace() && character != '\u{85}')
 }
 
-fn trim_js(text: &str) -> &str {
+/// ECMAScript's `TrimString`, shared with `read`'s `Number(text)`, which trims the same set.
+pub(crate) fn trim_js(text: &str) -> &str {
     text.trim_start_matches(is_js_whitespace)
         .trim_end_matches(is_js_whitespace)
 }

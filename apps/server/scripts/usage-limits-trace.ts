@@ -4,13 +4,16 @@
 //
 // `node apps/server/scripts/usage-limits-trace.ts > /tmp/usage-trace.txt`
 //
-// Every case is a call into `providerUsageLimits.ts`, `claudeUsageLimits.ts` or
-// `codexUsageLimits.ts`. Those functions are pure — no layer, no clock, no subprocess — so
-// the trace needs no harness beyond the fixtures. Nothing here reimplements a rule: if a
-// line looks like it is computing something, it is only normalising for the wire.
+// Every case is a call into `providerUsageLimits.ts`, `claudeUsageLimits.ts`,
+// `codexUsageLimits.ts`, `cursorUsageLimits.ts` or `grokUsageLimits.ts`. Those five functions
+// are pure — no layer, no clock, no subprocess — so the trace needs no harness beyond the
+// fixtures. Nothing here reimplements a rule: if a line looks like it is computing something,
+// it is only normalising for the wire.
 
 import * as claudeUsageLimits from "../src/provider/Layers/claudeUsageLimits.ts";
 import * as codexUsageLimits from "../src/provider/Layers/codexUsageLimits.ts";
+import * as cursorUsageLimits from "../src/provider/Layers/cursorUsageLimits.ts";
+import * as grokUsageLimits from "../src/provider/Layers/grokUsageLimits.ts";
 import * as providerUsageLimits from "../src/provider/providerUsageLimits.ts";
 
 type Json = unknown;
@@ -898,6 +901,237 @@ for (const [name, snapshot] of nextStepCases) {
     "codexUsageLimitMessage.nextStep",
     [snapshot, AT],
     codexUsageLimits.codexUsageLimitMessage(snapshot as never, AT),
+  );
+}
+
+// -------------------------------------------------------------------------------- cursor
+// `cursorUsageResponseToLimits` runs `billingCycleEnd` through `Number()` twice — once to
+// build the Date, once to ask whether a reset exists at all — so the coercion table is part
+// of the decision and not a detail of parsing. A key written `undefined` and a key that is
+// absent are the same value to `Number`, but `null` is not: it coerces to 0.
+const CURSOR_PLAN_USAGE: Json = { totalPercentUsed: 10 };
+for (const billingCycleEnd of [
+  undefined,
+  null,
+  0,
+  -0,
+  -1,
+  1_777_000_000_000,
+  // Epoch seconds handed to a milliseconds Date: a reset in January 1970, which is still a
+  // reset, so the bar carries it.
+  1_777_000_000,
+  1.5,
+  8.64e15,
+  8.64e15 + 1,
+  -8.64e15,
+  Number.NaN,
+  Number.POSITIVE_INFINITY,
+  Number.NEGATIVE_INFINITY,
+  "1777000000000",
+  "0",
+  " 0 ",
+  "-1",
+  " 1777000000000 ",
+  "1e12",
+  "1E12",
+  "0x10",
+  "0b101",
+  "Infinity",
+  "-Infinity",
+  "+Infinity",
+  "NaN",
+  "",
+  " ",
+  "\t\n1777000000000\r",
+  "1,000",
+  "1777000000000abc",
+  "2026-05-01T00:00:00Z",
+  "1e999",
+  "0.5",
+  "  ",
+  // The rest of the `StringNumericLiteral` grammar. A value that coerces to a positive
+  // number is visible as a reset time in the range of milliseconds, so each of these is a
+  // discriminating case rather than another way to say `NaN`.
+  "nan",
+  "NAN",
+  "infinity",
+  "INFINITY",
+  "0X10",
+  "0xff",
+  "-0x10",
+  "+0x10",
+  "0o17",
+  "0b1",
+  ".5",
+  "5.",
+  "+.5",
+  "-.5",
+  "1e",
+  "e5",
+  "1.2.3",
+  "010",
+  "-0",
+  "1_0",
+  "1e-323",
+  "١٢",
+  "½",
+]) {
+  const body = { billingCycleEnd, planUsage: CURSOR_PLAN_USAGE };
+  record(
+    "cursor",
+    "cursorUsageResponseToLimits.billingCycleEnd",
+    [body, AT],
+    cursorUsageLimits.cursorUsageResponseToLimits(body as never, AT),
+  );
+}
+
+// The three rows Cursor's dashboard reports, and what each value does to the row. The table
+// order is the declaration order; the published order is `kindOrder || localeCompare`, and
+// every cursor row is `monthly`, so ids alone decide it.
+for (const planUsage of [
+  undefined,
+  null,
+  {},
+  { totalPercentUsed: undefined },
+  { totalPercentUsed: null },
+  { totalPercentUsed: 0 },
+  { totalPercentUsed: -0 },
+  { totalPercentUsed: -5 },
+  { totalPercentUsed: 33.5 },
+  { totalPercentUsed: 100 },
+  { totalPercentUsed: 140 },
+  { totalPercentUsed: Number.NaN },
+  { totalPercentUsed: Number.POSITIVE_INFINITY },
+  { totalPercentUsed: "10" },
+  { totalPercentUsed: true },
+  { autoPercentUsed: 20 },
+  { apiPercentUsed: 30 },
+  { totalPercentUsed: 10, autoPercentUsed: 20, apiPercentUsed: 30 },
+  { totalPercentUsed: 10, unknownBucket: 99 },
+  { unknownBucket: 99 },
+  "not an object",
+  5,
+  true,
+  [10],
+]) {
+  record(
+    "cursor",
+    "cursorUsageResponseToLimits.planUsage",
+    [{ billingCycleEnd: 1_777_000_000_000, planUsage }, AT],
+    cursorUsageLimits.cursorUsageResponseToLimits(
+      { billingCycleEnd: 1_777_000_000_000, planUsage } as never,
+      AT,
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------------- grok
+// `grokUsageResponseToLimits`: the decision that a billing read with no percentage is an
+// account with nothing metered yet (`windows: []`, drawn) rather than an unsupported account
+// (dropped from the view) is the whole reason this mapper is not a clamp and a row.
+for (const creditUsagePercent of [
+  undefined,
+  null,
+  0,
+  -0,
+  -5,
+  12.5,
+  100,
+  140,
+  Number.NaN,
+  Number.POSITIVE_INFINITY,
+  Number.NEGATIVE_INFINITY,
+  "10",
+  "0",
+  "",
+  true,
+  5e-324,
+  1e308,
+]) {
+  record(
+    "grok",
+    "grokUsageResponseToLimits.creditUsagePercent",
+    [
+      {
+        config: {
+          creditUsagePercent,
+          currentPeriod: { type: "USAGE_PERIOD_TYPE_WEEKLY", end: "2026-05-08T00:00:00Z" },
+        },
+      },
+      AT,
+    ],
+    grokUsageLimits.grokUsageResponseToLimits(
+      {
+        config: {
+          creditUsagePercent,
+          currentPeriod: { type: "USAGE_PERIOD_TYPE_WEEKLY", end: "2026-05-08T00:00:00Z" },
+        },
+      } as never,
+      AT,
+    ),
+  );
+}
+
+for (const config of [
+  undefined,
+  null,
+  {},
+  { currentPeriod: { type: "USAGE_PERIOD_TYPE_WEEKLY", end: "2026-05-08T00:00:00Z" } },
+]) {
+  record(
+    "grok",
+    "grokUsageResponseToLimits.config",
+    [config === undefined ? {} : { config }, AT],
+    grokUsageLimits.grokUsageResponseToLimits(
+      (config === undefined ? {} : { config }) as never,
+      AT,
+    ),
+  );
+}
+
+// The period type decides kind and label after a prefix strip, and the period end is the only
+// date in these mappers that reaches `DateTime.make` without a guard in front of it.
+for (const currentPeriod of [
+  undefined,
+  null,
+  {},
+  { type: undefined },
+  { type: "" },
+  { type: "USAGE_PERIOD_TYPE_WEEKLY" },
+  { type: "USAGE_PERIOD_TYPE_MONTHLY" },
+  { type: "USAGE_PERIOD_TYPE_DAILY" },
+  { type: "weekly" },
+  { type: "WEEKLY" },
+  { type: "USAGE_PERIOD_TYPE_" },
+  { type: "USAGE_PERIOD_TYPE_weekly" },
+  { type: null },
+  { end: "2026-05-08T00:00:00Z" },
+  { end: "2026-05-08" },
+  { end: "2026-05-08T00:00" },
+  { end: "2026-05-08T00:00:00" },
+  { end: "2026-05-08T00:00:00+02:00" },
+  { end: "2026-05-08T00:00:00-0330" },
+  { end: "2026-05-08T00:00:00 GMT" },
+  { end: "2026-05-08T00:00:00GMT" },
+  { end: "Fri, 08 May 2026 00:00:00 GMT" },
+  { end: "05/08/2026 00:00:00" },
+  { end: "2026-02-30T00:00:00Z" },
+  { end: "not a date" },
+  { end: "" },
+  { end: null },
+  { end: 1_777_000_000_000 },
+  { end: "2026-05-08T00:00:00Z[Europe/Berlin]" },
+  { type: "USAGE_PERIOD_TYPE_WEEKLY", end: "2026-05-08T00:00:00Z" },
+  { type: "USAGE_PERIOD_TYPE_MONTHLY", end: "2026-05-08T00:00:00.000Z" },
+]) {
+  record(
+    "grok",
+    "grokUsageResponseToLimits.currentPeriod",
+    [{ config: { creditUsagePercent: 40, currentPeriod } }, AT],
+    grokUsageLimits.grokUsageResponseToLimits(
+      { config: { creditUsagePercent: 40, currentPeriod } } as never,
+      AT,
+    ),
   );
 }
 

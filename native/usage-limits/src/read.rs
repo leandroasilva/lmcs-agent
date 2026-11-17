@@ -14,6 +14,7 @@
 
 use serde_json::Value;
 
+use crate::jsdate;
 use crate::limits::{
     Field, ResetCredits, Unavailable, UnavailableReason, UsageLimits, UsageLimitsUpdate,
     UsageWindow, WindowKind,
@@ -80,6 +81,139 @@ pub fn field_number(value: &Value, key: &str) -> Field<f64> {
         Field::Absent | Field::Null => Field::Absent,
         Field::Value(found) => as_number(found).map_or(Field::Absent, Field::Value),
     }
+}
+
+/// JS `Number(value)`, the coercion Cursor's `billingCycleEnd` goes through twice. The
+/// positions it is used in are typed `string | number` by the provider's schema, so the
+/// `ToPrimitive` detour an array or object takes (`Number([10])` is `10`, not `NaN`) is not
+/// reproduced: neither can survive the decode in front of the mapper.
+#[must_use]
+pub fn to_number(value: &Value) -> f64 {
+    match value {
+        Value::Null => 0.0,
+        Value::Bool(true) => 1.0,
+        Value::Bool(false) => 0.0,
+        Value::String(text) => string_to_number(text),
+        // A number or the trace's marker keeps its value, infinities included; `undefined`
+        // reached through an absent key is [`Value::Null`] here only after [`property`], and
+        // callers that must tell those apart use [`field`].
+        value => as_number(value).unwrap_or(f64::NAN),
+    }
+}
+
+/// JS `Number(text)`: ECMAScript whitespace, an optional sign, then either a radix literal —
+/// which takes no sign — or a decimal one with an optional exponent. Anything else is `NaN`,
+/// including the numeric separators a source literal may use and every legacy date spelling.
+fn string_to_number(text: &str) -> f64 {
+    let text = jsdate::trim_js(text);
+    match text {
+        "" => return 0.0,
+        "Infinity" | "+Infinity" => return f64::INFINITY,
+        "-Infinity" => return f64::NEG_INFINITY,
+        // The only spelling of the `NaN` literal, and indistinguishable from a rejection.
+        "NaN" => return f64::NAN,
+        _ => {}
+    }
+    let (negative, body) = match text.as_bytes().first() {
+        Some(b'+') => (false, &text[1..]),
+        Some(b'-') => (true, &text[1..]),
+        _ => (false, text),
+    };
+    let signed = body.len() != text.len();
+    if let Some((radix, digits)) = radix_literal(body) {
+        // `Number("-0x10")` is `NaN`: the sign belongs to the decimal grammar only.
+        if signed {
+            return f64::NAN;
+        }
+        let mut value = 0.0f64;
+        // Accumulating in `f64` is exact up to 2^53, which is below the 8.64e15 a `Date` can
+        // hold, so every radix literal whose value could mean a reset time is unaffected by
+        // rounding — and every one above it reads as "no reset" whatever digits it has.
+        for digit in digits.chars() {
+            let Some(digit) = digit.to_digit(radix) else {
+                return f64::NAN;
+            };
+            value = value * f64::from(radix) + f64::from(digit);
+        }
+        return value;
+    }
+
+    let bytes = body.as_bytes();
+    let mut index = digits_end(body, 0);
+    let integer = &body[..index];
+    let mut fraction = "";
+    if bytes.get(index) == Some(&b'.') {
+        index += 1;
+        let after = digits_end(body, index);
+        fraction = &body[index..after];
+        index = after;
+    }
+    if integer.is_empty() && fraction.is_empty() {
+        return f64::NAN;
+    }
+    let mut exponent = 0i64;
+    if bytes
+        .get(index)
+        .is_some_and(|byte| matches!(byte, b'e' | b'E'))
+    {
+        index += 1;
+        let negative_exponent = match bytes.get(index) {
+            Some(b'+') => {
+                index += 1;
+                false
+            }
+            Some(b'-') => {
+                index += 1;
+                true
+            }
+            _ => false,
+        };
+        let start = index;
+        index = digits_end(body, index);
+        if index == start {
+            return f64::NAN;
+        }
+        // Past anything a `f64` can round to, so it only decides infinity versus zero, which
+        // the saturated exponent says as well.
+        exponent = body[start..index].parse().unwrap_or(i64::MAX);
+        exponent = exponent.clamp(-4_000, 4_000);
+        if negative_exponent {
+            exponent = -exponent;
+        }
+    }
+    if index != bytes.len() {
+        return f64::NAN;
+    }
+    // Rust's float grammar wants a digit on each side of the point, which the ECMAScript one
+    // does not ("5.", ".5"), and accepts leading zeros either way ("010" is ten, not eight).
+    let normalized = format!(
+        "{}.{}e{exponent}",
+        if integer.is_empty() { "0" } else { integer },
+        if fraction.is_empty() { "0" } else { fraction },
+    );
+    let value = normalized.parse::<f64>().unwrap_or(f64::NAN);
+    if negative { -value } else { value }
+}
+
+fn digits_end(text: &str, from: usize) -> usize {
+    let bytes = text.as_bytes();
+    let mut index = from;
+    while bytes.get(index).is_some_and(u8::is_ascii_digit) {
+        index += 1;
+    }
+    index
+}
+
+/// `0x`/`0b`/`0o` and their digits, so `Number("0b101")` is five. An empty digit run is not a
+/// radix literal but a rejection, and is not reported as one.
+fn radix_literal(text: &str) -> Option<(u32, &str)> {
+    let (radix, digits) = match text.get(..2)? {
+        "0x" | "0X" => (16, &text[2..]),
+        "0b" | "0B" => (2, &text[2..]),
+        "0o" | "0O" => (8, &text[2..]),
+        _ => return None,
+    };
+    (!digits.is_empty()).then_some((radix, digits))
 }
 
 /// JS `typeof value === "string"`.
@@ -267,6 +401,69 @@ mod tests {
         assert_eq!(optional_string(&written, "limitId"), Field::Null);
         assert_eq!(field_string(&written, "limitId"), Field::Absent);
         assert_eq!(optional_string(&written, "primary"), Field::Absent);
+    }
+
+    #[test]
+    fn number_coercion_follows_the_string_numeric_grammar() {
+        // Whitespace on either end, the empty string, and the only three words it knows.
+        assert_eq!(to_number(&json!(" 12 ")), 12.0);
+        assert_eq!(to_number(&json!("")), 0.0);
+        assert_eq!(to_number(&json!("   ")), 0.0);
+        assert_eq!(to_number(&json!("Infinity")), f64::INFINITY);
+        assert_eq!(to_number(&json!("+Infinity")), f64::INFINITY);
+        assert_eq!(to_number(&json!("-Infinity")), f64::NEG_INFINITY);
+        for text in ["infinity", "INFINITY", "NaN", "nan"] {
+            assert!(to_number(&json!(text)).is_nan(), "{text}");
+        }
+
+        // A radix literal takes no sign, a decimal one does, and a leading zero is decimal.
+        assert_eq!(to_number(&json!("0x10")), 16.0);
+        assert_eq!(to_number(&json!("0X10")), 16.0);
+        assert_eq!(to_number(&json!("0xff")), 255.0);
+        assert_eq!(to_number(&json!("0b101")), 5.0);
+        assert_eq!(to_number(&json!("0o17")), 15.0);
+        assert!(to_number(&json!("-0x10")).is_nan());
+        assert!(to_number(&json!("+0x10")).is_nan());
+        assert!(to_number(&json!("0x")).is_nan());
+        assert_eq!(to_number(&json!("010")), 10.0);
+        assert!(to_number(&json!("-0")).is_sign_negative());
+
+        // The exponent and point forms, and the round trip an out-of-range one takes.
+        assert_eq!(to_number(&json!("1e12")), 1e12);
+        assert_eq!(to_number(&json!("1E12")), 1e12);
+        assert_eq!(to_number(&json!(".5")), 0.5);
+        assert_eq!(to_number(&json!("5.")), 5.0);
+        assert_eq!(to_number(&json!("+.5")), 0.5);
+        assert_eq!(to_number(&json!("-.5")), -0.5);
+        assert_eq!(to_number(&json!("1e-323")), 1e-323);
+        assert_eq!(to_number(&json!("1e999")), f64::INFINITY);
+        assert_eq!(to_number(&json!("1e-999")), 0.0);
+        // An exponent too long to hold is still only a question of which end it saturates at.
+        assert_eq!(to_number(&json!("1e99999999999999999999")), f64::INFINITY);
+        for text in [
+            "1e",
+            "e5",
+            "1.2.3",
+            "1_0",
+            "1,000",
+            "1777000000000abc",
+            "١٢",
+            "½",
+        ] {
+            assert!(to_number(&json!(text)).is_nan(), "{text}");
+        }
+
+        // The non-string coercions. An array is `NaN` here where JS would call `toString`.
+        assert_eq!(to_number(&Value::Null), 0.0);
+        assert_eq!(to_number(&json!(true)), 1.0);
+        assert_eq!(to_number(&json!(false)), 0.0);
+        assert_eq!(to_number(&json!(-5.5)), -5.5);
+        assert!(to_number(&json!({})).is_nan());
+        assert!(to_number(&json!([10])).is_nan());
+        assert_eq!(
+            to_number(&json!({"__number": "-Infinity"})),
+            f64::NEG_INFINITY
+        );
     }
 
     #[test]
