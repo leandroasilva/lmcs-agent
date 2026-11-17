@@ -16,8 +16,7 @@
 //!   (`05/01/2026 12:00:00`, `Thu, 01 May 2026 12:00:00 GMT`) are ported because they are
 //!   cheap and measured, not because anything sends them.
 //!
-//! Where this parser and V8 can still disagree is stated in [`date_parse`]'s doc comment, and
-//! every such case is outside what the shipped adapters produce.
+//! Where this parser and V8 can still disagree is stated in [`date_parse`]'s doc comment.
 
 use std::cmp::Ordering;
 
@@ -32,7 +31,13 @@ fn is_js_whitespace(character: char) -> bool {
 }
 
 fn trim_js(text: &str) -> &str {
-    text.trim_matches(is_js_whitespace)
+    text.trim_start_matches(is_js_whitespace).trim_end_matches(is_js_whitespace)
+}
+
+/// Leading whitespace only, because a space is also the date/time separator and the caller
+/// has to see it.
+fn skip_spaces(text: &str) -> &str {
+    text.trim_start_matches(is_js_whitespace)
 }
 
 /// Effect's `hasZone` test — `/Z|GMT|[+-]\d{2}$|[+-]\d{2}:?\d{2}$|\]$/`, unanchored except
@@ -40,29 +45,29 @@ fn trim_js(text: &str) -> &str {
 /// "zoned" to this test even though nothing can parse it.
 fn has_zone(text: &str) -> bool {
     let bytes = text.as_bytes();
-    let digits_before = |end: usize, count: usize| -> bool {
-        end >= count
-            && (end - count..end).all(|index| bytes[index].is_ascii_digit())
+    let len = bytes.len();
+    let digits = |end: usize, count: usize| -> bool {
+        end >= count && (end - count..end).all(|index| bytes[index].is_ascii_digit())
     };
+    let sign = |index: usize| matches!(bytes.get(index), Some(&b'+') | Some(&b'-'));
     text.contains('Z')
         || text.contains("GMT")
-        || (bytes.len() >= 3
-            && (bytes[bytes.len() - 3] == b'+' || bytes[bytes.len() - 3] == b'-')
-            && digits_before(bytes.len() - 1, 2))
-        || matches!(bytes.len(), len if len >= 5
-            && (bytes[len - 5] == b'+' || bytes[len - 5] == b'-')
-            && digits_before(len - 3, 2)
-            && digits_before(len, 2))
-        || matches!(bytes.len(), len if len >= 6
-            && (bytes[len - 5] == b'+' || bytes[len - 5] == b'-')
+        // `[+-]\d{2}$`, as in `…T12:00:00+02`.
+        || (len >= 3 && sign(len - 3) && digits(len, 2))
+        // `[+-]\d{2}\d{2}$`, the `:?` absent, as in `…-0330`.
+        || (len >= 5 && sign(len - 5) && digits(len - 2, 2) && digits(len, 2))
+        // `[+-]\d{2}:\d{2}$`, as in `…+02:00`.
+        || (len >= 6
+            && sign(len - 6)
+            && digits(len - 3, 2)
             && bytes[len - 3] == b':'
-            && digits_before(len - 2, 2)
-            && digits_before(len, 2))
+            && digits(len, 2))
         || bytes.last() == Some(&b']')
 }
 
 /// `DateTime.make(input)` for a string, then `DateTime.formatIso`: parse with Effect's
-/// `"Z"` rule applied first, and format the instant in UTC. `None` is `undefined`.
+/// `"Z"` rule applied first, and format the instant in UTC. `None` is Effect's `none`, which
+/// the shipped mappers turn into "this row has no reset time".
 pub fn iso_from_string(input: &str) -> Option<String> {
     let zoned = if has_zone(input) {
         input.to_owned()
@@ -85,7 +90,7 @@ pub fn iso_from_epoch_seconds(seconds: f64) -> Option<String> {
 /// `new Date(value * 1000)` for a number: the product is clipped to the range a `Date`
 /// holds and truncated toward zero, so 2^53 seconds — a value a JSON number can carry —
 /// is an invalid date rather than a year-285618 one.
-pub fn millis_from_seconds(seconds: f64) -> f64 {
+fn millis_from_seconds(seconds: f64) -> f64 {
     let millis = seconds * 1000.0;
     if !millis.is_finite() || millis.abs() > MAX_EPOCH_MS {
         return f64::NAN;
@@ -121,24 +126,27 @@ pub fn to_iso_string(millis: f64) -> Option<String> {
     ))
 }
 
-/// `Date.parse`, restricted as its doc comment states. `None` is an invalid date; the
-/// `Number` a caller compares against is `NaN` there.
+/// `Date.parse`, restricted as its doc comment states. `None` is an invalid date, which the
+/// callers see as `NaN`.
 ///
-/// Accepted, all measured against the shipped code:
+/// Accepted, each case measured against the shipped code:
 ///
-/// - The ISO 8601 date-time grammar, including `±YYYYYY` years, a `Z` or `±HH:mm`/`±HHmm`
-///   offset, a fractional second of any digit count (truncated to milliseconds, so `.9999`
-///   is `.999`), the `24:00:00.000` end-of-day form, and out-of-range days rolling over
-///   (`2026-02-30` is March 2, because only the month and the time fields are range-checked).
-/// - Month and day written with one digit (`2026-1-1`), a space instead of `T`, a leading or
-///   trailing run of ECMAScript whitespace, and a bare year or year-month.
+/// - The ISO 8601 date-time grammar: `±YYYYYY` years, a month or day written with one digit
+///   (`2026-1-1`), a bare year or year-month (`2026` and `2026-05` both land on the first),
+///   `T`/`t`/a space before the time, `Z`/`z`/`±HH:mm`/`±HHmm` offsets, a fractional second
+///   of any digit count truncated to milliseconds (`.9999` is `.999`), `hh:mm` without
+///   seconds, the `24:00:00.000` end-of-day form, padding ECMAScript whitespace anywhere the
+///   text is already loose, and out-of-range days rolling over (`2026-02-30` is March 2,
+///   because only the month and the time fields are range-checked).
 /// - `MM/DD/YYYY [HH:MM:SS]` and `Wdy, DD Mon YYYY HH:MM:SS <zone>` — V8's legacy forms.
 ///
-/// Deliberately not accepted, each because nothing in the shipped adapters can send it:
-/// a zone-less *date-time* (this port reads it as UTC, where V8 would read local time —
-/// unreachable through Effect, which appends `"Z"` first); a bare named zone such as
-/// `12:00:00 UTC` or a military zone letter; `hh:mm` without seconds followed by a zone
-/// name; and a two-digit year.
+/// Rejected, matching what the trace shows V8 doing: a two-digit or three-digit year, an
+/// offset written `+02`, a bare zone name (`2026-05-01T12:00:00GMT`), a zone name after a
+/// space (`2026-05-01T12:00:00 UTC`), a bracketed IANA name, month 13, minute 60, second 60.
+///
+/// One difference remains, and it is unreachable: a zone-less *date-time* is read here as
+/// UTC, where V8 would read the host's local time. Effect appends `"Z"` to exactly such
+/// strings before parsing, so the shipped code never asks the question.
 #[must_use]
 pub fn date_parse(text: &str) -> Option<f64> {
     let text = trim_js(text);
@@ -152,39 +160,34 @@ pub fn date_parse(text: &str) -> Option<f64> {
 #[derive(Clone, Copy, Debug)]
 struct ParsedDate {
     year: i64,
-    /// 1-based, as written.
+    /// 1-based.
     month: i64,
-    /// 1-based, or 0 when the string carried no day.
+    /// 1-based; a date written without one lands on the first.
     day: i64,
     hour: f64,
     minute: f64,
     second: f64,
     millis: f64,
-    /// `Some(false)` for a zone-less *date* form, which ECMAScript reads as UTC; the flag
-    /// exists to make the date-time branch state its own choice out loud.
-    zoned: bool,
 }
 
 impl ParsedDate {
-    fn at_midnight(year: i64, month: i64, day: i64, zoned: bool) -> Self {
-        Self { year, month, day, hour: 0.0, minute: 0.0, second: 0.0, millis: 0.0, zoned }
+    fn at_midnight(year: i64, month: i64, day: i64) -> Self {
+        Self { year, month, day, hour: 0.0, minute: 0.0, second: 0.0, millis: 0.0 }
     }
 
-    /// `MakeDate` then `MakeTime`, with the ±100 000 000 day clip.
+    fn set_time(&mut self, time: ClockTime) {
+        self.hour = time.hour;
+        self.minute = time.minute;
+        self.second = time.second;
+        self.millis = time.millis;
+    }
+
+    /// `MakeDay` then `MakeTime`, with `TimeClip`'s range check on the sum.
     fn to_epoch_millis(self) -> Option<f64> {
-        let month = self.month - 1;
-        // A day the caller never wrote (`2026-05`) still has to land on the first.
-        let day = if self.day == 0 { 1 } else { self.day };
         if !(1..=12).contains(&self.month) {
             return None;
         }
-        // `MakeDate`'s year/month normalisation, and the `TimeClip` range check on the sum.
-        let (year, month) = euclid_div_mod_i64(self.year, 12) ;
-        let month_index = euclid_sub(month, 1) + euclid_mul(year, 12);
-        let days = days_from_civil(euclid_add(year, 1970), month_index, day);
-        if !(-337_200_000_000_000.0..=337_200_000_000_000.0).contains(&(days as f64)) {
-            return None;
-        }
+        let days = days_from_civil(self.year, self.month, self.day);
         let time = ((self.hour * 60.0 + self.minute) * 60.0 + self.second) * 1000.0 + self.millis;
         let millis = days as f64 * 86_400_000.0 + time;
         if millis.is_finite() && millis.abs() <= MAX_EPOCH_MS {
@@ -195,36 +198,16 @@ impl ParsedDate {
     }
 }
 
-fn euclid_div_mod_i64(value: i64, divisor: i64) -> (i64, i64) {
-    (value.div_euclid(divisor), value.rem_euclid(divisor))
-}
-
-fn euclid_sub(left: i64, right: i64) -> i64 {
-    left.wrapping_sub(right)
-}
-
-fn euclid_mul(left: i64, right: i64) -> i64 {
-    left.wrapping_mul(right)
-}
-
-fn euclid_add(left: i64, right: i64) -> i64 {
-    left.wrapping_add(right)
-}
-
-/// ECMAScript's `MakeDay`, which is `tm::days_from_civil` with the epoch moved to 1970.
-/// An out-of-range `day` is not an error: it rolls over, which is why February 30 is March 2.
-fn days_from_civil(year: i64, month_zero_based: i64, day: i64) -> i64 {
-    let shifted_year = if month_zero_based <= 2 {
-        year - 1
-    } else {
-        year
-    };
+/// ECMAScript's `MakeDay(year, month, date)` for an in-range month: `tm::days_from_civil`
+/// with the epoch moved to 1970. An out-of-range `date` is not an error: it rolls over,
+/// which is why February 30 is March 2.
+fn days_from_civil(year: i64, month: i64, day: i64) -> i64 {
+    let shifted_year = if month <= 2 { year - 1 } else { year };
     let era = shifted_year.div_euclid(400);
     let year_of_era = shifted_year - era * 400;
-    let shifted_month = (month_zero_based + 9).rem_euclid(12);
+    let shifted_month = (month + 9) % 12;
     let day_of_year = (153 * shifted_month + 2) / 5 + day - 1;
-    let day_of_era =
-        year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
     era * 146_097 + day_of_era - 719_468
 }
 
@@ -247,79 +230,75 @@ fn civil_from_days(days: i64) -> (i64, i64, i64) {
     (if month <= 2 { year + 1 } else { year }, month, day)
 }
 
-fn iso_date_parse(text: &str) -> Option<f64> {
-    let rest = text;
-    let (year, rest) = read_year(rest)?;
-    let mut parsed = ParsedDate::at_midnight(year, 1, 0, false);
-
-    // Month and day. A single digit is allowed here and nowhere else in the grammar.
-    let rest = rest.strip_prefix('-')?;
-    let (month, rest) = read_number(rest, 1, 2)?;
-    parsed.month = month;
-    let mut rest = rest;
-    if let Some(after_day) = rest.strip_prefix('-') {
-        let (day, after_day) = read_number(after_day, 1, 2)?;
-        parsed.day = day;
-        rest = after_day;
-    } else {
-        parsed.day = 1;
-    }
-
-    rest = skip_spaces(rest);
-    if rest.is_empty() {
-        // Zone-less date form: UTC by the specification, and the only case of its kind the
-        // port keeps, because a reset written as a bare date is unambiguous.
-        return parsed.to_epoch_millis();
-    }
-
-    let (zoneless_time, rest) = if let Some(rest) = rest
-        .strip_prefix('T')
-        .or_else(|| rest.strip_prefix('t'))
-        .or_else(|| rest.strip_prefix(' '))
-    {
-        let (time, rest) = read_time(skip_spaces(rest))?;
-        parsed.hour = time.0;
-        parsed.minute = time.1;
-        parsed.second = time.2;
-        parsed.millis = time.3;
-        (true, skip_spaces(rest))
-    } else {
-        (false, rest)
-    };
-
-    let offset = if zoneless_time && rest.is_empty() {
-        None
-    } else {
-        Some(read_zone(rest?)?)
-    };
-    let millis = parsed.to_epoch_millis()?;
-    Some(match offset {
-        Some(offset_millis) => millis - offset_millis,
-        None => millis,
-    })
+/// `hh:mm[:ss[.fraction]]`. `24:00:00.000` is the end of the previous day; any other field
+/// at 24 hours is rejected the way the specification's `Date From Time String` does.
+#[derive(Clone, Copy, Debug)]
+struct ClockTime {
+    hour: f64,
+    minute: f64,
+    second: f64,
+    millis: f64,
 }
 
-fn read_year(text: &str) -> Option<(i64, &str)> {
-    let (sign, digits) = match text.as_bytes().first()? {
-        b'+' => (1, &text[1..]),
-        b'-' => (-1, &text[1..]),
-        _ => (1, text),
+fn iso_date_parse(text: &str) -> Option<f64> {
+    let (year, rest) = read_year(text)?;
+    let mut parsed = ParsedDate::at_midnight(year, 1, 1);
+
+    // Month and day. A single digit is allowed here and nowhere else in the grammar.
+    let mut rest = rest;
+    if let Some(after_year) = rest.strip_prefix('-') {
+        let (month, after_month) = read_number(after_year, 1, 2)?;
+        parsed.month = month;
+        rest = if let Some(after_day) = after_month.strip_prefix('-') {
+            let (day, after_day) = read_number(after_day, 1, 2)?;
+            parsed.day = day;
+            after_day
+        } else {
+            after_month
+        };
+    }
+
+    // `T` demands a time; a space is the time separator but may also be trailing padding,
+    // which is why `"2026-05-01 "` and `"2026-05-01Z"` are both the bare date.
+    let (requires_time, mut rest) = match rest.as_bytes().first() {
+        Some(b'T') | Some(b't') => (true, skip_spaces(&rest[1..])),
+        Some(b' ') => (false, skip_spaces(rest)),
+        _ => (false, rest),
     };
-    let digit_count = digits
+    if requires_time || rest.as_bytes().first().is_some_and(u8::is_ascii_digit) {
+        let (time, tail) = read_time(rest)?;
+        parsed.set_time(time);
+        rest = skip_spaces(tail);
+    }
+    let offset_millis = if rest.is_empty() {
+        0.0
+    } else {
+        read_zone(rest)?
+    };
+    Some(parsed.to_epoch_millis()? - offset_millis)
+}
+
+/// `YYYY`, or `±YYYYYY` for the years the four-digit form cannot hold.
+fn read_year(text: &str) -> Option<(i64, &str)> {
+    let (negative, digits) = match text.as_bytes().first()? {
+        b'+' => (false, &text[1..]),
+        b'-' => (true, &text[1..]),
+        _ => (false, text),
+    };
+    let count = digits
         .bytes()
         .position(|byte| !byte.is_ascii_digit())
         .unwrap_or(digits.len());
-    if digit_count != 4 && !(digit_count == 6 && sign != 1 || digit_count == 6 && text.starts_with('+'))
-    {
+    if count != if text.len() == digits.len() { 4 } else { 6 } {
         return None;
     }
-    let value: i64 = digits[..digit_count].parse().ok()?;
-    Some((sign * value, &digits[digit_count..]))
+    let value: i64 = digits[..count].parse().ok()?;
+    Some((if negative { -value } else { value }, &digits[count..]))
 }
 
-/// Exactly `count` digits, or between `min` and `max` when `count` is a range.
+/// Between `min` and `max` digits, so a field can be greedy where the grammar allows it.
 fn read_number(text: &str, min: usize, max: usize) -> Option<(i64, &str)> {
-    let digits = text.bytes().take_while(|byte| byte.is_ascii_digit()).count();
+    let digits = text.bytes().take_while(u8::is_ascii_digit).count();
     if digits < min || digits > max {
         return None;
     }
@@ -327,31 +306,7 @@ fn read_number(text: &str, min: usize, max: usize) -> Option<(i64, &str)> {
     Some((value, &text[digits..]))
 }
 
-fn skip_spaces(text: &str) -> &str {
-    let trimmed = trim_js(text);
-    // A space is also the date/time separator, so only leading whitespace is removed here.
-    if text.starts_with(is_js_whitespace) {
-        trimmed_start(text)
-    } else {
-        trimmed
-    }
-}
-
-fn trimmed_start(text: &str) -> &str {
-    let mut offset = 0;
-    for character in text.chars() {
-        if !is_js_whitespace(character) {
-            break;
-        }
-        offset += character.len_utf8();
-    }
-    &text[offset..]
-}
-
-/// `HH:MM[:SS[.fraction]]`. `24:00:00.000` is the end of the previous day; any other field
-/// at 24 hours, and a second of 60 outside a whole minute, are rejected the way the
-/// specification's `Date From Time` does.
-fn read_time(text: &str) -> Option<((f64, f64, f64, f64), &str)> {
+fn read_time(text: &str) -> Option<(ClockTime, &str)> {
     let (hour, rest) = read_number(text, 2, 2)?;
     let rest = rest.strip_prefix(':')?;
     let (minute, rest) = read_number(rest, 2, 2)?;
@@ -364,68 +319,59 @@ fn read_time(text: &str) -> Option<((f64, f64, f64, f64), &str)> {
     };
     let mut millis = 0.0;
     if let Some(fraction) = rest.strip_prefix('.') {
-        let digits = fraction.bytes().take_while(|byte| byte.is_ascii_digit()).count();
+        let digits = fraction.bytes().take_while(u8::is_ascii_digit).count();
         if digits == 0 {
             return None;
         }
-        let taken: String = fraction.chars().take(3).collect();
-        millis = taken
-            .parse::<f64>()
-            .ok()
-            .map(|value| value * 10f64.powi(3 - taken.len() as i32))
-            .unwrap_or(f64::NAN);
+        // Longer than three digits is truncated, not rounded, and the rest is not re-read.
+        let taken = &fraction[..digits.min(3)];
+        millis = taken.parse::<f64>().ok()? * 10f64.powi(3 - taken.len() as i32);
         rest = &fraction[digits..];
     }
     if hour > 24 || minute > 59 || second > 59 {
         return None;
     }
-    if hour == 24 && !(minute == 0 && second == 0 && millis == 0.0) {
+    if hour == 24 && (minute, second, millis) != (0, 0, 0.0) {
         return None;
     }
-    Some(((hour as f64, minute as f64, second as f64, millis), rest))
+    Some((
+        ClockTime { hour: hour as f64, minute: minute as f64, second: second as f64, millis },
+        rest,
+    ))
 }
 
-/// `Z`, `z`, or `±HH:mm` / `±HHmm`. A bare name is not a zone here, which is what makes
+/// `Z`, `z`, or `±HH:mm` / `±HHmm`, as the milliseconds a wall clock is *ahead* of UTC — so
+/// a caller subtracts them. A bare name is not a zone here, which is what makes
 /// `2026-05-01T12:00:00GMT` invalid in both engines.
 fn read_zone(text: &str) -> Option<f64> {
-    if text.is_empty() {
-        return Some(0.0);
+    let sign = match text.as_bytes().first()? {
+        b'Z' | b'z' if text.len() == 1 => return Some(0.0),
+        b'+' => 1.0,
+        b'-' => -1.0,
+        _ => return None,
+    };
+    let digits = &text[1..];
+    let (hours, minutes) = match digits.as_bytes().get(2) {
+        Some(b':') if digits.len() == 5 => (read_two(digits, 0)?, read_two(digits, 3)?),
+        _ if digits.len() == 4 => (read_two(digits, 0)?, read_two(digits, 2)?),
+        _ => return None,
+    };
+    if hours > 23.0 || minutes > 59.0 {
+        return None;
     }
-    let mut chars = text.chars();
-    match chars.next()? {
-        'Z' | 'z' if text.len() == 1 => Some(0.0),
-        sign @ ('+' | '-') => {
-            let digits = text[1..]
-                .bytes()
-                .take_while(|byte| byte.is_ascii_digit())
-                .count();
-            let (hours, minutes) = match digits {
-                4 => (
-                    text[1..3].parse::<f64>().ok()?,
-                    text[3..5].parse::<f64>().ok()?,
-                ),
-                5 if text.as_bytes()[3] == b':' => (
-                    text[1..3].parse::<f64>().ok()?,
-                    text[4..6].parse::<f64>().ok()?,
-                ),
-                _ => return None,
-            };
-            if hours > 23 || minutes > 59 {
-                return None;
-            }
-            let offset = (hours * 60.0 + minutes) * 60_000.0;
-            Some(if sign == '-' { offset } else { -offset })
-        }
-        _ => None,
-    }
+    Some(sign * (hours * 60.0 + minutes) * 60_000.0)
+}
+
+fn read_two(text: &str, offset: usize) -> Option<f64> {
+    text.get(offset..offset + 2)?.parse().ok()
 }
 
 fn legacy_date_parse(text: &str) -> Option<f64> {
     us_date_parse(text).or_else(|| rfc1123_parse(text))
 }
 
-/// `MM/DD/YYYY[, HH:MM:SS]` with an optional trailing zone token. V8 also swaps day and
-/// month for two-digit years, which the port does not attempt.
+/// `MM/DD/YYYY[, HH:MM:SS]` with an optional trailing UTC zone. V8 also swaps day and month
+/// for two-digit years, which the port does not attempt.
 fn us_date_parse(text: &str) -> Option<f64> {
     let (month, rest) = read_number(text, 1, 2)?;
     let rest = rest.strip_prefix('/')?;
@@ -435,46 +381,37 @@ fn us_date_parse(text: &str) -> Option<f64> {
     if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
         return None;
     }
-    let mut parsed = ParsedDate::at_midnight(year, month, day, true);
+    let mut parsed = ParsedDate::at_midnight(year, month, day);
     let rest = skip_spaces(rest);
-    let Some(first) = rest.chars().next() else {
+    if rest.is_empty() {
         return parsed.to_epoch_millis();
-    };
-    if !first.is_ascii_digit() {
+    }
+    if !rest.as_bytes().first().is_some_and(u8::is_ascii_digit) {
         return None;
     }
     let (time, rest) = read_time(rest)?;
-    parsed.hour = time.0;
-    parsed.minute = time.1;
-    parsed.second = time.2;
-    parsed.millis = time.3;
-    let rest = skip_spaces(rest);
-    let zone = read_zone(rest)?;
+    parsed.set_time(time);
+    let zone = match skip_spaces(rest) {
+        "" => 0.0,
+        // V8 reads a trailing `GMT`/`UTC` here; anything else needs the host's answer.
+        "GMT" | "UTC" | "Z" => 0.0,
+        rest => read_zone(rest)?,
+    };
     Some(parsed.to_epoch_millis()? - zone)
 }
 
-/// `Thu, 01 May 2026 12:00:00 GMT`, with the weekday optional and the timezone limited to
-/// the names that mean UTC. `EST` and friends would need the host's answer.
+/// `Thu, 01 May 2026 12:00:00 GMT`, with the weekday optional and the zone limited to the
+/// names that mean UTC.
 fn rfc1123_parse(text: &str) -> Option<f64> {
-    let mut words = text.split(|character: char| character == ',' || is_js_whitespace(character));
-    let first = words.next()?.trim();
-    let (weekday_len, rest): (usize, &str) = if first.bytes().all(|byte| byte.is_ascii_alphabetic())
-        && !first.is_empty()
-        && first.len() <= 9
-        && first.len() != 4
-    {
-        // A leading weekday: consume it along with its separating comma.
-        (first.len() + 1, &text[first.len() + 1..])
-    } else {
-        (0, text)
+    let tokens: Vec<&str> = text.split([' ', '\t', ',']).filter(|token| !token.is_empty()).collect();
+    // `Wdy DD Mon YYYY HH:MM:SS GMT`, or the same without the leading weekday.
+    let offset = match tokens.len() {
+        6 => 1,
+        5 => 0,
+        _ => return None,
     };
-    debug_assert_eq!(weekday_len % 1, 0);
-    let mut parts = rest
-        .trim_start_matches(|character: char| character == ',' || is_js_whitespace(character))
-        .split(is_js_whitespace);
-    let day: i64 = parts.next()?.parse().ok()?;
-    let month_name = parts.next()?;
-    let month = match month_name.to_ascii_lowercase().as_str() {
+    let day: i64 = tokens[offset].parse().ok()?;
+    let month = match tokens[offset + 1].to_ascii_lowercase().as_str() {
         "jan" | "january" => 1,
         "feb" | "february" => 2,
         "mar" | "march" => 3,
@@ -489,22 +426,21 @@ fn rfc1123_parse(text: &str) -> Option<f64> {
         "dec" | "december" => 12,
         _ => return None,
     };
-    let year: i64 = parts.next()?.parse().ok()?;
-    let (time, _) = read_time(parts.next()?)?;
-    let zone_name = parts.next().unwrap_or("UTC");
-    let zone = match zone_name.to_ascii_uppercase().as_str() {
+    let year: i64 = tokens[offset + 2].parse().ok()?;
+    let (time, _) = read_time(tokens[offset + 3])?;
+    let zone_name =
+        tokens.get(offset + 4).map_or_else(|| "UTC".to_owned(), |name| name.to_ascii_uppercase());
+    let zone = match zone_name.as_str() {
         "GMT" | "UTC" | "Z" | "ZULU" => 0.0,
-        _ if zone_name.starts_with('+') || zone_name.starts_with('-') => read_zone(zone_name)?,
+        // `EST` and the other abbreviations whose answer is the host's, and any offset
+        // spelling, are outside what the shipped callers can receive.
         _ => return None,
     };
     if !(1..=31).contains(&day) {
         return None;
     }
-    let mut parsed = ParsedDate::at_midnight(year, month, day, true);
-    parsed.hour = time.0;
-    parsed.minute = time.1;
-    parsed.second = time.2;
-    parsed.millis = time.3;
+    let mut parsed = ParsedDate::at_midnight(year, month, day);
+    parsed.set_time(time);
     Some(parsed.to_epoch_millis()? - zone)
 }
 
@@ -513,7 +449,7 @@ fn rfc1123_parse(text: &str) -> Option<f64> {
 ///
 /// Measured against the shipped code, the order it gives for the characters a usage window
 /// id can hold is: ECMAScript punctuation before digits before letters, the punctuation
-/// among themselves in `CLDR` root order, letters ignoring case, and lowercase before
+/// among themselves in CLDR root order, letters ignoring case, and lowercase before
 /// uppercase only as the last tie-break. That differs from `str::cmp` in two places that
 /// are reachable: `_` sorts *before* digits and letters rather than between them, so
 /// `seven_day_gpt_5` precedes `seven_day_gpt5`, and `five_hour` precedes `fivehour`.
@@ -545,7 +481,8 @@ pub fn locale_compare(left: &str, right: &str) -> Ordering {
 }
 
 /// The measured primary order: punctuation (root-collation order), digits, letters.
-const PRIMARY_ORDER: &str = " _-,;:!?'\"()[]{}@*/\\&#%`^+<=>|~$0123456789abcdefghijklmnopqrstuvwxyz";
+const PRIMARY_ORDER: &str =
+    " _-,;:!?.'\"()[]{}@*/\\&#%`^+<=>|~$0123456789abcdefghijklmnopqrstuvwxyz";
 
 fn collation_keys(text: &str) -> (Vec<u32>, Vec<u8>) {
     let mut primary = Vec::with_capacity(text.len());
@@ -554,10 +491,7 @@ fn collation_keys(text: &str) -> (Vec<u32>, Vec<u8>) {
         let rank = PRIMARY_ORDER
             .chars()
             .position(|candidate| candidate.eq_ignore_ascii_case(&character))
-            .map_or_else(
-                || 1_000_000 + u32::from(character),
-                |index| index as u32 + 1,
-            );
+            .map_or_else(|| 1_000_000 + u32::from(character), |index| index as u32 + 1);
         primary.push(rank);
         case.push(if character.is_ascii_uppercase() { 2 } else { 1 });
     }

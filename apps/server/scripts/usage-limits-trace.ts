@@ -621,14 +621,12 @@ for (const snapshot of [
   { primary: { usedPercent: 150 } },
   { primary: { usedPercent: 100 }, secondary: { usedPercent: 100, windowDurationMins: 10_080 } },
 ]) {
+  const input = { snapshot, checkedAt: AT };
   record(
     "codex",
     "codexRateLimitsToLimits",
-    [snapshot],
-    codexUsageLimits.codexRateLimitsToLimits({
-      snapshot: snapshot as never,
-      checkedAt: AT,
-    }),
+    [input],
+    codexUsageLimits.codexRateLimitsToLimits(input as never),
   );
   record(
     "codex",
@@ -640,25 +638,27 @@ for (const snapshot of [
 
 // The probe reads a map keyed by limit id and picks `codex` out of it; the bare snapshot is
 // only the fallback.
+const byLimitIdInput = {
+  snapshot: { limitId: "spark", primary: { usedPercent: 99 } },
+  rateLimitsByLimitId: { codex: { limitId: "codex", primary: { usedPercent: 3 } } },
+  checkedAt: AT,
+};
 record(
   "codex",
   "codexRateLimitsToLimits.byLimitId",
-  [{ limitId: "spark" }, { codex: { limitId: "codex", primary: { usedPercent: 3 } } }],
-  codexUsageLimits.codexRateLimitsToLimits({
-    snapshot: { limitId: "spark", primary: { usedPercent: 99 } } as never,
-    rateLimitsByLimitId: { codex: { limitId: "codex", primary: { usedPercent: 3 } } as never },
-    checkedAt: AT,
-  }),
+  [byLimitIdInput],
+  codexUsageLimits.codexRateLimitsToLimits(byLimitIdInput as never),
 );
+const emptyLimitIdMapInput = {
+  snapshot: { primary: { usedPercent: 7 } },
+  rateLimitsByLimitId: { codex: null },
+  checkedAt: AT,
+};
 record(
   "codex",
   "codexRateLimitsToLimits.emptyLimitIdMap",
-  [{ codex: null }],
-  codexUsageLimits.codexRateLimitsToLimits({
-    snapshot: { primary: { usedPercent: 7 } } as never,
-    rateLimitsByLimitId: { codex: null } as never,
-    checkedAt: AT,
-  }),
+  [emptyLimitIdMapInput],
+  codexUsageLimits.codexRateLimitsToLimits(emptyLimitIdMapInput as never),
 );
 
 for (const summary of [
@@ -748,7 +748,7 @@ for (const [name, previous, update] of merged) {
   record(
     "codex",
     "mergeCodexRateLimits",
-    [{ previous, update }],
+    [previous, update],
     codexUsageLimits.mergeCodexRateLimits(previous as never, update as never),
   );
 }
@@ -876,7 +876,7 @@ for (const [name, snapshot, atIso] of messageCases) {
   record(
     "codex",
     "codexUsageLimitMessage",
-    [{ snapshot, atIso }],
+    [snapshot, atIso],
     codexUsageLimits.codexUsageLimitMessage(snapshot as never, atIso),
   );
 }
@@ -896,7 +896,7 @@ for (const [name, snapshot] of nextStepCases) {
   record(
     "codex",
     "codexUsageLimitMessage.nextStep",
-    [{ snapshot }],
+    [snapshot, AT],
     codexUsageLimits.codexUsageLimitMessage(snapshot as never, AT),
   );
 }

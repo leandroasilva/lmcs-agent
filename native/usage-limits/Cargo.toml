@@ -6,7 +6,7 @@ license = "MIT"
 publish = false
 
 [dependencies]
-serde_json = { version = "1.0.154", features = ["float_roundtrip", "preserve_order"] }
+serde_json = { version = "1.0.154", features = ["float_roundtrip"] }
 
 [profile.release]
 codegen-units = 1

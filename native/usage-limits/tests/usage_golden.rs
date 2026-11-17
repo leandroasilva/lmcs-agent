@@ -1,0 +1,500 @@
+//! Replays a trace captured from the shipped usage-limit mappers — the shared rules, the
+//! Claude sources and the Codex sources — so the Rust port is checked against the real code
+//! rather than against a reading of it.
+//!
+//! Set `LMCS_USAGE_TRACE` to a trace file; the test skips when unset. Regenerate one with:
+//! `node apps/server/scripts/usage-limits-trace.ts > /tmp/usage-trace.txt`
+//!
+//! The trace stores each record's input as the argument list the shipped call actually got
+//! and its result through `canon`, which flattens a window, a snapshot or a published
+//! snapshot to `[key, value]` pairs in a fixed field order. Key order is deliberately not
+//! evidence: the JavaScript spread gives each call site its own order, and the contract
+//! decides what reaches the wire. The Rust side below builds the same pair lists from its own
+//! types and compares them structurally, which is also why numbers are compared as values —
+//! ECMAScript's `Number::toString` and Rust's shortest-round-trip formatting disagree on
+//! shapes like `1e308` while meaning the same number.
+
+use lmcs_usage_limits::claude::{ClaudeScopedNames, claude_rate_limit_event_to_update, claude_usage_response_to_limits};
+use lmcs_usage_limits::codex::{
+    CodexRateLimitsFailure, codex_rate_limits_failure_message, codex_rate_limits_to_limits,
+    codex_rate_limits_to_update, codex_reset_credits_to_contract, codex_usage_limit_message,
+    merge_codex_rate_limits,
+};
+use lmcs_usage_limits::limits::{
+    self, Field, ResetCredits, UnavailableReason, UsageLimits, UsageLimitsUpdate, UsageWindow,
+};
+use lmcs_usage_limits::read;
+use serde_json::{Value, json};
+
+fn unhex(value: &str) -> String {
+    let bytes: Vec<u8> = (0..value.len())
+        .step_by(2)
+        .map(|index| u8::from_str_radix(&value[index..index + 2], 16).expect("hex byte"))
+        .collect();
+    String::from_utf8(bytes).expect("the trace is utf-8")
+}
+
+fn decode(hex: &str) -> Value {
+    serde_json::from_str(&unhex(hex)).expect("a json payload")
+}
+
+/// The trace's spelling of a value that cannot be put in JSON.
+const ABSENT: &str = "__absent";
+
+fn absent() -> Value {
+    json!({ ABSENT: true })
+}
+
+/// Re-encode a Rust float the way the generator writes one, so a `NaN` percent and the
+/// `{"__number":"NaN"}` beside it are the same value here. A signed zero is written `0`, as
+/// `JSON.stringify` does.
+fn number(value: f64) -> Value {
+    if value.is_nan() {
+        return json!({ "__number": "NaN" });
+    }
+    if value == f64::INFINITY {
+        return json!({ "__number": "Infinity" });
+    }
+    if value == f64::NEG_INFINITY {
+        return json!({ "__number": "-Infinity" });
+    }
+    Value::from(value + 0.0)
+}
+
+fn text_field(field: &Field<String>) -> Value {
+    match field {
+        Field::Absent => Value::Null,
+        Field::Null => Value::Null,
+        Field::Value(text) => Value::String(text.clone()),
+    }
+}
+
+/// `canonWindow`: the four required fields always, the two optional ones only when written.
+fn canon_window(window: &UsageWindow) -> Value {
+    let mut pairs = vec![
+        json!(["id", window.id]),
+        json!(["kind", window.kind.as_str()]),
+        json!(["label", window.label]),
+        json!(["usedPercent", number(window.used_percent)]),
+    ];
+    if window.resets_at.is_written() {
+        pairs.push(json!(["resetsAt", text_field(&window.resets_at)]));
+    }
+    if window.window_duration_mins.is_written() {
+        pairs.push(json!([
+            "windowDurationMins",
+            match &window.window_duration_mins {
+                Field::Value(mins) => number(*mins),
+                Field::Null => Value::Null,
+                Field::Absent => unreachable!("guarded above"),
+            }
+        ]));
+    }
+    Value::Array(pairs)
+}
+
+fn canon_windows(windows: &[UsageWindow]) -> Value {
+    Value::Array(windows.iter().map(canon_window).collect())
+}
+
+/// `canonLimits`.
+fn canon_limits(limits: &UsageLimits) -> Value {
+    let mut pairs = vec![
+        json!(["checkedAt", limits.checked_at]),
+        json!(["windows", canon_windows(&limits.windows)]),
+    ];
+    if let Some(credits) = &limits.reset_credits {
+        pairs.push(json!(["resetCredits", canon_credits_pairs(credits)]));
+    }
+    if let Some(unavailable) = &limits.unavailable {
+        let mut reason = vec![json!(["reason", unavailable.reason.as_str()])];
+        if unavailable.message.is_written() {
+            reason.push(json!(["message", text_field(&unavailable.message)]));
+        }
+        pairs.push(json!(["unavailable", reason]));
+    }
+    Value::Array(pairs)
+}
+
+/// A reset-credits summary as the generator sees it: a plain object, not pairs, because
+/// `canon` has no rule for it.
+fn canon_credits_pairs(credits: &ResetCredits) -> Value {
+    let mut pairs = vec![json!(["availableCount", number(credits.available_count)])];
+    if credits.next_expires_at.is_written() {
+        pairs.push(json!(["nextExpiresAt", text_field(&credits.next_expires_at)]));
+    }
+    Value::Array(pairs)
+}
+
+fn canon_credits(credits: &ResetCredits) -> Value {
+    let mut object = serde_json::Map::new();
+    object.insert("availableCount".to_owned(), number(credits.available_count));
+    if credits.next_expires_at.is_written() {
+        object.insert(
+            "nextExpiresAt".to_owned(),
+            text_field(&credits.next_expires_at),
+        );
+    }
+    Value::Object(object)
+}
+
+fn canon_opt_limits(limits: Option<UsageLimits>) -> Value {
+    limits.map_or_else(absent, |limits| canon_limits(&limits))
+}
+
+fn canon_update(update: &UsageLimitsUpdate) -> Value {
+    json!([["windows", canon_windows(&update.windows)]])
+}
+
+fn canon_opt_update(update: Option<UsageLimitsUpdate>) -> Value {
+    update.map_or_else(absent, |update| canon_update(&update))
+}
+
+fn canon_opt_credits(credits: Option<ResetCredits>) -> Value {
+    credits.map_or_else(absent, |credits| canon_credits(&credits))
+}
+
+/// `canonSnapshot`. An explicit `null` is a written field and is kept; only an absent key
+/// disappears.
+fn canon_snapshot(snapshot: &Value) -> Value {
+    let mut pairs = Vec::new();
+    for field in [
+        "limitId",
+        "planType",
+        "rateLimitReachedType",
+        "primary",
+        "secondary",
+    ] {
+        if let written @ (Field::Null | Field::Value(_)) = read::field(snapshot, field) {
+            pairs.push(json!([
+                field,
+                match written {
+                    Field::Value(value) => value.clone(),
+                    // `Field::Absent` cannot reach here; the pattern above is the guard.
+                    _ => Value::Null,
+                }
+            ]));
+        }
+    }
+    Value::Array(pairs)
+}
+
+fn canon_opt_snapshot(snapshot: Option<Value>) -> Value {
+    snapshot.map_or_else(absent, |snapshot| canon_snapshot(&snapshot))
+}
+
+/// Structural equality, with numbers compared by value and non-finite ones already tagged.
+fn json_eq(left: &Value, right: &Value) -> bool {
+    match (left, right) {
+        (Value::Number(left), Value::Number(right)) => match (left.as_f64(), right.as_f64()) {
+            (Some(left), Some(right)) => left == right,
+            _ => left.to_string() == right.to_string(),
+        },
+        (Value::Array(left), Value::Array(right)) => {
+            left.len() == right.len() && left.iter().zip(right).all(|(a, b)| json_eq(a, b))
+        }
+        (Value::Object(left), Value::Object(right)) => {
+            left.len() == right.len()
+                && left.iter().all(|(key, value)| {
+                    right.get(key).is_some_and(|other| json_eq(value, other))
+                })
+        }
+        _ => left == right,
+    }
+}
+
+fn arg(input: &Value, index: usize) -> Value {
+    input
+        .as_array()
+        .and_then(|args| args.get(index))
+        .cloned()
+        .unwrap_or(Value::Null)
+}
+
+fn required_string(value: &Value, key: &str) -> String {
+    read::as_string(value)
+        .unwrap_or_else(|| panic!("{key} is a string in every fixture"))
+        .to_owned()
+}
+
+/// Every fixture table calls this with the same `checkedAt`, so a missing one is a broken
+/// fixture rather than a case to handle.
+fn checked_at(input: &Value) -> String {
+    required_string(read::property(input, "checkedAt"), "checkedAt")
+}
+
+/// The three keys that are members of the shipped `WINDOWS` object through its prototype
+/// chain, and therefore draw a row there that the contract cannot describe.
+const PROTOTYPE_KEYS: [&str; 3] = ["constructor", "toString", "__proto__"];
+
+/// Run one record through the port and return what it decided, in the trace's own shape.
+fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static str>) {
+    let first = arg(input, 0);
+    match (module, name) {
+        ("core", "clampPercent") => (
+            number(limits::clamp_percent(
+                read::as_number(&first).expect("a number under test"),
+            )),
+            None,
+        ),
+        ("core", "makeUsageLimits.sort" | "makeUsageLimits.idOrder" | "makeUsageLimits.emptyIterable") => {
+            let windows = read::array(&first, "windows")
+                .iter()
+                .map(|window| read::window_from_value(window))
+                .collect::<Vec<_>>();
+            (
+                canon_limits(&limits::make_usage_limits(checked_at(&first), windows)),
+                None,
+            )
+        }
+        ("core", "makeUnavailableUsageLimits") => {
+            let reason = required_string(read::property(&first, "reason"), "reason");
+            let message = read::optional_string(&first, "message").into_value();
+            (
+                canon_limits(&limits::make_unavailable_usage_limits(
+                    checked_at(&first),
+                    UnavailableReason::parse(&reason).expect("a declared reason"),
+                    message,
+                )),
+                None,
+            )
+        }
+        ("core", "applyUsageLimitsUpdate") => {
+            let previous = match read::field(&first, "previous") {
+                Field::Absent | Field::Null => None,
+                Field::Value(value) => Some(read::limits_from_value(value)),
+            };
+            let update = read::update_from_value(read::property(&first, "update"));
+            (
+                canon_opt_limits(limits::apply_usage_limits_update(
+                    previous.as_ref(),
+                    &update,
+                    &checked_at(&first),
+                )),
+                None,
+            )
+        }
+        ("core", "resolveUsageLimitsAfterProbe") => {
+            let published = match read::field(&first, "published") {
+                Field::Absent | Field::Null => None,
+                Field::Value(value) => Some(read::limits_from_value(value)),
+            };
+            let probed = match read::field(&first, "probed") {
+                Field::Absent | Field::Null => None,
+                Field::Value(value) => Some(read::limits_from_value(value)),
+            };
+            (
+                canon_opt_limits(limits::resolve_usage_limits_after_probe(
+                    published.as_ref(),
+                    probed.as_ref(),
+                )),
+                None,
+            )
+        }
+        ("claude", "claudeRateLimitEventToUpdate") => {
+            let names = read::optional_string(&arg(input, 1), "overageIncluded").into_value();
+            let produced = claude_rate_limit_event_to_update(
+                &first,
+                &ClaudeScopedNames {
+                    overage_included: names,
+                },
+            );
+            let deviation = read::as_string(read::property(&first, "rateLimitType"))
+                .filter(|kind| PROTOTYPE_KEYS.contains(kind))
+                .map(|_| "a prototype key names a window the contract cannot carry");
+            (canon_opt_update(produced), deviation)
+        }
+        ("claude", "claudeUsageResponseToLimits" | "claudeUsageResponseToLimits.resetsAt" | "claudeUsageResponseToLimits.scopedId") => {
+            let (limits, names) = claude_usage_response_to_limits(&first);
+            let mut object = serde_json::Map::new();
+            object.insert("limits".to_owned(), canon_limits(&limits));
+            let mut names_object = serde_json::Map::new();
+            if let Some(overage_included) = &names.overage_included {
+                names_object.insert(
+                    "overageIncluded".to_owned(),
+                    Value::String(overage_included.clone()),
+                );
+            }
+            object.insert("names".to_owned(), Value::Object(names_object));
+            (Value::Object(object), None)
+        }
+        ("codex", "codexRateLimitsToLimits" | "codexRateLimitsToLimits.byLimitId" | "codexRateLimitsToLimits.emptyLimitIdMap") => {
+            (canon_limits(&codex_rate_limits_to_limits(&first)), None)
+        }
+        ("codex", "codexRateLimitsToUpdate") => (
+            canon_opt_update(codex_rate_limits_to_update(&first)),
+            None,
+        ),
+        ("codex", "codexResetCreditsToContract") => (
+            canon_opt_credits(codex_reset_credits_to_contract(&first)),
+            None,
+        ),
+        ("codex", "mergeCodexRateLimits") => {
+            let previous = arg(input, 0);
+            let previous = match previous {
+                Value::Null => None,
+                value => Some(value),
+            };
+            (
+                canon_opt_snapshot(merge_codex_rate_limits(
+                    previous.as_ref(),
+                    &arg(input, 1),
+                )),
+                None,
+            )
+        }
+        ("codex", "codexRateLimitsFailureMessage") => {
+            let tag = required_string(read::property(&first, "_tag"), "_tag");
+            let failure = match tag.as_str() {
+                "CodexAppServerRequestError" => CodexRateLimitsFailure::Request {
+                    code: read::as_number(read::property(&first, "code")).expect("an rpc code"),
+                },
+                "CodexAppServerSpawnError" => CodexRateLimitsFailure::Spawn,
+                "CodexAppServerProcessExitedError" => CodexRateLimitsFailure::ProcessExited,
+                "CodexAppServerProtocolParseError"
+                | "CodexAppServerTransportError"
+                | "CodexAppServerInputStreamEndedError"
+                | "CodexAppServerIdentifierGenerationError" => CodexRateLimitsFailure::Other,
+                other => panic!("an unmapped Codex error tag {other:?}"),
+            };
+            (
+                Value::String(codex_rate_limits_failure_message(&failure)),
+                None,
+            )
+        }
+        ("codex", "codexUsageLimitMessage" | "codexUsageLimitMessage.nextStep") => (
+            Value::String(codex_usage_limit_message(
+                &first,
+                read::as_string(&arg(input, 1)).expect("an event timestamp"),
+            )),
+            None,
+        ),
+        (module, name) => panic!("no port wired up for {module} {name}"),
+    }
+}
+
+struct Record {
+    module: String,
+    name: String,
+    input: Value,
+    expected: Value,
+}
+
+fn records(text: &str) -> Vec<Record> {
+    let lines: Vec<&str> = text.lines().filter(|line| !line.is_empty()).collect();
+    assert_eq!(lines.len() % 3, 0, "every record is a C/I/R triple");
+    lines
+        .chunks(3)
+        .map(|chunk| {
+            let mut fields = chunk[0].split(' ');
+            assert_eq!(fields.next(), Some("C"), "a record starts with C");
+            let module = fields.next().expect("a module").to_owned();
+            let name = fields.next().expect("a function").to_owned();
+            assert!(fields.next().is_none(), "a record names module and function");
+            assert!(chunk[1].starts_with("I "), "the second line is the input");
+            assert!(chunk[2].starts_with("R "), "the third line is the result");
+            Record {
+                module,
+                name,
+                input: decode(&chunk[1][2..]),
+                expected: decode(&chunk[2][2..]),
+            }
+        })
+        .collect()
+}
+
+/// What the shipped code decides, per function. The counts are the trace's own partition: a
+/// fixture table that stops being replayed would otherwise lower the bar silently.
+const EXPECTED_COUNTS: &[(&str, usize)] = &[
+    ("claude claudeRateLimitEventToUpdate", 44),
+    ("claude claudeUsageResponseToLimits.resetsAt", 37),
+    ("codex codexUsageLimitMessage", 36),
+    ("codex codexRateLimitsToLimits", 31),
+    ("codex codexRateLimitsToUpdate", 31),
+    ("codex codexResetCreditsToContract", 20),
+    ("claude claudeUsageResponseToLimits", 16),
+    ("core applyUsageLimitsUpdate", 12),
+    ("claude claudeUsageResponseToLimits.scopedId", 12),
+    ("core clampPercent", 11),
+    ("codex codexUsageLimitMessage.nextStep", 9),
+    ("core resolveUsageLimitsAfterProbe", 8),
+    ("codex mergeCodexRateLimits", 7),
+    ("codex codexRateLimitsFailureMessage", 7),
+    ("core makeUnavailableUsageLimits", 4),
+    ("core makeUsageLimits.sort", 1),
+    ("core makeUsageLimits.idOrder", 1),
+    ("core makeUsageLimits.emptyIterable", 1),
+    ("codex codexRateLimitsToLimits.byLimitId", 1),
+    ("codex codexRateLimitsToLimits.emptyLimitIdMap", 1),
+];
+const EXPECTED_TOTAL: usize = 290;
+
+#[test]
+fn replays_the_shipped_usage_limit_decisions() {
+    let Ok(path) = std::env::var("LMCS_USAGE_TRACE") else {
+        eprintln!(
+            "skipping the usage-limits golden: set LMCS_USAGE_TRACE to a trace from \
+             apps/server/scripts/usage-limits-trace.ts"
+        );
+        return;
+    };
+    let text = std::fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("cannot read the trace at {}: {error}", path));
+    let records = records(&text);
+
+    let mut counts: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for record in &records {
+        *counts
+            .entry(format!("{} {}", record.module, record.name))
+            .or_default() += 1;
+    }
+    assert_eq!(
+        counts.len(),
+        EXPECTED_COUNTS.len(),
+        "the trace replayed {counts:?}, which is not the wired-up set"
+    );
+    for (label, expected) in EXPECTED_COUNTS {
+        assert_eq!(
+            counts.get(*label).copied().unwrap_or_default(),
+            *expected,
+            "{label} is not the table the trace captured"
+        );
+    }
+    assert_eq!(records.len(), EXPECTED_TOTAL, "the trace's record count");
+
+    let mut deviations = 0;
+    for record in &records {
+        let (produced, deviation) = replay(&record.module, &record.name, &record.input);
+        if let Some(reason) = deviation {
+            // A deviation has to stay visible: the shipped answer must not already be the
+            // one the port gives, or the entry is papering over a port that changed.
+            assert!(
+                !json_eq(&record.expected, &absent()),
+                "{} {:?} was expected to deviate but matches",
+                record.name,
+                record.input
+            );
+            deviations += 1;
+            assert!(
+                json_eq(&produced, &absent()),
+                "{reason} for {:?}, got {produced}",
+                record.input
+            );
+            continue;
+        }
+        assert!(
+            json_eq(&produced, &record.expected),
+            "{} {} differed\n  input    {}\n  shipped  {}\n  rust     {}",
+            record.module,
+            record.name,
+            record.input,
+            record.expected,
+            produced
+        );
+    }
+    assert_eq!(
+        deviations, 6,
+        "the prototype-key events are six records; a different count means the \
+         deviation list no longer describes the trace"
+    );
+}
