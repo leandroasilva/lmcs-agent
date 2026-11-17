@@ -196,7 +196,11 @@ pub struct UsageLimitsUpdate {
 /// `clampPercent`. A percentage the provider did not sanity-check still draws a bar.
 #[must_use]
 pub fn clamp_percent(value: f64) -> f64 {
-    if value.is_finite() { js_max(0.0, js_min(100.0, value)) } else { 0.0 }
+    if value.is_finite() {
+        js_max(0.0, js_min(100.0, value))
+    } else {
+        0.0
+    }
 }
 
 /// `Math.max`. Unlike `f64::max`, ECMAScript propagates `NaN`, and `max(0, -0)` is `+0`.
@@ -222,7 +226,11 @@ pub fn js_min(left: f64, right: f64) -> f64 {
         return f64::NAN;
     }
     if left == right {
-        return if left.is_sign_negative() || right.is_sign_negative() { -0.0 } else { left };
+        return if left.is_sign_negative() || right.is_sign_negative() {
+            -0.0
+        } else {
+            left
+        };
     }
     if left < right { left } else { right }
 }
@@ -231,7 +239,9 @@ pub fn js_min(left: f64, right: f64) -> f64 {
 /// `Infinity` for a reason: `Math.min()` with no arguments is `+Infinity`.
 #[must_use]
 pub fn js_min_all(values: &[f64]) -> f64 {
-    values.iter().fold(f64::INFINITY, |acc, value| js_min(acc, *value))
+    values
+        .iter()
+        .fold(f64::INFINITY, |acc, value| js_min(acc, *value))
 }
 
 /// `[...windows].toSorted(kindOrder || id.localeCompare)`. `sort_by` is stable, like
@@ -300,24 +310,30 @@ pub fn apply_usage_limits_update(
             .and_then(|limits| limits.unavailable.as_ref())
             .is_some_and(|unavailable| unavailable.reason == UnavailableReason::Unsupported)
     {
-        return previous.map(UsageLimits::clone);
+        return previous.cloned();
     }
 
     // A `Vec` rather than a map, because the order rows arrive in is the order a JS `Map`
     // keeps before the sort: an update that names an existing id rewrites that row in place,
     // and only a new id appends.
-    let mut merged: Vec<UsageWindow> =
-        previous.map(|limits| limits.windows.clone()).unwrap_or_default();
+    let mut merged: Vec<UsageWindow> = previous
+        .map(|limits| limits.windows.clone())
+        .unwrap_or_default();
     // Codex sends this notification beside every token-usage tick, almost always with
     // unchanged numbers. Decide "nothing changed" per window on the way through so the no-op
     // case never allocates a new snapshot.
     let mut changed = false;
     for window in &update.windows {
-        let position = merged.iter().position(|candidate| candidate.id == window.id);
+        let position = merged
+            .iter()
+            .position(|candidate| candidate.id == window.id);
         let existing = position.map(|index| merged[index].clone());
         let next = UsageWindow {
             used_percent: clamp_percent(window.used_percent),
-            resets_at: inherit(&window.resets_at, existing.as_ref().map(|row| &row.resets_at)),
+            resets_at: inherit(
+                &window.resets_at,
+                existing.as_ref().map(|row| &row.resets_at),
+            ),
             window_duration_mins: inherit(
                 &window.window_duration_mins,
                 existing.as_ref().map(|row| &row.window_duration_mins),
@@ -395,9 +411,302 @@ pub fn resolve_usage_limits_after_probe(
             .unavailable
             .as_ref()
             .is_some_and(|unavailable| unavailable.reason == UnavailableReason::ProbeFailed)
-        && let Some(published @ UsageLimits { unavailable: None, .. }) = published
+        && let Some(
+            published @ UsageLimits {
+                unavailable: None, ..
+            },
+        ) = published
     {
         return Some(published.clone());
     }
-    probed.map(UsageLimits::clone)
+    probed.cloned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn window(id: &str, kind: WindowKind, used_percent: f64) -> UsageWindow {
+        UsageWindow {
+            id: id.to_owned(),
+            kind,
+            label: kind.as_str().to_owned(),
+            used_percent,
+            resets_at: Field::Absent,
+            window_duration_mins: Field::Absent,
+        }
+    }
+
+    fn ids(limits: &UsageLimits) -> Vec<&str> {
+        limits
+            .windows
+            .iter()
+            .map(|window| window.id.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn clamp_percent_rejects_the_non_finite_instead_of_clamping_it() {
+        assert_eq!(clamp_percent(100.5), 100.0);
+        assert_eq!(clamp_percent(-1.0), 0.0);
+        // `Number.isFinite` fails for the infinities, so an unbounded percentage is read as an
+        // empty bar rather than a full one — the difference between this and a plain clamp.
+        assert_eq!(clamp_percent(f64::INFINITY), 0.0);
+        assert_eq!(clamp_percent(f64::NAN), 0.0);
+        // The result of `Math.max(0, Math.min(100, -0))` is `+0`; the two zeros are equal, and
+        // JSON prints both as `0`, so the sign is invisible on the wire and pinned only here.
+        assert!(!clamp_percent(-0.0).is_sign_negative());
+    }
+
+    #[test]
+    fn the_math_helpers_propagate_nan_where_javascript_does() {
+        assert!(js_max(0.0, f64::NAN).is_nan());
+        assert!(js_min(100.0, f64::NAN).is_nan());
+        // `Math.min()` with no arguments is `+Infinity`, which is what makes an empty credit
+        // list a missing countdown rather than one at the epoch.
+        assert_eq!(js_min_all(&[]), f64::INFINITY);
+        assert!(js_min(0.0, -0.0).is_sign_negative());
+        assert!(!js_max(0.0, -0.0).is_sign_negative());
+    }
+
+    #[test]
+    fn windows_stack_shortest_allowance_first_then_the_locale_order() {
+        let limits = make_usage_limits(
+            "2026-05-01T00:00:00.000Z",
+            [
+                window("z_other", WindowKind::Other, 0.0),
+                window("seven_day_gpt5", WindowKind::Weekly, 0.0),
+                window("m_monthly", WindowKind::Monthly, 0.0),
+                window("seven_day_gpt_5", WindowKind::Weekly, 0.0),
+                window("five_hour", WindowKind::Session, 0.0),
+            ],
+        );
+        assert_eq!(
+            ids(&limits),
+            [
+                "five_hour",
+                "seven_day_gpt_5",
+                "seven_day_gpt5",
+                "m_monthly",
+                "z_other"
+            ]
+        );
+    }
+
+    #[test]
+    fn an_unwritten_field_inherits_and_a_written_null_clears() {
+        let published = make_usage_limits(
+            "earlier",
+            [UsageWindow {
+                resets_at: Field::Value("2026-05-01T00:00:00.000Z".to_owned()),
+                window_duration_mins: Field::Value(300.0),
+                ..window("five_hour", WindowKind::Session, 10.0)
+            }],
+        );
+
+        let kept = apply_usage_limits_update(
+            Some(&published),
+            &UsageLimitsUpdate {
+                windows: vec![window("five_hour", WindowKind::Session, 20.0)],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(
+            kept.windows[0].resets_at,
+            Field::Value("2026-05-01T00:00:00.000Z".to_owned())
+        );
+        assert_eq!(kept.windows[0].window_duration_mins, Field::Value(300.0));
+        assert_eq!(kept.checked_at, "later");
+
+        // The shipped spread tests `=== undefined`, so an explicit `null` is an answer: the
+        // bar loses its countdown instead of reaching back to the previous snapshot.
+        let cleared = apply_usage_limits_update(
+            Some(&published),
+            &UsageLimitsUpdate {
+                windows: vec![UsageWindow {
+                    resets_at: Field::Null,
+                    ..window("five_hour", WindowKind::Session, 20.0)
+                }],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(cleared.windows[0].resets_at, Field::Null);
+
+        // A row whose countdown was cleared once stays cleared: the inherit test is
+        // `existing?.resetsAt !== undefined`, and `null` passes it. Reading it as "nothing was
+        // observed" instead would resurrect a countdown the provider took away.
+        let cleared_once = make_usage_limits(
+            "middle",
+            [UsageWindow {
+                resets_at: Field::Null,
+                ..window("five_hour", WindowKind::Session, 20.0)
+            }],
+        );
+        let stayed = apply_usage_limits_update(
+            Some(&cleared_once),
+            &UsageLimitsUpdate {
+                windows: vec![window("five_hour", WindowKind::Session, 30.0)],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(stayed.windows[0].resets_at, Field::Null);
+    }
+
+    #[test]
+    fn an_unchanged_notification_reuses_the_snapshot_and_a_nan_one_does_not() {
+        let published =
+            make_usage_limits("earlier", [window("five_hour", WindowKind::Session, 0.0)]);
+        let unchanged = apply_usage_limits_update(
+            Some(&published),
+            &UsageLimitsUpdate {
+                windows: vec![window("five_hour", WindowKind::Session, 0.0)],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(unchanged, published);
+
+        // `clampPercent` turns the `NaN` into `0`, and the published row still holds the `NaN`
+        // the provider sent, so the comparison cannot see them as the same row. The
+        // equality test is JS `===` for exactly this reason: a `NaN` bar re-publishes.
+        let stalled = make_usage_limits(
+            "earlier",
+            [window("five_hour", WindowKind::Session, f64::NAN)],
+        );
+        let after = apply_usage_limits_update(
+            Some(&stalled),
+            &UsageLimitsUpdate {
+                windows: vec![window("five_hour", WindowKind::Session, f64::NAN)],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(after.checked_at, "later");
+        assert_eq!(after.windows[0].used_percent, 0.0);
+
+        // With nothing to say, the update leaves the snapshot alone, checked-at included.
+        let empty =
+            apply_usage_limits_update(Some(&published), &UsageLimitsUpdate::default(), "later")
+                .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(empty, published);
+        assert_eq!(
+            apply_usage_limits_update(None, &UsageLimitsUpdate::default(), "later"),
+            None
+        );
+    }
+
+    #[test]
+    fn a_runtime_event_cannot_make_an_unsupported_account_supported() {
+        let unsupported = make_unavailable_usage_limits(
+            "earlier",
+            UnavailableReason::Unsupported,
+            Some("API key".to_owned()),
+        );
+        let after = apply_usage_limits_update(
+            Some(&unsupported),
+            &UsageLimitsUpdate {
+                windows: vec![window("five_hour", WindowKind::Session, 40.0)],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(after, unsupported);
+
+        // A `probeFailed` snapshot is only a stalled read, so the event draws over it.
+        let stalled =
+            make_unavailable_usage_limits("earlier", UnavailableReason::ProbeFailed, None);
+        let after = apply_usage_limits_update(
+            Some(&stalled),
+            &UsageLimitsUpdate {
+                windows: vec![window("five_hour", WindowKind::Session, 40.0)],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(ids(&after), ["five_hour"]);
+        assert_eq!(after.unavailable, None);
+        // The empty message is falsy and disappears.
+        assert_eq!(
+            make_unavailable_usage_limits(
+                "now",
+                UnavailableReason::Unsupported,
+                Some(String::new())
+            )
+            .unavailable
+            .expect("an unavailable snapshot")
+            .message,
+            Field::Absent
+        );
+    }
+
+    #[test]
+    fn a_failed_probe_keeps_the_bars_and_an_unsupported_answer_replaces_them() {
+        let published =
+            make_usage_limits("published", [window("five_hour", WindowKind::Session, 1.0)]);
+        let probed_failed = make_unavailable_usage_limits(
+            "probed",
+            UnavailableReason::ProbeFailed,
+            Some("timeout".to_owned()),
+        );
+        assert_eq!(
+            resolve_usage_limits_after_probe(Some(&published), Some(&probed_failed)),
+            Some(published.clone())
+        );
+        assert_eq!(
+            resolve_usage_limits_after_probe(None, Some(&probed_failed)),
+            Some(probed_failed.clone())
+        );
+        let probed_unsupported =
+            make_unavailable_usage_limits("probed", UnavailableReason::Unsupported, None);
+        assert_eq!(
+            resolve_usage_limits_after_probe(Some(&published), Some(&probed_unsupported)),
+            Some(probed_unsupported)
+        );
+        assert_eq!(
+            resolve_usage_limits_after_probe(Some(&published), None),
+            None
+        );
+    }
+
+    #[test]
+    fn credits_survive_a_merge_onto_their_own_snapshot() {
+        let published = UsageLimits {
+            reset_credits: Some(ResetCredits {
+                available_count: 2.0,
+                next_expires_at: Field::Value("2026-05-01T00:00:00.000Z".to_owned()),
+            }),
+            ..make_usage_limits("earlier", [window("primary", WindowKind::Session, 1.0)])
+        };
+        let after = apply_usage_limits_update(
+            Some(&published),
+            &UsageLimitsUpdate {
+                windows: vec![window("secondary", WindowKind::Weekly, 2.0)],
+            },
+            "later",
+        )
+        .expect("an update over a snapshot yields a snapshot");
+        assert_eq!(after.reset_credits, published.reset_credits);
+        assert_eq!(ids(&after), ["primary", "secondary"]);
+    }
+
+    #[test]
+    fn merged_with_keeps_the_previous_answer_only_when_this_one_is_silent() {
+        assert_eq!(
+            Field::Absent.merged_with(Field::Value("earlier")),
+            Field::Value("earlier")
+        );
+        assert_eq!(
+            Field::Null.merged_with(Field::Value("earlier")),
+            Field::Null
+        );
+        assert_eq!(
+            Field::Value("later").merged_with(Field::Value("earlier")),
+            Field::Value("later")
+        );
+        assert!(Field::<u8>::Null.is_written());
+        assert!(!Field::<u8>::Absent.is_written());
+    }
 }

@@ -110,9 +110,9 @@ fn make_window(
 /// anything falsy or unparsable leaves the row without a reset time.
 fn iso_from_reset(value: &Value) -> Field<String> {
     match read::field(value, "resets_at") {
-        Field::Value(text) if read::truthy(text) => {
-            read::as_string(text).and_then(jsdate::iso_from_string).into()
-        }
+        Field::Value(text) if read::truthy(text) => read::as_string(text)
+            .and_then(jsdate::iso_from_string)
+            .into(),
         _ => Field::Absent,
     }
 }
@@ -141,14 +141,19 @@ pub fn claude_rate_limit_event_to_update(
     let resets_at = read::as_number(read::property(info, "resetsAt"))
         .and_then(jsdate::iso_from_epoch_seconds)
         .into();
-    if let Some(definition) = WINDOWS.iter().find(|definition| definition.id == rate_limit_type) {
+    if let Some(definition) = WINDOWS
+        .iter()
+        .find(|definition| definition.id == rate_limit_type)
+    {
         return Some(UsageLimitsUpdate {
             windows: vec![make_window(definition, used_percent, resets_at)],
         });
     }
     if rate_limit_type == OVERAGE_INCLUDED_EVENT_TYPE
-        && let Some(display_name) =
-            names.overage_included.as_deref().filter(|name| !name.is_empty())
+        && let Some(display_name) = names
+            .overage_included
+            .as_deref()
+            .filter(|name| !name.is_empty())
     {
         return Some(UsageLimitsUpdate {
             windows: vec![scoped_window(display_name, used_percent, resets_at)],
@@ -197,10 +202,179 @@ pub fn claude_usage_response_to_limits(input: &Value) -> (UsageLimits, ClaudeSco
         let Field::Value(utilization) = read::field_number(entry, "utilization") else {
             continue;
         };
-        windows.push(scoped_window(display_name, utilization, iso_from_reset(entry)));
+        windows.push(scoped_window(
+            display_name,
+            utilization,
+            iso_from_reset(entry),
+        ));
         if overage_included.is_none() {
             overage_included = Some(display_name.to_owned());
         }
     }
-    (make_usage_limits(checked_at, windows), ClaudeScopedNames { overage_included })
+    (
+        make_usage_limits(checked_at, windows),
+        ClaudeScopedNames { overage_included },
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn a_scoped_id_folds_every_separator_into_one_underscore() {
+        assert_eq!(
+            scoped_window_id("Opus 4.1 (Preview)"),
+            "seven_day_opus_4_1_preview_",
+            "the trailing run of separators is folded too, because `+` replaces every match"
+        );
+        assert_eq!(scoped_window_id("Fable"), "seven_day_fable");
+        assert_eq!(
+            scoped_window_id("Claude Fable 3"),
+            "seven_day_claude_fable_3"
+        );
+        // Several characters in a row are one underscore, not several.
+        assert_eq!(scoped_window_id("a  -- b"), "seven_day_a_b");
+        assert_eq!(scoped_window_id(""), "seven_day_");
+    }
+
+    #[test]
+    fn a_streamed_event_needs_a_number_and_a_type_the_table_declares() {
+        let names = ClaudeScopedNames {
+            overage_included: Some("Opus 4.1".to_owned()),
+        };
+        let update = claude_rate_limit_event_to_update(
+            &json!({"rateLimitType": "five_hour", "utilization": 0.25, "resetsAt": 1_777_000_000}),
+            &names,
+        )
+        .expect("a session event draws the session bar");
+        assert_eq!(
+            update.windows,
+            vec![UsageWindow {
+                id: "five_hour".to_owned(),
+                kind: WindowKind::Session,
+                label: "Session".to_owned(),
+                used_percent: 25.0,
+                resets_at: Field::Value("2026-04-24T03:06:40.000Z".to_owned()),
+                window_duration_mins: Field::Value(300.0),
+            }]
+        );
+
+        // Utilization is a fraction, and the CLI has been seen sending something else.
+        assert_eq!(
+            claude_rate_limit_event_to_update(
+                &json!({"rateLimitType": "five_hour", "utilization": "0.25"}),
+                &names
+            ),
+            None
+        );
+        // A `NaN` utilization survives the guard, because `typeof NaN === "number"`, and
+        // `clampPercent` then draws it as an empty bar rather than dropping the row.
+        let stalled = claude_rate_limit_event_to_update(
+            &json!({"rateLimitType": "five_hour", "utilization": {"__number": "NaN"}}),
+            &names,
+        )
+        .expect("a `NaN` utilization is still a number to `typeof`");
+        assert_eq!(stalled.windows[0].used_percent, 0.0);
+        assert_eq!(stalled.windows[0].resets_at, Field::Absent);
+        // An overage event before the probe has named the bucket cannot guess its row, and a
+        // type outside the table has no row to land on.
+        assert_eq!(
+            claude_rate_limit_event_to_update(
+                &json!({"rateLimitType": "seven_day_overage_included", "utilization": 0.5}),
+                &ClaudeScopedNames::default()
+            ),
+            None
+        );
+        assert_eq!(
+            claude_rate_limit_event_to_update(
+                &json!({"rateLimitType": "twenty_minute", "utilization": 0.5}),
+                &names
+            ),
+            None
+        );
+
+        let scoped = claude_rate_limit_event_to_update(
+            &json!({"rateLimitType": "seven_day_overage_included", "utilization": 1.5}),
+            &names,
+        )
+        .expect("an overage event lands on the row the probe drew");
+        assert_eq!(
+            scoped.windows,
+            vec![UsageWindow {
+                id: "seven_day_opus_4_1".to_owned(),
+                kind: WindowKind::Weekly,
+                label: "Weekly · Opus 4.1".to_owned(),
+                used_percent: 100.0,
+                resets_at: Field::Absent,
+                window_duration_mins: Field::Value(WEEK_MINS),
+            }]
+        );
+    }
+
+    #[test]
+    fn the_probe_names_the_bucket_its_events_will_use() {
+        let (limits, names) = claude_usage_response_to_limits(&json!({
+            "checkedAt": "2026-05-01T12:00:00.000Z",
+            "response": {
+                "rate_limits_available": true,
+                "rate_limits": {
+                    "seven_day": {"utilization": 40, "resets_at": "2026-05-08T00:00:00Z"},
+                    "five_hour": {"utilization": 10, "resets_at": "2026-05-01T17:00:00Z"},
+                    "model_scoped": [
+                        {"display_name": "Opus 4.1", "utilization": 70},
+                        {"display_name": "Skip Me", "utilization": "n/a"},
+                    ],
+                },
+            },
+        }));
+        assert_eq!(names.overage_included.as_deref(), Some("Opus 4.1"));
+        assert_eq!(
+            limits
+                .windows
+                .iter()
+                .map(|window| window.id.as_str())
+                .collect::<Vec<_>>(),
+            ["five_hour", "seven_day", "seven_day_opus_4_1"]
+        );
+        assert_eq!(limits.windows[2].label, "Weekly · Opus 4.1");
+        assert_eq!(limits.windows[2].resets_at, Field::Absent);
+        assert_eq!(limits.unavailable, None);
+
+        let (unavailable, names) = claude_usage_response_to_limits(&json!({
+            "checkedAt": "2026-05-01T12:00:00.000Z",
+            "response": {"rate_limits_available": false, "rate_limits": null},
+        }));
+        assert_eq!(names, ClaudeScopedNames::default());
+        assert_eq!(unavailable.windows, Vec::new());
+        assert_eq!(
+            unavailable
+                .unavailable
+                .map(|unavailable| unavailable.reason),
+            Some(UnavailableReason::Unsupported)
+        );
+    }
+
+    #[test]
+    fn a_reset_time_the_parser_refuses_leaves_the_bar_without_a_countdown() {
+        let (limits, _) = claude_usage_response_to_limits(&json!({
+            "checkedAt": "now",
+            "response": {
+                "rate_limits_available": true,
+                "rate_limits": {"five_hour": {"utilization": 10, "resets_at": "2026-05-01T12:00:00GMT"}},
+            },
+        }));
+        assert_eq!(limits.windows[0].resets_at, Field::Absent);
+
+        // An empty string is falsy, so it never reaches the parser at all.
+        let (limits, _) = claude_usage_response_to_limits(&json!({
+            "checkedAt": "now",
+            "response": {
+                "rate_limits_available": true,
+                "rate_limits": {"five_hour": {"utilization": 10, "resets_at": ""}},
+            },
+        }));
+        assert_eq!(limits.windows[0].resets_at, Field::Absent);
+    }
 }

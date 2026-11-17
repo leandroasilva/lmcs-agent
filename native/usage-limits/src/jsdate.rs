@@ -31,7 +31,8 @@ fn is_js_whitespace(character: char) -> bool {
 }
 
 fn trim_js(text: &str) -> &str {
-    text.trim_start_matches(is_js_whitespace).trim_end_matches(is_js_whitespace)
+    text.trim_start_matches(is_js_whitespace)
+        .trim_end_matches(is_js_whitespace)
 }
 
 /// Leading whitespace only, because a space is also the date/time separator and the caller
@@ -140,13 +141,16 @@ pub fn to_iso_string(millis: f64) -> Option<String> {
 ///   because only the month and the time fields are range-checked).
 /// - `MM/DD/YYYY [HH:MM:SS]` and `Wdy, DD Mon YYYY HH:MM:SS <zone>` — V8's legacy forms.
 ///
-/// Rejected, matching what the trace shows V8 doing: a two-digit or three-digit year, an
-/// offset written `+02`, a bare zone name (`2026-05-01T12:00:00GMT`), a zone name after a
-/// space (`2026-05-01T12:00:00 UTC`), a bracketed IANA name, month 13, minute 60, second 60.
+/// Rejected, matching what the trace shows V8 doing: a two-digit year, an offset written
+/// `+02`, a bare zone name (`2026-05-01T12:00:00GMT`), a zone name after a space
+/// (`2026-05-01T12:00:00 UTC`), a bracketed IANA name, month 13, minute 60, second 60.
 ///
-/// One difference remains, and it is unreachable: a zone-less *date-time* is read here as
-/// UTC, where V8 would read the host's local time. Effect appends `"Z"` to exactly such
-/// strings before parsing, so the shipped code never asks the question.
+/// Two differences remain, and neither is reachable: a zone-less *date-time* is read here as
+/// UTC, where V8 would read the host's local time, and *already-zoned* text is trimmed here
+/// where V8 refuses it outright. Effect appends `"Z"` to exactly the first kind of string
+/// before parsing, and neither CLI pads a reset time, so the shipped code never asks either
+/// question. A three-digit year is a third: V8's legacy parser answers that one in the host's
+/// own time zone, which is why nothing here claims to match it.
 #[must_use]
 pub fn date_parse(text: &str) -> Option<f64> {
     let text = trim_js(text);
@@ -172,7 +176,15 @@ struct ParsedDate {
 
 impl ParsedDate {
     fn at_midnight(year: i64, month: i64, day: i64) -> Self {
-        Self { year, month, day, hour: 0.0, minute: 0.0, second: 0.0, millis: 0.0 }
+        Self {
+            year,
+            month,
+            day,
+            hour: 0.0,
+            minute: 0.0,
+            second: 0.0,
+            millis: 0.0,
+        }
     }
 
     fn set_time(&mut self, time: ClockTime) {
@@ -335,7 +347,12 @@ fn read_time(text: &str) -> Option<(ClockTime, &str)> {
         return None;
     }
     Some((
-        ClockTime { hour: hour as f64, minute: minute as f64, second: second as f64, millis },
+        ClockTime {
+            hour: hour as f64,
+            minute: minute as f64,
+            second: second as f64,
+            millis,
+        },
         rest,
     ))
 }
@@ -403,7 +420,10 @@ fn us_date_parse(text: &str) -> Option<f64> {
 /// `Thu, 01 May 2026 12:00:00 GMT`, with the weekday optional and the zone limited to the
 /// names that mean UTC.
 fn rfc1123_parse(text: &str) -> Option<f64> {
-    let tokens: Vec<&str> = text.split([' ', '\t', ',']).filter(|token| !token.is_empty()).collect();
+    let tokens: Vec<&str> = text
+        .split([' ', '\t', ','])
+        .filter(|token| !token.is_empty())
+        .collect();
     // `Wdy DD Mon YYYY HH:MM:SS GMT`, or the same without the leading weekday.
     let offset = match tokens.len() {
         6 => 1,
@@ -428,8 +448,9 @@ fn rfc1123_parse(text: &str) -> Option<f64> {
     };
     let year: i64 = tokens[offset + 2].parse().ok()?;
     let (time, _) = read_time(tokens[offset + 3])?;
-    let zone_name =
-        tokens.get(offset + 4).map_or_else(|| "UTC".to_owned(), |name| name.to_ascii_uppercase());
+    let zone_name = tokens
+        .get(offset + 4)
+        .map_or_else(|| "UTC".to_owned(), |name| name.to_ascii_uppercase());
     let zone = match zone_name.as_str() {
         "GMT" | "UTC" | "Z" | "ZULU" => 0.0,
         // `EST` and the other abbreviations whose answer is the host's, and any offset
@@ -491,9 +512,159 @@ fn collation_keys(text: &str) -> (Vec<u32>, Vec<u8>) {
         let rank = PRIMARY_ORDER
             .chars()
             .position(|candidate| candidate.eq_ignore_ascii_case(&character))
-            .map_or_else(|| 1_000_000 + u32::from(character), |index| index as u32 + 1);
+            .map_or_else(
+                || 1_000_000 + u32::from(character),
+                |index| index as u32 + 1,
+            );
         primary.push(rank);
         case.push(if character.is_ascii_uppercase() { 2 } else { 1 });
     }
     (primary, case)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn iso_from_string_applies_the_effect_z_rule_and_formats_in_utc() {
+        assert_eq!(
+            iso_from_string("2026-05-01T12:00:00").as_deref(),
+            Some("2026-05-01T12:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-05-01T12:00:00+02:00").as_deref(),
+            Some("2026-05-01T10:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-05-01").as_deref(),
+            Some("2026-05-01T00:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-05").as_deref(),
+            Some("2026-05-01T00:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("2026").as_deref(),
+            Some("2026-01-01T00:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-05-01T12:00").as_deref(),
+            Some("2026-05-01T12:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-05-01T12:00:00Z").as_deref(),
+            Some("2026-05-01T12:00:00.000Z")
+        );
+        // A trailing space is the date/time separator with nothing after it, which the golden
+        // measures as the bare date. Padding around an already-zoned string is not measured —
+        // V8 rejects it and this parser trims it — because no caller can produce it.
+        assert_eq!(
+            iso_from_string("2026-05-01 ").as_deref(),
+            Some("2026-05-01T00:00:00.000Z")
+        );
+        assert_eq!(iso_from_string("").as_deref(), None);
+        assert_eq!(iso_from_string(" ").as_deref(), None);
+    }
+
+    #[test]
+    fn a_fraction_is_truncated_and_a_day_rolls_over() {
+        assert_eq!(
+            iso_from_string("2026-05-01T12:00:00.9999Z").as_deref(),
+            Some("2026-05-01T12:00:00.999Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-05-01T12:00:00.5Z").as_deref(),
+            Some("2026-05-01T12:00:00.500Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-02-30T00:00:00Z").as_deref(),
+            Some("2026-03-02T00:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("2026-05-01T24:00:00.000Z").as_deref(),
+            Some("2026-05-02T00:00:00.000Z")
+        );
+        assert_eq!(iso_from_string("2026-05-01T24:00:01.000Z"), None);
+    }
+
+    #[test]
+    fn the_rejections_match_what_v8_answers() {
+        for text in [
+            "26-05-01",
+            "2026-05-01T12:00:00+02",
+            "2026-05-01T12:00:00GMT",
+            "2026-05-01T12:00:00 UTC",
+            "2026-05-01T12:00:00[Europe/Berlin]",
+            "2026-13-01T00:00:00Z",
+            "2026-05-01T12:60:00Z",
+            "2026-05-01T12:00:60Z",
+            "not a date",
+        ] {
+            assert_eq!(iso_from_string(text), None, "{text} should not parse");
+        }
+    }
+
+    #[test]
+    fn the_legacy_forms_parse_too_and_the_expanded_year_round_trips() {
+        assert_eq!(
+            date_parse("05/01/2026 12:00:00")
+                .and_then(to_iso_string)
+                .as_deref(),
+            Some("2026-05-01T12:00:00.000Z")
+        );
+        assert_eq!(
+            date_parse("Thu, 01 May 2026 12:00:00 GMT")
+                .and_then(to_iso_string)
+                .as_deref(),
+            Some("2026-05-01T12:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("-000001-01-01T00:00:00Z").as_deref(),
+            Some("-000001-01-01T00:00:00.000Z")
+        );
+        assert_eq!(
+            iso_from_string("+010000-01-01T00:00:00Z").as_deref(),
+            Some("+010000-01-01T00:00:00.000Z")
+        );
+        // Past the ±100 000 000 day range a `Date` cannot go.
+        assert_eq!(date_parse("+275761-01-01T00:00:00Z"), None);
+    }
+
+    #[test]
+    fn epoch_seconds_are_guarded_before_any_calendar_work() {
+        assert_eq!(
+            iso_from_epoch_seconds(1_777_000_000.0).as_deref(),
+            Some("2026-04-24T03:06:40.000Z")
+        );
+        // A sub-second reset still lands on the millisecond the product carries.
+        assert_eq!(
+            iso_from_epoch_seconds(1_777_000_000.5).as_deref(),
+            Some("2026-04-24T03:06:40.500Z")
+        );
+        for seconds in [0.0, -1.0, f64::NAN, f64::INFINITY, 9_007_199_254_740_992.0] {
+            assert_eq!(
+                iso_from_epoch_seconds(seconds),
+                None,
+                "{seconds} should read as absent"
+            );
+        }
+    }
+
+    #[test]
+    fn locale_compare_sorts_punctuation_before_letters_not_like_bytes() {
+        assert_eq!(locale_compare("a.b", "ab"), Ordering::Less);
+        assert_eq!(locale_compare("five_hour", "fivehour"), Ordering::Less);
+        // The byte order puts `_` (0x5F) after every digit, so a byte sort would rank the
+        // model's weekly bar before the same model's overage-included one.
+        assert_eq!("seven_day_gpt_5".cmp("seven_day_gpt5"), Ordering::Greater);
+        assert_eq!(
+            locale_compare("seven_day_gpt_5", "seven_day_gpt5"),
+            Ordering::Less
+        );
+        assert_eq!(locale_compare("cap", "Cap"), Ordering::Less);
+        assert_eq!(locale_compare("Cap", "CAP"), Ordering::Less);
+        assert_eq!(locale_compare("five_hour", "five_hour"), Ordering::Equal);
+        assert_eq!(locale_compare("weekly", "five_hour"), Ordering::Greater);
+    }
 }

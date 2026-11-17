@@ -14,7 +14,9 @@
 //! ECMAScript's `Number::toString` and Rust's shortest-round-trip formatting disagree on
 //! shapes like `1e308` while meaning the same number.
 
-use lmcs_usage_limits::claude::{ClaudeScopedNames, claude_rate_limit_event_to_update, claude_usage_response_to_limits};
+use lmcs_usage_limits::claude::{
+    ClaudeScopedNames, claude_rate_limit_event_to_update, claude_usage_response_to_limits,
+};
 use lmcs_usage_limits::codex::{
     CodexRateLimitsFailure, codex_rate_limits_failure_message, codex_rate_limits_to_limits,
     codex_rate_limits_to_update, codex_reset_credits_to_contract, codex_usage_limit_message,
@@ -121,7 +123,10 @@ fn canon_limits(limits: &UsageLimits) -> Value {
 fn canon_credits_pairs(credits: &ResetCredits) -> Value {
     let mut pairs = vec![json!(["availableCount", number(credits.available_count)])];
     if credits.next_expires_at.is_written() {
-        pairs.push(json!(["nextExpiresAt", text_field(&credits.next_expires_at)]));
+        pairs.push(json!([
+            "nextExpiresAt",
+            text_field(&credits.next_expires_at)
+        ]));
     }
     Value::Array(pairs)
 }
@@ -195,9 +200,9 @@ fn json_eq(left: &Value, right: &Value) -> bool {
         }
         (Value::Object(left), Value::Object(right)) => {
             left.len() == right.len()
-                && left.iter().all(|(key, value)| {
-                    right.get(key).is_some_and(|other| json_eq(value, other))
-                })
+                && left
+                    .iter()
+                    .all(|(key, value)| right.get(key).is_some_and(|other| json_eq(value, other)))
         }
         _ => left == right,
     }
@@ -237,7 +242,10 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
             )),
             None,
         ),
-        ("core", "makeUsageLimits.sort" | "makeUsageLimits.idOrder" | "makeUsageLimits.emptyIterable") => {
+        (
+            "core",
+            "makeUsageLimits.sort" | "makeUsageLimits.idOrder" | "makeUsageLimits.emptyIterable",
+        ) => {
             let windows = read::array(&first, "windows")
                 .iter()
                 .map(|window| read::window_from_value(window))
@@ -304,7 +312,12 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
                 .map(|_| "a prototype key names a window the contract cannot carry");
             (canon_opt_update(produced), deviation)
         }
-        ("claude", "claudeUsageResponseToLimits" | "claudeUsageResponseToLimits.resetsAt" | "claudeUsageResponseToLimits.scopedId") => {
+        (
+            "claude",
+            "claudeUsageResponseToLimits"
+            | "claudeUsageResponseToLimits.resetsAt"
+            | "claudeUsageResponseToLimits.scopedId",
+        ) => {
             let (limits, names) = claude_usage_response_to_limits(&first);
             let mut object = serde_json::Map::new();
             object.insert("limits".to_owned(), canon_limits(&limits));
@@ -318,13 +331,15 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
             object.insert("names".to_owned(), Value::Object(names_object));
             (Value::Object(object), None)
         }
-        ("codex", "codexRateLimitsToLimits" | "codexRateLimitsToLimits.byLimitId" | "codexRateLimitsToLimits.emptyLimitIdMap") => {
-            (canon_limits(&codex_rate_limits_to_limits(&first)), None)
+        (
+            "codex",
+            "codexRateLimitsToLimits"
+            | "codexRateLimitsToLimits.byLimitId"
+            | "codexRateLimitsToLimits.emptyLimitIdMap",
+        ) => (canon_limits(&codex_rate_limits_to_limits(&first)), None),
+        ("codex", "codexRateLimitsToUpdate") => {
+            (canon_opt_update(codex_rate_limits_to_update(&first)), None)
         }
-        ("codex", "codexRateLimitsToUpdate") => (
-            canon_opt_update(codex_rate_limits_to_update(&first)),
-            None,
-        ),
         ("codex", "codexResetCreditsToContract") => (
             canon_opt_credits(codex_reset_credits_to_contract(&first)),
             None,
@@ -336,10 +351,7 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
                 value => Some(value),
             };
             (
-                canon_opt_snapshot(merge_codex_rate_limits(
-                    previous.as_ref(),
-                    &arg(input, 1),
-                )),
+                canon_opt_snapshot(merge_codex_rate_limits(previous.as_ref(), &arg(input, 1))),
                 None,
             )
         }
@@ -390,7 +402,10 @@ fn records(text: &str) -> Vec<Record> {
             assert_eq!(fields.next(), Some("C"), "a record starts with C");
             let module = fields.next().expect("a module").to_owned();
             let name = fields.next().expect("a function").to_owned();
-            assert!(fields.next().is_none(), "a record names module and function");
+            assert!(
+                fields.next().is_none(),
+                "a record names module and function"
+            );
             assert!(chunk[1].starts_with("I "), "the second line is the input");
             assert!(chunk[2].starts_with("R "), "the third line is the result");
             Record {

@@ -23,8 +23,13 @@ const WEEK_MINS: f64 = 7.0 * 24.0 * 60.0;
 const MONTH_MINS: f64 = 30.0 * 24.0 * 60.0;
 
 /// The snapshot's fields, in the order the shipped partial merge writes them.
-const SNAPSHOT_FIELDS: [&str; 5] =
-    ["limitId", "planType", "rateLimitReachedType", "primary", "secondary"];
+const SNAPSHOT_FIELDS: [&str; 5] = [
+    "limitId",
+    "planType",
+    "rateLimitReachedType",
+    "primary",
+    "secondary",
+];
 
 /// The `account/rateLimits/read` failures the message can tell apart. Codex's app-server error
 /// union is wider (`packages/providers/src/codex/errors.ts`); everything outside these three
@@ -33,7 +38,9 @@ const SNAPSHOT_FIELDS: [&str; 5] =
 pub enum CodexRateLimitsFailure {
     /// A JSON-RPC error. Its code is the only part that reaches the Limits view; the raw
     /// `errorMessage` is for the log.
-    Request { code: f64 },
+    Request {
+        code: f64,
+    },
     Spawn,
     ProcessExited,
     Other,
@@ -78,11 +85,25 @@ pub fn codex_rate_limits_to_windows(snapshot: &Value) -> Vec<UsageWindow> {
     if read::truthy(limit_id) && read::as_string(limit_id) != Some("codex") {
         return Vec::new();
     }
-    let is_monthly_plan =
-        matches!(read::as_string(read::property(snapshot, "planType")), Some("free") | Some("go"));
+    let is_monthly_plan = matches!(
+        read::as_string(read::property(snapshot, "planType")),
+        Some("free") | Some("go")
+    );
     let positions = [
-        ("primary", read::property(snapshot, "primary"), if is_monthly_plan { MONTH_MINS } else { SESSION_MINS }),
-        ("secondary", read::property(snapshot, "secondary"), WEEK_MINS),
+        (
+            "primary",
+            read::property(snapshot, "primary"),
+            if is_monthly_plan {
+                MONTH_MINS
+            } else {
+                SESSION_MINS
+            },
+        ),
+        (
+            "secondary",
+            read::property(snapshot, "secondary"),
+            WEEK_MINS,
+        ),
     ];
     let mut windows = Vec::new();
     for (id, window, fallback_mins) in positions {
@@ -95,8 +116,9 @@ pub fn codex_rate_limits_to_windows(snapshot: &Value) -> Vec<UsageWindow> {
         if !used_percent.is_finite() {
             continue;
         }
-        let window_duration_mins =
-            read::field_number(window, "windowDurationMins").into_value().unwrap_or(fallback_mins);
+        let window_duration_mins = read::field_number(window, "windowDurationMins")
+            .into_value()
+            .unwrap_or(fallback_mins);
         let kind = kind_for_duration(window_duration_mins);
         let resets_at = read::field_number(window, "resetsAt")
             .into_value()
@@ -161,8 +183,7 @@ pub fn codex_rate_limits_to_limits(input: &Value) -> UsageLimits {
         _ => read::property(input, "snapshot"),
     };
     let windows = codex_rate_limits_to_windows(snapshot);
-    let reset_credits =
-        codex_reset_credits_to_contract(read::property(input, "resetCredits"));
+    let reset_credits = codex_reset_credits_to_contract(read::property(input, "resetCredits"));
     UsageLimits {
         checked_at: checked_at.to_owned(),
         windows: core::sort_windows(windows),
@@ -184,7 +205,10 @@ pub fn codex_rate_limits_to_update(snapshot: &Value) -> Option<UsageLimitsUpdate
 pub fn codex_rate_limits_failure_message(failure: &CodexRateLimitsFailure) -> String {
     match failure {
         CodexRateLimitsFailure::Request { code } => {
-            format!("Codex could not read usage (JSON-RPC {}).", js_number_text(*code))
+            format!(
+                "Codex could not read usage (JSON-RPC {}).",
+                js_number_text(*code)
+            )
         }
         CodexRateLimitsFailure::Spawn => "Codex could not be started to read usage.".to_owned(),
         CodexRateLimitsFailure::ProcessExited => {
@@ -255,9 +279,9 @@ fn format_codex_usage_limit_wait(wait_ms: f64) -> String {
 
 fn codex_usage_limit_next_step(rate_limit_reached_type: Option<&str>) -> &'static str {
     match rate_limit_reached_type {
-        Some(
-            "workspace_owner_credits_depleted" | "workspace_member_credits_depleted",
-        ) => " The workspace has no credits to continue sooner: ask your workspace owner to add credits, or send the message again once the limit resets.",
+        Some("workspace_owner_credits_depleted" | "workspace_member_credits_depleted") => {
+            " The workspace has no credits to continue sooner: ask your workspace owner to add credits, or send the message again once the limit resets."
+        }
         Some("workspace_owner_usage_limit_reached" | "workspace_member_usage_limit_reached") => {
             " The workspace spend limit is reached: ask your workspace owner to raise it, or send the message again once the limit resets."
         }
@@ -305,9 +329,10 @@ pub fn codex_usage_limit_message(snapshot: &Value, at_iso: &str) -> String {
     }
     format!(
         "Codex usage limit reached.{reset}{}",
-        codex_usage_limit_next_step(read::as_string(
-            read::property(snapshot, "rateLimitReachedType")
-        ))
+        codex_usage_limit_next_step(read::as_string(read::property(
+            snapshot,
+            "rateLimitReachedType"
+        )))
     )
 }
 
@@ -319,4 +344,338 @@ fn js_number_text(value: f64) -> String {
         return format!("{}", value as i64);
     }
     format!("{value}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn a_duration_names_the_bar_and_its_label() {
+        assert_eq!(kind_for_duration(SESSION_MINS), WindowKind::Session);
+        // The thresholds are inclusive, so a week exactly long is a weekly bar.
+        assert_eq!(kind_for_duration(WEEK_MINS), WindowKind::Weekly);
+        assert_eq!(kind_for_duration(WEEK_MINS - 0.5), WindowKind::Session);
+        assert_eq!(kind_for_duration(MONTH_MINS), WindowKind::Monthly);
+        assert_eq!(kind_for_duration(MONTH_MINS - 0.5), WindowKind::Weekly);
+        // `NaN` fails both comparisons, as every other non-number does.
+        assert_eq!(kind_for_duration(f64::NAN), WindowKind::Session);
+        assert_eq!(label_for_kind(WindowKind::Monthly), "Monthly");
+        assert_eq!(label_for_kind(WindowKind::Other), "Monthly");
+    }
+
+    #[test]
+    fn windows_follow_the_plan_and_ignore_another_allowance() {
+        let paid = codex_rate_limits_to_windows(&json!({
+            "limitId": "codex",
+            "planType": "plus",
+            "primary": {"usedPercent": 10},
+            "secondary": {"usedPercent": 20, "resetsAt": 1_777_000_000},
+        }));
+        assert_eq!(
+            paid.iter()
+                .map(|window| (window.id.as_str(), window.kind))
+                .collect::<Vec<_>>(),
+            [
+                ("primary", WindowKind::Session),
+                ("secondary", WindowKind::Weekly)
+            ]
+        );
+        assert_eq!(paid[0].window_duration_mins, Field::Value(SESSION_MINS));
+        assert_eq!(
+            paid[1].resets_at,
+            Field::Value("2026-04-24T03:06:40.000Z".to_owned()),
+            "the position order survives, because only a full snapshot sorts"
+        );
+
+        // Free and Go expose one monthly allowance and no weekly partner.
+        let free = codex_rate_limits_to_windows(&json!({
+            "limitId": "codex", "planType": "free", "primary": {"usedPercent": 50},
+        }));
+        assert_eq!(free.len(), 1);
+        assert_eq!(free[0].kind, WindowKind::Monthly);
+        assert_eq!(free[0].label, "Monthly");
+        assert_eq!(free[0].window_duration_mins, Field::Value(MONTH_MINS));
+
+        // A model-specific snapshot describes a different allowance, and a percentage the CLI
+        // did not sanity-check is not a bar.
+        assert!(
+            codex_rate_limits_to_windows(
+                &json!({"limitId": "spark", "primary": {"usedPercent": 1}})
+            )
+            .is_empty()
+        );
+        assert!(
+            codex_rate_limits_to_windows(&json!({"primary": {"usedPercent": "50"}})).is_empty(),
+            "a string percentage is not a number"
+        );
+        assert!(
+            codex_rate_limits_to_windows(&json!({
+                "primary": {"usedPercent": {"__number": "NaN"}},
+            }))
+            .is_empty()
+        );
+        // Older CLIs omit the limit id, which must not hide the windows.
+        assert_eq!(
+            codex_rate_limits_to_windows(&json!({"primary": {"usedPercent": 1}})).len(),
+            1
+        );
+        assert_eq!(
+            codex_rate_limits_to_update(
+                &json!({"limitId": "spark", "primary": {"usedPercent": 1}})
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn credits_count_the_spendable_ones_and_poison_on_a_bad_expiry() {
+        assert_eq!(codex_reset_credits_to_contract(&Value::Null), None);
+        // A summary that names no count is not a zero: `Math.max(0, undefined)` is `NaN`, and
+        // the view reads that as "no credits information" rather than as an empty wallet.
+        let unsaid =
+            codex_reset_credits_to_contract(&json!({})).expect("a truthy summary yields credits");
+        assert!(unsaid.available_count.is_nan());
+        assert_eq!(unsaid.next_expires_at, Field::Absent);
+
+        let credits = codex_reset_credits_to_contract(&json!({
+            "availableCount": 3,
+            "credits": [
+                {"status": "available", "expiresAt": 1_777_000_000},
+                {"status": "available", "expiresAt": 1_800_000_000},
+                {"status": "spent", "expiresAt": 1_000},
+                {"status": "available"},
+            ],
+        }))
+        .expect("a summary with credits yields credits");
+        assert_eq!(credits.available_count, 3.0);
+        assert_eq!(
+            credits.next_expires_at,
+            Field::Value("2026-04-24T03:06:40.000Z".to_owned()),
+            "the soonest spendable credit is the countdown"
+        );
+
+        // `Math.min(...)` with one non-number is `NaN`, so the count still shows and the
+        // countdown does not.
+        let poisoned = codex_reset_credits_to_contract(&json!({
+            "availableCount": 2.5,
+            "credits": [
+                {"status": "available", "expiresAt": {"__number": "NaN"}},
+                {"status": "available", "expiresAt": 1_777_000_000},
+            ],
+        }))
+        .expect("a summary with credits yields credits");
+        assert_eq!(poisoned.available_count, 2.5);
+        assert_eq!(poisoned.next_expires_at, Field::Absent);
+
+        // An expiry that is not a number is filtered out rather than folded in, so the rest of
+        // the list still answers.
+        let ignored = codex_reset_credits_to_contract(&json!({
+            "availableCount": 2,
+            "credits": [
+                {"status": "available", "expiresAt": "soon"},
+                {"status": "available", "expiresAt": 1_777_000_000},
+            ],
+        }))
+        .expect("a summary with credits yields credits");
+        assert_eq!(
+            ignored.next_expires_at,
+            Field::Value("2026-04-24T03:06:40.000Z".to_owned())
+        );
+
+        // Nothing available is not the same answer as an unparsable expiry.
+        let none_available =
+            codex_reset_credits_to_contract(&json!({"availableCount": 0, "credits": []}))
+                .expect("a summary with no credits still has a count");
+        assert_eq!(none_available.available_count, 0.0);
+        assert_eq!(none_available.next_expires_at, Field::Absent);
+    }
+
+    #[test]
+    fn the_read_prefers_the_main_allowance_and_keeps_the_credits() {
+        let limits = codex_rate_limits_to_limits(&json!({
+            "checkedAt": "2026-05-01T12:00:00.000Z",
+            "snapshot": {"limitId": "spark", "primary": {"usedPercent": 99}},
+            "rateLimitsByLimitId": {
+                "codex": {"limitId": "codex", "secondary": {"usedPercent": 30}, "primary": {"usedPercent": 10}},
+            },
+            "resetCredits": {"availableCount": 1, "credits": [{"status": "available", "expiresAt": 1_777_000_000}]},
+        }));
+        assert_eq!(
+            limits
+                .windows
+                .iter()
+                .map(|window| window.id.as_str())
+                .collect::<Vec<_>>(),
+            ["primary", "secondary"]
+        );
+        assert_eq!(
+            limits.reset_credits.map(|credits| credits.available_count),
+            Some(1.0),
+            "the `spark` snapshot beside the main allowance is not read"
+        );
+
+        // A `null` entry falls through `??`, unlike an absent one.
+        let legacy = codex_rate_limits_to_limits(&json!({
+            "checkedAt": "now",
+            "rateLimitsByLimitId": {"codex": null},
+            "snapshot": {"limitId": "codex", "primary": {"usedPercent": 10}},
+        }));
+        assert_eq!(legacy.windows.len(), 1);
+        assert_eq!(legacy.reset_credits, None);
+    }
+
+    #[test]
+    fn a_partial_view_replaces_only_what_it_writes() {
+        let previous =
+            json!({"limitId": "codex", "planType": "plus", "primary": {"usedPercent": 10}});
+        let merged = merge_codex_rate_limits(Some(&previous), &json!({"limitId": "codex"}))
+            .expect("a merge with a previous snapshot yields one");
+        assert_eq!(
+            merged, previous,
+            "an update that says nothing inherits everything"
+        );
+
+        let cleared = merge_codex_rate_limits(Some(&previous), &json!({"planType": null}))
+            .expect("a merge with a previous snapshot yields one");
+        assert_eq!(
+            cleared["planType"],
+            Value::Null,
+            "a written `null` is an answer"
+        );
+        assert_eq!(cleared["primary"], previous["primary"]);
+
+        let replaced = merge_codex_rate_limits(
+            Some(&previous),
+            &json!({"limitId": "codex", "primary": {"usedPercent": 90}, "secondary": {"usedPercent": 5}}),
+        )
+        .expect("a merge with a previous snapshot yields one");
+        assert_eq!(replaced["primary"]["usedPercent"], 90);
+        assert_eq!(replaced["secondary"]["usedPercent"], 5);
+
+        assert_eq!(
+            merge_codex_rate_limits(Some(&previous), &json!({"limitId": "spark"})),
+            Some(previous.clone()),
+            "another allowance must not overwrite the main one"
+        );
+        assert_eq!(merge_codex_rate_limits(None, &previous), Some(previous));
+        assert_eq!(
+            merge_codex_rate_limits(Some(&Value::Null), &json!({"planType": "plus"})),
+            Some(json!({"planType": "plus"})),
+            "a falsy previous snapshot has nothing to inherit"
+        );
+    }
+
+    #[test]
+    fn a_failure_message_names_what_the_client_could_not_learn() {
+        assert_eq!(
+            codex_rate_limits_failure_message(&CodexRateLimitsFailure::Request { code: -32601.0 }),
+            "Codex could not read usage (JSON-RPC -32601)."
+        );
+        assert_eq!(
+            codex_rate_limits_failure_message(&CodexRateLimitsFailure::Request { code: 1.5 }),
+            "Codex could not read usage (JSON-RPC 1.5)."
+        );
+        assert_eq!(
+            codex_rate_limits_failure_message(&CodexRateLimitsFailure::Spawn),
+            "Codex could not be started to read usage."
+        );
+        assert_eq!(
+            codex_rate_limits_failure_message(&CodexRateLimitsFailure::ProcessExited),
+            "Codex exited before it could report usage."
+        );
+        assert_eq!(
+            codex_rate_limits_failure_message(&CodexRateLimitsFailure::Other),
+            "Codex did not answer the usage request."
+        );
+    }
+
+    #[test]
+    fn the_wait_is_coarse_and_reads_like_the_bars() {
+        let minute = 60_000.0;
+        let hour = 60.0 * minute;
+        assert_eq!(
+            format_codex_usage_limit_wait(90.0 * 1000.0),
+            "2m",
+            "a partial minute rounds up"
+        );
+        assert_eq!(format_codex_usage_limit_wait(12.0 * minute), "12m");
+        assert_eq!(format_codex_usage_limit_wait(2.0 * hour), "2h");
+        assert_eq!(
+            format_codex_usage_limit_wait(3.0 * hour + 20.0 * minute),
+            "3h 20m"
+        );
+        assert_eq!(format_codex_usage_limit_wait(5.0 * 24.0 * hour), "5d");
+        assert_eq!(
+            format_codex_usage_limit_wait(5.0 * 24.0 * hour + 5.0 * hour),
+            "5d 5h"
+        );
+        assert_eq!(format_codex_usage_limit_wait(0.0), "0m");
+    }
+
+    #[test]
+    fn the_stop_sentence_names_the_latest_window_still_waiting() {
+        let at = "2026-05-01T12:00:00.000Z";
+        let seconds_after = |hours: f64| jsdate::date_parse(at).unwrap() / 1000.0 + hours * 3600.0;
+        let exhausted = |used: f64, resets: f64| json!({"usedPercent": used, "resetsAt": resets});
+
+        let sentence = codex_usage_limit_message(
+            &json!({
+                "limitId": "codex",
+                "primary": exhausted(100.0, seconds_after(1.0)),
+                "secondary": exhausted(100.0, seconds_after(3.0)),
+            }),
+            at,
+        );
+        assert_eq!(
+            sentence,
+            "Codex usage limit reached. The weekly limit resets in 3h. \
+             Send the message again once the limit resets."
+        );
+
+        // A window that already came due is not a promise, and a bar that is not full is not
+        // the limit the turn hit.
+        let already = codex_usage_limit_message(
+            &json!({"limitId": "codex", "primary": exhausted(100.0, seconds_after(-1.0))}),
+            at,
+        );
+        assert_eq!(
+            already,
+            "Codex usage limit reached. Send the message again once the limit resets."
+        );
+        let spare = codex_usage_limit_message(
+            &json!({"limitId": "codex", "primary": exhausted(99.9, seconds_after(1.0))}),
+            at,
+        );
+        assert!(spare.starts_with("Codex usage limit reached. Send the message"));
+
+        let workspace = codex_usage_limit_message(
+            &json!({"limitId": "codex", "rateLimitReachedType": "workspace_member_credits_depleted"}),
+            at,
+        );
+        assert!(
+            workspace.contains("ask your workspace owner to add credits"),
+            "the workspace sentence replaces the personal one"
+        );
+
+        // Without a snapshot, or without a timestamp to measure against, the sentence is the
+        // bare one.
+        assert!(
+            codex_usage_limit_message(&Value::Null, at)
+                .starts_with("Codex usage limit reached. Send")
+        );
+        assert!(
+            codex_usage_limit_message(&json!({"primary": {"usedPercent": 100}}), "not a date")
+                .starts_with("Codex usage limit reached. Send")
+        );
+    }
+
+    #[test]
+    fn whole_numbers_are_spelled_without_a_decimal_point() {
+        assert_eq!(js_number_text(0.0), "0");
+        assert_eq!(js_number_text(-32_000.0), "-32000");
+        assert_eq!(js_number_text(2.5), "2.5");
+        assert_eq!(js_number_text(f64::NAN), "NaN");
+    }
 }
