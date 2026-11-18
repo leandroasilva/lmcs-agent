@@ -159,8 +159,7 @@ pub fn date_parse(text: &str) -> Option<f64> {
     if trimmed.is_empty() {
         return None;
     }
-    iso_date_parse(trimmed, text.len() != trimmed.len())
-        .or_else(|| legacy_date_parse(trimmed))
+    iso_date_parse(trimmed, text.len() != trimmed.len()).or_else(|| legacy_date_parse(trimmed))
 }
 
 /// Fields an accepted string resolved to, before the calendar arithmetic.

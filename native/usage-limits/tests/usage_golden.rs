@@ -1,9 +1,15 @@
 //! Replays a trace captured from the shipped usage-limit mappers — the shared rules and the
-//! Claude, Codex, Cursor and Grok sources — so the Rust port is checked against the real code
-//! rather than against a reading of it.
+//! Claude, Codex, Cursor, Grok and OpenCode sources — so the Rust port is checked against the
+//! real code rather than against a reading of it.
 //!
 //! Set `LMCS_USAGE_TRACE` to a trace file; the test skips when unset. Regenerate one with:
 //! `node apps/server/scripts/usage-limits-trace.ts > /tmp/usage-trace.txt`
+//!
+//! The first four are functions of their arguments, so their fixture is an argument list.
+//! OpenCode is not, and its fixture is the world instead: the generator drove the shipped code
+//! through a pinned clock, a stubbed filesystem and a stubbed client, and wrote down both what
+//! the call returned and which file it opened and what it put on the wire. The replay feeds
+//! the same world to the port and compares both halves.
 //!
 //! The trace stores each record's input as the argument list the shipped call actually got
 //! and its result through `canon`, which flattens a window, a snapshot or a published
@@ -27,6 +33,7 @@ use lmcs_usage_limits::grok::grok_usage_response_to_limits;
 use lmcs_usage_limits::limits::{
     self, Field, ResetCredits, UnavailableReason, UsageLimits, UsageLimitsUpdate, UsageWindow,
 };
+use lmcs_usage_limits::opencode;
 use lmcs_usage_limits::read;
 use serde_json::{Value, json};
 
@@ -411,8 +418,90 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
             )),
             None,
         ),
+        ("opencode", _) => (canon_opencode(&opencode_outcome(&first)), None),
         (module, name) => panic!("no port wired up for {module} {name}"),
     }
+}
+
+/// The OpenCode fixtures are the whole world the shipped call saw: the gate's two arguments,
+/// the environment it read, what `auth.json` answered, and what the endpoint answered. The
+/// port gets the same fixture, and the record it is checked against carries the side effects
+/// as well as the limits, because which file was opened and what went on the wire are half of
+/// what the read decides.
+fn opencode_outcome(fixture: &Value) -> opencode::Outcome {
+    let server_url = required_string(read::property(fixture, "serverUrl"), "serverUrl");
+    let checked_at = required_string(read::property(fixture, "checkedAt"), "checkedAt");
+    let environment = opencode_environment(read::property(fixture, "environment"));
+    let probe = opencode::Probe {
+        enabled: read::property(fixture, "enabled")
+            .as_bool()
+            .expect("the gate is a boolean"),
+        server_url: &server_url,
+        environment: &environment,
+        // No row reaches it, since every fixture names a home or an `XDG_DATA_HOME`. A port
+        // that consulted the host's own answer first would draw a different `authPath`.
+        os_home: "/host/home",
+        auth_file: opencode_auth_file(read::property(fixture, "authFile")),
+        response: opencode_response(read::property(fixture, "response")),
+    };
+    opencode::read_opencode_go_usage_limits(&probe, &checked_at)
+}
+
+/// `process.env`, as far as this read can see it. A key the fixture left out is a key the
+/// environment does not have, which is how the generator writes `undefined`.
+fn opencode_environment(value: &Value) -> opencode::Environment<'_> {
+    let mut values = opencode::Environment::new();
+    if let Value::Object(object) = value {
+        for (name, value) in object {
+            if let Value::String(text) = value {
+                values.insert(name.as_str(), text.as_str());
+            }
+        }
+    }
+    values
+}
+
+/// The three answers the read can get from the filesystem. An empty file is `contents`, not
+/// an absence, so the key's presence decides rather than its truthiness.
+fn opencode_auth_file(value: &Value) -> opencode::AuthFile<'_> {
+    if let Field::Value(contents) = read::field(value, "contents") {
+        return opencode::AuthFile::Contents(
+            read::as_string(contents).expect("the auth file is text"),
+        );
+    }
+    if read::truthy(read::property(value, "notFound")) {
+        return opencode::AuthFile::NotFound;
+    }
+    assert!(
+        read::truthy(read::property(value, "blocked")),
+        "an auth file is present, missing, or unreadable"
+    );
+    opencode::AuthFile::Unreadable
+}
+
+/// A response with no `body` on the input line is a response that had none, which reaches the
+/// shipped schema as the empty text it then refuses to parse.
+fn opencode_response(value: &Value) -> opencode::Response<'_> {
+    opencode::Response {
+        status: read::as_number(read::property(value, "status")).expect("a status number") as u16,
+        body: read::as_string(read::property(value, "body")).unwrap_or_default(),
+    }
+}
+
+/// `{limits, effects}`, in the shape `canon` left it. The effect objects stay plain objects,
+/// which is what the generator's `canon` does to anything it has no rule for.
+fn canon_opencode(outcome: &opencode::Outcome) -> Value {
+    let effects: Vec<Value> = outcome
+        .effects
+        .iter()
+        .map(|effect| match effect {
+            opencode::Effect::AuthFile { path } => json!({ "authPath": path }),
+            opencode::Effect::UsageRequest { authorization } => {
+                json!({ "url": opencode::USAGE_URL, "authorization": authorization })
+            }
+        })
+        .collect();
+    json!({ "limits": canon_limits(&outcome.limits), "effects": effects })
 }
 
 struct Record {
@@ -451,33 +540,43 @@ fn records(text: &str) -> Vec<Record> {
 /// What the shipped code decides, per function. The counts are the trace's own partition: a
 /// fixture table that stops being replayed would otherwise lower the bar silently.
 const EXPECTED_COUNTS: &[(&str, usize)] = &[
+    ("opencode readOpenCodeGoUsageLimits.credentials", 88),
     ("cursor cursorUsageResponseToLimits.billingCycleEnd", 59),
     ("claude claudeRateLimitEventToUpdate", 44),
     ("claude claudeUsageResponseToLimits.resetsAt", 37),
     ("codex codexUsageLimitMessage", 36),
+    ("opencode readOpenCodeGoUsageLimits.resetsAt", 35),
     ("codex codexRateLimitsToLimits", 31),
     ("codex codexRateLimitsToUpdate", 31),
     ("grok grokUsageResponseToLimits.currentPeriod", 31),
     ("cursor cursorUsageResponseToLimits.planUsage", 24),
+    ("opencode readOpenCodeGoUsageLimits.authFile", 21),
     ("codex codexResetCreditsToContract", 20),
     ("grok grokUsageResponseToLimits.creditUsagePercent", 17),
+    ("opencode readOpenCodeGoUsageLimits.percent", 17),
     ("claude claudeUsageResponseToLimits", 16),
+    ("opencode readOpenCodeGoUsageLimits.padding", 16),
+    ("opencode readOpenCodeGoUsageLimits.gate", 14),
+    ("opencode readOpenCodeGoUsageLimits.status", 14),
+    ("opencode readOpenCodeGoUsageLimits.usageBody", 13),
     ("core applyUsageLimitsUpdate", 12),
     ("claude claudeUsageResponseToLimits.scopedId", 12),
     ("core clampPercent", 11),
+    ("opencode readOpenCodeGoUsageLimits.authPath", 11),
     ("codex codexUsageLimitMessage.nextStep", 9),
     ("core resolveUsageLimitsAfterProbe", 8),
     ("codex mergeCodexRateLimits", 7),
     ("codex codexRateLimitsFailureMessage", 7),
     ("core makeUnavailableUsageLimits", 4),
     ("grok grokUsageResponseToLimits.config", 4),
+    ("opencode readOpenCodeGoUsageLimits.overlay", 2),
     ("core makeUsageLimits.sort", 1),
     ("core makeUsageLimits.idOrder", 1),
     ("core makeUsageLimits.emptyIterable", 1),
     ("codex codexRateLimitsToLimits.byLimitId", 1),
     ("codex codexRateLimitsToLimits.emptyLimitIdMap", 1),
 ];
-const EXPECTED_TOTAL: usize = 425;
+const EXPECTED_TOTAL: usize = 656;
 
 #[test]
 fn replays_the_shipped_usage_limit_decisions() {

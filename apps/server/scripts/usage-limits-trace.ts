@@ -1163,6 +1163,10 @@ for (const currentPeriod of [
 // The pinned instant, in the milliseconds `TestClock` takes. It is `AT`, so an OpenCode record
 // and a Cursor record agree on when they were read.
 const OPENCODE_AT = 1_777_000_000_000;
+// The same instant in the spelling a `checkedAt` takes. The shipped function reads it from the
+// clock instead of from its arguments, so the fixture names it on the input line and the Rust
+// replay hands its port that same reading rather than a clock of its own.
+const OPENCODE_CHECKED_AT = new Date(OPENCODE_AT).toISOString();
 
 interface OpenCodeFixture {
   readonly enabled: boolean;
@@ -1251,7 +1255,17 @@ async function recordOpenCode(table: string, fixture: OpenCodeFixture): Promise<
   record(
     "opencode",
     `readOpenCodeGoUsageLimits.${table}`,
-    [{ ...fixture, checkedAt: OPENCODE_CHECKED_AT }],
+    [
+      {
+        ...fixture,
+        checkedAt: OPENCODE_CHECKED_AT,
+        // A 204 carries no body, which is not something the stub could fake: `new Response`
+        // refuses a body for that status. The input line therefore says what the wire said,
+        // and the port is handed no text rather than the text the case happened to name.
+        response:
+          fixture.response.status === 204 ? { status: fixture.response.status } : fixture.response,
+      },
+    ],
     { limits, effects },
   );
 }
@@ -1386,13 +1400,19 @@ for (const stored of [openCodeGo("filekey"), "{}"]) {
 // `USERPROFILE`; both are tested with `||`, so an empty one is not a home. A machine with
 // neither falls back to the OS home directory, which is the host's own and cannot be pinned
 // here — the port reads it from the same place, and no fixture needs to say so.
+//
+// The joining is what is under test, so every home here is spelled the way the layer that did
+// the joining reads it: `Path.layer` is host-native, and on this machine that is `path.posix`,
+// which treats `\` as an ordinary character. A Windows spelling would record the posix answer
+// and ship a different one, so the port takes the same separator rules and the adapter that
+// owns the host path supplies an already-joined home.
 for (const environment of [
   { HOME: "/home/tester" },
   { HOME: "/home/tester", XDG_DATA_HOME: "/xdg" },
   { XDG_DATA_HOME: "/xdg" },
   { XDG_DATA_HOME: " " },
   { XDG_DATA_HOME: "/xdg/" },
-  { HOME: "", USERPROFILE: "C:\\Users\\tester" },
+  { HOME: "", USERPROFILE: "/from/profile" },
   { USERPROFILE: "/from/userprofile" },
   { HOME: "/a//b/" },
   { HOME: "/a/b/../c" },
