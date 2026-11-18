@@ -18,6 +18,7 @@ use std::collections::BTreeMap;
 use serde_json::Value;
 
 use crate::jsdate;
+use crate::paths;
 use crate::limits::{
     self, Field, UnavailableReason, UsageLimits, UsageWindow, WindowKind, clamp_percent,
 };
@@ -188,7 +189,7 @@ fn credential(probe: &Probe<'_>, effects: &mut Vec<Effect>) -> Result<Option<Str
 
 /// `env.XDG_DATA_HOME || path.join(env.HOME || env.USERPROFILE || os.homedir(), ".local",
 /// "share")`, then `path.join(dataHome, "opencode", "auth.json")`. The joining is
-/// host-native, and every separator rule it has is [`posix_join`]'s.
+/// host-native, and every separator rule it has is [`crate::paths::posix_join`]'s.
 fn auth_path(probe: &Probe<'_>) -> String {
     let data_home = match environment(probe.environment, "XDG_DATA_HOME") {
         Some(text) => text.to_owned(),
@@ -196,65 +197,14 @@ fn auth_path(probe: &Probe<'_>) -> String {
             let home = environment(probe.environment, "HOME")
                 .or_else(|| environment(probe.environment, "USERPROFILE"))
                 .unwrap_or(probe.os_home);
-            posix_join(&[home, ".local", "share"])
+            paths::posix_join(&[home, ".local", "share"])
         }
     };
-    posix_join(&[&data_home, "opencode", "auth.json"])
+    paths::posix_join(&[&data_home, "opencode", "auth.json"])
 }
 
 fn environment<'a>(values: &'a Environment<'_>, name: &str) -> Option<&'a str> {
     values.get(name).filter(|value| !value.is_empty()).copied()
-}
-
-/// `path.posix.join`, which is what `Path.layer` hands the shipped code: non-empty segments
-/// joined with `/` and then normalised, so empty and `.` segments disappear, `..` pops one
-/// segment and is dropped at the root, a leading `/` is kept, and nothing else is special — a
-/// `~` is an ordinary directory name and a space is a segment like any other.
-fn posix_join(parts: &[&str]) -> String {
-    // An empty segment is skipped rather than separated, which is what keeps a home of `""`
-    // from turning the path absolute.
-    let mut joined = String::new();
-    for part in parts {
-        if part.is_empty() {
-            continue;
-        }
-        if !joined.is_empty() {
-            joined.push('/');
-        }
-        joined.push_str(part);
-    }
-    posix_normalize(&joined)
-}
-
-fn posix_normalize(path: &str) -> String {
-    let absolute = path.starts_with('/');
-    let trailing_separator = path.ends_with('/');
-    let mut segments: Vec<&str> = Vec::new();
-    for segment in path.split('/') {
-        match segment {
-            "" | "." => {}
-            ".." => match segments.last() {
-                Some(last) if *last != ".." => {
-                    segments.pop();
-                }
-                _ if absolute => {}
-                _ => segments.push(".."),
-            },
-            other => segments.push(other),
-        }
-    }
-    let mut joined = segments.join("/");
-    if joined.is_empty() && !absolute {
-        joined = ".".to_owned();
-    }
-    if trailing_separator && !joined.is_empty() {
-        joined.push('/');
-    }
-    if absolute {
-        format!("/{joined}")
-    } else {
-        joined
-    }
 }
 
 /// `Schema.decodeEffect(Schema.fromJsonString(AuthFile))` for
@@ -434,9 +384,5 @@ mod tests {
             auth_path([("XDG_DATA_HOME", "/")].as_slice()),
             "/opencode/auth.json"
         );
-        // The joining itself skips an empty segment rather than separating it, which is the
-        // one rule the guards above cannot reach: no variable that is empty gets here.
-        assert_eq!(posix_join(&["", ".local", "share"]), ".local/share");
-        assert_eq!(posix_join(&[]), ".");
     }
 }

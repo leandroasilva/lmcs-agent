@@ -35,10 +35,12 @@
 //! owns is what those answers mean.
 
 pub mod claude;
+pub mod claude_credits;
 pub mod codex;
 pub mod cursor;
 pub mod grok;
 pub mod jsdate;
 pub mod limits;
 pub mod opencode;
+pub mod paths;
 pub mod read;

@@ -5,21 +5,26 @@
 // `node apps/server/scripts/usage-limits-trace.ts > /tmp/usage-trace.txt`
 //
 // Every case is a call into `providerUsageLimits.ts`, `claudeUsageLimits.ts`,
-// `codexUsageLimits.ts`, `cursorUsageLimits.ts`, `grokUsageLimits.ts` or
-// `openCodeUsageLimits.ts`. The first five are pure — no layer, no clock, no subprocess — so
-// they need no harness beyond the fixtures. OpenCode is not pure, and gets one (see the
-// section at the end). Nothing here reimplements a rule: if a line looks like it is computing
-// something, it is only normalising for the wire.
+// `codexUsageLimits.ts`, `cursorUsageLimits.ts`, `grokUsageLimits.ts`,
+// `openCodeUsageLimits.ts` or `claudeResetCredits.ts`. The first five are pure — no layer, no
+// clock, no subprocess — so they need no harness beyond the fixtures. OpenCode and the Claude
+// reset credits are not, and get one (see the two sections at the end). Nothing here
+// reimplements a rule: if a line looks like it is computing something, it is only normalising
+// for the wire.
 
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as PlatformError from "effect/PlatformError";
+import * as Result from "effect/Result";
 import * as TestClock from "effect/testing/TestClock";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
+import * as Url from "effect/unstable/http/Url.ts";
+import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
+import * as claudeResetCredits from "../src/provider/Layers/claudeResetCredits.ts";
 import * as claudeUsageLimits from "../src/provider/Layers/claudeUsageLimits.ts";
 import * as codexUsageLimits from "../src/provider/Layers/codexUsageLimits.ts";
 import * as cursorUsageLimits from "../src/provider/Layers/cursorUsageLimits.ts";
@@ -59,6 +64,11 @@ function canonLimits(value: Json): Json {
     const credits: [string, Json][] = [["availableCount", resetCredits["availableCount"]]];
     if (resetCredits["nextExpiresAt"] !== undefined) {
       credits.push(["nextExpiresAt", resetCredits["nextExpiresAt"]]);
+    }
+    // Only Claude names the credit a redeem is pinned to; Codex leaves the key out, so the
+    // pair list carries it exactly when the shipped object did.
+    if (resetCredits["nextCreditId"] !== undefined) {
+      credits.push(["nextCreditId", resetCredits["nextCreditId"]]);
     }
     out.push(["resetCredits", credits]);
   }
@@ -1562,6 +1572,664 @@ for (const resetsAt of [
   await recordOpenCode(
     "padding",
     openCodeReady({ response: { status: 200, body: rawBody(resetsWindow(resetsAt)) } }),
+  );
+}
+
+// ---------------------------------------------------------------- claude reset credits
+// `claudeResetCredits.ts` is the bank behind Claude's "redeem a reset" button: the grants the
+// usage endpoint reports, and the claim that spends one. Its first export is a pure function of
+// a block and an instant, so those tables need no harness. The other three read the account — a
+// login file, an account file, the platform, the path layer, the wire — so they run through the
+// same stubs OpenCode uses, with `HostProcessPlatform` pinned per case. Leaving it to the
+// machine would record this host's operating system, which is a fact about the laptop that
+// generated the trace and not about the reader.
+//
+// Two things no fixture can reach: the ten and twenty-five second timeouts, and the keychain a
+// macOS login lives in. Neither is a hole. A timeout is answered the way an unreadable answer
+// already is, and the darwin rows record the *absence* of a credentials read, which is the part
+// of the keychain branch anything outside the CLI can see.
+
+const CREDITS_NOW = Date.parse("2026-05-08T12:00:00.000Z");
+const grant = (over: Record<string, Json> = {}): Json => ({
+  id: "g1",
+  resets_left: 2,
+  usable_now: true,
+  ...over,
+});
+// The smallest bank the endpoint can send. `next_grant_id` is written only when the table names
+// one: JSON drops an `undefined`, and an absent key is a different block from a null one.
+const bank = (grants: Json[], next?: Json): Json => ({
+  eligible: true,
+  grants,
+  ...(next === undefined ? {} : { next_grant_id: next }),
+});
+const toCredits = (block: Json) =>
+  claudeResetCredits.claudeResetCreditsToContract(block, CREDITS_NOW);
+
+// The block is decoded all-or-nothing by `decodeUnknownOption`, which is what makes a junk grant
+// different from a junk block: one grant is dropped and the bank keeps reporting the others,
+// while a bad block reports nothing at all. An eligible block with nothing spendable still says
+// `availableCount: 0`, so the bars may draw zero but never go missing.
+for (const block of [
+  bank([grant()], "g1"),
+  { eligible: false, grants: [grant()], next_grant_id: "g1" },
+  { grants: [grant()], next_grant_id: "g1" },
+  { eligible: "true", grants: [grant()] },
+  { eligible: 1, grants: [grant()] },
+  { eligible: null, grants: [grant()] },
+  bank([]),
+  { eligible: true },
+  { eligible: true, grants: "no" },
+  { eligible: true, grants: {} },
+  { eligible: true, grants: null },
+  { eligible: true, grants: [grant()], next_grant_id: null },
+  { eligible: true, grants: [grant()], next_grant_id: 7 },
+  { eligible: true, grants: [grant()], next_grant_id: "g1", other: 1 },
+  { eligible: true, grants: [null, 5, "x", {}, grant()], next_grant_id: "g1" },
+  null,
+  undefined,
+  "cedar",
+  0,
+  [],
+]) {
+  record("credits", "claudeResetCreditsToContract.shape", [block, CREDITS_NOW], toCredits(block));
+}
+
+// One grant at a time, every spelling of every field. Each row is a bank of one or a bank of
+// nothing, because a field of the wrong type is the end of that grant and of nothing else.
+for (const over of [
+  {},
+  { id: "G1" },
+  { id: "g.dot" },
+  { id: "" },
+  { id: "g".repeat(41) },
+  { id: "g".repeat(40) },
+  { id: "a_b-c0" },
+  { id: "g 1" },
+  { id: "bé" },
+  { id: 5 },
+  { id: null },
+  { resets_left: 0 },
+  { resets_left: -0 },
+  { resets_left: 1.5 },
+  { resets_left: -1 },
+  { resets_left: "2" },
+  { resets_left: null },
+  { resets_left: 1e21 },
+  { resets_left: 9007199254740991 },
+  { resets_left: 9007199254740992 },
+  { resets_left: undefined },
+  { paused: true },
+  { paused: false },
+  { paused: "true" },
+  { paused: null },
+  { usable_now: false },
+  { usable_now: undefined },
+  { usable_now: "yes" },
+  { usable_now: 1 },
+  { usable_now: null },
+  { ends_at: null },
+  { ends_at: undefined },
+  { ends_at: 1777000000000 },
+  { ends_at: true },
+  { ends_at: [] },
+  { ends_at: {} },
+  { other: 1 },
+]) {
+  const block = bank([grant(over)], "g1");
+  record("credits", "claudeResetCreditsToContract.grant", [block, CREDITS_NOW], toCredits(block));
+}
+
+// `ends_at` carries the whole grammar: `COMPLETE_TIMESTAMP` first, then the instant has to be
+// strictly after `nowMs`, then the day has to exist in its own month. Everything that passes the
+// pattern is dated after the reference instant unless the row says otherwise, so "future" and
+// "well-formed" stop being the same answer. The rows past the pattern are the evidence that the
+// local check is stricter than the parser behind it: a compact offset, a lowercase `t`, a padded
+// text and the legacy spellings all reach `Date.parse` in other mappers and die here.
+for (const endsAt of [
+  "2026-05-08T12:00:00.001Z",
+  "2026-05-08T12:00:00Z",
+  "2026-05-08T12:00:00.000Z",
+  "2026-05-08T13:00:00Z",
+  "2026-05-08T11:00:00Z",
+  "2027-01-01T00:00:00Z",
+  "2027-02-29T00:00:00Z",
+  "2028-02-29T00:00:00Z",
+  "2026-02-30T00:00:00Z",
+  "2026-04-31T00:00:00Z",
+  "2026-05-32T00:00:00Z",
+  "2026-12-32T00:00:00Z",
+  "2026-13-01T00:00:00Z",
+  "2026-00-10T00:00:00Z",
+  "2026-05-08T25:00:00Z",
+  "2026-05-08T12:60:00Z",
+  "2026-05-08T12:00:60Z",
+  "2026-05-08T12:00:00+02:00",
+  "2026-05-08T23:00:00+02:00",
+  "2026-05-08T12:00:00-03:30",
+  "2026-05-08T12:00:00+0200",
+  "2026-05-08T12:00:00+00:00",
+  "2026-05-08T12:00:00.123456Z",
+  "2026-05-08T12:00:00.1Z",
+  "2026-05-08T12:00:00.12Z",
+  "2026-05-08T12:00:00.Z",
+  "2026-05-08t12:00:00z",
+  "2026-05-08T12:00:00z",
+  "2026-05-08t12:00:00Z",
+  " 2026-05-09T00:00:00Z",
+  "2026-05-09T00:00:00Z ",
+  "2026-05-09",
+  "2026-05-09 00:00:00",
+  "2026-05-09T00:00:00",
+  "Fri, 09 May 2026 00:00:00 GMT",
+  "05/09/2026",
+  "2026-05-09T00:00:00Z[Europe/Berlin]",
+  "2026-05-09T00:00:00 GMT",
+  "9999-12-31T23:59:59Z",
+  "275760-09-13T00:00:00Z",
+  "-000001-01-01T00:00:00Z",
+  "2026-05-08T12:00:00.000+00:00",
+  "2026-05-09T00:00:00+14:00",
+  "2026-05-08T00:00:00-14:00",
+  "",
+  "not a date",
+]) {
+  const block = bank([grant({ ends_at: endsAt })], "g1");
+  record(
+    "credits",
+    "claudeResetCreditsToContract.timestamp",
+    [block, CREDITS_NOW],
+    toCredits(block),
+  );
+}
+
+// The bank's own pointer decides whether the count is said at all: a `next_grant_id` that names
+// nothing live answers zero and names no credit, while one that lands sums every live grant —
+// duplicates, other live grants, and the grant it pointed at.
+const nextCases: [string, Json][] = [
+  ["no-next-id", bank([grant(), grant({ id: "g2" })])],
+  ["next-is-second", bank([grant(), grant({ id: "g2", resets_left: 5 })], "g2")],
+  ["next-not-live", bank([grant()], "g9")],
+  ["next-is-paused", bank([grant({ paused: true }), grant({ id: "g2" })], "g1")],
+  ["next-is-expired", bank([grant({ ends_at: "2026-05-01T00:00:00Z" })], "g1")],
+  ["next-is-dropped-grant", bank([{ id: "g1", resets_left: 1 }, grant({ id: "g2" })], "g1")],
+  ["duplicate-ids", bank([grant({ resets_left: 1 }), grant({ resets_left: 2 })], "g1")],
+  ["next-with-null-end", bank([grant({ ends_at: null }), grant({ id: "g2" })], "g1")],
+  [
+    "expires-from-next",
+    bank(
+      [
+        grant({ ends_at: "2026-06-01T00:00:00Z" }),
+        grant({ id: "g2", ends_at: "2026-07-01T00:00:00.5Z" }),
+      ],
+      "g2",
+    ),
+  ],
+  ["only-dropped", bank([grant({ usable_now: false })], "g1")],
+  [
+    "sum-over-twelve",
+    bank(
+      Array.from({ length: 12 }, (_, index) => ({
+        id: `g${index}`,
+        resets_left: 1,
+        usable_now: true,
+      })),
+      "g0",
+    ),
+  ],
+  [
+    "zero-and-huge",
+    bank([grant({ resets_left: -0 }), grant({ id: "g2", resets_left: 1e21 }), grant()], "g1"),
+  ],
+];
+for (const [name, block] of nextCases) {
+  record(
+    "credits",
+    `claudeResetCreditsToContract.nextGrant.${name}`,
+    [block, CREDITS_NOW],
+    toCredits(block),
+  );
+}
+
+interface CreditFile {
+  readonly contents?: string;
+  readonly notFound?: true;
+  readonly blocked?: true;
+}
+
+interface CreditReply {
+  readonly status: number;
+  readonly body?: string;
+}
+
+const CRED_TOKEN = JSON.stringify({ claudeAiOauth: { accessToken: "tok" } });
+const CRED_ACCOUNT = JSON.stringify({ oauthAccount: { organizationUuid: "org-1" } });
+const claimReply = (result: string): CreditReply => ({
+  status: 200,
+  body: JSON.stringify({ result }),
+});
+const claimReset = claimReply("reset");
+
+function creditStubFileSystem(files: readonly CreditFile[], seen: string[]) {
+  return FileSystem.makeNoop({
+    readFileString: (path: string) => {
+      // The two files are told apart by the names they were opened under, which is the only
+      // thing that distinguishes them here, and the order the reads arrive in is the order the
+      // record keeps.
+      seen.push(path);
+      const file = path.endsWith(".credentials.json") ? files[0]! : files[1]!;
+      if (file.contents !== undefined) return Effect.succeed(file.contents);
+      if (file.blocked === true) {
+        return Effect.fail(
+          PlatformError.systemError({
+            _tag: "PermissionDenied",
+            module: "FileSystem",
+            method: "readFileString",
+            description: "blocked",
+            pathOrDescriptor: path,
+          }),
+        );
+      }
+      return Effect.fail(
+        PlatformError.systemError({
+          _tag: "NotFound",
+          module: "FileSystem",
+          method: "readFileString",
+          description: "No such file or directory",
+          pathOrDescriptor: path,
+        }),
+      );
+    },
+  });
+}
+
+// The URL as the executor would have sent it. `Url.make` is exactly what `HttpClient` calls to
+// turn a request's `url` and `urlParams` into the wire URL, so the record says what would have
+// left the process rather than what the builder was handed — which is the only way the usage
+// read's two parameters appear anywhere.
+function wireUrl(request: HttpClient.HttpClientRequest): string {
+  const made = Url.make(request.url, request.urlParams, undefined);
+  return Result.isSuccess(made) ? made.success.toString() : `unmakeable: ${request.url}`;
+}
+
+function creditStubClient(reply: CreditReply, seen: Json[]) {
+  return HttpClient.make((request) => {
+    const headers = { ...request.headers };
+    seen.push({
+      method: request.method,
+      url: wireUrl(request),
+      authorization: headers["authorization"],
+      beta: headers["anthropic-beta"],
+      userAgent: headers["user-agent"],
+      body: (request.body as { text?: string } | undefined)?.text,
+    });
+    return Effect.succeed(
+      HttpClientResponse.fromWeb(
+        request,
+        new Response(reply.status === 204 || reply.body === undefined ? null : reply.body, {
+          status: reply.status,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+  });
+}
+
+const creditEffect = (path: string): Json =>
+  path.endsWith(".credentials.json") ? { credentialsFile: path } : { accountFile: path };
+
+// Files first, in the order they were opened, then the request. A case that stopped before the
+// wire has no `request` entry at all, which is what makes "did not send" a measured answer
+// rather than an assumption.
+function creditEffects(files: readonly string[], requests: readonly Json[]): Json[] {
+  return [
+    ...files.map(creditEffect),
+    ...requests.map((request) => {
+      const sent = request as Record<string, Json>;
+      return {
+        request: {
+          method: sent["method"],
+          url: sent["url"],
+          authorization: sent["authorization"],
+          beta: sent["beta"],
+          userAgent: sent["userAgent"],
+          // A GET carries no body, and `bodyJsonUnsafe` is the only thing that ever wrote one.
+          ...(sent["body"] === undefined ? {} : { body: sent["body"] }),
+        },
+      };
+    }),
+  ];
+}
+
+function creditLayers(
+  platform: "darwin" | "linux",
+  files: readonly CreditFile[],
+  seenFiles: string[],
+  reply: CreditReply,
+  seenRequests: Json[],
+) {
+  return [
+    TestClock.layer(),
+    Layer.succeed(HostProcessPlatform, platform),
+    Layer.succeed(FileSystem.FileSystem, creditStubFileSystem(files, seenFiles)),
+    Path.layer,
+    Layer.succeed(HttpClient.HttpClient, creditStubClient(reply, seenRequests)),
+  ] as const;
+}
+
+async function runClaim(fixture: {
+  readonly platform: "darwin" | "linux";
+  readonly configDir: string;
+  readonly accountConfigPath: string;
+  readonly version: string;
+  readonly grantId: string;
+  readonly requestId: string;
+  readonly credentials: CreditFile;
+  readonly account: CreditFile;
+  readonly reply: CreditReply;
+}): Promise<Json> {
+  const seenFiles: string[] = [];
+  const seenRequests: Json[] = [];
+  const [clock, host, fs, path, client] = creditLayers(
+    fixture.platform,
+    [fixture.credentials, fixture.account],
+    seenFiles,
+    fixture.reply,
+    seenRequests,
+  );
+  const decided = await Effect.runPromise(
+    claudeResetCredits
+      .consumeClaudeResetCredit({
+        configDir: fixture.configDir,
+        accountConfigPath: fixture.accountConfigPath,
+        version: fixture.version,
+        grantId: fixture.grantId,
+        requestId: fixture.requestId,
+      })
+      .pipe(
+        Effect.match({
+          onFailure: (error) => ({
+            outcome: null,
+            failure: error.reason,
+            message: error.message,
+            settled: claudeResetCredits.isSettledClaudeResetCreditFailure(error),
+          }),
+          onSuccess: (outcome) => ({
+            outcome: outcome ?? null,
+            failure: null,
+            message: null,
+            settled: null,
+          }),
+        }),
+        Effect.provide(clock),
+        Effect.provide(host),
+        Effect.provide(fs),
+        Effect.provide(path),
+        Effect.provide(client),
+      ),
+  );
+  return { ...decided, effects: creditEffects(seenFiles, seenRequests) };
+}
+
+const claimCase = (table: string, over: Partial<Parameters<typeof runClaim>[0]>): Promise<void> =>
+  recordClaim(table, {
+    platform: "linux",
+    configDir: "/cfg",
+    accountConfigPath: "/cfg/.claude.json",
+    version: "1.2.3",
+    grantId: "g1",
+    requestId: "req1",
+    credentials: { contents: CRED_TOKEN },
+    account: { contents: CRED_ACCOUNT },
+    reply: claimReset,
+    ...over,
+  });
+
+async function recordClaim(table: string, fixture: Parameters<typeof runClaim>[0]): Promise<void> {
+  const result = await runClaim(fixture);
+  record(
+    "credits",
+    `consumeClaudeResetCredit.${table}`,
+    [
+      {
+        ...fixture,
+        reply: fixture.reply.status === 204 ? { status: 204 } : fixture.reply,
+      },
+    ],
+    result,
+  );
+}
+
+// Both ids are checked before anything is read, so a claim that cannot be named never opens a
+// file and never puts an id on the wire. The `effects` half of each record is the proof.
+for (const [name, over] of [
+  ["grant-upper", { grantId: "G1" }],
+  ["grant-dot", { grantId: "g.1" }],
+  ["grant-empty", { grantId: "" }],
+  ["grant-too-long", { grantId: "g".repeat(41) }],
+  ["grant-non-ascii", { grantId: "gã" }],
+  ["request-bang", { requestId: "req!" }],
+  ["request-empty", { requestId: "" }],
+  ["request-too-long", { requestId: "r".repeat(65) }],
+  ["request-lowercase-ok", { requestId: "req_-abc123" }],
+] as const) {
+  await claimCase(`ids.${name}`, over as never);
+}
+
+// The login stage: which file is opened on which platform, and what an unreadable one is worth.
+// A missing credentials file is answered with `{}` and the claim goes on to ask about the
+// account; anything else the reader could not do is `loginUnreadable`, and nothing further runs.
+for (const [name, over] of [
+  ["darwin", { platform: "darwin" }],
+  ["not-found", { credentials: { notFound: true } }],
+  ["blocked", { credentials: { blocked: true } }],
+  [
+    "blank-token",
+    { credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: "  " } }) } },
+  ],
+  ["no-oauth", { credentials: { contents: "{}" } }],
+  [
+    "token-number",
+    { credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: 5 } }) } },
+  ],
+  ["oauth-not-object", { credentials: { contents: JSON.stringify({ claudeAiOauth: 5 }) } }],
+  ["not-an-object", { credentials: { contents: "[]" } }],
+  ["bad-json", { credentials: { contents: "not json" } }],
+  ["empty-file", { credentials: { contents: "" } }],
+  ["config-dir-empty", { configDir: "" }],
+  ["config-dir-odd", { configDir: "/a//b/../cfg" }],
+] as const) {
+  await claimCase(`credentials.${name}`, over as never);
+}
+
+// The account stage, which the claim reaches even when it has no login: the two files are read
+// before either is asked about.
+for (const [name, over] of [
+  ["not-found", { account: { notFound: true } }],
+  ["blocked", { account: { blocked: true } }],
+  [
+    "blank-org",
+    { account: { contents: JSON.stringify({ oauthAccount: { organizationUuid: "  " } }) } },
+  ],
+  ["no-account", { account: { contents: "{}" } }],
+  [
+    "org-number",
+    { account: { contents: JSON.stringify({ oauthAccount: { organizationUuid: 7 } }) } },
+  ],
+  ["not-an-object", { account: { contents: "5" } }],
+  ["path-is-verbatim", { accountConfigPath: " /odd/../path/.claude.json" }],
+] as const) {
+  await claimCase(`account.${name}`, over as never);
+}
+
+// The answers a claim can arrive under. `429`, `401` and `403` are decided on the status alone,
+// before the body is read; everything else in the 2xx range is asked what it said, and a body
+// that cannot answer is `requestFailed` — which, like `unconfirmed`, is not settled.
+for (const [name, reply] of [
+  ["reset", claimReply("reset")],
+  ["not-limited", claimReply("not_limited")],
+  ["already-used", claimReply("already_used")],
+  ["ineligible", claimReply("ineligible")],
+  ["cooldown", claimReply("cooldown")],
+  ["unavailable", claimReply("unavailable")],
+  ["unknown-result", { status: 200, body: JSON.stringify({ result: "maybe" }) }],
+  ["missing-result", { status: 200, body: "{}" }],
+  ["bad-json", { status: 200, body: "not json" }],
+  ["empty-body", { status: 200, body: "" }],
+  ["204", { status: 204 }],
+  ["201", { status: 201, body: JSON.stringify({ result: "reset" }) }],
+  ["401", { status: 401, body: JSON.stringify({ result: "reset" }) }],
+  ["403", { status: 403, body: JSON.stringify({ result: "reset" }) }],
+  ["404", { status: 404, body: JSON.stringify({ result: "reset" }) }],
+  ["429", { status: 429, body: JSON.stringify({ result: "reset" }) }],
+  ["500", { status: 500, body: JSON.stringify({ result: "reset" }) }],
+] as const) {
+  await claimCase(`status.${name}`, { reply } as never);
+}
+
+// What went on the wire: the organization is escaped into the path, the token and the version
+// are spelled into headers, and the body is the three keys the CLI sends. The escaping is the
+// part a port gets to get wrong.
+for (const [name, organizationUuid] of [
+  ["plain", "org-1"],
+  ["slash", "or/g1"],
+  ["hash", "org#1"],
+  ["space", "org 1"],
+  ["percent", "org%41"],
+  ["unicode", "orgçã"],
+  ["plus", "org+1"],
+  ["query", "org?1"],
+  ["trimmed", "  org-1  "],
+] as const) {
+  await claimCase(`request.${name}`, {
+    account: { contents: JSON.stringify({ oauthAccount: { organizationUuid } }) },
+    version: "2.0.0-rc",
+    grantId: "credit_9",
+    requestId: "req_-abc123",
+  } as never);
+}
+
+async function runRead(fixture: {
+  readonly platform: "darwin" | "linux";
+  readonly configDir: string;
+  readonly version: string;
+  readonly credentials: CreditFile;
+  readonly reply: CreditReply;
+}): Promise<Json> {
+  const seenFiles: string[] = [];
+  const seenRequests: Json[] = [];
+  const [clock, host, fs, path, client] = creditLayers(
+    fixture.platform,
+    [fixture.credentials],
+    seenFiles,
+    fixture.reply,
+    seenRequests,
+  );
+  const read = await Effect.runPromise(
+    Effect.gen(function* () {
+      yield* TestClock.setTime(CREDITS_NOW);
+      return yield* claudeResetCredits.readClaudeResetCredits(fixture.configDir, fixture.version);
+    }).pipe(
+      Effect.provide(clock),
+      Effect.provide(host),
+      Effect.provide(fs),
+      Effect.provide(path),
+      Effect.provide(client),
+    ),
+  );
+  // Every failure this read can raise ends in `orElseSucceed(() => undefined)`, so the record
+  // says nothing rather than which thing went wrong. The effects are what tell the cases apart.
+  return {
+    credits: read === undefined ? { __absent: true } : read,
+    effects: creditEffects(seenFiles, seenRequests),
+  };
+}
+
+const readCase = (name: string, over: Partial<Parameters<typeof runRead>[0]>): Promise<void> =>
+  recordRead(name, {
+    platform: "linux",
+    configDir: "/cfg",
+    version: "1.2.3",
+    credentials: { contents: CRED_TOKEN },
+    reply: { status: 200, body: JSON.stringify({ cedar_ember: bank([grant()], "g1") }) },
+    ...over,
+  });
+
+async function recordRead(name: string, fixture: Parameters<typeof runRead>[0]): Promise<void> {
+  const result = await runRead(fixture);
+  record("credits", `readClaudeResetCredits.${name}`, [{ ...fixture, nowMs: CREDITS_NOW }], result);
+}
+
+// The usage read: the instant it is made at comes from the clock, so it is named on the input
+// line for the port to be handed the same one. A grant that ends exactly at that instant is not
+// live, which is the difference between the two `at-now` rows and the empty bank.
+await readCase("ok", {});
+await readCase("at-now", {
+  reply: {
+    status: 200,
+    body: JSON.stringify({
+      cedar_ember: bank([grant({ ends_at: "2026-05-08T12:00:00.000Z" })], "g1"),
+    }),
+  },
+});
+await readCase("one-second-ahead", {
+  reply: {
+    status: 200,
+    body: JSON.stringify({
+      cedar_ember: bank([grant({ ends_at: "2026-05-08T12:00:01.000Z" })], "g1"),
+    }),
+  },
+});
+await readCase("expired", {
+  reply: {
+    status: 200,
+    body: JSON.stringify({ cedar_ember: bank([grant({ ends_at: "2026-05-01T00:00:00Z" })], "g1") }),
+  },
+});
+await readCase("no-bank", { reply: { status: 200, body: "{}" } });
+await readCase("null-bank", { reply: { status: 200, body: '{"cedar_ember":null}' } });
+await readCase("junk-bank", { reply: { status: 200, body: '{"cedar_ember":5}' } });
+await readCase("extra-keys", {
+  reply: {
+    status: 200,
+    body: `{"cedar_ember":${JSON.stringify({ ...bank([grant()], "g1"), other: 1 })},"spam":1}`,
+  },
+});
+await readCase("darwin", { platform: "darwin" });
+await readCase("not-found", { credentials: { notFound: true } });
+await readCase("blocked", { credentials: { blocked: true } });
+await readCase("blank-token", {
+  credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: " " } }) },
+});
+await readCase("bad-token", {
+  credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: 5 } }) },
+});
+for (const status of [200, 201, 204, 300, 301, 400, 403, 429, 500, 503]) {
+  await readCase(`status-${status}`, { reply: { status } });
+}
+
+// Where the account record lives. `configDir ? path.join(configDir, ".claude.json") :
+// path.join(os.homedir(), …)` — the second branch is this machine's home, so no row may take it
+// and the empty directory is decided by the port's own unit test instead.
+for (const configDir of [
+  "/cfg",
+  "/cfg/",
+  "//cfg",
+  "/cfg/../x",
+  "/cfg/./x",
+  "~",
+  "/cfg with space",
+  ".",
+  "a/b",
+  "/cfg with space/nested",
+]) {
+  record(
+    "credits",
+    "claudeAccountConfigPath",
+    [configDir],
+    await Effect.runPromise(
+      claudeResetCredits.claudeAccountConfigPath(configDir).pipe(Effect.provide(Path.layer)),
+    ),
   );
 }
 

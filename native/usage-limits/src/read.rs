@@ -222,6 +222,13 @@ pub fn as_string(value: &Value) -> Option<&str> {
     value.as_str()
 }
 
+/// JS `typeof value === "boolean"`, which is what `Schema.Boolean` asks. A `null` is not one and
+/// neither is a `"true"` the provider could have sent instead.
+#[must_use]
+pub fn as_bool(value: &Value) -> Option<bool> {
+    value.as_bool()
+}
+
 /// A text field, where anything that is not a string reads as absent. The shipped mappers
 /// compare these with `===` against a literal or feed them to `Date.parse`, so a number in
 /// the position has no meaning to keep.
@@ -325,6 +332,7 @@ pub fn reset_credits_from_value(value: &Value) -> ResetCredits {
     ResetCredits {
         available_count: as_number(property(value, "availableCount")).unwrap_or(f64::NAN),
         next_expires_at: optional_string(value, "nextExpiresAt"),
+        next_credit_id: optional_string(value, "nextCreditId"),
     }
 }
 

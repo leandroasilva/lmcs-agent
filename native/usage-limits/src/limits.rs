@@ -140,6 +140,9 @@ pub struct ResetCredits {
     /// letting a `NaN` through `Math.max`, so the value is whatever the provider said.
     pub available_count: f64,
     pub next_expires_at: Field<String>,
+    /// The credit a redeem is pinned to. Codex has no equivalent, so its answer is always
+    /// absent; Claude leaves it absent too whenever the bank has no next credit to name.
+    pub next_credit_id: Field<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -677,6 +680,7 @@ mod tests {
             reset_credits: Some(ResetCredits {
                 available_count: 2.0,
                 next_expires_at: Field::Value("2026-05-01T00:00:00.000Z".to_owned()),
+                next_credit_id: Field::Absent,
             }),
             ..make_usage_limits("earlier", [window("primary", WindowKind::Session, 1.0)])
         };

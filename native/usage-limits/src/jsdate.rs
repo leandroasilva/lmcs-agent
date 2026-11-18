@@ -225,6 +225,37 @@ fn days_from_civil(year: i64, month: i64, day: i64) -> i64 {
     era * 146_097 + day_of_era - 719_468
 }
 
+/// ECMAScript's `Date.UTC(year, month, date)`. Neither the 0-based month index nor the date is
+/// validated: `MakeDay` normalises both, so February 30 is March 2 and month 12 is January of the
+/// next year. That is what lets a caller compare a day against the last day of its own month,
+/// which is exactly the question `claude_credits` asks about a grant's `ends_at`.
+///
+/// The 0..=99 year window is `Date.UTC`'s own two-digit rule, and `None` is the `NaN` the
+/// specification returns outside `MakeDay`'s year range or `TimeClip`'s range.
+#[must_use]
+pub fn date_utc(year: f64, month: f64, day: f64) -> Option<f64> {
+    if !year.is_finite() || !month.is_finite() || !day.is_finite() {
+        return None;
+    }
+    let mut year = year.trunc();
+    if (0.0..=99.0).contains(&year) {
+        year += 1900.0;
+    }
+    if !(-1.0e8..=1.0e8).contains(&year) {
+        return None;
+    }
+    let year = year as i64;
+    let month = month.trunc() as i64;
+    let day = day.trunc() as i64;
+    let shifted_year = year + month.div_euclid(12);
+    let shifted_month = month.rem_euclid(12) + 1;
+    if !(0..=9999).contains(&shifted_year) {
+        return None;
+    }
+    let millis = (days_from_civil(shifted_year, shifted_month, 1) + day - 1) as f64 * 86_400_000.0;
+    millis.is_finite().then_some(millis)
+}
+
 /// The inverse, for `toISOString`.
 fn civil_from_days(days: i64) -> (i64, i64, i64) {
     let zeroed = days + 719_468;

@@ -165,6 +165,8 @@ pub fn codex_reset_credits_to_contract(summary: &Value) -> Option<ResetCredits> 
             read::as_number(read::property(summary, "availableCount")).unwrap_or(f64::NAN),
         ),
         next_expires_at,
+        // Codex names its credits by limit, not by a grant the client can pin a redemption to.
+        next_credit_id: Field::Absent,
     })
 }
 
