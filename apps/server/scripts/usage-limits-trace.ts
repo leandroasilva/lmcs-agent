@@ -5,15 +5,26 @@
 // `node apps/server/scripts/usage-limits-trace.ts > /tmp/usage-trace.txt`
 //
 // Every case is a call into `providerUsageLimits.ts`, `claudeUsageLimits.ts`,
-// `codexUsageLimits.ts`, `cursorUsageLimits.ts` or `grokUsageLimits.ts`. Those five functions
-// are pure — no layer, no clock, no subprocess — so the trace needs no harness beyond the
-// fixtures. Nothing here reimplements a rule: if a line looks like it is computing something,
-// it is only normalising for the wire.
+// `codexUsageLimits.ts`, `cursorUsageLimits.ts`, `grokUsageLimits.ts` or
+// `openCodeUsageLimits.ts`. The first five are pure — no layer, no clock, no subprocess — so
+// they need no harness beyond the fixtures. OpenCode is not pure, and gets one (see the
+// section at the end). Nothing here reimplements a rule: if a line looks like it is computing
+// something, it is only normalising for the wire.
+
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as Layer from "effect/Layer";
+import * as Path from "effect/Path";
+import * as PlatformError from "effect/PlatformError";
+import * as TestClock from "effect/testing/TestClock";
+import * as HttpClient from "effect/unstable/http/HttpClient";
+import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
 
 import * as claudeUsageLimits from "../src/provider/Layers/claudeUsageLimits.ts";
 import * as codexUsageLimits from "../src/provider/Layers/codexUsageLimits.ts";
 import * as cursorUsageLimits from "../src/provider/Layers/cursorUsageLimits.ts";
 import * as grokUsageLimits from "../src/provider/Layers/grokUsageLimits.ts";
+import * as openCodeUsageLimits from "../src/provider/Layers/openCodeUsageLimits.ts";
 import * as providerUsageLimits from "../src/provider/providerUsageLimits.ts";
 
 type Json = unknown;
@@ -1132,6 +1143,405 @@ for (const currentPeriod of [
       { config: { creditUsagePercent: 40, currentPeriod } } as never,
       AT,
     ),
+  );
+}
+
+// ------------------------------------------------------------------------------- opencode
+// `readOpenCodeGoUsageLimits` is the one usage read here that is not a pure function: it asks
+// the clock for `checkedAt`, the filesystem for `auth.json`, and `opencode.ai` for the usage
+// body. Its decisions are still worth measuring byte for byte, so the trace drives the
+// shipped code through stubs rather than reimplementing it: `TestClock` pins the timestamp,
+// `FileSystem.makeNoop` answers the auth read, and an `HttpClient` built from the fixture
+// replies with the status and body the case names. The input line is the fixture, so the Rust
+// replay feeds the same one to its own port and compares the record the call produced *and*
+// the side effects it took — which file was read and what went on the wire.
+//
+// Two things the fixture cannot reach, and why neither is a hole: a socket that never answers
+// and the five second deadline both land in the same `probeFailed` record the tables below
+// already capture, and the deadline itself is the port's IO layer rather than a decision.
+
+// The pinned instant, in the milliseconds `TestClock` takes. It is `AT`, so an OpenCode record
+// and a Cursor record agree on when they were read.
+const OPENCODE_AT = 1_777_000_000_000;
+
+interface OpenCodeFixture {
+  readonly enabled: boolean;
+  readonly serverUrl: string;
+  readonly environment: Record<string, string | undefined>;
+  readonly authFile:
+    | { readonly contents: string }
+    | { readonly notFound: true }
+    | { readonly blocked: true };
+  readonly response: { readonly status: number; readonly body: string };
+}
+
+function openCodeStubFileSystem(authFile: OpenCodeFixture["authFile"], seen: { path?: string }) {
+  return FileSystem.makeNoop({
+    readFileString: (path) => {
+      seen.path = path;
+      if ("contents" in authFile) return Effect.succeed(authFile.contents);
+      if ("blocked" in authFile) {
+        return Effect.fail(
+          PlatformError.systemError({
+            _tag: "PermissionDenied",
+            module: "FileSystem",
+            method: "readFileString",
+            description: "blocked",
+            pathOrDescriptor: path,
+          }),
+        );
+      }
+      return Effect.fail(
+        PlatformError.systemError({
+          _tag: "NotFound",
+          module: "FileSystem",
+          method: "readFileString",
+          description: "No such file or directory",
+          pathOrDescriptor: path,
+        }),
+      );
+    },
+  });
+}
+
+function openCodeStubClient(response: OpenCodeFixture["response"], seen: { auth?: string }) {
+  return HttpClient.make((request) => {
+    seen.auth = request.headers["authorization"];
+    return Effect.succeed(
+      HttpClientResponse.fromWeb(
+        request,
+        new Response(response.status === 204 ? null : response.body, {
+          status: response.status,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+  });
+}
+
+async function recordOpenCode(table: string, fixture: OpenCodeFixture): Promise<void> {
+  const fileRead: { path?: string } = {};
+  const requestMade: { auth?: string } = {};
+  const limits = await Effect.runPromise(
+    Effect.gen(function* () {
+      yield* TestClock.setTime(OPENCODE_AT);
+      return yield* openCodeUsageLimits.readOpenCodeGoUsageLimits({
+        enabled: fixture.enabled,
+        serverUrl: fixture.serverUrl,
+        environment: fixture.environment as never,
+      });
+    }).pipe(
+      Effect.provide(TestClock.layer()),
+      Effect.provide(
+        Layer.succeed(FileSystem.FileSystem, openCodeStubFileSystem(fixture.authFile, fileRead)),
+      ),
+      Effect.provide(Path.layer),
+      Effect.provide(
+        Layer.succeed(HttpClient.HttpClient, openCodeStubClient(fixture.response, requestMade)),
+      ),
+    ),
+  );
+  // Absent rather than empty when the stage was never reached, so a case that stopped at the
+  // gate cannot be confused with one that read a file and made no request.
+  const effects: Json[] = [];
+  if (fileRead.path !== undefined) effects.push({ authPath: fileRead.path });
+  if (requestMade.auth !== undefined) {
+    effects.push({ url: "https://opencode.ai/zen/go/v1/usage", authorization: requestMade.auth });
+  }
+  record(
+    "opencode",
+    `readOpenCodeGoUsageLimits.${table}`,
+    [{ ...fixture, checkedAt: OPENCODE_CHECKED_AT }],
+    { limits, effects },
+  );
+}
+
+const openCodeGo = (key: Json): string => JSON.stringify({ "opencode-go": { type: "api", key } });
+const GOOD_USAGE: Json = {
+  rolling: { percent: 12.5, resetsAt: "2026-05-08T00:00:00.000Z" },
+  weekly: { percent: 40, resetsAt: "2026-05-11T00:00:00.000Z" },
+  monthly: { percent: 99.9, resetsAt: "2026-06-01T00:00:00.000Z" },
+};
+const goodBody = JSON.stringify({ usage: GOOD_USAGE });
+// The body reaches the schema as text, so a case can name a spelling `JSON.stringify` would
+// never emit — `1e999` for the infinity `Schema.Finite` rejects, `-0` for the zero it keeps.
+const rawBody = (rolling: string, weekly = "1e0", monthly = "2e0"): string =>
+  `{"usage":{"rolling":${rolling},"weekly":{"percent":${weekly},"resetsAt":"2026-05-11T00:00:00.000Z"},"monthly":{"percent":${monthly},"resetsAt":"2026-06-01T00:00:00.000Z"}}}`;
+const percentWindow = (percent: string): string =>
+  `{"percent":${percent},"resetsAt":"2026-05-08T00:00:00.000Z"}`;
+const resetsWindow = (resetsAt: string): string => `{"percent":10,"resetsAt":${resetsAt}}`;
+
+const openCodeReady = (
+  over: Partial<
+    Pick<OpenCodeFixture, "enabled" | "serverUrl" | "environment" | "authFile" | "response">
+  >,
+): OpenCodeFixture => ({
+  enabled: over.enabled ?? true,
+  serverUrl: over.serverUrl ?? "",
+  // A home is always named, either the default one or the one the table supplies: without a
+  // home the shipped code falls back to the host's own home directory, which is this machine's
+  // and not a fact about the reader, so no row may reach that branch. An `undefined` value is
+  // how a table writes "this key is not in the environment at all", since JSON drops it.
+  environment: over.environment ?? {
+    HOME: "/home/tester",
+    OPENCODE_AUTH_CONTENT: openCodeGo("abc"),
+  },
+  authFile: over.authFile ?? { notFound: true },
+  response: over.response ?? { status: 200, body: goodBody },
+});
+
+// `!input.enabled || input.serverUrl.trim()`. An external server owns its own credentials, so
+// the read must not touch the host's account — and `.trim()` means a serverUrl of only
+// whitespace is not an external server.
+for (const enabled of [true, false]) {
+  for (const serverUrl of [
+    "",
+    " ",
+    "  ",
+    "\t\n",
+    "http://127.0.0.1:4096",
+    "0",
+    " https://opencode.ai ",
+  ]) {
+    await recordOpenCode("gate", openCodeReady({ enabled, serverUrl }));
+  }
+}
+
+// Where the key comes from, and when there is no key at all. `OPENCODE_AUTH_CONTENT` is
+// checked with `||`, so an empty one falls through to the file; the stored credential is
+// decoded as an `Option`, so anything that is not `{type:"api", key:string}` silently hands
+// the decision to `OPENCODE_API_KEY`; and the key is trimmed before the falsiness test, so a
+// whitespace-only key is "no key" (`unsupported`) rather than a failed probe.
+for (const authContent of [
+  undefined,
+  "",
+  " ",
+  "{}",
+  openCodeGo("abc"),
+  openCodeGo(" abc "),
+  openCodeGo("   "),
+  openCodeGo(""),
+  openCodeGo(5),
+  openCodeGo(null),
+  JSON.stringify({ "opencode-go": { type: "Bearer", key: "abc" } }),
+  JSON.stringify({ "opencode-go": { key: "abc" } }),
+  JSON.stringify({ "opencode-go": "abc" }),
+  JSON.stringify({ "opencode-go": null }),
+  JSON.stringify({ "opencode-go": null, other: 1 }),
+  JSON.stringify({ other: 1 }),
+  "not json",
+  "null",
+  "5",
+  "[]",
+  "true",
+  '"abc"',
+]) {
+  for (const envKey of [undefined, "envkey", "  ", ""]) {
+    const environment: Record<string, string | undefined> = {
+      HOME: "/home/tester",
+      OPENCODE_AUTH_CONTENT: authContent,
+    };
+    if (envKey !== undefined) environment["OPENCODE_API_KEY"] = envKey;
+    await recordOpenCode("credentials", openCodeReady({ environment }));
+  }
+}
+
+// The file branch, and what the two failure modes of the read are worth. A missing
+// `auth.json` is answered with `"{}"` and the decision moves on to the environment key; any
+// other platform error is re-thrown, which the outer handler turns into `probeFailed`.
+for (const authFile of [
+  { contents: openCodeGo("filekey") },
+  { contents: "{}" },
+  { contents: "" },
+  { contents: "not json" },
+  { contents: JSON.stringify({ "opencode-go": { type: "api", key: "filekey" }, other: 1 }) },
+  { notFound: true },
+  { blocked: true },
+] as const) {
+  for (const environment of [
+    {},
+    { OPENCODE_API_KEY: "envkey" },
+    { OPENCODE_AUTH_CONTENT: openCodeGo("overlay") },
+  ]) {
+    await recordOpenCode(
+      "authFile",
+      openCodeReady({ authFile, environment: { HOME: "/home/tester", ...environment } }),
+    );
+  }
+}
+
+// Both sources at once: stored credentials overlay environment credentials, so the file wins,
+// and the environment key decides nothing. The `authorization` effect is what proves the order.
+for (const stored of [openCodeGo("filekey"), "{}"]) {
+  await recordOpenCode(
+    "overlay",
+    openCodeReady({
+      environment: { HOME: "/home/tester", OPENCODE_API_KEY: "envkey" },
+      authFile: { contents: stored },
+    }),
+  );
+}
+
+// Which file gets read. `XDG_DATA_HOME` wins outright, otherwise the home is `HOME`, then
+// `USERPROFILE`; both are tested with `||`, so an empty one is not a home. A machine with
+// neither falls back to the OS home directory, which is the host's own and cannot be pinned
+// here — the port reads it from the same place, and no fixture needs to say so.
+for (const environment of [
+  { HOME: "/home/tester" },
+  { HOME: "/home/tester", XDG_DATA_HOME: "/xdg" },
+  { XDG_DATA_HOME: "/xdg" },
+  { XDG_DATA_HOME: " " },
+  { XDG_DATA_HOME: "/xdg/" },
+  { HOME: "", USERPROFILE: "C:\\Users\\tester" },
+  { USERPROFILE: "/from/userprofile" },
+  { HOME: "/a//b/" },
+  { HOME: "/a/b/../c" },
+  { HOME: "~" },
+  { HOME: "/home/tester", OPENCODE_AUTH_CONTENT: openCodeGo("abc") },
+]) {
+  await recordOpenCode(
+    "authPath",
+    openCodeReady({ environment, authFile: { contents: openCodeGo("filekey") } }),
+  );
+}
+
+// A valid Zen key can exist without a Go subscription, so 403 is "this account has nothing to
+// show" (`unsupported`) while every other non-2xx status is a failed read. `filterStatusOk`
+// answers on the 2xx range, so 201 draws and 299 does not.
+for (const status of [200, 201, 202, 204, 299, 300, 301, 400, 401, 403, 404, 429, 500, 503]) {
+  await recordOpenCode("status", openCodeReady({ response: { status, body: goodBody } }));
+}
+
+// `Schema.Finite` is the gate in front of `clampPercent`: a percentage that is not a finite
+// number fails the whole decode, so one bad window takes the other two with it. That is the
+// opposite of the Cursor mapper, which drops a non-numeric bucket and keeps the rest. The
+// values that do survive are `clampPercent`'s to decide, which the core table already covers —
+// these rows are here for the range and the sign that reaches it.
+for (const percent of [
+  "0",
+  "-0",
+  "0.4",
+  "12.5",
+  "100",
+  "100.0001",
+  "140",
+  "-5",
+  "1e999",
+  "-1e999",
+  '"10"',
+  "true",
+  "false",
+  "null",
+  "1e-324",
+  "{}",
+  "[]",
+]) {
+  await recordOpenCode(
+    "percent",
+    openCodeReady({ response: { status: 200, body: rawBody(percentWindow(percent)) } }),
+  );
+}
+
+// The response shape is all-or-nothing: three named windows, each with both fields.
+for (const body of [
+  goodBody,
+  '{"usage":{}}',
+  '{"usage":null}',
+  "{}",
+  '{"usage":{"rolling":{},"weekly":{},"monthly":{}}}',
+  `{"usage":${JSON.stringify({ ...GOOD_USAGE, extra: GOOD_USAGE.rolling })}}`,
+  `{"usage":{"rolling":${JSON.stringify(GOOD_USAGE.rolling)},"weekly":${JSON.stringify(GOOD_USAGE.weekly)}}}`,
+  '{"usage":[1,2,3]}',
+  "5",
+  "[]",
+  '""',
+  "",
+  "not json",
+]) {
+  await recordOpenCode("usageBody", openCodeReady({ response: { status: 200, body } }));
+}
+
+// `Schema.DateTimeUtcFromString` in front of `DateTime.formatIso`. Every spelling has to be
+// accepted by the schema *and* survive the round trip through the formatter, so this table is
+// the evidence for what the port's ISO grammar must be: the same ECMAScript-shaped grammar the
+// Grok period end reaches, or a narrower one.
+for (const resetsAt of [
+  '"2026-05-08T00:00:00.000Z"',
+  '"2026-05-08T00:00:00Z"',
+  '"2026-05-08T00:00:00"',
+  '"2026-05-08T00:00"',
+  '"2026-05-08"',
+  '"2026-05-08T00:00:00.00Z"',
+  '"2026-05-08T00:00:00.1Z"',
+  '"2026-05-08T00:00:00.123456789Z"',
+  '"2026-05-08T00:00:00+02:00"',
+  '"2026-05-08T00:00:00-0330"',
+  '"2026-05-08T00:00:00+0200"',
+  '"2026-05-08t00:00:00z"',
+  '"2026-05-08 00:00:00Z"',
+  '"2026-05-08T00:00:00 GMT"',
+  '"Fri, 08 May 2026 00:00:00 GMT"',
+  '"05/08/2026 00:00:00"',
+  '"2026-02-30T00:00:00Z"',
+  '"2026-13-01T00:00:00Z"',
+  '"2026-05-08T25:00:00Z"',
+  '"1970-01-01T00:00:00.000Z"',
+  '"1969-12-31T23:59:59.999Z"',
+  '"9999-12-31T23:59:59.999Z"',
+  '"+002026-05-08T00:00:00Z"',
+  '"-000001-01-01T00:00:00Z"',
+  '"999999-12-31T23:59:59Z"',
+  '" 2026-05-08T00:00:00Z "',
+  '""',
+  '"not a date"',
+  '"1777000000000"',
+  "1777000000000",
+  "0",
+  '"2026-05-08T00:00:00Z[Europe/Berlin]"',
+  "null",
+  "true",
+  "{}",
+]) {
+  await recordOpenCode(
+    "resetsAt",
+    openCodeReady({ response: { status: 200, body: rawBody(resetsWindow(resetsAt)) } }),
+  );
+}
+
+// Padding, measured separately because Effect's `"Z"` rule decides it: a string with no zone
+// gets one appended, so the whitespace ends up *inside* the text the parser sees, while an
+// already-zoned string is handed over as written. The rule the shipped code follows is that
+// only the `T` form is strict — a padded `2026-05-08T00:00:00Z` is refused while a padded bare
+// date, a space-separated date-time and the legacy forms are all taken.
+//
+// `" 2026-05-08"` (leading space, date-only, no zone) is deliberately absent: the shipped
+// answer is `03:00Z` here and `09:00Z` under `TZ=Asia/Tokyo`, because V8's legacy parser reads
+// that one spelling in the host's own zone. A golden cannot carry a value that changes with the
+// machine that generated it, so the case stays unmeasured and the port keeps its UTC-only
+// stance for it.
+for (const resetsAt of [
+  '"2026-05-08T00:00:00Z "',
+  '" 2026-05-08T00:00:00Z"',
+  '"\\t2026-05-08T00:00:00Z\\n"',
+  '"2026-05-08T00:00:00 "',
+  '" 2026-05-08T00:00:00 "',
+  '"2026-05-08 "',
+  '"2026-05-08Z "',
+  '" 05/08/2026 00:00:00"',
+  '"05/08/2026 00:00:00 "',
+  '" Fri, 08 May 2026 00:00:00 GMT "',
+  '"2026-05-08T00:00:00Z\\t"',
+  // The other side of the same question: padding on a date-only text, a space between a bare
+  // date and its zone, and padding after an explicit offset rather than a `Z`.
+  '"  2026-05-08  "',
+  '"2026-05-08 Z"',
+  '"2026-05-08T00:00:00+02:00 "',
+  '" 2026-05-08T00:00:00+02:00"',
+  '"2026-05-08 00:00:00 Z"',
+]) {
+  await recordOpenCode(
+    "padding",
+    openCodeReady({ response: { status: 200, body: rawBody(resetsWindow(resetsAt)) } }),
   );
 }
 

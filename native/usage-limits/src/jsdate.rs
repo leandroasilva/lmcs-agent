@@ -144,21 +144,23 @@ pub fn to_iso_string(millis: f64) -> Option<String> {
 ///
 /// Rejected, matching what the trace shows V8 doing: a two-digit year, an offset written
 /// `+02`, a bare zone name (`2026-05-01T12:00:00GMT`), a zone name after a space
-/// (`2026-05-01T12:00:00 UTC`), a bracketed IANA name, month 13, minute 60, second 60.
+/// (`2026-05-01T12:00:00 UTC`), a bracketed IANA name, month 13, minute 60, second 60, and
+/// any padding around the `T` form — `2026-05-08T00:00:00Z ` is refused outright.
 ///
-/// Two differences remain, and neither is reachable: a zone-less *date-time* is read here as
-/// UTC, where V8 would read the host's local time, and *already-zoned* text is trimmed here
-/// where V8 refuses it outright. Effect appends `"Z"` to exactly the first kind of string
-/// before parsing, and neither CLI pads a reset time, so the shipped code never asks either
-/// question. A three-digit year is a third: V8's legacy parser answers that one in the host's
-/// own time zone, which is why nothing here claims to match it.
+/// One difference remains, and the golden does not carry it: a date-only text with *leading*
+/// padding (`" 2026-05-08"`) lands on UTC here, while the shipped code answers it in the host's
+/// zone — Effect appends its `"Z"` to the padded text, and V8's legacy parser then reads
+/// ` 2026-05-08Z` as a legacy date rather than a zoned one. That answer changes with the
+/// machine, so `apps/server/scripts/usage-limits-trace.ts` leaves the spelling out rather than
+/// recording an instant no other host agrees to.
 #[must_use]
 pub fn date_parse(text: &str) -> Option<f64> {
-    let text = trim_js(text);
-    if text.is_empty() {
+    let trimmed = trim_js(text);
+    if trimmed.is_empty() {
         return None;
     }
-    iso_date_parse(text).or_else(|| legacy_date_parse(text))
+    iso_date_parse(trimmed, text.len() != trimmed.len())
+        .or_else(|| legacy_date_parse(trimmed))
 }
 
 /// Fields an accepted string resolved to, before the calendar arithmetic.
@@ -253,7 +255,7 @@ struct ClockTime {
     millis: f64,
 }
 
-fn iso_date_parse(text: &str) -> Option<f64> {
+fn iso_date_parse(text: &str, padded: bool) -> Option<f64> {
     let (year, rest) = read_year(text)?;
     let mut parsed = ParsedDate::at_midnight(year, 1, 1);
 
@@ -280,6 +282,13 @@ fn iso_date_parse(text: &str) -> Option<f64> {
     };
     if requires_time || rest.as_bytes().first().is_some_and(u8::is_ascii_digit) {
         let (time, tail) = read_time(rest)?;
+        // The `T` spelling is the one the engines treat as the strict ISO form: nothing may pad
+        // it and its zone has to be attached, which is why `2026-05-08T00:00:00 ` is refused
+        // while `2026-05-08 ` and `2026-05-08 00:00:00 ` are not. The padding has to be judged
+        // from the caller's text, since [`date_parse`] has already trimmed it away.
+        if requires_time && (padded || tail.chars().next().is_some_and(is_js_whitespace)) {
+            return None;
+        }
         parsed.set_time(time);
         rest = skip_spaces(tail);
     }
