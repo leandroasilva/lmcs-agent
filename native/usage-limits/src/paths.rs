@@ -66,12 +66,18 @@ mod tests {
     fn joining_follows_the_posix_rules_the_shipped_layer_uses() {
         assert_eq!(posix_join(&["", ".local", "share"]), ".local/share");
         assert_eq!(posix_join(&[]), ".");
-        assert_eq!(posix_join(&["/xdg", "opencode", "auth.json"]), "/xdg/opencode/auth.json");
+        assert_eq!(
+            posix_join(&["/xdg", "opencode", "auth.json"]),
+            "/xdg/opencode/auth.json"
+        );
         assert_eq!(posix_join(&["a", ".", "b"]), "a/b");
         assert_eq!(posix_join(&["/a/b", "..", "c"]), "/a/c");
         assert_eq!(posix_join(&["/a", "..", ".."]), "/");
         assert_eq!(posix_join(&["~", ".config"]), "~/.config");
-        assert_eq!(posix_join(&["/cfg with space", ".claude.json"]), "/cfg with space/.claude.json");
+        assert_eq!(
+            posix_join(&["/cfg with space", ".claude.json"]),
+            "/cfg with space/.claude.json"
+        );
     }
 
     #[test]

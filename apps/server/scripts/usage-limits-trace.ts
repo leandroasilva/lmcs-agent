@@ -2109,6 +2109,13 @@ for (const [, organizationUuid] of [
   ["unicode", "orgçã"],
   ["plus", "org+1"],
   ["query", "org?1"],
+  // `encodeURIComponent` leaves exactly these five punctuation marks as they are, and no other
+  // spelling of a quote belongs in a URL path.
+  ["quote", 'org"1'],
+  ["apostrophe", "org'1"],
+  ["parens", "org(1)"],
+  ["star", "org*1"],
+  ["tilde", "org~1"],
   ["trimmed", "  org-1  "],
 ] as const) {
   await claimCase("request", {
@@ -2169,10 +2176,13 @@ const readCase = (table: string, over: Partial<Parameters<typeof runRead>[0]>): 
 
 async function recordRead(table: string, fixture: Parameters<typeof runRead>[0]): Promise<void> {
   const result = await runRead(fixture);
+  // A `204` cannot carry the body the fixture named: the stub hands the response a null one, and
+  // the input line has to say what the shipped call was actually given.
+  const reply = fixture.reply.status === 204 ? { status: 204 } : fixture.reply;
   record(
     "credits",
     `readClaudeResetCredits.${table}`,
-    [{ ...fixture, nowMs: CREDITS_NOW }],
+    [{ ...fixture, nowMs: CREDITS_NOW, reply }],
     result,
   );
 }
@@ -2225,8 +2235,13 @@ await readCase("credentials", {
   credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: 5 } }) },
 });
 
+// `filterStatusOk` is decided before the body is read, so a status that is not 2xx has to be
+// tried against a body that would have answered. Without these rows the read would accept a
+// redirect's or a server error's bank, and nothing here would say so.
+const bankBody = JSON.stringify({ cedar_ember: bank([grant()], "g1") });
 for (const status of [200, 201, 204, 300, 301, 400, 403, 429, 500, 503]) {
   await readCase("status", { reply: { status } });
+  await readCase("status", { reply: { status, body: bankBody } });
 }
 
 // Where the account record lives. `configDir ? path.join(configDir, ".claude.json") :

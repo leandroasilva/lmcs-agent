@@ -143,10 +143,7 @@ fn canon_credits_pairs(credits: &ResetCredits) -> Value {
     }
     // Only Claude names the credit a redeem is pinned to; Codex leaves the key out.
     if credits.next_credit_id.is_written() {
-        pairs.push(json!([
-            "nextCreditId",
-            text_field(&credits.next_credit_id)
-        ]));
+        pairs.push(json!(["nextCreditId", text_field(&credits.next_credit_id)]));
     }
     Value::Array(pairs)
 }
@@ -452,7 +449,7 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
             let config_dir = read::as_string(&first);
             (
                 Value::String(claude_credits::account_config_path(
-                    config_dir.as_deref(),
+                    config_dir,
                     "/host/home",
                 )),
                 None,
@@ -572,8 +569,10 @@ fn canon_opencode(outcome: &opencode::Outcome) -> Value {
 /// never sent is a different decision from one that came back `unavailable`.
 fn claim_outcome(fixture: &Value) -> ClaimOutcome {
     let config_dir = required_string(read::property(fixture, "configDir"), "configDir");
-    let account_config_path =
-        required_string(read::property(fixture, "accountConfigPath"), "accountConfigPath");
+    let account_config_path = required_string(
+        read::property(fixture, "accountConfigPath"),
+        "accountConfigPath",
+    );
     let version = required_string(read::property(fixture, "version"), "version");
     let grant_id = required_string(read::property(fixture, "grantId"), "grantId");
     let request_id = required_string(read::property(fixture, "requestId"), "requestId");
@@ -690,7 +689,12 @@ fn canon_effects(effects: &[Effect]) -> Vec<Value> {
 /// rather than leaving them out, because the harness spread one object over both branches.
 fn canon_claim(outcome: &ClaimOutcome) -> Value {
     let (result, failure, message, settled) = match outcome.result {
-        Ok(outcome) => (json!(outcome.as_str()), Value::Null, Value::Null, Value::Null),
+        Ok(outcome) => (
+            json!(outcome.as_str()),
+            Value::Null,
+            Value::Null,
+            Value::Null,
+        ),
         Err(failure) => (
             Value::Null,
             json!(failure.as_str()),
@@ -771,12 +775,14 @@ const EXPECTED_COUNTS: &[(&str, usize)] = &[
     ("opencode readOpenCodeGoUsageLimits.authFile", 21),
     ("codex codexResetCreditsToContract", 20),
     ("credits claudeResetCreditsToContract.shape", 20),
+    ("credits readClaudeResetCredits.status", 20),
     ("credits consumeClaudeResetCredit.status", 17),
     ("grok grokUsageResponseToLimits.creditUsagePercent", 17),
     ("opencode readOpenCodeGoUsageLimits.percent", 17),
     ("claude claudeUsageResponseToLimits", 16),
     ("opencode readOpenCodeGoUsageLimits.padding", 16),
     ("credits consumeClaudeResetCredit.credentials", 14),
+    ("credits consumeClaudeResetCredit.request", 14),
     ("opencode readOpenCodeGoUsageLimits.gate", 14),
     ("opencode readOpenCodeGoUsageLimits.status", 14),
     ("opencode readOpenCodeGoUsageLimits.usageBody", 13),
@@ -786,11 +792,9 @@ const EXPECTED_COUNTS: &[(&str, usize)] = &[
     ("core clampPercent", 11),
     ("opencode readOpenCodeGoUsageLimits.authPath", 11),
     ("credits claudeAccountConfigPath", 10),
-    ("credits readClaudeResetCredits.status", 10),
     ("codex codexUsageLimitMessage.nextStep", 9),
     ("credits consumeClaudeResetCredit.account", 9),
     ("credits consumeClaudeResetCredit.ids", 9),
-    ("credits consumeClaudeResetCredit.request", 9),
     ("core resolveUsageLimitsAfterProbe", 8),
     ("credits readClaudeResetCredits.bank", 8),
     ("codex codexRateLimitsFailureMessage", 7),
@@ -805,7 +809,7 @@ const EXPECTED_COUNTS: &[(&str, usize)] = &[
     ("core makeUsageLimits.idOrder", 1),
     ("core makeUsageLimits.sort", 1),
 ];
-const EXPECTED_TOTAL: usize = 862;
+const EXPECTED_TOTAL: usize = 877;
 
 #[test]
 fn replays_the_shipped_usage_limit_decisions() {

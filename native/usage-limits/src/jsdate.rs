@@ -706,4 +706,24 @@ mod tests {
         assert_eq!(locale_compare("five_hour", "five_hour"), Ordering::Equal);
         assert_eq!(locale_compare("weekly", "five_hour"), Ordering::Greater);
     }
+
+    /// The calendar question `claude_credits` asks is `Date.UTC(y, m - 1, d) <= Date.UTC(y, m, 0)`,
+    /// and the right-hand side of that shifts into the next year. A clamp borrowed from the ISO
+    /// string grammar would refuse the last day of December 9999 and make a real grant look
+    /// unreadable, so the only bounds here are the ones `TimeClip` itself imposes.
+    #[test]
+    fn date_utc_shifts_past_the_ninth_millennium_and_still_names_an_instant() {
+        assert_eq!(date_utc(9999.0, 12.0, 0.0), Some(253_402_214_400_000.0));
+        assert_eq!(date_utc(9999.0, 11.0, 31.0), Some(253_402_214_400_000.0));
+        assert_eq!(date_utc(275_760.0, 8.0, 13.0), Some(8.64e15));
+        assert_eq!(date_utc(275_760.0, 8.0, 14.0), None);
+        assert_eq!(date_utc(1.0e8, 0.0, 1.0), None);
+        assert_eq!(date_utc(-1.0, 11.0, 31.0), Some(-62_167_305_600_000.0));
+        // Neither the month index nor the date is validated: both are normalised.
+        assert_eq!(date_utc(0.0, 13.0, 1.0), Some(-2_174_774_400_000.0));
+        // The two-digit rule applies to the year as written, before any shifting.
+        assert_eq!(date_utc(50.0, 0.0, 1.0), Some(-631_152_000_000.0));
+        assert_eq!(date_utc(99.0, 0.0, 1.0), Some(915_148_800_000.0));
+        assert_eq!(date_utc(100.0, 0.0, 1.0), Some(-59_011_459_200_000.0));
+    }
 }

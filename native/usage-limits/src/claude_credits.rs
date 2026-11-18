@@ -72,11 +72,10 @@ pub fn claude_reset_credits_to_contract(block: &Value, now_ms: f64) -> Option<Re
 /// `Struct({ eligible: Boolean, grants: optional(Array(Unknown)), next_grant_id:
 /// optional(NullOr(String)) })` through `decodeUnknownOption`. The array's *elements* are not
 /// questioned here, which is the difference between this block and the OpenCode usage body: an
-/// unusable grant is dropped on its own and the bank keeps reporting the others.
+/// unusable grant is dropped on its own and the bank keeps reporting the others. A block that is
+/// not an object at all needs no separate refusal: it has no `eligible`, and the question below
+/// is what the shipped schema's failure comes to for every caller of this.
 fn decode_cedar_ember(block: &Value) -> Option<CedarEmber> {
-    if !matches!(block, Value::Object(_)) {
-        return None;
-    }
     if read::as_bool(read::property(block, "eligible")) != Some(true) {
         return None;
     }
@@ -223,7 +222,9 @@ fn complete_timestamp(text: &str) -> bool {
     if bytes.len() < 19 {
         return false;
     }
-    if !groups.iter().all(|(from, to)| all_digits(bytes, *from, *to))
+    if !groups
+        .iter()
+        .all(|(from, to)| all_digits(bytes, *from, *to))
         || bytes[4] != b'-'
         || bytes[7] != b'-'
         || bytes[10] != b'T'
@@ -273,7 +274,9 @@ fn digits(text: &[u8], from: usize, to: usize) -> i64 {
 /// grant this reader drops rather than a spelling it forgives.
 fn grant_id_ok(text: &str) -> bool {
     bounded_id(text, 40, |character| {
-        character.is_ascii_lowercase() || character.is_ascii_digit() || matches!(character, '_' | '-')
+        character.is_ascii_lowercase()
+            || character.is_ascii_digit()
+            || matches!(character, '_' | '-')
     })
 }
 
@@ -423,8 +426,12 @@ pub struct UsageRead<'a> {
 /// and a golden that restated them would be evidence about the wrong layer.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Effect {
-    CredentialsFile { path: String },
-    AccountFile { path: String },
+    CredentialsFile {
+        path: String,
+    },
+    AccountFile {
+        path: String,
+    },
     UsageRequest {
         url: String,
         authorization: String,
@@ -481,7 +488,10 @@ pub fn consume_claude_reset_credit(claim: &Claim<'_>) -> ClaimOutcome {
     ClaimOutcome { result, effects }
 }
 
-fn claim_result(claim: &Claim<'_>, effects: &mut Vec<Effect>) -> Result<ConsumeOutcome, ClaimFailure> {
+fn claim_result(
+    claim: &Claim<'_>,
+    effects: &mut Vec<Effect>,
+) -> Result<ConsumeOutcome, ClaimFailure> {
     // Both ids are asked before anything is read, so a claim that cannot be named never touches
     // the account's files and never gets an id onto the wire.
     if !grant_id_ok(claim.grant_id) || !request_id_ok(claim.request_id) {
@@ -658,7 +668,10 @@ fn url_encode_component(text: &str) -> String {
     let mut encoded = String::new();
     for character in text.chars() {
         if character.is_ascii_alphanumeric()
-            || matches!(character, '-' | '_' | '.' | '!' | '~' | '*' | '\'' | '(' | ')' )
+            || matches!(
+                character,
+                '-' | '_' | '.' | '!' | '~' | '*' | '\'' | '(' | ')'
+            )
         {
             encoded.push(character);
         } else {
@@ -698,5 +711,61 @@ fn decode_claim(reply: Reply<'_>) -> Result<ConsumeOutcome, ClaimFailure> {
         // kept and the retry asks about the same claim.
         Some("unavailable") => Err(ClaimFailure::Unconfirmed),
         _ => Err(ClaimFailure::RequestFailed),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every trace row names a directory, because the other branch of the shipped function is
+    /// the generating machine's own home. Injecting one is what makes that branch testable.
+    #[test]
+    fn the_account_record_follows_the_named_directory_and_the_home_otherwise() {
+        assert_eq!(
+            account_config_path(Some("/cfg"), "/home/user"),
+            "/cfg/.claude.json"
+        );
+        assert_eq!(
+            account_config_path(Some("/"), "/home/user"),
+            "/.claude.json"
+        );
+        assert_eq!(
+            account_config_path(None, "/home/user"),
+            "/home/user/.claude.json"
+        );
+        // An empty string is falsy in JavaScript, so it joins onto the home and not onto nothing.
+        assert_eq!(
+            account_config_path(Some(""), "/home/user"),
+            "/home/user/.claude.json"
+        );
+    }
+
+    /// `encodeURIComponent` leaves six punctuation marks alone that a URL-building port is
+    /// tempted to escape, and the trace only ever sends the ones it escapes.
+    #[test]
+    fn the_organization_is_escaped_as_a_url_component() {
+        assert_eq!(url_encode_component("AZaz09-_.!~*(x)'"), "AZaz09-_.!~*(x)'");
+        assert_eq!(url_encode_component("a b"), "a%20b");
+        assert_eq!(url_encode_component("%41"), "%2541");
+        assert_eq!(url_encode_component("+,;=?@&"), "%2B%2C%3B%3D%3F%40%26");
+        assert_eq!(url_encode_component("ünï"), "%C3%BCn%C3%AF");
+        assert_eq!(url_encode_component("🐈"), "%F0%9F%90%88");
+    }
+
+    /// The trace sends one id of each kind at an ordinary length, plus three that fail early, so
+    /// the length ceilings are the part of the gate nothing else touches.
+    #[test]
+    fn an_id_at_its_own_ceiling_is_still_an_id() {
+        assert!(grant_id_ok(&"g".repeat(40)));
+        assert!(!grant_id_ok(&"g".repeat(41)));
+        assert!(request_id_ok(&"r".repeat(64)));
+        assert!(!request_id_ok(&"r".repeat(65)));
+        // A char outside the allowed set refuses the id whatever its length, and the two gates
+        // differ only in case: the CLI mints lowercase grant ids and accepts any request id.
+        assert!(!grant_id_ok("G1"));
+        assert!(request_id_ok("REQ_1"));
+        assert!(!grant_id_ok("gã"));
+        assert!(!request_id_ok("req!"));
     }
 }
