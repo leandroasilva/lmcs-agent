@@ -230,8 +230,10 @@ fn days_from_civil(year: i64, month: i64, day: i64) -> i64 {
 /// next year. That is what lets a caller compare a day against the last day of its own month,
 /// which is exactly the question `claude_credits` asks about a grant's `ends_at`.
 ///
-/// The 0..=99 year window is `Date.UTC`'s own two-digit rule, and `None` is the `NaN` the
-/// specification returns outside `MakeDay`'s year range or `TimeClip`'s range.
+/// The 0..=99 year window is `Date.UTC`'s own two-digit rule. `MakeDay` clamps no year of its
+/// own — `Date.UTC(9999, 12, 0)`, the last day of December 9999, shifts into year 10000 and is
+/// still a real instant — so the only thing that can make this `None` beyond a non-finite
+/// argument is `TimeClip` refusing a value outside the range a `Date` can name.
 #[must_use]
 pub fn date_utc(year: f64, month: f64, day: f64) -> Option<f64> {
     if !year.is_finite() || !month.is_finite() || !day.is_finite() {
@@ -249,11 +251,8 @@ pub fn date_utc(year: f64, month: f64, day: f64) -> Option<f64> {
     let day = day.trunc() as i64;
     let shifted_year = year + month.div_euclid(12);
     let shifted_month = month.rem_euclid(12) + 1;
-    if !(0..=9999).contains(&shifted_year) {
-        return None;
-    }
     let millis = (days_from_civil(shifted_year, shifted_month, 1) + day - 1) as f64 * 86_400_000.0;
-    millis.is_finite().then_some(millis)
+    (millis.is_finite() && millis.abs() <= MAX_EPOCH_MS).then_some(millis)
 }
 
 /// The inverse, for `toISOString`.

@@ -21,7 +21,7 @@ import * as Result from "effect/Result";
 import * as TestClock from "effect/testing/TestClock";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
-import * as Url from "effect/unstable/http/Url.ts";
+import * as Url from "effect/unstable/http/Url";
 import { HostProcessPlatform } from "@lmcstools/core/hostProcess";
 
 import * as claudeResetCredits from "../src/provider/Layers/claudeResetCredits.ts";
@@ -1782,10 +1782,10 @@ const nextCases: [string, Json][] = [
     bank([grant({ resets_left: -0 }), grant({ id: "g2", resets_left: 1e21 }), grant()], "g1"),
   ],
 ];
-for (const [name, block] of nextCases) {
+for (const [, block] of nextCases) {
   record(
     "credits",
-    `claudeResetCreditsToContract.nextGrant.${name}`,
+    "claudeResetCreditsToContract.nextGrant",
     [block, CREDITS_NOW],
     toCredits(block),
   );
@@ -2002,7 +2002,7 @@ async function recordClaim(table: string, fixture: Parameters<typeof runClaim>[0
 
 // Both ids are checked before anything is read, so a claim that cannot be named never opens a
 // file and never puts an id on the wire. The `effects` half of each record is the proof.
-for (const [name, over] of [
+for (const [, over] of [
   ["grant-upper", { grantId: "G1" }],
   ["grant-dot", { grantId: "g.1" }],
   ["grant-empty", { grantId: "" }],
@@ -2013,13 +2013,13 @@ for (const [name, over] of [
   ["request-too-long", { requestId: "r".repeat(65) }],
   ["request-lowercase-ok", { requestId: "req_-abc123" }],
 ] as const) {
-  await claimCase(`ids.${name}`, over as never);
+  await claimCase("ids", over as never);
 }
 
 // The login stage: which file is opened on which platform, and what an unreadable one is worth.
 // A missing credentials file is answered with `{}` and the claim goes on to ask about the
 // account; anything else the reader could not do is `loginUnreadable`, and nothing further runs.
-for (const [name, over] of [
+for (const [, over] of [
   ["darwin", { platform: "darwin" }],
   ["not-found", { credentials: { notFound: true } }],
   ["blocked", { credentials: { blocked: true } }],
@@ -2033,18 +2033,23 @@ for (const [name, over] of [
     { credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: 5 } }) } },
   ],
   ["oauth-not-object", { credentials: { contents: JSON.stringify({ claudeAiOauth: 5 }) } }],
+  ["oauth-null", { credentials: { contents: JSON.stringify({ claudeAiOauth: null }) } }],
+  [
+    "token-null",
+    { credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: null } }) } },
+  ],
   ["not-an-object", { credentials: { contents: "[]" } }],
   ["bad-json", { credentials: { contents: "not json" } }],
   ["empty-file", { credentials: { contents: "" } }],
   ["config-dir-empty", { configDir: "" }],
   ["config-dir-odd", { configDir: "/a//b/../cfg" }],
 ] as const) {
-  await claimCase(`credentials.${name}`, over as never);
+  await claimCase("credentials", over as never);
 }
 
 // The account stage, which the claim reaches even when it has no login: the two files are read
 // before either is asked about.
-for (const [name, over] of [
+for (const [, over] of [
   ["not-found", { account: { notFound: true } }],
   ["blocked", { account: { blocked: true } }],
   [
@@ -2052,20 +2057,25 @@ for (const [name, over] of [
     { account: { contents: JSON.stringify({ oauthAccount: { organizationUuid: "  " } }) } },
   ],
   ["no-account", { account: { contents: "{}" } }],
+  ["account-null", { account: { contents: JSON.stringify({ oauthAccount: null }) } }],
   [
     "org-number",
     { account: { contents: JSON.stringify({ oauthAccount: { organizationUuid: 7 } }) } },
   ],
+  [
+    "org-null",
+    { account: { contents: JSON.stringify({ oauthAccount: { organizationUuid: null } }) } },
+  ],
   ["not-an-object", { account: { contents: "5" } }],
   ["path-is-verbatim", { accountConfigPath: " /odd/../path/.claude.json" }],
 ] as const) {
-  await claimCase(`account.${name}`, over as never);
+  await claimCase("account", over as never);
 }
 
 // The answers a claim can arrive under. `429`, `401` and `403` are decided on the status alone,
 // before the body is read; everything else in the 2xx range is asked what it said, and a body
 // that cannot answer is `requestFailed` — which, like `unconfirmed`, is not settled.
-for (const [name, reply] of [
+for (const [, reply] of [
   ["reset", claimReply("reset")],
   ["not-limited", claimReply("not_limited")],
   ["already-used", claimReply("already_used")],
@@ -2084,13 +2094,13 @@ for (const [name, reply] of [
   ["429", { status: 429, body: JSON.stringify({ result: "reset" }) }],
   ["500", { status: 500, body: JSON.stringify({ result: "reset" }) }],
 ] as const) {
-  await claimCase(`status.${name}`, { reply } as never);
+  await claimCase("status", { reply } as never);
 }
 
 // What went on the wire: the organization is escaped into the path, the token and the version
 // are spelled into headers, and the body is the three keys the CLI sends. The escaping is the
 // part a port gets to get wrong.
-for (const [name, organizationUuid] of [
+for (const [, organizationUuid] of [
   ["plain", "org-1"],
   ["slash", "or/g1"],
   ["hash", "org#1"],
@@ -2101,7 +2111,7 @@ for (const [name, organizationUuid] of [
   ["query", "org?1"],
   ["trimmed", "  org-1  "],
 ] as const) {
-  await claimCase(`request.${name}`, {
+  await claimCase("request", {
     account: { contents: JSON.stringify({ oauthAccount: { organizationUuid } }) },
     version: "2.0.0-rc",
     grantId: "credit_9",
@@ -2145,8 +2155,10 @@ async function runRead(fixture: {
   };
 }
 
-const readCase = (name: string, over: Partial<Parameters<typeof runRead>[0]>): Promise<void> =>
-  recordRead(name, {
+// `table` groups the rows, because naming each case its own label would leave most labels with
+// a single record. Which case a row is travels on the input line, in the fixture itself.
+const readCase = (table: string, over: Partial<Parameters<typeof runRead>[0]>): Promise<void> =>
+  recordRead(table, {
     platform: "linux",
     configDir: "/cfg",
     version: "1.2.3",
@@ -2155,16 +2167,21 @@ const readCase = (name: string, over: Partial<Parameters<typeof runRead>[0]>): P
     ...over,
   });
 
-async function recordRead(name: string, fixture: Parameters<typeof runRead>[0]): Promise<void> {
+async function recordRead(table: string, fixture: Parameters<typeof runRead>[0]): Promise<void> {
   const result = await runRead(fixture);
-  record("credits", `readClaudeResetCredits.${name}`, [{ ...fixture, nowMs: CREDITS_NOW }], result);
+  record(
+    "credits",
+    `readClaudeResetCredits.${table}`,
+    [{ ...fixture, nowMs: CREDITS_NOW }],
+    result,
+  );
 }
 
 // The usage read: the instant it is made at comes from the clock, so it is named on the input
 // line for the port to be handed the same one. A grant that ends exactly at that instant is not
 // live, which is the difference between the two `at-now` rows and the empty bank.
-await readCase("ok", {});
-await readCase("at-now", {
+await readCase("bank", {});
+await readCase("bank", {
   reply: {
     status: 200,
     body: JSON.stringify({
@@ -2172,7 +2189,7 @@ await readCase("at-now", {
     }),
   },
 });
-await readCase("one-second-ahead", {
+await readCase("bank", {
   reply: {
     status: 200,
     body: JSON.stringify({
@@ -2180,32 +2197,36 @@ await readCase("one-second-ahead", {
     }),
   },
 });
-await readCase("expired", {
+await readCase("bank", {
   reply: {
     status: 200,
     body: JSON.stringify({ cedar_ember: bank([grant({ ends_at: "2026-05-01T00:00:00Z" })], "g1") }),
   },
 });
-await readCase("no-bank", { reply: { status: 200, body: "{}" } });
-await readCase("null-bank", { reply: { status: 200, body: '{"cedar_ember":null}' } });
-await readCase("junk-bank", { reply: { status: 200, body: '{"cedar_ember":5}' } });
-await readCase("extra-keys", {
+await readCase("bank", { reply: { status: 200, body: "{}" } });
+await readCase("bank", { reply: { status: 200, body: '{"cedar_ember":null}' } });
+await readCase("bank", { reply: { status: 200, body: '{"cedar_ember":5}' } });
+await readCase("bank", {
   reply: {
     status: 200,
     body: `{"cedar_ember":${JSON.stringify({ ...bank([grant()], "g1"), other: 1 })},"spam":1}`,
   },
 });
-await readCase("darwin", { platform: "darwin" });
-await readCase("not-found", { credentials: { notFound: true } });
-await readCase("blocked", { credentials: { blocked: true } });
-await readCase("blank-token", {
+
+// What the read can get back from the credential file. Every one of these ends as "no resets",
+// so the effects — which file was opened, whether anything went on the wire — are the record.
+await readCase("credentials", { platform: "darwin" });
+await readCase("credentials", { credentials: { notFound: true } });
+await readCase("credentials", { credentials: { blocked: true } });
+await readCase("credentials", {
   credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: " " } }) },
 });
-await readCase("bad-token", {
+await readCase("credentials", {
   credentials: { contents: JSON.stringify({ claudeAiOauth: { accessToken: 5 } }) },
 });
+
 for (const status of [200, 201, 204, 300, 301, 400, 403, 429, 500, 503]) {
-  await readCase(`status-${status}`, { reply: { status } });
+  await readCase("status", { reply: { status } });
 }
 
 // Where the account record lives. `configDir ? path.join(configDir, ".claude.json") :

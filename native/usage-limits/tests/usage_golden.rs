@@ -6,10 +6,11 @@
 //! `node apps/server/scripts/usage-limits-trace.ts > /tmp/usage-trace.txt`
 //!
 //! The first four are functions of their arguments, so their fixture is an argument list.
-//! OpenCode is not, and its fixture is the world instead: the generator drove the shipped code
-//! through a pinned clock, a stubbed filesystem and a stubbed client, and wrote down both what
-//! the call returned and which file it opened and what it put on the wire. The replay feeds
-//! the same world to the port and compares both halves.
+//! OpenCode and the two Claude credit calls that read the account are not, and their fixture is
+//! the world instead: the generator drove the shipped code through a pinned clock, a stubbed
+//! filesystem and a stubbed client, and wrote down both what the call returned and which file it
+//! opened and what it put on the wire. The replay feeds the same world to the port and compares
+//! both halves.
 //!
 //! The trace stores each record's input as the argument list the shipped call actually got
 //! and its result through `canon`, which flattens a window, a snapshot or a published
@@ -22,6 +23,9 @@
 
 use lmcs_usage_limits::claude::{
     ClaudeScopedNames, claude_rate_limit_event_to_update, claude_usage_response_to_limits,
+};
+use lmcs_usage_limits::claude_credits::{
+    self, Claim, ClaimOutcome, Effect, FileText, Platform, ReadOutcome, Reply, UsageRead,
 };
 use lmcs_usage_limits::codex::{
     CodexRateLimitsFailure, codex_rate_limits_failure_message, codex_rate_limits_to_limits,
@@ -137,6 +141,13 @@ fn canon_credits_pairs(credits: &ResetCredits) -> Value {
             text_field(&credits.next_expires_at)
         ]));
     }
+    // Only Claude names the credit a redeem is pinned to; Codex leaves the key out.
+    if credits.next_credit_id.is_written() {
+        pairs.push(json!([
+            "nextCreditId",
+            text_field(&credits.next_credit_id)
+        ]));
+    }
     Value::Array(pairs)
 }
 
@@ -147,6 +158,12 @@ fn canon_credits(credits: &ResetCredits) -> Value {
         object.insert(
             "nextExpiresAt".to_owned(),
             text_field(&credits.next_expires_at),
+        );
+    }
+    if credits.next_credit_id.is_written() {
+        object.insert(
+            "nextCreditId".to_owned(),
+            text_field(&credits.next_credit_id),
         );
     }
     Value::Object(object)
@@ -241,6 +258,12 @@ fn checked_at(input: &Value) -> String {
 /// body is the provider's own shape and has no room for one.
 fn second_argument(input: &Value) -> String {
     required_string(&arg(input, 1), "checkedAt")
+}
+
+/// Claude's credit tables take the instant the same way, as a reading of the clock rather than
+/// a timestamp string, because a grant is live only strictly after it.
+fn second_number_argument(input: &Value) -> f64 {
+    read::as_number(&arg(input, 1)).expect("a credit table names the instant")
 }
 
 /// The three keys that are members of the shipped `WINDOWS` object through its prototype
@@ -397,6 +420,45 @@ fn replay(module: &str, name: &str, input: &Value) -> (Value, Option<&'static st
             None,
         ),
         (
+            "credits",
+            "claudeResetCreditsToContract.shape"
+            | "claudeResetCreditsToContract.grant"
+            | "claudeResetCreditsToContract.timestamp"
+            | "claudeResetCreditsToContract.nextGrant",
+        ) => (
+            canon_opt_credits(claude_credits::claude_reset_credits_to_contract(
+                &first,
+                second_number_argument(input),
+            )),
+            None,
+        ),
+        (
+            "credits",
+            "consumeClaudeResetCredit.ids"
+            | "consumeClaudeResetCredit.credentials"
+            | "consumeClaudeResetCredit.account"
+            | "consumeClaudeResetCredit.status"
+            | "consumeClaudeResetCredit.request",
+        ) => (canon_claim(&claim_outcome(&first)), None),
+        (
+            "credits",
+            "readClaudeResetCredits.bank"
+            | "readClaudeResetCredits.credentials"
+            | "readClaudeResetCredits.status",
+        ) => (canon_read(&read_outcome(&first)), None),
+        ("credits", "claudeAccountConfigPath") => {
+            // The second branch of the shipped function is this machine's home directory, so no
+            // row takes it; the port's own unit test decides an absent or empty directory.
+            let config_dir = read::as_string(&first);
+            (
+                Value::String(claude_credits::account_config_path(
+                    config_dir.as_deref(),
+                    "/host/home",
+                )),
+                None,
+            )
+        }
+        (
             "cursor",
             "cursorUsageResponseToLimits.billingCycleEnd" | "cursorUsageResponseToLimits.planUsage",
         ) => (
@@ -504,6 +566,160 @@ fn canon_opencode(outcome: &opencode::Outcome) -> Value {
     json!({ "limits": canon_limits(&outcome.limits), "effects": effects })
 }
 
+/// The claim's world: the platform the login would live on, the two files and what they
+/// answered, the ids and version the shipped caller passed in, and the one reply the endpoint
+/// gave. As with OpenCode, the record compares the effects as well, because a claim that was
+/// never sent is a different decision from one that came back `unavailable`.
+fn claim_outcome(fixture: &Value) -> ClaimOutcome {
+    let config_dir = required_string(read::property(fixture, "configDir"), "configDir");
+    let account_config_path =
+        required_string(read::property(fixture, "accountConfigPath"), "accountConfigPath");
+    let version = required_string(read::property(fixture, "version"), "version");
+    let grant_id = required_string(read::property(fixture, "grantId"), "grantId");
+    let request_id = required_string(read::property(fixture, "requestId"), "requestId");
+    let reply = credit_reply(read::property(fixture, "reply"));
+    let claim = Claim {
+        platform: credit_platform(read::property(fixture, "platform")),
+        config_dir: &config_dir,
+        account_config_path: &account_config_path,
+        credentials: credit_file(read::property(fixture, "credentials")),
+        account: credit_file(read::property(fixture, "account")),
+        version: &version,
+        grant_id: &grant_id,
+        request_id: &request_id,
+        reply,
+    };
+    claude_credits::consume_claude_reset_credit(&claim)
+}
+
+/// The usage read's world, which is the claim's with the account record left out — the read
+/// asks the endpoint for the bank and never needs to know who owns the login.
+fn read_outcome(fixture: &Value) -> ReadOutcome {
+    let config_dir = required_string(read::property(fixture, "configDir"), "configDir");
+    let version = required_string(read::property(fixture, "version"), "version");
+    let now_ms = read::as_number(read::property(fixture, "nowMs"))
+        .expect("every read fixture names the instant it was made at");
+    let reply = credit_reply(read::property(fixture, "reply"));
+    let usage_read = UsageRead {
+        platform: credit_platform(read::property(fixture, "platform")),
+        config_dir: &config_dir,
+        version: &version,
+        credentials: credit_file(read::property(fixture, "credentials")),
+        now_ms,
+        reply,
+    };
+    claude_credits::read_claude_reset_credits(&usage_read)
+}
+
+/// The pinned `HostProcessPlatform`. A row could leave it to the generating machine, which
+/// would make the trace a fact about the laptop that ran the script.
+fn credit_platform(value: &Value) -> Platform {
+    match required_string(value, "platform").as_str() {
+        "darwin" => Platform::Darwin,
+        _ => Platform::Other,
+    }
+}
+
+/// The three answers a file read can give. As in OpenCode's `authFile`, an empty file is
+/// `contents` and not an absence, so the key's presence decides rather than its truthiness.
+fn credit_file(value: &Value) -> FileText<'_> {
+    if let Field::Value(contents) = read::field(value, "contents") {
+        return FileText::Contents(read::as_string(contents).expect("a credit file is text"));
+    }
+    if read::truthy(read::property(value, "notFound")) {
+        return FileText::NotFound;
+    }
+    assert!(
+        read::truthy(read::property(value, "blocked")),
+        "a credit file is present, missing, or unreadable"
+    );
+    FileText::Unreadable
+}
+
+/// A reply with no `body` is one that had none — a `204`, which reaches the shipped schema as
+/// the empty text it then refuses to parse.
+fn credit_reply(value: &Value) -> Reply<'_> {
+    Reply {
+        status: read::as_number(read::property(value, "status")).expect("a status number") as u16,
+        body: read::as_string(read::property(value, "body")).unwrap_or_default(),
+    }
+}
+
+fn canon_effects(effects: &[Effect]) -> Vec<Value> {
+    effects
+        .iter()
+        .map(|effect| match effect {
+            Effect::CredentialsFile { path } => json!({ "credentialsFile": path }),
+            Effect::AccountFile { path } => json!({ "accountFile": path }),
+            Effect::UsageRequest {
+                url,
+                authorization,
+                beta,
+                user_agent,
+            } => json!({
+                "request": {
+                    "method": "GET",
+                    "url": url,
+                    "authorization": authorization,
+                    "beta": beta,
+                    "userAgent": user_agent,
+                }
+            }),
+            Effect::ClaimRequest {
+                url,
+                authorization,
+                beta,
+                user_agent,
+                body,
+            } => json!({
+                "request": {
+                    "method": "POST",
+                    "url": url,
+                    "authorization": authorization,
+                    "beta": beta,
+                    "userAgent": user_agent,
+                    "body": body,
+                }
+            }),
+        })
+        .collect()
+}
+
+/// What the claim decided, in the shape the harness wrote it. A failure is recorded as its
+/// reason, its sentence and whether the caller may forget it; a success leaves all three null
+/// rather than leaving them out, because the harness spread one object over both branches.
+fn canon_claim(outcome: &ClaimOutcome) -> Value {
+    let (result, failure, message, settled) = match outcome.result {
+        Ok(outcome) => (json!(outcome.as_str()), Value::Null, Value::Null, Value::Null),
+        Err(failure) => (
+            Value::Null,
+            json!(failure.as_str()),
+            json!(failure.message()),
+            json!(failure.is_settled()),
+        ),
+    };
+    json!({
+        "outcome": result,
+        "failure": failure,
+        "message": message,
+        "settled": settled,
+        "effects": canon_effects(&outcome.effects),
+    })
+}
+
+/// `{credits, effects}`. The shipped read turns every failure into "no resets", so an account
+/// with no bank and an unreadable login are the same answer here, and only the effects say
+/// which of the two the call was.
+fn canon_read(outcome: &ReadOutcome) -> Value {
+    json!({
+        "credits": match &outcome.credits {
+            Some(credits) => canon_credits(credits),
+            None => absent(),
+        },
+        "effects": canon_effects(&outcome.effects),
+    })
+}
+
 struct Record {
     module: String,
     name: String,
@@ -542,8 +758,10 @@ fn records(text: &str) -> Vec<Record> {
 const EXPECTED_COUNTS: &[(&str, usize)] = &[
     ("opencode readOpenCodeGoUsageLimits.credentials", 88),
     ("cursor cursorUsageResponseToLimits.billingCycleEnd", 59),
+    ("credits claudeResetCreditsToContract.timestamp", 46),
     ("claude claudeRateLimitEventToUpdate", 44),
     ("claude claudeUsageResponseToLimits.resetsAt", 37),
+    ("credits claudeResetCreditsToContract.grant", 37),
     ("codex codexUsageLimitMessage", 36),
     ("opencode readOpenCodeGoUsageLimits.resetsAt", 35),
     ("codex codexRateLimitsToLimits", 31),
@@ -552,31 +770,42 @@ const EXPECTED_COUNTS: &[(&str, usize)] = &[
     ("cursor cursorUsageResponseToLimits.planUsage", 24),
     ("opencode readOpenCodeGoUsageLimits.authFile", 21),
     ("codex codexResetCreditsToContract", 20),
+    ("credits claudeResetCreditsToContract.shape", 20),
+    ("credits consumeClaudeResetCredit.status", 17),
     ("grok grokUsageResponseToLimits.creditUsagePercent", 17),
     ("opencode readOpenCodeGoUsageLimits.percent", 17),
     ("claude claudeUsageResponseToLimits", 16),
     ("opencode readOpenCodeGoUsageLimits.padding", 16),
+    ("credits consumeClaudeResetCredit.credentials", 14),
     ("opencode readOpenCodeGoUsageLimits.gate", 14),
     ("opencode readOpenCodeGoUsageLimits.status", 14),
     ("opencode readOpenCodeGoUsageLimits.usageBody", 13),
-    ("core applyUsageLimitsUpdate", 12),
     ("claude claudeUsageResponseToLimits.scopedId", 12),
+    ("core applyUsageLimitsUpdate", 12),
+    ("credits claudeResetCreditsToContract.nextGrant", 12),
     ("core clampPercent", 11),
     ("opencode readOpenCodeGoUsageLimits.authPath", 11),
+    ("credits claudeAccountConfigPath", 10),
+    ("credits readClaudeResetCredits.status", 10),
     ("codex codexUsageLimitMessage.nextStep", 9),
+    ("credits consumeClaudeResetCredit.account", 9),
+    ("credits consumeClaudeResetCredit.ids", 9),
+    ("credits consumeClaudeResetCredit.request", 9),
     ("core resolveUsageLimitsAfterProbe", 8),
-    ("codex mergeCodexRateLimits", 7),
+    ("credits readClaudeResetCredits.bank", 8),
     ("codex codexRateLimitsFailureMessage", 7),
+    ("codex mergeCodexRateLimits", 7),
+    ("credits readClaudeResetCredits.credentials", 5),
     ("core makeUnavailableUsageLimits", 4),
     ("grok grokUsageResponseToLimits.config", 4),
     ("opencode readOpenCodeGoUsageLimits.overlay", 2),
-    ("core makeUsageLimits.sort", 1),
-    ("core makeUsageLimits.idOrder", 1),
-    ("core makeUsageLimits.emptyIterable", 1),
     ("codex codexRateLimitsToLimits.byLimitId", 1),
     ("codex codexRateLimitsToLimits.emptyLimitIdMap", 1),
+    ("core makeUsageLimits.emptyIterable", 1),
+    ("core makeUsageLimits.idOrder", 1),
+    ("core makeUsageLimits.sort", 1),
 ];
-const EXPECTED_TOTAL: usize = 656;
+const EXPECTED_TOTAL: usize = 862;
 
 #[test]
 fn replays_the_shipped_usage_limit_decisions() {

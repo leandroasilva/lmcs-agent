@@ -571,15 +571,46 @@ fn access_token(
         FileText::Unreadable => return Err(ClaimFailure::LoginUnreadable),
     };
     let parsed = read_json(contents, ClaimFailure::LoginUnreadable)?;
-    let oauth = read::property(&parsed, "claudeAiOauth");
-    Ok(trimmed_non_empty(read::as_string(read::property(
-        oauth,
+    nested_string(
+        &parsed,
+        "claudeAiOauth",
         "accessToken",
-    ))))
+        ClaimFailure::LoginUnreadable,
+    )
+}
+
+/// `Credentials` and `Config` are the same shape twice: a struct whose one optional member is
+/// another struct whose one optional member is a string. `optional` says only that the key may
+/// be missing, so anything else that turns up in either seat — a `null`, a number, a string
+/// where an object belongs — is the decode failing rather than a value the caller may ignore.
+/// That is what makes a login that stored its token as a number an unreadable login instead of
+/// a signed-out one.
+fn nested_string(
+    parsed: &Value,
+    outer: &str,
+    inner: &str,
+    failure: ClaimFailure,
+) -> Result<Option<String>, ClaimFailure> {
+    let object = match read::field(parsed, outer) {
+        Field::Absent => return Ok(None),
+        // `optional` says the key may be missing. A `null` is not missing, and is not a struct.
+        Field::Null => return Err(failure),
+        Field::Value(object) => object,
+    };
+    if !object.is_object() {
+        return Err(failure);
+    }
+    let text = match read::field(object, inner) {
+        Field::Absent => return Ok(None),
+        Field::Null => return Err(failure),
+        Field::Value(value) => value.as_str().ok_or(failure)?,
+    };
+    Ok(trimmed_non_empty(Some(text)))
 }
 
 /// `Config`'s one interesting key. A record the CLI wrote for another host's layout is the same
-/// silence as no record at all.
+/// silence as no record at all — but only silence: a record that contradicts the schema is the
+/// account being unreadable.
 fn organization_uuid(claim: &Claim<'_>) -> Result<Option<String>, ClaimFailure> {
     let contents = match claim.account {
         FileText::Contents(text) => text,
@@ -587,11 +618,12 @@ fn organization_uuid(claim: &Claim<'_>) -> Result<Option<String>, ClaimFailure> 
         FileText::Unreadable => return Err(ClaimFailure::AccountUnreadable),
     };
     let parsed = read_json(contents, ClaimFailure::AccountUnreadable)?;
-    let account = read::property(&parsed, "oauthAccount");
-    Ok(trimmed_non_empty(read::as_string(read::property(
-        account,
+    nested_string(
+        &parsed,
+        "oauthAccount",
         "organizationUuid",
-    ))))
+        ClaimFailure::AccountUnreadable,
+    )
 }
 
 /// `Schema.decodeEffect(Schema.fromJsonString(Struct))`: the file has to be JSON and it has to be
