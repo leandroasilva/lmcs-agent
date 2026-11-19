@@ -67,7 +67,7 @@ pub fn pty_library_call(input: &PtySpawnInput<'_>, platform: Platform) -> PtyLib
 /// `NodePtyProcess.kill`. Windows has no POSIX signals, and `node-pty` terminates the process
 /// tree when it is given none, so the signal is dropped at this boundary rather than translated.
 #[must_use]
-pub fn kill_argument<'a>(platform: Platform, signal: Option<&'a str>) -> Option<&'a str> {
+pub fn kill_argument(platform: Platform, signal: Option<&str>) -> Option<&str> {
     if platform.is_win32() { None } else { signal }
 }
 

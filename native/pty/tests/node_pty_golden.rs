@@ -71,12 +71,12 @@ fn parse(trace: &str) -> Vec<Record> {
                 Some("node-pty-adapter"),
                 "one module per trace"
             );
-            let input = decode(&chunk[1], "I");
+            let input = decode(chunk[1], "I");
             Record {
                 table: fields.next().expect("a table name").to_string(),
                 name: input["name"].as_str().expect("a case name").to_string(),
                 input,
-                result: decode(&chunk[2], "R"),
+                result: decode(chunk[2], "R"),
             }
         })
         .collect()
