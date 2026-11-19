@@ -12,6 +12,7 @@
 
 pub mod env;
 pub mod jsstr;
+pub mod node_pty;
 pub mod shell;
 pub mod spawn;
 
