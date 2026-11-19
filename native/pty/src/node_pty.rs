@@ -98,6 +98,25 @@ pub struct PtyExitEvent {
     pub signal: Option<i32>,
 }
 
+/// The environment the child process actually ends up with, which is **not** the one in
+/// [`PtyLibraryCall::env`].
+///
+/// On the POSIX path the library writes `name` into the child's `TERM` over whatever the caller
+/// passed, so a `TERM` of `dumb` or `""` is gone before a prompt is ever drawn; the shipped
+/// adapter's "leave `TERM` alone" is true of the call and false of the child. Measured against
+/// the packaged library by `apps/server/scripts/node-pty-child-probe.ts` (scenarios `probe`,
+/// `termDumb`, `termEmpty`): the child reports `term=xterm-256color` and exactly one `TERM` entry
+/// in all three. The ConPTY path leaves the environment alone, which is why [`pty_library_call`]
+/// patches it there instead.
+pub fn child_environment(call: &PtyLibraryCall, platform: Platform) -> Env {
+    if platform.is_win32() {
+        return call.env.clone();
+    }
+    let mut env = call.env.clone();
+    env.set("TERM", PTY_TERMINAL_NAME);
+    env
+}
+
 /// The shipped mapping is `event.signal ?? null`, so the only translation is `undefined` to
 /// `null`. It is spelled as a function because this is where a port is tempted to treat `0`
 /// as absent.
@@ -212,6 +231,45 @@ mod tests {
             Some("SIGTERM")
         );
         assert_eq!(kill_argument(Platform::Darwin, None), None);
+    }
+
+    #[test]
+    fn the_child_forgets_the_term_the_call_kept() {
+        let env = Env::from_pairs([
+            ("PATH".to_string(), "/usr/bin:/bin".to_string()),
+            ("TERM".to_string(), "dumb".to_string()),
+        ]);
+        let call = pty_library_call(&input("/bin/sh", None, &env), Platform::Linux);
+        assert_eq!(
+            call.env.get("TERM"),
+            Some("dumb"),
+            "the call is what the adapter sends"
+        );
+
+        let child = child_environment(&call, Platform::Linux);
+        assert_eq!(
+            child.get("TERM"),
+            Some(PTY_TERMINAL_NAME),
+            "and the library overwrites it on the POSIX path"
+        );
+        assert_eq!(
+            child.len(),
+            call.env.len(),
+            "replaced in place, not appended"
+        );
+
+        // The empty `TERM` survives the call and still does not survive the library.
+        let empty = Env::from_pairs([("TERM".to_string(), String::new())]);
+        let call = pty_library_call(&input("/bin/sh", None, &empty), Platform::Linux);
+        assert_eq!(call.env.get("TERM"), Some(""));
+        assert_eq!(
+            child_environment(&call, Platform::Linux).get("TERM"),
+            Some(PTY_TERMINAL_NAME)
+        );
+
+        // ConPTY is the one that leaves the environment alone, so the child sees the call.
+        let windows = pty_library_call(&input("cmd.exe", None, &empty), Platform::Win32);
+        assert_eq!(child_environment(&windows, Platform::Win32), windows.env);
     }
 
     #[test]

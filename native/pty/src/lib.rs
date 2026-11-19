@@ -4,14 +4,16 @@
 //! Ported from the platform-independent half of `apps/server/src/terminal/Manager.ts`
 //! (`resolveShellCandidates` and friends, `createTerminalSpawnEnv`,
 //! `isRetryableShellSpawnError`, `trySpawn`) and the `PtySpawnError` message from
-//! `apps/server/src/terminal/PtyAdapter.ts`. Binding these decisions to a real PTY is a
-//! separate implementation of [`spawn::Spawner`]; everything here is pure and replayable.
+//! `apps/server/src/terminal/PtyAdapter.ts`. Everything except [`native_pty`] is pure and
+//! replayable; [`native_pty`] is the one implementation of [`spawn::Spawner`] that opens a
+//! terminal for real.
 //!
 //! Every rule is measured against the shipped TypeScript, not re-read from it: see
 //! `apps/server/scripts/terminal-shell-trace.ts` and `tests/shell_golden.rs`.
 
 pub mod env;
 pub mod jsstr;
+pub mod native_pty;
 pub mod node_pty;
 pub mod shell;
 pub mod spawn;
