@@ -37,6 +37,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Logger from "effect/Logger";
 import * as Path from "effect/Path";
+import * as Schema from "effect/Schema";
 
 import type { TerminalEvent } from "@lmcstools/core";
 
@@ -141,8 +142,6 @@ const cases: ReadonlyArray<Case> = [
       { op: "exit", p: 0, c: 0, s: 0 },
       { op: "count", n: 2 },
       { op: "data", p: 0, s: "late-after-exit" },
-      // The flush: by the time `restarted` lands, every fiber the manager forked has run, so a
-      // delivery that was not dropped would be in the record.
       { op: "restart" },
       { op: "count", n: 3 },
     ],
@@ -170,8 +169,6 @@ const cases: ReadonlyArray<Case> = [
       { op: "count", n: 1 },
       { op: "data", s: "after-setup" },
       { op: "count", n: 2 },
-      // The flush also proves the setup payload never shows up late: it would be in the record by
-      // the time `restarted` lands.
       { op: "restart" },
       { op: "count", n: 3 },
     ],
@@ -280,12 +277,12 @@ class ScriptedPtyProcess implements PtyAdapter.PtyProcess {
 
   /** Deliver as if the library's read side produced this chunk now. */
   emitData(data: string): void {
-    for (const callback of [...this.#data]) callback(data);
+    for (const callback of this.#data) callback(data);
   }
 
   emitExit(exitCode: number, signal: number): void {
     const event = { exitCode, signal };
-    for (const callback of [...this.#exit]) callback(event);
+    for (const callback of this.#exit) callback(event);
   }
 }
 
@@ -332,6 +329,7 @@ class ScriptedPtyAdapter {
 }
 
 const hex = (value: string) => Buffer.from(value, "utf8").toString("hex");
+const encodeInput = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 /** One `hold` suspends exactly one publish, which is what makes "mid-drain" mean something. */
 type Hold = {
@@ -346,11 +344,7 @@ type Harness = {
   readonly awaitSuspended: () => Effect.Effect<void>;
   readonly releaseNextPublish: () => Effect.Effect<void>;
   readonly awaitCount: (count: number) => Effect.Effect<void>;
-  /**
-   * Restart is the flush: `restarted` is published inside the call the case awaits, so by the
-   * time it returns every fiber the manager forked has run. A dropped delivery that was not
-   * dropped would be in the record by then — no yield counting, no sleeping.
-   */
+  /** Awaits the restarted event, not every previously forked drain. */
   readonly restart: () => Effect.Effect<void>;
   readonly close: () => Effect.Effect<void>;
 };
@@ -477,16 +471,18 @@ const run = Effect.gen(function* () {
         yield* Deferred.await(deferred);
       }),
       restart: Effect.fnUntraced(function* () {
-        yield* manager.restart({
-          threadId: "thread-1",
-          terminalId: "term-1",
-          cwd,
-          cols: 80,
-          rows: 24,
-        });
+        yield* Effect.orDie(
+          manager.restart({
+            threadId: "thread-1",
+            terminalId: "term-1",
+            cwd,
+            cols: 80,
+            rows: 24,
+          }),
+        );
       }),
       close: Effect.fnUntraced(function* () {
-        yield* manager.close({ threadId: "thread-1", terminalId: "term-1" });
+        yield* Effect.orDie(manager.close({ threadId: "thread-1", terminalId: "term-1" }));
       }),
     };
 
@@ -496,7 +492,7 @@ const run = Effect.gen(function* () {
     }
 
     out.push(`C ${input.name}`);
-    out.push(`I ${hex(JSON.stringify(input))}`);
+    out.push(`I ${hex(yield* encodeInput(input))}`);
     for (const [index, event] of recorded.entries()) {
       out.push(`O ${index} ${event.type} ${event.sequence} ${event.payload}`);
     }
@@ -511,9 +507,12 @@ const run = Effect.gen(function* () {
 
 Effect.runPromise(
   Effect.scoped(run).pipe(
-    Effect.provide(Logger.layer([])),
     Effect.provide(
-      Layer.merge(NodeServices.layer, ProcessRunner.layer.pipe(Layer.provide(NodeServices.layer))),
+      Layer.mergeAll(
+        Logger.layer([]),
+        NodeServices.layer,
+        ProcessRunner.layer.pipe(Layer.provide(NodeServices.layer)),
+      ),
     ),
   ),
 ).then(

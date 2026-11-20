@@ -216,7 +216,7 @@ impl Pipe {
         }
     }
 
-    /// The sequence the last published event carried.
+    /// The last assigned sequence; its publication may still be suspended.
     #[must_use]
     pub fn sequence(&self) -> u64 {
         self.sequence
@@ -265,31 +265,17 @@ mod tests {
         }
     }
 
-    /// A stand-in for `lmcs-terminal-history`'s sanitize, just enough to exercise the carry:
-    /// complete `ESC … m` sequences disappear and a chunk ending mid-sequence keeps its prefix.
     fn escapes(pending: &str, text: &str) -> Sanitized {
-        let chars: Vec<char> = format!("{pending}{text}").chars().collect();
-        let mut visible = String::new();
-        let mut index = 0;
-        while index < chars.len() {
-            if chars[index] == '\u{1b}' {
-                match chars[index..].iter().position(|c| *c == 'm') {
-                    Some(offset) => index += offset + 1,
-                    None => {
-                        return Sanitized {
-                            visible,
-                            pending: chars[index..].iter().collect(),
-                        };
-                    }
-                }
-                continue;
-            }
-            visible.push(chars[index]);
-            index += 1;
-        }
-        Sanitized {
-            visible,
-            pending: String::new(),
+        match (pending, text) {
+            ("", "\x1b[3") => Sanitized {
+                visible: String::new(),
+                pending: text.to_string(),
+            },
+            ("\x1b[3", "1mX") => Sanitized {
+                visible: "X".to_string(),
+                pending: String::new(),
+            },
+            other => panic!("unexpected sanitizer input: {other:?}"),
         }
     }
 
@@ -300,7 +286,10 @@ mod tests {
         assert!(!pipe.enqueue(1, data("early")));
         assert_eq!(pipe.start(1), 1);
         assert!(pipe.accepts(1));
-        assert!(!pipe.accepts(2), "a delivery from another process is not this one");
+        assert!(
+            !pipe.accepts(2),
+            "a delivery from another process is not this one"
+        );
     }
 
     #[test]
@@ -348,7 +337,7 @@ mod tests {
     }
 
     #[test]
-    fn an_exit_takes_everything_queued_behind_it_before_it_teardowns() {
+    fn an_exit_follows_prior_output_and_discards_later_events() {
         let mut pipe = Pipe::new();
         let _ = pipe.start(7);
         pipe.enqueue(7, data("held"));
@@ -360,6 +349,7 @@ mod tests {
                 signal: Some(0),
             }),
         );
+        pipe.enqueue(7, data("queued-after-exit"));
         let kinds: Vec<&str> = std::iter::from_fn(|| pipe.drain_next(7, plain))
             .map(|delivery| match delivery {
                 Delivery::Output { .. } => "output",
@@ -442,23 +432,99 @@ mod tests {
     }
 
     #[test]
-    fn a_control_sequence_split_over_two_chunks_is_carried_and_dropped_at_exit() {
+    fn sanitizer_carry_does_not_change_raw_deliveries() {
         let mut pipe = Pipe::new();
         let _ = pipe.start(7);
         pipe.enqueue(7, data("\x1b[3"));
         pipe.enqueue(7, data("1mX"));
-        let visible: Vec<String> = std::iter::from_fn(|| pipe.drain_next(7, escapes))
-            .map(|delivery| match delivery {
-                Delivery::Output { visible, .. } => visible,
-                Delivery::Exit { .. } => String::new(),
+        assert_eq!(
+            pipe.drain_next(7, escapes),
+            Some(Delivery::Output {
+                sequence: 2,
+                data: "\x1b[3".to_string(),
+                visible: String::new(),
+                history_grew: false,
             })
-            .collect();
-        // The first chunk is all escape and has nothing to show; the second completes the sequence.
-        assert_eq!(visible, vec![String::new(), "X".to_string()]);
+        );
+        assert_eq!(
+            pipe.drain_next(7, escapes),
+            Some(Delivery::Output {
+                sequence: 3,
+                data: "1mX".to_string(),
+                visible: "X".to_string(),
+                history_grew: true,
+            })
+        );
         assert_eq!(pipe.history_appends(), 1);
+    }
 
-        let _ = pipe.start(8);
-        pipe.enqueue(7, data("\x1b["));
-        assert_eq!(pipe.queued(), 0, "a stale pid does not even queue");
+    #[test]
+    fn exit_stop_and_start_each_clear_sanitizer_carry() {
+        for transition in ["exit", "stop", "start"] {
+            let mut pipe = Pipe::new();
+            let _ = pipe.start(7);
+            pipe.enqueue(7, data("\x1b[3"));
+            assert!(pipe.drain_next(7, escapes).is_some());
+            assert_eq!(pipe.pending_control_sequence, "\x1b[3");
+            match transition {
+                "exit" => {
+                    pipe.enqueue(
+                        7,
+                        PendingEvent::Exit(PtyExitEvent {
+                            exit_code: 0,
+                            signal: None,
+                        }),
+                    );
+                    assert!(matches!(
+                        pipe.drain_next(7, escapes),
+                        Some(Delivery::Exit { .. })
+                    ));
+                }
+                "stop" => pipe.stop(),
+                "start" => {
+                    let _ = pipe.start(8);
+                }
+                _ => unreachable!(),
+            }
+            assert!(pipe.pending_control_sequence.is_empty(), "{transition}");
+        }
+    }
+
+    #[test]
+    fn a_dequeued_output_keeps_the_walk_until_idle() {
+        let mut pipe = Pipe::new();
+        assert_eq!(pipe.start(7), 1);
+        assert!(pipe.enqueue(7, data("held")));
+        assert!(pipe.drain_next(7, plain).is_some());
+        assert_eq!(pipe.sequence(), 2);
+        assert!(!pipe.enqueue(7, data("during-publish")));
+        assert_eq!(
+            pipe.drain_next(7, plain),
+            Some(Delivery::Output {
+                sequence: 3,
+                data: "during-publish".to_string(),
+                visible: "during-publish".to_string(),
+                history_grew: true,
+            })
+        );
+        assert!(pipe.drain_next(7, plain).is_none());
+        assert!(pipe.enqueue(7, data("after-idle")));
+    }
+
+    #[test]
+    fn an_old_walker_clears_the_new_process_queue_like_the_shipped_manager() {
+        let mut pipe = Pipe::new();
+        assert_eq!(pipe.start(7), 1);
+        pipe.enqueue(7, data("held"));
+        let held = pipe.drain_next(7, plain).unwrap();
+        assert_eq!(pipe.start(8), 3);
+        assert!(pipe.enqueue(8, data("new-but-queued")));
+        assert_eq!(pipe.queued(), 1);
+        // Manager.ts clears the shared queue even when expectedPid belongs to the old process.
+        assert!(pipe.drain_next(7, plain).is_none());
+        assert_eq!(pipe.queued(), 0);
+        assert!(pipe.drain_next(8, plain).is_none());
+        assert!(matches!(held, Delivery::Output { sequence: 2, .. }));
+        assert!(pipe.enqueue(8, data("after-stale-drain")));
     }
 }
