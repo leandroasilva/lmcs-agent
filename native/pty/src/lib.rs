@@ -1,24 +1,27 @@
-//! Which shell a terminal runs, with what environment, and what happens when the shell is
-//! not there.
+//! Which shell a terminal runs with what environment, what happens when the shell is not there,
+//! and what the server does with the bytes the running shell sends back.
 //!
 //! Ported from the platform-independent half of `apps/server/src/terminal/Manager.ts`
 //! (`resolveShellCandidates` and friends, `createTerminalSpawnEnv`,
-//! `isRetryableShellSpawnError`, `trySpawn`) and the `PtySpawnError` message from
-//! `apps/server/src/terminal/PtyAdapter.ts`. Everything except [`native_pty`] is pure and
-//! replayable; [`native_pty`] is the one implementation of [`spawn::Spawner`] that opens a
-//! terminal for real.
+//! `isRetryableShellSpawnError`, `trySpawn`, `enqueueProcessEvent`, `drainProcessEvents`) and
+//! the `PtySpawnError` message from `apps/server/src/terminal/PtyAdapter.ts`. Everything except
+//! [`native_pty`] is pure and replayable; [`native_pty`] is the one implementation of
+//! [`spawn::Spawner`] that opens a terminal for real.
 //!
 //! Every rule is measured against the shipped TypeScript, not re-read from it: see
-//! `apps/server/scripts/terminal-shell-trace.ts` and `tests/shell_golden.rs`.
+//! `apps/server/scripts/terminal-shell-trace.ts` and `tests/shell_golden.rs` for the write side,
+//! and `apps/server/scripts/terminal-pipe-trace.ts` and `tests/pipe_golden.rs` for the read side.
 
 pub mod env;
 pub mod jsstr;
 pub mod native_pty;
 pub mod node_pty;
+pub mod pipe;
 pub mod shell;
 pub mod spawn;
 
 pub use env::{Env, create_terminal_spawn_env, normalized_runtime_env};
+pub use pipe::{Delivery, PendingEvent, Pipe, Sanitized};
 pub use shell::{ShellCandidate, resolve_shell_candidates};
 pub use spawn::{PtySpawnError, Spawned, Spawner, try_spawn};
 
