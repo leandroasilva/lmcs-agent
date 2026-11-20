@@ -95,8 +95,7 @@ fn spawn_waiting_child() -> NativePtyProcess {
 /// Runs one command in a real terminal and returns what the child wrote plus how it ended.
 fn run(args: &[String], env: &Env, cols: u32, rows: u32) -> (String, PtyExitEvent) {
     let mut process = spawn_in(args, env, cols, rows);
-    let mut reader = process.take_reader().expect("the output side");
-    let output = read_until_eof(&mut reader);
+    let output = read_until_eof(process.reader_mut().expect("the output side"));
     let event = process.wait().expect("the child is waited on");
     (output, event)
 }
@@ -249,10 +248,10 @@ fn resize_moves_the_window_the_kernel_holds_and_the_window_the_child_sees() {
     let mut watching = spawn_in(&args, &minimal_env(), 80, 24);
     watching.resize(100, 30).expect("a resize");
     watching.write("\n").expect("the line the child waits for");
-    let mut reader = watching
-        .take_reader()
+    let reader = watching
+        .reader_mut()
         .expect("the output side of the watching child");
-    assert_eq!(read_until_eof(&mut reader).trim(), "30 100");
+    assert_eq!(read_until_eof(reader).trim(), "30 100");
     assert_eq!(
         watching.wait().expect("the child is waited on"),
         exit_event(0, Some(0))
@@ -346,8 +345,7 @@ fn the_walk_past_a_missing_shell_lands_on_the_one_that_is_there() {
         ["/bin/sh".to_string(), "-c".to_string(), PROBE.to_string()].join(" ")
     );
     let mut process: NativePtyProcess = spawned.process;
-    let mut reader = process.take_reader().expect("the output side");
-    let output = read_until_eof(&mut reader);
+    let output = read_until_eof(process.reader_mut().expect("the output side"));
     assert_eq!(
         process.wait().expect("the child is waited on"),
         exit_event(0, Some(0))
@@ -382,7 +380,11 @@ fn the_incremental_decoder_handles_real_pty_bytes_and_flushes_before_wait() {
             let mut output = String::new();
             let mut buffer = vec![0_u8; read_size];
             loop {
-                match process.reader_mut().read(&mut buffer) {
+                match process
+                    .reader_mut()
+                    .expect("exclusive reader")
+                    .read(&mut buffer)
+                {
                     Ok(0) => break,
                     Ok(read) => output.push_str(&decoder.write(&buffer[..read])),
                     Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,

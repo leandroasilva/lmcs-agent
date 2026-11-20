@@ -104,6 +104,9 @@ for (const scenario of scenarios) {
   process.stdout.write(
     encodeReport({
       name: scenario.name,
+      command: scenario.command,
+      acknowledge: scenario.acknowledge,
+      deliveries,
       sizes: chunks.map((chunk) => Buffer.byteLength(chunk.text)),
       replacement: text.includes("\u{fffd}"),
       lastIsExit: deliveries.at(-1)?.kind === "exit",

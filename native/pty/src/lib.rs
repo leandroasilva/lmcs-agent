@@ -4,9 +4,9 @@
 //! Ported from the platform-independent half of `apps/server/src/terminal/Manager.ts`
 //! (`resolveShellCandidates` and friends, `createTerminalSpawnEnv`,
 //! `isRetryableShellSpawnError`, `trySpawn`, `enqueueProcessEvent`, `drainProcessEvents`) and
-//! the `PtySpawnError` message from `apps/server/src/terminal/PtyAdapter.ts`. Everything except
-//! [`native_pty`] is pure and replayable; [`native_pty`] is the one implementation of
-//! [`spawn::Spawner`] that opens a terminal for real.
+//! the `PtySpawnError` message from `apps/server/src/terminal/PtyAdapter.ts`. The native spawner
+//! opens real terminals; on Unix, the reader thread delivers decoded output through a bounded channel.
+//! Shell, adapter and queue decisions remain pure and replayable.
 //!
 //! Every rule is measured against the shipped TypeScript, not re-read from it: see
 //! `apps/server/scripts/terminal-shell-trace.ts` and `tests/shell_golden.rs` for the write side,
@@ -17,6 +17,10 @@ pub mod jsstr;
 pub mod native_pty;
 pub mod node_pty;
 pub mod pipe;
+#[cfg(unix)]
+pub mod reader;
+#[cfg(unix)]
+mod readiness;
 pub mod shell;
 pub mod spawn;
 pub mod utf8;
