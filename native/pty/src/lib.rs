@@ -19,6 +19,7 @@ pub mod node_pty;
 pub mod pipe;
 pub mod shell;
 pub mod spawn;
+pub mod utf8;
 
 pub use env::{Env, create_terminal_spawn_env, normalized_runtime_env};
 pub use pipe::{Delivery, PendingEvent, Pipe, Sanitized};

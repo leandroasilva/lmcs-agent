@@ -23,6 +23,7 @@ use lmcs_pty::native_pty::{NativePtyProcess, NativePtySpawner};
 use lmcs_pty::node_pty::{PtyExitEvent, exit_event};
 use lmcs_pty::shell::ShellCandidate;
 use lmcs_pty::spawn::{PtySpawnInput, SpawnTarget, is_retryable_shell_spawn_error, try_spawn};
+use lmcs_pty::utf8::Utf8Decoder;
 use lmcs_pty::{Platform, Spawner};
 
 /// What the child is asked to report about itself, field for field the way
@@ -353,4 +354,45 @@ fn the_walk_past_a_missing_shell_lands_on_the_one_that_is_there() {
     );
     assert_eq!(field(&output, "size"), "43 132");
     assert_eq!(field(&output, "term"), "xterm-256color");
+}
+
+#[test]
+fn the_incremental_decoder_handles_real_pty_bytes_and_flushes_before_wait() {
+    let cases = [
+        ("printf 'prefix\\303\\251\\n'", "prefixé\r\n".to_string()),
+        ("printf '\\342\\202\\254'", "€".to_string()),
+        ("printf '\\360\\237\\230\\200'", "\u{1f600}".to_string()),
+        ("printf 'prefix\\303'", "prefix\u{fffd}".to_string()),
+        ("printf 'prefix\\342\\202'", "prefix\u{fffd}".to_string()),
+        (
+            "printf 'prefix\\360\\237\\230'",
+            "prefix\u{fffd}".to_string(),
+        ),
+        (
+            "printf 'prefix\\355\\240\\200'",
+            "prefix\u{fffd}\u{fffd}\u{fffd}".to_string(),
+        ),
+        ("printf 'prefix\\377'", "prefix\u{fffd}".to_string()),
+        ("printf '%131072s' ''", " ".repeat(131_072)),
+    ];
+    for (script, expected) in cases {
+        for read_size in [1, 1024] {
+            let mut process = spawn_in(&sh(script), &minimal_env(), 80, 24);
+            let mut decoder = Utf8Decoder::new();
+            let mut output = String::new();
+            let mut buffer = vec![0_u8; read_size];
+            loop {
+                match process.reader_mut().read(&mut buffer) {
+                    Ok(0) => break,
+                    Ok(read) => output.push_str(&decoder.write(&buffer[..read])),
+                    Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+                    Err(error) => panic!("PTY read failed: {error}"),
+                }
+            }
+            output.push_str(&decoder.finish());
+            let event = process.wait().expect("the child is reaped");
+            assert_eq!(output, expected, "{script}, read size {read_size}");
+            assert_eq!(event, exit_event(0, Some(0)));
+        }
+    }
 }

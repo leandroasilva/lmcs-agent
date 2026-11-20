@@ -72,6 +72,23 @@ const scenarios: ReadonlyArray<Scenario> = [
     command: "printf 'second-tail\\n'; exit 0",
     expected: "second-tail\r\n",
   },
+  { name: "incompleteTwoByteEof", command: "printf 'prefix\\303'", expected: "prefix\ufffd" },
+  {
+    name: "incompleteThreeByteEof",
+    command: "printf 'prefix\\342\\202'",
+    expected: "prefix\ufffd",
+  },
+  {
+    name: "incompleteFourByteEof",
+    command: "printf 'prefix\\360\\237\\230'",
+    expected: "prefix\ufffd",
+  },
+  {
+    name: "invalidSurrogate",
+    command: "printf 'prefix\\355\\240\\200'",
+    expected: "prefix\ufffd\ufffd\ufffd",
+  },
+  { name: "invalidByte", command: "printf 'prefix\\377'", expected: "prefix\ufffd" },
 ];
 
 for (const scenario of scenarios) {
