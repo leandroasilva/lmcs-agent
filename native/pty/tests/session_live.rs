@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use lmcs_pty::native_pty::NativePtySpawner;
 use lmcs_pty::node_pty::{PtyExitEvent, exit_event};
-use lmcs_pty::session::PtySession;
+use lmcs_pty::session::{PtySession, SessionEvent};
 use lmcs_pty::spawn::PtySpawnInput;
 use lmcs_pty::{Delivery, Env, PendingEvent, Pipe, Platform, Sanitized};
 
@@ -52,7 +52,7 @@ fn collect(command: &str, acknowledge: Option<&str>) -> (Vec<String>, PtyExitEve
             .unwrap()
             .expect("exit must precede closure")
         {
-            PendingEvent::Data(text) => {
+            SessionEvent::Data(text) => {
                 assert!(!text.is_empty());
                 chunks.push(text);
                 if !acknowledged
@@ -62,7 +62,8 @@ fn collect(command: &str, acknowledge: Option<&str>) -> (Vec<String>, PtyExitEve
                     assert_eq!(session.try_write(b"\n").unwrap(), 1);
                 }
             }
-            PendingEvent::Exit(exit) => break exit,
+            SessionEvent::Exit(exit) => break exit,
+            SessionEvent::Writable => panic!("unrequested writable notification"),
         }
     };
     assert_eq!(session.recv().unwrap(), None);
@@ -91,7 +92,7 @@ fn controls_remain_available_while_exit_observation_is_blocked() {
         spawn("stty -echo; printf ready; IFS= read -r ack; stty size; IFS= read -r ack");
     assert_eq!(
         session.recv_timeout(DEADLINE).unwrap(),
-        Some(PendingEvent::Data("ready".to_string()))
+        Some(SessionEvent::Data("ready".to_string()))
     );
     assert_eq!(
         session.recv_timeout(Duration::ZERO).unwrap_err().kind(),
@@ -101,7 +102,7 @@ fn controls_remain_available_while_exit_observation_is_blocked() {
     assert_eq!(session.try_write(b"\n").unwrap(), 1);
     let mut text = String::new();
     while !text.contains("43 132") {
-        let Some(PendingEvent::Data(data)) = session.recv_timeout(DEADLINE).unwrap() else {
+        let Some(SessionEvent::Data(data)) = session.recv_timeout(DEADLINE).unwrap() else {
             panic!("child exited before control input")
         };
         text.push_str(&data);
@@ -109,8 +110,9 @@ fn controls_remain_available_while_exit_observation_is_blocked() {
     session.kill(Some("SIGKILL")).unwrap();
     loop {
         match session.recv_timeout(DEADLINE).unwrap().unwrap() {
-            PendingEvent::Data(_) => (),
-            PendingEvent::Exit(exit) => {
+            SessionEvent::Data(_) => (),
+            SessionEvent::Writable => panic!("unrequested writable notification"),
+            SessionEvent::Exit(exit) => {
                 assert_eq!(exit, exit_event(0, Some(9)));
                 break;
             }
@@ -126,7 +128,7 @@ fn large_duplex_input_makes_progress_without_blocking_output_or_controls() {
         let mut session = spawn("stty raw -echo; printf ready; exec cat");
         assert_eq!(
             session.recv_timeout(DEADLINE).unwrap(),
-            Some(PendingEvent::Data("ready".to_string()))
+            Some(SessionEvent::Data("ready".to_string()))
         );
         let input = "x€𐀀".repeat(2_097_152);
         let mut written = session.try_write(input.as_bytes()).unwrap();
@@ -135,27 +137,34 @@ fn large_duplex_input_makes_progress_without_blocking_output_or_controls() {
             "large input must allow partial progress"
         );
         session.resize(132, 43).unwrap();
+        session.request_writable().unwrap();
         let mut output = String::new();
+        let mut notifications = 0;
         while output.len() < input.len() {
-            if written < input.len() {
-                match session.try_write(&input.as_bytes()[written..]) {
-                    Ok(0) => panic!("input made no progress"),
-                    Ok(count) => written += count,
-                    Err(error) if error.kind() == io::ErrorKind::WouldBlock => (),
-                    Err(error) => panic!("input failed: {error}"),
+            match session.recv_timeout(DEADLINE).unwrap().unwrap() {
+                SessionEvent::Writable => {
+                    notifications += 1;
+                    match session.try_write(&input.as_bytes()[written..]) {
+                        Ok(0) => panic!("input made no progress"),
+                        Ok(count) => written += count,
+                        Err(error) if error.kind() == io::ErrorKind::WouldBlock => (),
+                        Err(error) => panic!("input failed: {error}"),
+                    }
+                    if written < input.len() {
+                        session.request_writable().unwrap();
+                    }
                 }
+                SessionEvent::Data(data) => output.push_str(&data),
+                SessionEvent::Exit(_) => panic!("exit before echoed input"),
             }
-            let Some(PendingEvent::Data(data)) = session.recv_timeout(DEADLINE).unwrap() else {
-                panic!("exit before echoed input")
-            };
-            output.push_str(&data);
         }
+        assert!(notifications > 0);
         assert_eq!(written, input.len());
         assert_eq!(output, input);
         session.kill(Some("SIGKILL")).unwrap();
         assert_eq!(
             session.recv_timeout(DEADLINE).unwrap(),
-            Some(PendingEvent::Exit(exit_event(0, Some(9))))
+            Some(SessionEvent::Exit(exit_event(0, Some(9))))
         );
         assert_eq!(session.recv().unwrap(), None);
         done.send(()).unwrap();
@@ -176,7 +185,7 @@ fn cancellation_and_drop_join_workers_and_reap_idle_or_busy_children() {
             let mut session = spawn(command);
             assert!(matches!(
                 session.recv_timeout(DEADLINE).unwrap(),
-                Some(PendingEvent::Data(_))
+                Some(SessionEvent::Data(_))
             ));
             let pid = session.pid();
             let (done, receipt) = mpsc::channel();
@@ -205,6 +214,128 @@ fn cancellation_and_drop_join_workers_and_reap_idle_or_busy_children() {
             );
         }
     }
+}
+
+const SILENT_INPUT_BYTES: usize = 2_097_152;
+
+fn fill_input(session: &mut PtySession, input: &[u8]) -> usize {
+    let mut written = 0;
+    loop {
+        assert!(
+            written < input.len(),
+            "fixture must hold input backpressure"
+        );
+        match session.try_write(&input[written..]) {
+            Ok(0) => panic!("input made no progress"),
+            Ok(count) => written += count,
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => return written,
+            Err(error) => panic!("input failed: {error}"),
+        }
+    }
+}
+
+#[test]
+fn writable_notifications_resume_input_without_any_child_output() {
+    let fixture = Fixture::new();
+    let mut session = fixture.spawn("input");
+    let mut control = fixture.accept();
+    receive_through(&mut session, "input-ready");
+    let input = "x€𐀀".repeat(SILENT_INPUT_BYTES / 8);
+    let mut written = fill_input(&mut session, input.as_bytes());
+    assert!(written > 0);
+    session.request_writable().unwrap();
+    session.resize(132, 43).unwrap();
+    control.write_all(b"r").unwrap();
+    let mut notifications = 0;
+    while written < input.len() {
+        assert_eq!(
+            session.recv_timeout(DEADLINE).unwrap(),
+            Some(SessionEvent::Writable),
+            "the child emits no output while receiving input"
+        );
+        notifications += 1;
+        match session.try_write(&input.as_bytes()[written..]) {
+            Ok(0) => panic!("input made no progress"),
+            Ok(count) => written += count,
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => (),
+            Err(error) => panic!("input failed: {error}"),
+        }
+        if written < input.len() {
+            session.request_writable().unwrap();
+        }
+    }
+    assert!(notifications > 0);
+    receipt(&mut control, b'd');
+    control.write_all(b"q").unwrap();
+    assert_eq!(
+        session.recv_timeout(DEADLINE).unwrap(),
+        Some(SessionEvent::Exit(exit_event(7, Some(0))))
+    );
+    assert_eq!(session.recv().unwrap(), None);
+    assert_eq!(
+        session.request_writable().unwrap_err().kind(),
+        io::ErrorKind::NotConnected
+    );
+}
+
+#[test]
+fn cancellation_and_drop_reap_with_writable_observation_pending() {
+    for explicit in [false, true] {
+        let fixture = Fixture::new();
+        let mut session = fixture.spawn("input");
+        let _control = fixture.accept();
+        receive_through(&mut session, "input-ready");
+        fill_input(&mut session, &vec![b'x'; SILENT_INPUT_BYTES]);
+        session.request_writable().unwrap();
+        let pid = session.pid();
+        let (done, completion) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            let result = if explicit {
+                session.cancel()
+            } else {
+                drop(session);
+                Ok(())
+            };
+            done.send(result).unwrap();
+        });
+        completion.recv_timeout(DEADLINE).unwrap().unwrap();
+        worker.join().unwrap();
+        let mut status = 0;
+        assert_eq!(
+            unsafe { libc::waitpid(pid as libc::pid_t, &mut status, libc::WNOHANG) },
+            -1
+        );
+        assert_eq!(
+            io::Error::last_os_error().raw_os_error(),
+            Some(libc::ECHILD)
+        );
+    }
+}
+
+#[test]
+fn exit_does_not_wait_for_the_child_to_accept_remaining_input() {
+    let fixture = Fixture::new();
+    let mut session = fixture.spawn("input");
+    let mut control = fixture.accept();
+    receive_through(&mut session, "input-ready");
+    fill_input(&mut session, &vec![b'x'; SILENT_INPUT_BYTES]);
+    session.request_writable().unwrap();
+    control.write_all(b"q").unwrap();
+    let mut notifications = 0;
+    loop {
+        match session.recv_timeout(DEADLINE).unwrap().unwrap() {
+            SessionEvent::Writable => {
+                notifications += 1;
+                assert!(notifications <= 1);
+            }
+            SessionEvent::Exit(exit) => {
+                assert_eq!(exit, exit_event(7, Some(0)));
+                break;
+            }
+            SessionEvent::Data(text) => panic!("unexpected output: {text:?}"),
+        }
+    }
+    assert_eq!(session.recv().unwrap(), None);
 }
 
 static NEXT_FIXTURE: AtomicUsize = AtomicUsize::new(0);
@@ -307,6 +438,32 @@ fn session_fixture() {
     let mut control = UnixStream::connect(&path).unwrap();
     control.set_read_timeout(Some(DEADLINE)).unwrap();
     match mode.as_str() {
+        "input" => {
+            let mut termios = std::mem::MaybeUninit::<libc::termios>::uninit();
+            assert_eq!(unsafe { libc::tcgetattr(0, termios.as_mut_ptr()) }, 0);
+            let mut termios = unsafe { termios.assume_init() };
+            unsafe { libc::cfmakeraw(&mut termios) };
+            assert_eq!(unsafe { libc::tcsetattr(0, libc::TCSANOW, &termios) }, 0);
+            std::io::stdout().write_all(b"input-ready").unwrap();
+            std::io::stdout().flush().unwrap();
+            if fixture_command(&mut control) == b'q' {
+                unsafe { libc::_exit(7) };
+            }
+            let pattern = "x€𐀀".as_bytes();
+            let mut total = 0;
+            let mut buffer = [0; 4096];
+            while total < SILENT_INPUT_BYTES {
+                let count = std::io::stdin().read(&mut buffer).unwrap();
+                assert!(count > 0 && total + count <= SILENT_INPUT_BYTES);
+                for (index, byte) in buffer[..count].iter().enumerate() {
+                    assert_eq!(*byte, pattern[(total + index) % pattern.len()]);
+                }
+                total += count;
+            }
+            control.write_all(b"d").unwrap();
+            assert_eq!(fixture_command(&mut control), b'q');
+            unsafe { libc::_exit(7) };
+        }
         "eof" => {
             std::io::stdout().write_all(b"before-eof").unwrap();
             std::io::stdout().flush().unwrap();
@@ -348,7 +505,7 @@ fn session_fixture() {
 fn receive_through(session: &mut PtySession, marker: &str) -> String {
     let mut text = String::new();
     while !text.contains(marker) {
-        let Some(PendingEvent::Data(data)) = session.recv_timeout(DEADLINE).unwrap() else {
+        let Some(SessionEvent::Data(data)) = session.recv_timeout(DEADLINE).unwrap() else {
             panic!("exit before {marker}")
         };
         text.push_str(&data);
@@ -384,7 +541,7 @@ fn closing_output_does_not_replace_the_later_child_status() {
     control.write_all(b"q").unwrap();
     assert_eq!(
         session.recv_timeout(DEADLINE).unwrap(),
-        Some(PendingEvent::Exit(exit_event(7, Some(0))))
+        Some(SessionEvent::Exit(exit_event(7, Some(0))))
     );
     assert_eq!(session.recv().unwrap(), None);
 }
@@ -402,8 +559,9 @@ fn a_surviving_descendant_does_not_prevent_session_exit() {
     parent.write_all(b"q").unwrap();
     loop {
         match session.recv_timeout(DEADLINE).unwrap().unwrap() {
-            PendingEvent::Data(data) => text.push_str(&data),
-            PendingEvent::Exit(exit) => {
+            SessionEvent::Data(data) => text.push_str(&data),
+            SessionEvent::Writable => panic!("unrequested writable notification"),
+            SessionEvent::Exit(exit) => {
                 assert_eq!(exit, exit_event(7, Some(0)));
                 break;
             }
@@ -447,9 +605,15 @@ fn the_pipe_receives_data_then_exit_with_its_original_walker_rules() {
     let pid = session.pid();
     let mut pipe = Pipe::new();
     assert_eq!(pipe.start(pid), 1);
-    assert_eq!(session.enqueue_next(&mut pipe).unwrap(), Some(true));
-    assert_eq!(session.enqueue_next(&mut pipe).unwrap(), Some(false));
-    assert_eq!(session.enqueue_next(&mut pipe).unwrap(), None);
+    for expected in [true, false] {
+        let event = match session.recv_timeout(DEADLINE).unwrap().unwrap() {
+            SessionEvent::Data(data) => PendingEvent::Data(data),
+            SessionEvent::Exit(exit) => PendingEvent::Exit(exit),
+            SessionEvent::Writable => panic!("unrequested writable notification"),
+        };
+        assert_eq!(pipe.enqueue(pid, event), expected);
+    }
+    assert_eq!(session.recv().unwrap(), None);
     assert_eq!(
         pipe.drain_next(pid, identity),
         Some(Delivery::Output {

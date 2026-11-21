@@ -207,6 +207,17 @@ impl NativePtyProcess {
         }
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(super) fn input_descriptor(&self) -> io::Result<std::os::fd::OwnedFd> {
+        use std::os::fd::BorrowedFd;
+
+        let fd = self
+            .master
+            .as_raw_fd()
+            .ok_or_else(|| io::Error::from(io::ErrorKind::Unsupported))?;
+        unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned()
+    }
+
     /// Takes the two numbers in the order the shipped interface uses them, so the swap stays
     /// inside [`pty_size`].
     pub fn resize(&mut self, cols: u32, rows: u32) -> io::Result<()> {

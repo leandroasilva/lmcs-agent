@@ -3,26 +3,37 @@ use std::sync::mpsc::{self, Receiver};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
+use crate::Spawner;
 use crate::exit_drain::{DrainAction, ExitDrain};
 use crate::native_pty::{NativePtyProcess, NativePtySpawner, wait_child};
 use crate::node_pty::{PtyExitEvent, spawn_error};
 use crate::reader::ReaderWorker;
+use crate::readiness::WritableWorker;
 use crate::spawn::{PtySpawnError, PtySpawnInput, SpawnCause};
-use crate::{PendingEvent, Pipe, Spawner};
 
 const QUEUED_EVENTS: usize = 64;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum SessionEvent {
+    Data(String),
+    Exit(PtyExitEvent),
+    /// A one-shot retry hint, not a guarantee that the next write cannot return WouldBlock.
+    Writable,
+}
 
 enum Input {
     Data(String),
     ReaderClosed,
     ChildReady(io::Result<()>),
+    Writable(io::Result<()>),
 }
 
-/// Owns the child and both workers; dropping the session terminates and reaps the child.
+/// Owns the child and its workers; dropping the session terminates and reaps the child.
 pub struct PtySession {
     pid: u32,
     process: Option<NativePtyProcess>,
     reader: Option<ReaderWorker>,
+    writable: Option<WritableWorker>,
     observer: Option<JoinHandle<()>>,
     receiver: Option<Receiver<Input>>,
     drain: ExitDrain,
@@ -42,6 +53,7 @@ impl PtySession {
             pid,
             process: Some(process),
             reader: None,
+            writable: None,
             observer: None,
             receiver: Some(receiver),
             drain: ExitDrain::new(),
@@ -58,6 +70,12 @@ impl PtySession {
                 },
             )
         })?);
+        let writable = sender.clone();
+        session.writable = Some(WritableWorker::spawn(
+            pid,
+            session.process_mut()?.input_descriptor()?,
+            move |result| writable.send(Input::Writable(result)).is_ok(),
+        )?);
         session.observer = Some(
             thread::Builder::new()
                 .name(format!("pty-exit-{pid}"))
@@ -78,6 +96,14 @@ impl PtySession {
         self.process_mut()?.try_write(data)
     }
 
+    /// After a partial write or WouldBlock, request one Writable event; repeated requests coalesce.
+    pub fn request_writable(&mut self) -> io::Result<()> {
+        self.writable
+            .as_mut()
+            .ok_or(io::ErrorKind::NotConnected)?
+            .arm()
+    }
+
     pub fn resize(&mut self, cols: u32, rows: u32) -> io::Result<()> {
         self.process_mut()?.resize(cols, rows)
     }
@@ -90,19 +116,15 @@ impl PtySession {
         }
     }
 
-    pub fn recv(&mut self) -> io::Result<Option<PendingEvent>> {
+    pub fn recv(&mut self) -> io::Result<Option<SessionEvent>> {
         self.receive(None)
     }
 
-    pub fn recv_timeout(&mut self, timeout: Duration) -> io::Result<Option<PendingEvent>> {
+    pub fn recv_timeout(&mut self, timeout: Duration) -> io::Result<Option<SessionEvent>> {
         self.receive(Some(Instant::now() + timeout))
     }
 
-    pub fn enqueue_next(&mut self, pipe: &mut Pipe) -> io::Result<Option<bool>> {
-        Ok(self.recv()?.map(|event| pipe.enqueue(self.pid, event)))
-    }
-
-    /// Discards unread events, terminates the child, closes the PTY and joins both workers.
+    /// Discards unread events, terminates the child, closes the PTY and joins its workers.
     pub fn cancel(mut self) -> io::Result<()> {
         self.stop()
     }
@@ -113,7 +135,7 @@ impl PtySession {
             .ok_or_else(|| io::ErrorKind::NotConnected.into())
     }
 
-    fn receive(&mut self, deadline: Option<Instant>) -> io::Result<Option<PendingEvent>> {
+    fn receive(&mut self, deadline: Option<Instant>) -> io::Result<Option<SessionEvent>> {
         let result = self.receive_inner(deadline);
         if result
             .as_ref()
@@ -124,7 +146,7 @@ impl PtySession {
         result
     }
 
-    fn receive_inner(&mut self, deadline: Option<Instant>) -> io::Result<Option<PendingEvent>> {
+    fn receive_inner(&mut self, deadline: Option<Instant>) -> io::Result<Option<SessionEvent>> {
         loop {
             if self.receiver.is_none() {
                 return Ok(None);
@@ -160,7 +182,12 @@ impl PtySession {
                     .map_err(|_| io::Error::from(io::ErrorKind::UnexpectedEof))?,
             };
             let action = match event {
-                Input::Data(data) => return Ok(Some(PendingEvent::Data(data))),
+                Input::Data(data) => return Ok(Some(SessionEvent::Data(data))),
+                Input::Writable(result) => {
+                    self.writable.as_mut().unwrap().delivered();
+                    result?;
+                    return Ok(Some(SessionEvent::Writable));
+                }
                 Input::ReaderClosed => {
                     if let Some(mut reader) = self.reader.take() {
                         reader.join()?;
@@ -180,9 +207,9 @@ impl PtySession {
         }
     }
 
-    fn finish(&mut self, exit: PtyExitEvent) -> io::Result<Option<PendingEvent>> {
+    fn finish(&mut self, exit: PtyExitEvent) -> io::Result<Option<SessionEvent>> {
         self.stop()?;
-        Ok(Some(PendingEvent::Exit(exit)))
+        Ok(Some(SessionEvent::Exit(exit)))
     }
 
     fn join_observer(&mut self) -> io::Result<()> {
@@ -206,6 +233,11 @@ impl PtySession {
             .take()
             .map(|mut reader| reader.stop())
             .transpose();
+        let writable = self
+            .writable
+            .take()
+            .map(|mut writable| writable.stop())
+            .transpose();
         // macOS can hold wait4 while unread PTY output remains; close before waiting or joining.
         let child = self
             .process
@@ -218,6 +250,7 @@ impl PtySession {
             child.and_then(|child| child.map(|mut child| wait_child(&mut *child)).transpose());
         signaled?;
         reader?;
+        writable?;
         observer?;
         reaped.map(|_| ())
     }
@@ -265,6 +298,7 @@ mod tests {
             pid: 7,
             process: None,
             reader: None,
+            writable: None,
             observer: None,
             receiver: Some(receiver),
             drain: ExitDrain::new(),
@@ -292,14 +326,14 @@ mod tests {
         writer.write_all(b"prefix\xc3").unwrap();
         assert_eq!(
             session.recv_timeout(Duration::from_secs(5)).unwrap(),
-            Some(PendingEvent::Data("prefix".to_string()))
+            Some(SessionEvent::Data("prefix".to_string()))
         );
         let start = Instant::now();
         let exit = exit_event(7, Some(0));
         session.drain.child_exited(exit, start);
         assert_eq!(
             session.recv_timeout(Duration::from_secs(5)).unwrap(),
-            Some(PendingEvent::Exit(exit))
+            Some(SessionEvent::Exit(exit))
         );
         assert!(start.elapsed() >= Duration::from_millis(200));
         assert!(session.reader.is_none());
@@ -322,10 +356,10 @@ mod tests {
         for index in 0..QUEUED_EVENTS - 1 {
             assert_eq!(
                 session.recv().unwrap(),
-                Some(PendingEvent::Data(index.to_string()))
+                Some(SessionEvent::Data(index.to_string()))
             );
         }
-        assert_eq!(session.recv().unwrap(), Some(PendingEvent::Exit(exit)));
+        assert_eq!(session.recv().unwrap(), Some(SessionEvent::Exit(exit)));
         assert_eq!(session.recv().unwrap(), None);
         assert!(sender.send(Input::Data("after".to_string())).is_err());
     }
@@ -366,12 +400,12 @@ mod tests {
         for _ in 0..=QUEUED_EVENTS {
             assert_eq!(
                 session.recv_timeout(Duration::from_secs(5)).unwrap(),
-                Some(PendingEvent::Data("x".to_string()))
+                Some(SessionEvent::Data("x".to_string()))
             );
         }
         assert_eq!(
             session.recv_timeout(Duration::from_secs(5)).unwrap(),
-            Some(PendingEvent::Exit(exit))
+            Some(SessionEvent::Exit(exit))
         );
         assert!(session.reader.is_none());
         assert_eq!(session.recv().unwrap(), None);
@@ -433,7 +467,7 @@ mod tests {
         }));
         assert_eq!(
             session.recv().unwrap(),
-            Some(PendingEvent::Data("before".to_string()))
+            Some(SessionEvent::Data("before".to_string()))
         );
         assert_eq!(
             session.recv().unwrap_err().kind(),
@@ -442,6 +476,68 @@ mod tests {
         assert!(finished.load(Ordering::SeqCst));
         assert!(session.observer.is_none());
         assert_eq!(session.recv().unwrap(), None);
+    }
+
+    #[test]
+    fn writable_observer_errors_follow_prior_output_and_join_before_returning() {
+        let (source, _peer) = UnixStream::pair().unwrap();
+        source.set_nonblocking(true).unwrap();
+        let (sender, receiver) = mpsc::sync_channel(QUEUED_EVENTS);
+        sender.send(Input::Data("before".to_string())).unwrap();
+        let mut session = empty_session(receiver);
+        session.writable = Some(
+            WritableWorker::spawn(7, source.into(), move |_| {
+                sender
+                    .send(Input::Writable(Err(io::ErrorKind::PermissionDenied.into())))
+                    .is_ok()
+            })
+            .unwrap(),
+        );
+        session.request_writable().unwrap();
+        assert_eq!(
+            session.recv_timeout(Duration::from_secs(5)).unwrap(),
+            Some(SessionEvent::Data("before".to_string()))
+        );
+        assert_eq!(
+            session
+                .recv_timeout(Duration::from_secs(5))
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::PermissionDenied
+        );
+        assert!(session.writable.is_none());
+        assert_eq!(session.recv().unwrap(), None);
+    }
+
+    #[test]
+    fn cancellation_disconnects_a_full_shared_queue_before_joining_writable_observation() {
+        let (source, _peer) = UnixStream::pair().unwrap();
+        source.set_nonblocking(true).unwrap();
+        let (sender, receiver) = mpsc::sync_channel(QUEUED_EVENTS);
+        for _ in 0..QUEUED_EVENTS {
+            sender.send(Input::Data("queued".to_string())).unwrap();
+        }
+        let (entered, receipt) = mpsc::channel();
+        let mut session = empty_session(receiver);
+        session.writable = Some(
+            WritableWorker::spawn(7, source.into(), move |result| {
+                entered.send(()).unwrap();
+                assert!(sender.send(Input::Writable(result)).is_err());
+                false
+            })
+            .unwrap(),
+        );
+        session.request_writable().unwrap();
+        receipt.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (done, completion) = mpsc::channel();
+        let stopper = thread::spawn(move || {
+            done.send(session.cancel()).unwrap();
+        });
+        completion
+            .recv_timeout(Duration::from_secs(5))
+            .expect("full queue stalled writable cancellation")
+            .unwrap();
+        stopper.join().unwrap();
     }
 
     #[test]
