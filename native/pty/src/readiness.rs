@@ -11,26 +11,6 @@ pub(super) struct WritableWorker {
     armed: bool,
 }
 
-/// macOS `UnixStream::pair` has no `SOCK_CLOEXEC`, so a descriptor the manager keeps for itself would
-/// survive the PTY spawn and stay open in the user's shell — and hold the other end of the pair away
-/// from EOF for as long as that child lives.
-pub(crate) fn set_cloexec(fd: RawFd) -> io::Result<()> {
-    if unsafe { libc::fcntl(fd, libc::F_SETFD, libc::FD_CLOEXEC) } < 0 {
-        return Err(io::Error::last_os_error());
-    }
-    Ok(())
-}
-
-/// A socketpair whose ends a spawned child cannot inherit.
-pub(crate) fn cloexec_pair() -> io::Result<(std::os::unix::net::UnixStream, std::os::unix::net::UnixStream)>
-{
-    use std::os::fd::AsRawFd;
-    let (left, right) = std::os::unix::net::UnixStream::pair()?;
-    set_cloexec(left.as_raw_fd())?;
-    set_cloexec(right.as_raw_fd())?;
-    Ok((left, right))
-}
-
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 impl WritableWorker {
     pub(super) fn spawn(
@@ -41,7 +21,7 @@ impl WritableWorker {
         use std::os::fd::AsRawFd;
         use std::os::unix::net::UnixStream;
 
-        let (wake, cancellation) = cloexec_pair()?;
+        let (wake, cancellation) = UnixStream::pair()?;
         let mut readiness = Readiness::new(fd.as_raw_fd(), Some(cancellation.as_raw_fd()), true)?;
         let (requests, receiver) = std::sync::mpsc::channel();
         let worker = std::thread::Builder::new()
@@ -267,6 +247,7 @@ impl Readiness {
 mod tests {
     use super::*;
     use std::io::{Read, Write};
+    use std::os::fd::AsRawFd;
     use std::os::unix::net::UnixStream;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, mpsc};
@@ -315,13 +296,69 @@ mod tests {
         }
     }
 
+    fn drained(peer: &mut UnixStream) -> usize {
+        let mut buffer = [0; 8192];
+        let mut read = 0;
+        loop {
+            match peer.read(&mut buffer) {
+                Ok(0) => return read,
+                Ok(count) => read += count,
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => return read,
+                Err(error) => panic!("socket drain failed: {error}"),
+            }
+        }
+    }
+
+    // The file a descriptor points at, once the descriptor is closed there is no file to name.
+    // The two ends of a socketpair are separate files on this platform, which is what makes an
+    // identity rather than a liveness check.
+    fn descriptor_file(fd: RawFd) -> Option<i64> {
+        let mut stat: libc::stat = unsafe { std::mem::zeroed() };
+        if unsafe { libc::fstat(fd, &mut stat) } < 0 {
+            return None;
+        }
+        Some(stat.st_ino as i64)
+    }
+
+    fn holds(fd: RawFd, inode: i64) -> bool {
+        descriptor_file(fd) == Some(inode)
+    }
+
+    // A peer's EOF is not a usable witness for release: a fork anywhere in this binary — the PTY
+    // sessions do spawn — copies every open descriptor into the child until its exec lands, so the
+    // read answers that window instead of the worker. Naming the file survives that, and survives a
+    // concurrent open taking over the freed number, because the steal names a different socket.
+    fn assert_released(fd: RawFd, inode: i64) {
+        assert!(!holds(fd, inode), "worker retained its descriptor {fd}");
+    }
+
+    fn witness(descriptor: &UnixStream) -> (RawFd, i64) {
+        let fd = descriptor.as_raw_fd();
+        (
+            fd,
+            descriptor_file(fd).expect("the pair never opened a descriptor"),
+        )
+    }
+
+    #[test]
+    fn the_witness_tells_a_held_descriptor_from_a_released_one() {
+        // Calibration: a witness that never names a held descriptor would quiet every release check.
+        let (source, _peer) = nonblocking_pair();
+        let (fd, inode) = witness(&source);
+        assert!(holds(fd, inode));
+        drop(source);
+        assert!(!holds(fd, inode));
+    }
+
     #[test]
     fn writable_notifications_are_one_shot_coalesced_and_rearmed_without_readable_data() {
-        let (mut source, mut peer) = nonblocking_pair();
+        let (mut source, _peer) = nonblocking_pair();
         assert_eq!(
             source.read(&mut [0]).unwrap_err().kind(),
             io::ErrorKind::WouldBlock
         );
+        let (owned, inode) = witness(&source);
         let (sender, receipts) = mpsc::channel();
         let mut worker = WritableWorker::spawn(7, source.into(), move |result| {
             sender.send((thread::current().id(), result)).is_ok()
@@ -356,12 +393,13 @@ mod tests {
         drop(receipts);
         stop(worker);
         assert!(matches!(end, Err(mpsc::RecvTimeoutError::Disconnected)));
-        assert_eq!(peer.read(&mut [0]).unwrap(), 0, "worker retained its fd");
+        assert_released(owned, inode);
     }
 
     #[test]
     fn stop_wakes_an_idle_request_wait_and_closes_the_owned_descriptor() {
-        let (source, mut peer) = nonblocking_pair();
+        let (source, _peer) = nonblocking_pair();
+        let (owned, inode) = witness(&source);
         let (sender, receiver) = mpsc::channel();
         let calls = Arc::new(AtomicUsize::new(0));
         let emitted = Arc::clone(&calls);
@@ -374,7 +412,7 @@ mod tests {
         drop(receiver);
         stop(worker);
         assert_eq!(calls.load(Ordering::Relaxed), 0);
-        assert_eq!(peer.read(&mut [0]).unwrap(), 0, "worker retained its fd");
+        assert_released(owned, inode);
     }
 
     #[test]
@@ -386,6 +424,7 @@ mod tests {
             source.write(&[0]).unwrap_err().kind(),
             io::ErrorKind::WouldBlock
         );
+        let (owned, inode) = witness(&source);
         let (sender, receiver) = mpsc::channel();
         let calls = Arc::new(AtomicUsize::new(0));
         let emitted = Arc::clone(&calls);
@@ -399,14 +438,14 @@ mod tests {
         drop(receiver);
         stop(worker);
         assert_eq!(calls.load(Ordering::Relaxed), 0);
-        let mut buffered = Vec::new();
-        // EOF, rather than WouldBlock, also proves stop released the owned fd.
-        assert_eq!(peer.read_to_end(&mut buffered).unwrap(), written);
+        assert_eq!(drained(&mut peer), written, "stop lost the buffered output");
+        assert_released(owned, inode);
     }
 
     #[test]
     fn disconnecting_a_full_callback_queue_before_stop_unblocks_and_joins_the_callback() {
-        let (source, mut peer) = nonblocking_pair();
+        let (source, _peer) = nonblocking_pair();
+        let (owned, inode) = witness(&source);
         let (sender, receiver) = mpsc::sync_channel(1);
         sender.send(Ok(())).unwrap();
         let (entered, entry) = mpsc::channel();
@@ -427,6 +466,6 @@ mod tests {
         stop(worker);
         assert!(!exit.try_recv().unwrap());
         assert_eq!(exit.try_recv(), Err(mpsc::TryRecvError::Disconnected));
-        assert_eq!(peer.read(&mut [0]).unwrap(), 0, "worker retained its fd");
+        assert_released(owned, inode);
     }
 }
