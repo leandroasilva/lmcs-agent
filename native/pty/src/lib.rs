@@ -15,6 +15,7 @@
 pub mod env;
 pub mod exit_drain;
 pub mod jsstr;
+pub mod lifecycle;
 pub mod native_pty;
 pub mod node_pty;
 pub mod output;
