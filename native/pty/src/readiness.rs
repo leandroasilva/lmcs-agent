@@ -11,6 +11,26 @@ pub(super) struct WritableWorker {
     armed: bool,
 }
 
+/// macOS `UnixStream::pair` has no `SOCK_CLOEXEC`, so a descriptor the manager keeps for itself would
+/// survive the PTY spawn and stay open in the user's shell — and hold the other end of the pair away
+/// from EOF for as long as that child lives.
+pub(crate) fn set_cloexec(fd: RawFd) -> io::Result<()> {
+    if unsafe { libc::fcntl(fd, libc::F_SETFD, libc::FD_CLOEXEC) } < 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+/// A socketpair whose ends a spawned child cannot inherit.
+pub(crate) fn cloexec_pair() -> io::Result<(std::os::unix::net::UnixStream, std::os::unix::net::UnixStream)>
+{
+    use std::os::fd::AsRawFd;
+    let (left, right) = std::os::unix::net::UnixStream::pair()?;
+    set_cloexec(left.as_raw_fd())?;
+    set_cloexec(right.as_raw_fd())?;
+    Ok((left, right))
+}
+
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 impl WritableWorker {
     pub(super) fn spawn(
@@ -21,7 +41,7 @@ impl WritableWorker {
         use std::os::fd::AsRawFd;
         use std::os::unix::net::UnixStream;
 
-        let (wake, cancellation) = UnixStream::pair()?;
+        let (wake, cancellation) = cloexec_pair()?;
         let mut readiness = Readiness::new(fd.as_raw_fd(), Some(cancellation.as_raw_fd()), true)?;
         let (requests, receiver) = std::sync::mpsc::channel();
         let worker = std::thread::Builder::new()

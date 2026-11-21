@@ -392,6 +392,43 @@ mod tests {
         }
         assert_eq!(FileKind::Fifo.type_name(), "FIFO");
         assert_eq!(FileKind::from_type_name("folder"), None);
+        // A label the port never measured must fail the read-back rather than land on a real variant,
+        // which is what lets the golden tell a renamed spelling from a read one.
+        assert_eq!(StatReason::from_tag("busy"), None);
+        assert_eq!(StatReason::from_tag("PermissionDenied "), None);
+    }
+
+    #[test]
+    fn a_busy_or_looping_path_refuses_as_a_stat_error() {
+        // No traced fixture produces ELOOP or EBUSY, so these two rows of the shipped switch have
+        // their owner here rather than in the golden.
+        let eloop = if cfg!(target_os = "macos") { 62 } else { 40 };
+        for (code, reason) in [(16, "Busy"), (eloop, "BadResource")] {
+            let (tag, _, cause) =
+                refused("/srv", StatOutcome::Failed(StatReason::from_errno(code)));
+            assert_eq!(tag, "TerminalCwdStatError", "errno {code} is not ENOENT");
+            assert_eq!(cause, Some(format!("PlatformError/{reason}/stat")));
+        }
+    }
+
+    #[test]
+    fn the_verdict_reads_the_answered_stat_and_touches_nothing_else() {
+        // The shipped rule runs before the session table is read, so the verdict has to come from the
+        // outcome it was handed and never from a second look at the path.
+        let dir = std::env::temp_dir();
+        assert_eq!(
+            refused(&dir.to_string_lossy(), StatOutcome::Kind(FileKind::File)).0,
+            "TerminalCwdNotDirectoryError",
+            "a directory on disk cannot overrule the stat it was answered with"
+        );
+        assert!(
+            assert_valid_cwd("/dev/null", StatOutcome::Kind(FileKind::Directory)).is_ok(),
+            "and a character device on disk cannot overrule an answer that says directory"
+        );
+        assert!(
+            !std::fs::metadata("/dev/null").unwrap().is_dir(),
+            "the two readings disagree, which is the premise this test rests on"
+        );
     }
 
     #[test]
@@ -412,7 +449,15 @@ mod tests {
 
         let result = assert_valid_cwd_path(&dir.to_string_lossy());
         assert!(result.is_ok(), "{result:?}");
+        assert_eq!(
+            stat_cwd(&dir.to_string_lossy()),
+            StatOutcome::Kind(FileKind::Directory),
+        );
 
+        assert_eq!(
+            stat_cwd(&file.to_string_lossy()),
+            StatOutcome::Kind(FileKind::File),
+        );
         assert_eq!(
             assert_valid_cwd_path(&file.to_string_lossy())
                 .expect_err("a file must refuse")
