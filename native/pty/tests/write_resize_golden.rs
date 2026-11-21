@@ -3,62 +3,53 @@
 //! Gate: `LMCS_TERMINAL_WRITE_RESIZE_TRACE`, pointing at the output of
 //! `apps/server/scripts/terminal-write-resize-trace.ts`. Those two are the last of the nine
 //! `TerminalManager` service methods, and neither is observable on the wire by itself: no snapshot and no
-//! metadata row carries the viewport, so the capture measured the fake process's counters instead, and it
-//! read the error a refusal hands the transport field by field. This replay recomputes the same claims from
-//! the seam's own answers, so a match means the port and the shipped call agree on what the client learns
-//! and on what the shell was asked to do.
+//! metadata row carries the viewport, so the capture measured the fake process's counters instead and read
+//! the refusal a call hands the transport field by field. This replay recomputes the capture's `A` claims
+//! from the seam's own answers, so a match means the port and the shipped call agree on what the client
+//! learns and on what the shell was asked to do. A case added to the script has to be scheduled below,
+//! because `run` panics on a name it has no schedule for.
 //!
-//! The claims are the expectations: every `A` row is recomputed here from the replay's own observation and
-//! compared in id, verdict and detail, and a case added to the script has to be scheduled below.
+//! Claims are compared by id rather than by list order, and the pids come from the capture's own `M` rows
+//! rather than from a constant, so the two refusals that interpolate a pid are compared against the number
+//! the shipped run named.
 //!
-//! Three claims the seam cannot reproduce, each named where the replay skips it rather than quietly:
+//! Three claims the seam cannot reproduce, named here and counted at the end of the run rather than
+//! skipped quietly:
 //!
-//! - `starting-resize-waits-for-the-lock` and `write-does-not-take-the-thread-lock` are about the shipped
+//! - `starting-resize-waits-for-the-lock` and `write-does-not-take-the-thread-lock` measure the shipped
 //!   `withThreadLock` asymmetry (`write` at Manager.ts:2869 takes none, `resize` at :2908 takes one). The
-//!   seam has one owner at a time, so no interleaving of its calls can order two sequence numbers.
+//!   seam has one owner at a time, so no schedule of its calls can order two sequence numbers. The replay
+//!   asserts what the same window says about the records instead, as `starting-resize-is-silent`.
 //! - `write-error-renders-cause` reads the JavaScript rendering of whatever the library threw
-//!   (`Error: device full`). The port renders an I/O failure its own way
-//!   (`PlatformError/<reason>/write`), which `Failure::cause` documents as a divergence; the tag, the
-//!   message and the fields — the three halves the client reads — are compared.
+//!   (`Error: device full`). The port renders an I/O failure its own way, which `Failure::cause` declares
+//!   as a divergence; the tag, the message and the fields — the halves the client reads — are compared.
 
 use std::cell::RefCell;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use lmcs_pty::lifecycle::{Exit, LaunchAsk, Reopen, Size, Viewport, Worktree};
-use lmcs_pty::manager::{Failure, Manager, Open, Opened};
+use lmcs_pty::manager::{Failure, LogLine, Manager, Open, Opened};
 use lmcs_pty::stream::{Frame, Subscriber};
 use lmcs_terminal_history::{DEFAULT_TERMINAL_ID, HistoryPersistence};
 
 type Row = Vec<String>;
 
-/// One child, as the capture's fake saw it: the counters are the measurement, and the two throw flags are
-/// how the capture reached the two refusals a real `ioctl` gives.
-#[derive(Clone, Debug, Default)]
-struct Child {
-    writes: usize,
-    last_write: String,
-    resizes: usize,
-    last_cols: i64,
-    last_rows: i64,
-    kills: usize,
-    throw_write: bool,
-    throw_resize: bool,
-}
+/// The claims the seam has no way to make, for the reasons in the header.
+const UNREPRODUCIBLE: [&str; 3] = [
+    "starting-resize-waits-for-the-lock",
+    "write-does-not-take-the-thread-lock",
+    "write-error-renders-cause",
+];
 
-impl Child {
-    fn new() -> Self {
-        Self {
-            last_cols: -1,
-            last_rows: -1,
-            ..Self::default()
-        }
-    }
-}
-
+/// One case as the capture wrote it: the ids its steps used, the pids its children had, and the claims.
 struct Expected {
     name: String,
-    /// `(id, verdict, detail)`, in the order the script wrote them.
+    threads: Vec<String>,
+    pid: u32,
     claims: Vec<Row>,
 }
 
@@ -75,13 +66,10 @@ fn unhex(value: &str) -> String {
 }
 
 fn hex(value: &str) -> String {
-    value
-        .bytes()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>()
+    value.bytes().map(|byte| format!("{byte:02x}")).collect()
 }
 
-/// `-` is the capture's absent value; every other field is its data as UTF-8 hex.
+/// `-` is the capture's absent value; every other field of its rows is data as UTF-8 hex.
 fn text(value: &str) -> String {
     match value {
         "-" => "-".to_owned(),
@@ -92,7 +80,7 @@ fn text(value: &str) -> String {
 fn parse(trace: &Path) -> (String, Vec<Expected>) {
     let mut default_terminal = String::new();
     let mut cases: Vec<Expected> = Vec::new();
-    let mut building: Option<Expected> = None;
+    let mut building: Option<(String, Vec<String>, Vec<u32>, Vec<Row>)> = None;
     for line in fs::read_to_string(trace).expect("trace file").lines() {
         let fields: Vec<&str> = line.split('\t').collect();
         match fields[0] {
@@ -102,20 +90,37 @@ fn parse(trace: &Path) -> (String, Vec<Expected>) {
                     building.is_none(),
                     "a case opened before the last one closed"
                 );
-                building = Some(Expected {
-                    name: unhex(fields[1]),
-                    claims: Vec::new(),
-                });
+                building = Some((
+                    unhex(fields[1]),
+                    unhex(fields[2]).split(',').map(str::to_owned).collect(),
+                    Vec::new(),
+                    Vec::new(),
+                ));
+            }
+            // An `M` row is `(view, seq, thread, terminal, status, pid, stamp)` and a pid of `-` is a
+            // record that never had a process.
+            "M" => {
+                let building = building.as_mut().expect("row outside a case");
+                if let Ok(pid) = fields[6].parse::<u32>() {
+                    building.2.push(pid);
+                }
             }
             "A" => building
                 .as_mut()
                 .expect("claim outside a case")
-                .claims
+                .3
                 .push(vec![unhex(fields[1]), fields[2].to_owned(), unhex(fields[3])]),
             "X" => {
-                let case = building.take().expect("case end without a case");
-                assert_eq!(case.name, text(fields[1]));
-                cases.push(case);
+                let (name, threads, pids, claims) =
+                    building.take().expect("case end without a case");
+                assert_eq!(name, text(fields[1]));
+                cases.push(Expected {
+                    name,
+                    threads,
+                    // The capture's pids ascend one per spawn, so the lowest is the first child's.
+                    pid: pids.iter().copied().min().unwrap_or(7400),
+                    claims,
+                });
             }
             "Z" => {
                 assert_eq!(fields[3], "end");
@@ -131,47 +136,7 @@ fn parse(trace: &Path) -> (String, Vec<Expected>) {
     (default_terminal, cases)
 }
 
-/// The view row the capture's `stampLabel` produced: a stamp's rank is the order it was first seen, so a
-/// record re-stamped before anyone looked costs no new rank.
-struct Stamps {
-    seen: Vec<String>,
-}
-
-impl Stamps {
-    fn rank(&mut self, stamp: &str) -> usize {
-        if let Some(at) = self.seen.iter().position(|seen| seen == stamp) {
-            return at + 1;
-        }
-        self.seen.push(stamp.to_owned());
-        self.seen.len()
-    }
-}
-
-/// The seam, its one child per terminal, and everything the claims read.
-struct Replay {
-    manager: Manager,
-    logs: TempDir,
-    worker: HistoryPersistence,
-    threads: Vec<String>,
-    dir: PathBuf,
-    clock: RefCell<usize>,
-    stamps: RefCell<Stamps>,
-    /// One entry per child the replay started, in pid order.
-    children: Vec<Child>,
-    /// Snapshots of the child under test, taken where the capture took a `W` row.
-    samples: Vec<Child>,
-    /// The published events, counted the way the capture counted its `subscribe` callbacks.
-    events: Vec<String>,
-    /// The `view` steps, each the rows the manager sorted.
-    views: Vec<Vec<Row>>,
-    /// `(kind, status)` for every call, in the order the capture wrote its `B` rows.
-    boundaries: Vec<(String, String)>,
-    /// The refusal the last call handed the transport.
-    failure: Option<Failure>,
-    spawns: usize,
-    metadata: Subscriber,
-}
-
+/// A directory removed on drop, so a failing assertion leaves nothing for the next run to trip over.
 struct TempDir(PathBuf);
 
 impl TempDir {
@@ -189,29 +154,130 @@ impl Drop for TempDir {
     }
 }
 
+/// The child, as the capture's fake saw it. The counters are the measurement, and the two throw flags are
+/// how the capture reached the refusals a real `ioctl` gives.
+#[derive(Clone, Debug, Default)]
+struct Child {
+    writes: usize,
+    last_write: String,
+    resizes: usize,
+    last_cols: i64,
+    last_rows: i64,
+    throw_write: bool,
+    throw_resize: bool,
+}
+
+fn fresh() -> Child {
+    Child {
+        last_cols: -1,
+        last_rows: -1,
+        ..Child::default()
+    }
+}
+
+fn throw(reason: &str) -> io::Error {
+    io::Error::other(reason.to_owned())
+}
+
+/// The library call, held by the closure the seam asks for. The first child is the one every traced case
+/// names, because no traced schedule writes to a terminal other than the first.
+fn child_write(children: &Rc<RefCell<Vec<Child>>>, data: &str) -> Result<(), io::Error> {
+    let mut children = children.borrow_mut();
+    let Some(child) = children.first_mut() else {
+        return Ok(());
+    };
+    child.writes += 1;
+    if child.throw_write {
+        return Err(throw("device full"));
+    }
+    child.last_write = data.to_owned();
+    Ok(())
+}
+
+fn child_resize(children: &Rc<RefCell<Vec<Child>>>, size: Size) -> Result<(), io::Error> {
+    let mut children = children.borrow_mut();
+    let Some(child) = children.first_mut() else {
+        return Ok(());
+    };
+    child.resizes += 1;
+    child.last_cols = i64::from(size.cols);
+    child.last_rows = i64::from(size.rows);
+    if child.throw_resize {
+        return Err(throw("ioctl failed"));
+    }
+    Ok(())
+}
+
+/// A view row carries its stamp as the capture's rank, so "the stamp moved" is a rank comparison.
+fn rank_of(stamp: &str) -> usize {
+    stamp.parse().expect("a stamp rank")
+}
+
+fn peek(children: &Rc<RefCell<Vec<Child>>>) -> Child {
+    children
+        .borrow()
+        .first()
+        .cloned()
+        .unwrap_or_else(fresh)
+}
+
+/// The seam, the children it was told about, and everything the claims read.
+struct Replay {
+    logs: TempDir,
+    worker: HistoryPersistence,
+    manager: Manager,
+    threads: Vec<String>,
+    dir: PathBuf,
+    children: Rc<RefCell<Vec<Child>>>,
+    /// The child counters as each call left them, which is where the capture took its `W` rows.
+    samples: Vec<Child>,
+    /// Published events, counted the way the capture counted its `subscribe` callbacks: the metadata
+    /// subscriber sees exactly one frame per event.
+    events: usize,
+    views: Vec<Vec<Row>>,
+    /// One entry per client call, holding what the capture's return boundary said.
+    calls: Vec<(String, String)>,
+    failure: Option<Failure>,
+    spawns: usize,
+    clock: usize,
+    stamps: Vec<String>,
+    fail_spawn: bool,
+    park: bool,
+    pid: u32,
+    metadata: Subscriber,
+}
+
 impl Replay {
-    fn new(name: &str, threads: &[&str]) -> Self {
+    fn new(name: &str, threads: &[String], pid: u32) -> Self {
         let logs = TempDir::new(name);
         let dir = logs.0.join("cwd");
         fs::create_dir_all(&dir).unwrap();
         let worker = HistoryPersistence::start(logs.0.clone(), drop).unwrap();
-        let mut manager = Manager::new(&logs.0, worker.handle(), drop);
+        let mut manager = Manager::new(&logs.0, worker.handle(), move |_: LogLine| {});
+        // The capture subscribed before its first step, so every event of the case was delivered live
+        // rather than held for the initial view. The handshake's own frame is not an event.
         let metadata = manager.subscribe_metadata();
+        manager
+            .opened_metadata(metadata)
+            .expect("a metadata stream that can be handed its view");
         Self {
-            manager,
             logs,
             worker,
-            threads: threads.iter().map(|thread| (*thread).to_owned()).collect(),
+            manager,
+            threads: threads.to_vec(),
             dir,
-            clock: RefCell::new(0),
-            stamps: RefCell::new(Stamps { seen: Vec::new() }),
-            children: Vec::new(),
+            children: Rc::new(RefCell::new(Vec::new())),
             samples: Vec::new(),
-            events: Vec::new(),
+            events: 0,
             views: Vec::new(),
-            boundaries: Vec::new(),
+            calls: Vec::new(),
             failure: None,
             spawns: 0,
+            clock: 0,
+            stamps: Vec::new(),
+            fail_spawn: false,
+            park: false,
+            pid,
             metadata,
         }
     }
@@ -220,50 +286,56 @@ impl Replay {
         self.threads[index].clone()
     }
 
-    /// The capture's `Date.now` hijack: a fresh ISO text per read.
-    fn stamp(&self) -> String {
-        let mut clock = self.clock.borrow_mut();
-        *clock += 1;
-        format!("2026-01-01T00:00:00.00{clock}Z")
+    /// The capture's hijacked clock: a fresh ISO text per read, ascending as text so the sessions list
+    /// sorts the way the shipped one does.
+    fn stamp(&mut self) -> String {
+        self.clock += 1;
+        format!("2026-01-01T00:00:{:02}.000Z", self.clock)
     }
 
-    fn ask(&self, thread: usize) -> LaunchAsk {
-        LaunchAsk {
-            cwd: self.dir.to_string_lossy().into_owned(),
-            worktree: Worktree::Unnamed,
-            env: None,
+    /// The capture's `stampLabel`: a stamp's rank is the order it was first seen, so a record re-stamped
+    /// before anyone looked costs no new rank.
+    fn rank(&mut self, stamp: &str) -> usize {
+        if let Some(at) = self.stamps.iter().position(|seen| seen == stamp) {
+            return at + 1;
         }
+        self.stamps.push(stamp.to_owned());
+        self.stamps.len()
     }
 
-    fn note(&mut self, event: &lmcs_pty::stream::Publication) {
-        let _ = event;
-    }
-
-    /// The frames a call handed back are the capture's `O` rows: one per published event. The metadata
-    /// subscriber sees exactly one frame per event, which is what makes the count comparable.
     fn count(&mut self, frames: &[(Subscriber, Frame)]) {
-        for (subscriber, frame) in frames {
-            if subscriber != &self.metadata {
-                continue;
-            }
-            match frame {
-                Frame::Metadata(_) => self
-                    .events
-                    .push(frame.kind().strip_prefix("terminal").unwrap_or("event").to_owned()),
-                Frame::Attach(_) => {}
-            }
-        }
+        self.events += frames
+            .iter()
+            .filter(|(subscriber, _)| subscriber == &self.metadata)
+            .count();
     }
 
-    fn ask_size(&self, asked: Option<(u32, u32)>) -> Option<Size> {
+    fn viewport(&self, asked: Option<(u32, u32)>) -> Option<Size> {
         asked.map(|(cols, rows)| Size { cols, rows })
     }
 
-    /// `open`, then the shell the caller owes it. The capture's fake answered every spawn with a new pid
-    /// and never failed unless `failSpawn` was on, so the pid the record carries is the one the next
-    /// child index names.
+    /// `open` and the shell its caller owes it. A parked open (the capture's `starting` case) starts in
+    /// [`Replay::start_child`] instead, which is what leaves the record `starting` across the calls.
     fn open(&mut self, id: &str, thread: usize, terminal: &str, asked: Option<(u32, u32)>) {
-        self.boundaries.push((format!("open:{id}"), "-".to_owned()));
+        let created = self.open_record(id, thread, terminal, asked);
+        if created && self.fail_spawn {
+            let thread_id = self.thread(thread);
+            self.fail_spawn(&thread_id, terminal, asked);
+        } else if created {
+            let thread_id = self.thread(thread);
+            self.start_child(&thread_id, terminal, asked);
+        }
+    }
+
+    /// The seam's half of `openLocked`, with the viewport gate of its kept-process branch (:2626-2631)
+    /// run beside it, because that is the step the capture's follow-up `open` crossed in `resize-throws`.
+    fn open_record(
+        &mut self,
+        id: &str,
+        thread: usize,
+        terminal: &str,
+        asked: Option<(u32, u32)>,
+    ) -> bool {
         let thread_id = self.thread(thread);
         let ask = LaunchAsk {
             cwd: self.dir.to_string_lossy().into_owned(),
@@ -275,219 +347,163 @@ impl Replay {
             thread_id: &thread_id,
             terminal_id: terminal,
             ask: &ask,
-            requested: self.ask_size(asked),
+            requested: self.viewport(asked),
             at: &at,
         });
-        let created = match &opened {
+        match opened {
             Ok(Opened::Created) => true,
-            Ok(Opened::Existing(Reopen::Kept)) | Ok(Opened::Existing(Reopen::Stopped { .. }))
-            | Ok(Opened::Existing(Reopen::Reset)) => {
-                self.boundaries.push((format!("open:{id}"), "ok".to_owned()));
-                self.reopen_gate(&thread_id, terminal, asked);
-                return;
+            Ok(Opened::Existing(Reopen::Kept)) => {
+                self.calls.push((format!("open:{id}"), "ok".to_owned()));
+                if let Some(asked) = self.viewport(asked) {
+                    let at = self.stamp();
+                    let children = self.children.clone();
+                    let outcome = self.manager.viewport(
+                        &thread_id,
+                        terminal,
+                        asked,
+                        &at,
+                        move |_pid, size| child_resize(&children, size),
+                    );
+                    let expected = if peek(&self.children).last_cols == i64::from(asked.cols)
+                        && peek(&self.children).last_rows == i64::from(asked.rows)
+                    {
+                        Viewport::Unchanged
+                    } else {
+                        Viewport::Applied(asked)
+                    };
+                    assert_eq!(
+                        outcome.expect("a gate whose library call succeeds"),
+                        expected,
+                        "the viewport gate answered something else for {thread}/{terminal}"
+                    );
+                }
+                false
             }
-            Ok(Opened::Existing(Reopen::Missing)) => unreachable!("the table had the record"),
+            Ok(Opened::Existing(reopen)) => {
+                panic!("the traced schedules never reopen into {reopen:?}")
+            }
             Err(failure) => {
-                self.failure = Some(Failure::Persist(io_error(failure)));
-                self.boundaries
-                    .push((format!("open:{id}"), format!("err:{}", failure.message())));
-                return;
+                self.calls.push((
+                    format!("open:{id}"),
+                    format!("err:{}", failure.tag().unwrap_or("defect")),
+                ));
+                self.failure = Some(failure);
+                false
             }
-        };
-        if !created {
-            unreachable!("the match above covers every answer");
         }
-        if self.fail_spawn {
-            let at = self.stamp();
-            let frames = self.manager.fail_start(
-                &thread_id,
-                terminal,
-                "Failed to spawn PTY: terminal-manager",
-                self.ask_size(asked),
-                &at,
-            );
-            self.count(&frames);
-            self.boundaries.push((format!("open:{id}"), "ok".to_owned()));
-            return;
-        }
+    }
+
+    /// The spawn the record was created for, reported back in as `startSession`'s success path.
+    fn start_child(&mut self, thread_id: &str, terminal: &str, asked: Option<(u32, u32)>) {
         self.spawns += 1;
-        self.children.push(Child::new());
-        let pid = self.pid();
+        let pid = self.pid + self.spawns as u32 - 1;
+        self.children.borrow_mut().push(fresh());
         let at = self.stamp();
         let frames = self
             .manager
-            .start(&thread_id, terminal, pid, self.ask_size(asked), &at);
+            .start(thread_id, terminal, pid, self.viewport(asked), &at);
         self.count(&frames);
         let stamp = self
             .manager
-            .state(&thread_id, terminal)
+            .state(thread_id, terminal)
             .expect("a started record")
             .updated_at
             .clone();
         self.rank(&stamp);
-        self.boundaries.push((format!("open:{id}"), "ok".to_owned()));
     }
 
-    /// The viewport half of `openLocked` for a record that kept its process (:2626-2631), which is the
-    /// step the capture's follow-up `open` crossed in `resize-throws`.
-    fn reopen_gate(&mut self, thread_id: &str, terminal: &str, asked: Option<(u32, u32)>) {
-        let Some((cols, rows)) = asked else { return };
+    fn fail_spawn(&mut self, thread_id: &str, terminal: &str, asked: Option<(u32, u32)>) {
         let at = self.stamp();
-        let outcome = self.manager.viewport(
+        let frames = self.manager.fail_start(
             thread_id,
             terminal,
-            Size { cols, rows },
+            "Failed to spawn PTY: terminal-manager: /bin/sh",
+            self.viewport(asked),
             &at,
-            |pid, size| self.call_resize(pid, size),
         );
-        if let Err(failure) = outcome {
-            self.failure = Some(failure);
-        }
+        self.count(&frames);
     }
 
-    fn rank(&self, stamp: &str) -> usize {
-        self.stamps.borrow_mut().rank(stamp)
-    }
-
-    fn pid(&self) -> u32 {
-        self.pid_base + self.spawns as u32 - 1
-    }
-
-    /// The child the record names, or nothing when the key belongs to no child. The capture's fake threw
-    /// an `Error`, so the port's `io::Error` stands for it.
-    fn call_write(&mut self, _pid: u32, data: &str) -> Result<(), ()> {
-        let Some(child) = self.children.first_mut() else {
-            return Ok(());
-        };
-        if child.throw_write {
-            child.writes += 1;
-            return Err(());
-        }
-        child.writes += 1;
-        child.last_write = data.to_owned();
-        Ok(())
-    }
-
-    fn call_resize(&mut self, _pid: u32, size: Size) -> Result<(), ()> {
-        let Some(child) = self.children.first_mut() else {
-            return Ok(());
-        };
-        if child.throw_resize {
-            child.resizes += 1;
-            child.last_cols = i64::from(size.cols);
-            child.last_rows = i64::from(size.rows);
-            return Err(());
-        }
-        child.resizes += 1;
-        child.last_cols = i64::from(size.cols);
-        child.last_rows = i64::from(size.rows);
-        Ok(())
-    }
-
-    fn sample(&mut self) {
-        self.samples.push(self.children.first().cloned().unwrap_or_default());
-    }
-
-    fn write(&mut self, thread: usize, terminal: &str, data: &str) {
+    fn write(&mut self, thread: usize, terminal: &str, data: &str) -> bool {
+        self.failure = None;
         let thread_id = self.thread(thread);
-        let outcome = self.manager.write(&thread_id, terminal, |pid| {
-            self
-                .call_write(pid, data)
-                .map_err(|| io_error_text("device full"))
-        });
-        match &outcome {
-            Ok(_) => self
-                .boundaries
-                .push(("write".to_owned(), "ok".to_owned())),
+        let children = self.children.clone();
+        let payload = data.to_owned();
+        let outcome = self
+            .manager
+            .write(&thread_id, terminal, move |_pid| child_write(&children, &payload));
+        let status = match &outcome {
+            Ok(_) => "ok".to_owned(),
+            Err(failure) => format!("err:{}", failure.tag().unwrap_or("defect")),
+        };
+        self.calls.push(("write".to_owned(), status));
+        match outcome {
+            Ok(_) => true,
             Err(failure) => {
-                self.boundaries.push((
-                    "write".to_owned(),
-                    format!("err:{}", failure.tag().unwrap_or("defect")),
-                ));
                 self.failure = Some(failure);
+                false
             }
         }
-        self.sample();
-        outcome
     }
 
-    fn resize(&mut self, thread: usize, terminal: &str, cols: u32, rows: u32) {
+    fn resize(&mut self, thread: usize, terminal: &str, cols: u32, rows: u32) -> bool {
+        self.failure = None;
         let thread_id = self.thread(thread);
+        let children = self.children.clone();
         let at = self.stamp();
-        let outcome = self.manager.resize(&thread_id, terminal, cols, rows, &at, |pid, size| {
-            self
-                .call_resize(pid, size)
-                .map_err(|| io_error_text("ioctl failed"))
-        });
-        match &outcome {
-            Ok(()) => self
-                .boundaries
-                .push(("resize".to_owned(), "ok".to_owned())),
+        let outcome = self.manager.resize(
+            &thread_id,
+            terminal,
+            cols,
+            rows,
+            &at,
+            move |_pid, size| child_resize(&children, size),
+        );
+        let status = match &outcome {
+            Ok(()) => "ok".to_owned(),
+            Err(failure) => format!("err:{}", failure.tag().unwrap_or("defect")),
+        };
+        self.calls.push(("resize".to_owned(), status));
+        match outcome {
+            Ok(()) => true,
             Err(failure) => {
-                self.boundaries.push((
-                    "resize".to_owned(),
-                    format!("err:{}", failure.tag().unwrap_or("defect")),
-                ));
                 self.failure = Some(failure);
+                false
             }
         }
-        self.sample();
     }
 
     fn view(&mut self) {
-        let rows = self
-            .manager
-            .view()
-            .iter()
-            .map(|row| {
-                vec![
-                    row.thread_id.clone(),
-                    row.terminal_id.clone(),
-                    row.status.as_str().to_owned(),
-                    row.pid.map(|pid| pid.to_string()).unwrap_or("-".to_owned()),
-                    self.rank(&row.updated_at).to_string(),
-                ]
-            })
-            .collect();
+        let mut rows = Vec::new();
+        for row in self.manager.view() {
+            let stamp = self.rank(&row.updated_at).to_string();
+            rows.push(vec![
+                row.thread_id.clone(),
+                row.terminal_id.clone(),
+                row.status.as_str().to_owned(),
+                row.pid.map(|pid| pid.to_string()).unwrap_or("-".to_owned()),
+                stamp,
+            ]);
+        }
         self.views.push(rows);
     }
 
-    fn fail_spawn(&mut self, on: bool) {
-        self.fail_spawn = on;
+    fn sample(&mut self) {
+        self.samples.push(peek(&self.children));
     }
 
-    fn unthrow(&mut self) {
-        if let Some(child) = self.children.first_mut() {
-            child.throw_write = false;
-            child.throw_resize = false;
-        }
+    fn set_throw(&mut self, write: bool, resize: bool) {
+        let mut children = self.children.borrow_mut();
+        let Some(child) = children.first_mut() else {
+            panic!("a case that throws has a child");
+        };
+        child.throw_write = write;
+        child.throw_resize = resize;
     }
 
-    fn throw_write(&mut self) {
-        self.children
-            .first_mut()
-            .expect("a case that throws has a child")
-            .throw_write = true;
-    }
-
-    fn throw_resize(&mut self) {
-        self.children
-            .first_mut()
-            .expect("a case that throws has a child")
-            .throw_resize = true;
-    }
-
-    /// The capture's `boundaryOf` answer for the first call of a kind whose status is not `-`.
-    fn first_status(&self, kind: &str) -> Option<&str> {
-        self.boundaries
-            .iter()
-            .filter(|(named, status)| named == kind && status != "-")
-            .nth(0)
-            .map(|(_, status)| status.as_str())
-    }
-
+    /// The capture's `boundaryOf`: the status the nth call of a kind returned.
     fn status_of(&self, kind: &str, index: usize) -> String {
-        self.boundaries
+        self.calls
             .iter()
             .filter(|(named, _)| named == kind)
             .nth(index)
@@ -498,7 +514,7 @@ impl Replay {
     fn fields(&self) -> String {
         self.failure
             .as_ref()
-            .and_then(|failure| failure.fields())
+            .and_then(Failure::fields)
             .map(|fields| {
                 fields
                     .iter()
@@ -517,10 +533,10 @@ impl Replay {
     }
 
     fn last(&self) -> Child {
-        self.samples.last().cloned().unwrap_or_default()
+        self.samples.last().cloned().unwrap_or_else(|| peek(&self.children))
     }
 
-    fn claim(&self, claims: &mut Vec<Row>, id: &str, held: bool, detail: String) {
+    fn claim(&mut self, claims: &mut Vec<Row>, id: &str, held: bool, detail: String) {
         claims.push(vec![
             id.to_owned(),
             if held { "match" } else { "diff" }.to_owned(),
@@ -547,10 +563,6 @@ impl Replay {
         }
         claims
     }
-
-    fn finish(&mut self) {
-        let _ = self.worker.shutdown();
-    }
 }
 
 impl Replay {
@@ -558,8 +570,10 @@ impl Replay {
         self.open("open-1", 0, "term-1", Some((100, 24)));
         self.view();
         self.write(0, "term-1", "ls\n");
+        self.sample();
         self.view();
         self.resize(0, "term-1", 80, 20);
+        self.sample();
         self.view();
         let after = self.last();
         self.claim(
@@ -601,21 +615,23 @@ impl Replay {
         self.claim(
             claims,
             "neither-publishes",
-            self.events.len() == 1,
-            format!("{} events", self.events.len()),
+            self.events == 1,
+            format!("{} events", self.events),
         );
-        let stamp = |view: usize| self.views[view][0][4].clone();
+        let before = self.views[0][0][4].clone();
+        let after_write = self.views[1][0][4].clone();
+        let after_resize = self.views[2][0][4].clone();
         self.claim(
             claims,
             "write-leaves-stamp-alone",
-            stamp(0) == stamp(1),
-            format!("{}->{}", stamp(0), stamp(1)),
+            before == after_write,
+            format!("{before}->{after_write}"),
         );
         self.claim(
             claims,
             "resize-moves-stamp",
-            stamp(2).parse::<usize>() > stamp(1).parse::<usize>(),
-            format!("{}->{}", stamp(1), stamp(2)),
+            rank_of(&after_resize) > rank_of(&after_write),
+            format!("{after_write}->{after_resize}"),
         );
     }
 
@@ -623,45 +639,26 @@ impl Replay {
         self.open("open-1", 0, "term-1", None);
         for data in ["", "\r", "á\n\t"] {
             self.write(0, "term-1", data);
+            self.sample();
         }
-        let empties: Vec<&Child> = self
-            .samples
-            .iter()
-            .filter(|sample| sample.writes == 1)
-            .collect();
-        let carriage: Vec<&Child> = self
-            .samples
-            .iter()
-            .filter(|sample| sample.writes == 2)
-            .collect();
-        let multi: Vec<&Child> = self
-            .samples
-            .iter()
-            .filter(|sample| sample.writes == 3)
-            .collect();
-        self.claim(
-            claims,
-            "empty-write-reaches-pty",
-            empties.iter().any(|sample| sample.last_write.is_empty()),
-            format!("rows={}", empties.len()),
-        );
-        self.claim(
-            claims,
-            "carriage-untouched",
-            carriage.iter().any(|sample| sample.last_write == "\r"),
-            format!("rows={}", carriage.len()),
-        );
-        self.claim(
-            claims,
-            "tab-and-multibyte-untouched",
-            multi.iter().any(|sample| sample.last_write == "á\n\t"),
-            format!("rows={}", multi.len()),
-        );
+        for (id, writes, expected) in [
+            ("empty-write-reaches-pty", 1, ""),
+            ("carriage-untouched", 2, "\r"),
+            ("tab-and-multibyte-untouched", 3, "á\n\t"),
+        ] {
+            let rows: Vec<&Child> = self
+                .samples
+                .iter()
+                .filter(|sample| sample.writes == writes)
+                .collect();
+            let held = rows.iter().any(|sample| sample.last_write == expected);
+            self.claim(claims, id, held, format!("rows={}", rows.len()));
+        }
         self.claim(
             claims,
             "writes-publish-nothing",
-            self.events.len() == 1,
-            self.events.len().to_string(),
+            self.events == 1,
+            self.events.to_string(),
         );
     }
 
@@ -682,10 +679,10 @@ impl Replay {
         self.claim(
             claims,
             "reorder-publishes-nothing",
-            self.events.len() == 2,
-            self.events.len().to_string(),
+            self.events == 2,
+            self.events.to_string(),
         );
-        let child = self.children.first().cloned().unwrap_or_default();
+        let child = peek(&self.children);
         self.claim(
             claims,
             "only-one-pty-resized",
@@ -698,6 +695,7 @@ impl Replay {
         self.open("open-1", 0, "term-1", Some((100, 24)));
         self.resize(0, "term-1", 100, 24);
         self.resize(0, "term-1", 100, 24);
+        self.sample();
         let child = self.last();
         self.claim(
             claims,
@@ -708,33 +706,28 @@ impl Replay {
         self.claim(
             claims,
             "repeat-resize-quiet",
-            self.events.len() == 1,
-            self.events.len().to_string(),
+            self.events == 1,
+            self.events.to_string(),
         );
         let moves = self
-            .boundaries
+            .calls
             .iter()
             .filter(|(kind, status)| kind == "resize" && status == "ok")
             .count();
-        self.claim(
-            claims,
-            "both-resizes-succeed",
-            moves == 2,
-            format!("ok={moves}"),
-        );
+        self.claim(claims, "both-resizes-succeed", moves == 2, format!("ok={moves}"));
     }
 
     fn exited(&mut self, claims: &mut Vec<Row>) {
         self.open("open-1", 0, "term-1", None);
         let sequence = self
             .manager
-            .snapshot("thread-a", "term-1")
+            .snapshot(&self.thread(0), "term-1")
             .expect("the opened record")
             .sequence
             .expect("a started record has a sequence");
         let at = self.stamp();
         let frames = self.manager.exit(
-            "thread-a",
+            &self.thread(0),
             "term-1",
             sequence,
             Exit {
@@ -746,7 +739,9 @@ impl Replay {
         self.count(&frames);
         self.view();
         self.write(0, "term-1", "echo\n");
+        self.sample();
         self.resize(0, "term-1", 60, 10);
+        self.sample();
         self.view();
         let after = self.last();
         self.claim(
@@ -773,12 +768,13 @@ impl Replay {
             after.resizes == 0,
             format!("resizes={}", after.resizes),
         );
-        let stamp = |view: usize| self.views[view][0][4].clone();
+        let before = self.views[0][0][4].clone();
+        let later = self.views[1][0][4].clone();
         self.claim(
             claims,
             "exited-resize-leaves-stamp",
-            stamp(0) == stamp(1),
-            format!("{}->{}", stamp(0), stamp(1)),
+            before == later,
+            format!("{before}->{later}"),
         );
         self.claim(
             claims,
@@ -789,21 +785,28 @@ impl Replay {
     }
 
     fn failed_start(&mut self, claims: &mut Vec<Row>) {
-        self.fail_spawn(true);
-        self.open("open-1", 0, "term-1", None);
+        self.fail_spawn = true;
+        let thread_id = self.thread(0);
+        assert!(
+            self.open_record("open-1", 0, "term-1", None),
+            "a failed start still creates its record"
+        );
+        self.fail_spawn(&thread_id, "term-1", None);
         self.view();
-        self.failure = None;
-        let write = self.write(0, "term-1", "x");
+        self.write(0, "term-1", "x");
+        self.sample();
         self.claim(
             claims,
             "error-write-names-status",
-            write.is_err() && self.status_of("write", 0) == "err:TerminalNotRunningError",
+            self.status_of("write", 0) == "err:TerminalNotRunningError",
             self.status_of("write", 0),
         );
+        let resize = self.resize(0, "term-1", 40, 8);
+        self.sample();
         self.claim(
             claims,
             "error-resize-is-ok",
-            self.resize(0, "term-1", 40, 8).is_ok(),
+            resize,
             self.status_of("resize", 0),
         );
         self.claim(
@@ -822,25 +825,26 @@ impl Replay {
         self.claim(
             claims,
             "error-resize-publishes-nothing",
-            self.events.len() == 1,
-            self.events.len().to_string(),
+            self.events == 1,
+            self.events.to_string(),
         );
-        self.fail_spawn(false);
     }
 
     fn starting(&mut self, claims: &mut Vec<Row>) {
-        // The capture parked the spawn, so the record was `starting` when the calls ran and only became
-        // `running` once the open returned. The seam's part of that is the same two records: an `open`
-        // that created one, and the `start` the caller owes it afterwards.
-        self.park = true;
-        self.open("open-1", 0, "term-1", None);
+        // The capture parked the spawn, so the open had returned a `starting` record before anything
+        // became `running`. The seam's same window is the gap between `open_record` and `start_child`.
+        let thread_id = self.thread(0);
+        assert!(
+            self.open_record("open-1", 0, "term-1", None),
+            "the parked open is a create"
+        );
         self.view();
-        self.failure = None;
-        let write = self.write(0, "term-1", "x");
+        self.write(0, "term-1", "x");
+        self.sample();
         self.claim(
             claims,
             "starting-write-refuses",
-            write.is_err() && self.status_of("write", 0) == "err:TerminalNotRunningError",
+            self.status_of("write", 0) == "err:TerminalNotRunningError",
             self.status_of("write", 0),
         );
         self.claim(
@@ -849,38 +853,27 @@ impl Replay {
             self.last().writes == 0,
             format!("writes={}", self.last().writes),
         );
-        let asked = Size {
-            cols: 120,
-            rows: 40,
-        };
-        let at = self.stamp();
-        let held = self
-            .manager
-            .state("thread-a", "term-1")
-            .expect("the parked record")
-            .clone();
-        let _ = held;
-        let resize = self
-            .manager
-            .resize("thread-a", "term-1", asked.cols, asked.rows, &at, |pid, size| {
-                self.call_resize(pid, size)
-                    .map_err(|| io_error_text("ioctl failed"))
-            });
+        let held = self.resize(0, "term-1", 120, 40);
+        self.sample();
         self.claim(
             claims,
-            "starting-resize-is-silent-while-starting",
-            resize.is_ok() && self.last().resizes == 0,
+            "starting-resize-is-silent",
+            held && self.last().resizes == 0 && self.views[0][0][4] == self.views.last().unwrap()[0][4],
             format!("resizes={}", self.last().resizes),
         );
-        self.start_parked();
+        self.start_child(&thread_id, "term-1", None);
         self.resize(0, "term-1", 120, 40);
+        self.sample();
         self.view();
         let after = self.last();
         self.claim(
             claims,
             "held-resize-applies-after-the-open",
             after.resizes == 1 && after.last_cols == 120 && after.last_rows == 40,
-            format!("resizes={} {}x{}", after.resizes, after.last_cols, after.last_rows),
+            format!(
+                "resizes={} {}x{}",
+                after.resizes, after.last_cols, after.last_rows
+            ),
         );
         self.claim(
             claims,
@@ -891,18 +884,18 @@ impl Replay {
     }
 
     fn absent(&mut self, claims: &mut Vec<Row>) {
-        self.failure = None;
-        let write = self.write(0, "term-1", "x");
+        self.write(0, "term-1", "x");
         self.claim(
             claims,
             "absent-write-is-a-lookup",
-            write.is_err() && self.status_of("write", 0) == "err:TerminalSessionLookupError",
+            self.status_of("write", 0) == "err:TerminalSessionLookupError",
             self.status_of("write", 0),
         );
+        let resize = self.resize(0, "term-1", 80, 20);
         self.claim(
             claims,
             "absent-resize-is-ok",
-            self.resize(0, "term-1", 80, 20).is_ok(),
+            resize,
             self.status_of("resize", 0),
         );
         let message = self.message();
@@ -915,8 +908,8 @@ impl Replay {
         self.claim(
             claims,
             "absent-publishes-nothing",
-            self.events.is_empty(),
-            self.events.len().to_string(),
+            self.events == 0,
+            self.events.to_string(),
         );
         self.claim(
             claims,
@@ -928,26 +921,27 @@ impl Replay {
 
     fn after_close(&mut self, claims: &mut Vec<Row>) {
         self.open("open-1", 0, "term-1", None);
+        let thread_id = self.thread(0);
         let frames = self
             .manager
-            .close("thread-a", Some("term-1"), None)
+            .close(&thread_id, Some("term-1"), None)
             .expect("a close of a record the replay owns");
         self.count(&frames);
-        self.failure = None;
-        let write = self.write(0, "term-1", "x");
+        self.write(0, "term-1", "x");
         self.claim(
             claims,
             "closed-write-is-a-lookup",
-            write.is_err() && self.status_of("write", 0) == "err:TerminalSessionLookupError",
+            self.status_of("write", 0) == "err:TerminalSessionLookupError",
             self.status_of("write", 0),
         );
+        let resize = self.resize(0, "term-1", 80, 20);
         self.claim(
             claims,
             "closed-resize-is-ok",
-            self.resize(0, "term-1", 80, 20).is_ok(),
+            resize,
             self.status_of("resize", 0),
         );
-        let last = self.children.first().cloned().unwrap_or_default();
+        let last = peek(&self.children);
         self.claim(
             claims,
             "closed-process-untouched",
@@ -958,13 +952,13 @@ impl Replay {
 
     fn write_throws(&mut self, claims: &mut Vec<Row>) {
         self.open("open-1", 0, "term-1", None);
-        self.throw_write();
-        self.failure = None;
+        self.set_throw(true, false);
         let write = self.write(0, "term-1", "x");
+        self.sample();
         self.claim(
             claims,
             "throwing-write-is-named",
-            write.is_err() && self.status_of("write", 0) == "err:TerminalWriteError",
+            !write && self.status_of("write", 0) == "err:TerminalWriteError",
             self.status_of("write", 0),
         );
         let fields = self.fields();
@@ -991,28 +985,25 @@ impl Replay {
         self.claim(
             claims,
             "throwing-write-publishes-nothing",
-            self.events.len() == 1,
-            self.events.len().to_string(),
+            self.events == 1,
+            self.events.to_string(),
         );
-        self.unthrow();
-        self.claim(
-            claims,
-            "later-write-still-works",
-            self.write(0, "term-1", "y").is_ok(),
-            self.status_of("write", 1),
-        );
+        self.set_throw(false, false);
+        let later = self.write(0, "term-1", "y");
+        self.sample();
+        self.claim(claims, "later-write-still-works", later, self.status_of("write", 1));
     }
 
     fn resize_throws(&mut self, claims: &mut Vec<Row>) {
         self.open("open-1", 0, "term-1", Some((100, 24)));
         self.view();
-        self.throw_resize();
-        self.failure = None;
+        self.set_throw(false, true);
         let resize = self.resize(0, "term-1", 80, 20);
+        self.sample();
         self.claim(
             claims,
             "throwing-resize-is-named",
-            resize.is_err() && self.status_of("resize", 0) == "err:TerminalResizeError",
+            !resize && self.status_of("resize", 0) == "err:TerminalResizeError",
             self.status_of("resize", 0),
         );
         let fields = self.fields();
@@ -1020,7 +1011,10 @@ impl Replay {
             claims,
             "resize-error-carries-size",
             fields
-                == "threadId=thread-a,terminalId=term-1,terminalPid=7900,cols=80,rows=20",
+                == format!(
+                    "threadId=thread-a,terminalId=term-1,terminalPid={},cols=80,rows=20",
+                    self.pid
+                ),
             hex(&fields),
         );
         let message = self.message();
@@ -1028,15 +1022,30 @@ impl Replay {
             claims,
             "resize-error-message",
             message
-                == "Failed to resize terminal for thread: thread-a, terminal: term-1, PID: 7900 to 80x20",
+                == format!(
+                    "Failed to resize terminal for thread: thread-a, terminal: term-1, PID: {} to 80x20",
+                    self.pid
+                ),
             hex(&message),
         );
-        self.unthrow();
-        self.open("open-2", 0, "term-1", Some((80, 20)));
+        self.set_throw(false, false);
+        assert!(
+            !self.open_record("open-2", 0, "term-1", Some((80, 20))),
+            "the follow-up open found the record it was tracing"
+        );
         self.resize(0, "term-1", 90, 21);
-        self.open("open-3", 0, "term-1", Some((90, 21)));
-        let processes = self.children.len();
-        self.claim(claims, "no-extra-spawn", processes == 1, format!("processes={processes}"));
+        assert!(
+            !self.open_record("open-3", 0, "term-1", Some((90, 21))),
+            "the third open found it too"
+        );
+        self.sample();
+        let processes = self.children.borrow().len();
+        self.claim(
+            claims,
+            "no-extra-spawn",
+            processes == 1,
+            format!("processes={processes}"),
+        );
         let child = self.last();
         self.claim(
             claims,
@@ -1053,35 +1062,36 @@ impl Replay {
         self.claim(
             claims,
             "resize-failure-publishes-nothing",
-            self.events.len() == 1,
-            self.events.len().to_string(),
+            self.events == 1,
+            self.events.to_string(),
         );
     }
 
     fn other_thread(&mut self, claims: &mut Vec<Row>) {
         self.open("open-1", 0, "term-1", None);
-        self.failure = None;
-        let write = self.write(1, "term-1", "x");
+        self.write(1, "term-1", "x");
         self.claim(
             claims,
             "other-thread-write-is-a-lookup",
-            write.is_err() && self.status_of("write", 0) == "err:TerminalSessionLookupError",
+            self.status_of("write", 0) == "err:TerminalSessionLookupError",
             self.status_of("write", 0),
         );
+        let resize = self.resize(1, "term-1", 80, 20);
         self.claim(
             claims,
             "other-thread-resize-is-ok",
-            self.resize(1, "term-1", 80, 20).is_ok(),
+            resize,
             self.status_of("resize", 0),
         );
-        let last = self.children.first().cloned().unwrap_or_default();
+        let last = peek(&self.children);
         self.claim(
             claims,
             "other-thread-calls-touch-nothing",
             last.writes == 0 && last.resizes == 0,
             format!("writes={} resizes={}", last.writes, last.resizes),
         );
-        let rows = &self.views[0];
+        self.view();
+        let rows = self.views[0].clone();
         self.claim(
             claims,
             "other-thread-creates-no-session",
@@ -1091,7 +1101,7 @@ impl Replay {
                 .collect::<Vec<_>>()
                 .join(","),
         );
-        let stamp = self.views[0][0][4].clone();
+        let stamp = rows[0][4].clone();
         self.claim(
             claims,
             "other-thread-resize-stamps-nothing",
@@ -1099,14 +1109,6 @@ impl Replay {
             format!("stamp={stamp}"),
         );
     }
-}
-
-fn io_error(_: &Failure) -> std::io::Error {
-    std::io::Error::other("the replay never fails a persist")
-}
-
-fn io_error_text(reason: &str) -> std::io::Error {
-    std::io::Error::other(reason.to_owned())
 }
 
 #[test]
@@ -1121,24 +1123,51 @@ fn replays_shipped_write_and_resize() {
     let (default_terminal, cases) = parse(&trace);
     assert_eq!(default_terminal, DEFAULT_TERMINAL_ID);
 
-    let mut totals = (0usize, 0usize);
+    let mut compared = 0usize;
+    let mut skipped = 0usize;
+    let mut extra: Vec<String> = Vec::new();
     for case in &cases {
-        let threads: Vec<&str> = case.threads.iter().map(String::as_str).collect();
-        let mut replay = Replay::new(&case.name, &threads);
-        replay.pid_base = case.pid;
+        let mut replay = Replay::new(&case.name, &case.threads, case.pid);
         let claims = replay.run(&case.name);
-        replay.finish();
-        assert_eq!(
-            claims, case.claims,
-            "{} write/resize claims differ from the capture",
-            case.name
+        let mine: BTreeMap<&str, (&str, &str)> = claims
+            .iter()
+            .map(|claim| (claim[0].as_str(), (claim[1].as_str(), claim[2].as_str())))
+            .collect();
+        let theirs: BTreeSet<&str> = UNREPRODUCIBLE.into_iter().collect();
+        for claim in &case.claims {
+            if theirs.contains(claim[0].as_str()) {
+                skipped += 1;
+                continue;
+            }
+            let found = mine
+                .get(claim[0].as_str())
+                .unwrap_or_else(|| panic!("{} never recomputed {}", case.name, claim[0]));
+            assert_eq!(
+                *found,
+                (claim[1].as_str(), claim[2].as_str()),
+                "{} recomputed {} differently from the capture",
+                case.name,
+                claim[0]
+            );
+            compared += 1;
+        }
+        extra.extend(
+            claims
+                .iter()
+                .map(|claim| claim[0].clone())
+                .filter(|id| case.claims.iter().all(|claim| &claim[0] != id)),
         );
-        totals = (totals.0 + 1, totals.1 + claims.len());
     }
+    assert_eq!(
+        extra,
+        vec!["starting-resize-is-silent".to_owned()],
+        "the replay made a claim the capture did not, or lost the one it declares"
+    );
     eprintln!(
-        "write/resize golden: {} cases, {} claims recomputed from {}",
-        totals.0,
-        totals.1,
+        "write/resize golden: {} cases, {} claims recomputed, {} skipped as unportable, from {}",
+        cases.len(),
+        compared,
+        skipped,
         trace.display()
     );
 }
