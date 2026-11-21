@@ -17,6 +17,7 @@ pub mod exit_drain;
 pub mod jsstr;
 pub mod native_pty;
 pub mod node_pty;
+pub mod output;
 pub mod pipe;
 #[cfg(unix)]
 pub mod reader;

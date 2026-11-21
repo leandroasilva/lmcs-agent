@@ -16,9 +16,7 @@
 
 use crate::node_pty::PtyExitEvent;
 
-/// The visible part of a chunk and the control sequence still open when it ended. The shape of
-/// `lmcs-terminal-history`'s `Sanitized`, taken as an argument instead of a dependency: these
-/// crates are standalone, and which bytes reach history is that crate's decision, not this one's.
+/// Sanitizer results are injected so queue policy can be replayed independently of history.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Sanitized {
     pub visible: String,
@@ -120,6 +118,14 @@ impl Pipe {
     #[must_use]
     pub fn close(&mut self) -> u64 {
         self.stop();
+        self.advance()
+    }
+
+    pub fn clear(&mut self) -> u64 {
+        self.queue.clear();
+        self.cursor = 0;
+        self.draining = false;
+        self.pending_control_sequence.clear();
         self.advance()
     }
 

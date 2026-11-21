@@ -1,6 +1,7 @@
 // LMCS_PIPE_TRACE points to the output of apps/server/scripts/terminal-pipe-trace.ts.
 use lmcs_pty::node_pty::PtyExitEvent;
-use lmcs_pty::{Delivery, PendingEvent, Pipe, Sanitized};
+use lmcs_pty::output::TerminalOutput;
+use lmcs_pty::{Delivery, PendingEvent};
 use serde_json::Value;
 
 const CASE_NAMES: &[&str] = &[
@@ -112,7 +113,7 @@ fn exit(code: &Value, signal: &Value) -> PendingEvent {
 
 #[derive(Default)]
 struct Replay {
-    pipe: Pipe,
+    pipe: TerminalOutput,
     current_pid: u32,
     outputs: Vec<Recorded>,
     hold: bool,
@@ -136,7 +137,11 @@ impl Replay {
                 exit(&setup["exit"]["exitCode"], &setup["exit"]["signal"]),
             );
         }
-        let sequence = self.pipe.start(self.current_pid);
+        let sequence = if kind == "restarted" {
+            self.pipe.restart(self.current_pid)
+        } else {
+            self.pipe.start(self.current_pid)
+        };
         self.outputs.push(Recorded {
             kind: kind.to_string(),
             sequence,
@@ -151,10 +156,7 @@ impl Replay {
     }
 
     fn drain(&mut self, pid: u32) {
-        while let Some(delivery) = self.pipe.drain_next(pid, |_, text| Sanitized {
-            visible: text.to_string(),
-            pending: String::new(),
-        }) {
+        while let Some(delivery) = self.pipe.drain_next(pid) {
             if self.hold {
                 self.hold = false;
                 assert!(self.suspended.replace((pid, delivery)).is_none());

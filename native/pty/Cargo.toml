@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 portable-pty = "0.9.0"
+lmcs-terminal-history = { path = "../terminal-history" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

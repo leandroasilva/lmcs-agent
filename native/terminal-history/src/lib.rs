@@ -3,10 +3,19 @@
 
 use std::collections::VecDeque;
 
+mod file;
+mod persist;
 mod sanitize;
+mod store;
 mod tail;
 
+pub use file::{read_file, write_file};
+pub use persist::{HistoryPersistence, PersistHandle, PersistWarning, SharedHistory};
 pub use sanitize::{Sanitized, sanitize};
+pub use store::{
+    DEFAULT_TERMINAL_ID, HistoryOperation, LoadedHistory, TerminalHistoryError, history_path,
+    legacy_history_path, load_history,
+};
 pub use tail::{HistoryTail, Restored, history_tail, restore};
 
 pub const DEFAULT_MAX_LINES: usize = 5_000;

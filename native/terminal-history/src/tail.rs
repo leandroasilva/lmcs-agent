@@ -8,8 +8,7 @@ pub struct HistoryTail {
     pub truncated: bool,
 }
 
-/// The bounded tail of persisted history. `bytes` is exactly what the caller
-/// read from the file: opening, seeking and the read loop stay outside.
+/// The bounded tail of persisted history already loaded into memory.
 pub fn history_tail(bytes: &[u8], byte_limit: usize) -> HistoryTail {
     let offset = if bytes.len() > byte_limit {
         bytes.len() - byte_limit
@@ -17,8 +16,12 @@ pub fn history_tail(bytes: &[u8], byte_limit: usize) -> HistoryTail {
         0
     };
 
-    let mut start = offset;
-    if offset > 0 {
+    decode_tail(&bytes[offset..], offset > 0)
+}
+
+pub(crate) fn decode_tail(bytes: &[u8], truncated: bool) -> HistoryTail {
+    let mut start = 0;
+    if truncated {
         // A tail read can start inside a code point. Skip its remaining bytes.
         while start < bytes.len() && is_continuation(bytes[start]) {
             start += 1;
@@ -27,7 +30,7 @@ pub fn history_tail(bytes: &[u8], byte_limit: usize) -> HistoryTail {
 
     HistoryTail {
         history: String::from_utf8_lossy(&bytes[start..]).into_owned(),
-        truncated: offset > 0,
+        truncated,
     }
 }
 
@@ -38,7 +41,10 @@ pub struct Restored {
 }
 
 pub fn restore(bytes: &[u8], byte_limit: usize, line_limit: usize) -> Restored {
-    let tail = history_tail(bytes, byte_limit);
+    restore_tail(history_tail(bytes, byte_limit), byte_limit, line_limit)
+}
+
+pub(crate) fn restore_tail(tail: HistoryTail, byte_limit: usize, line_limit: usize) -> Restored {
     let raw = tail.history.as_bytes();
     let capped = BoundedHistory::with_limits(line_limit, byte_limit, raw).value();
     Restored {

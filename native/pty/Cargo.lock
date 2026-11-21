@@ -100,9 +100,14 @@ name = "lmcs-pty"
 version = "0.1.0"
 dependencies = [
  "libc",
+ "lmcs-terminal-history",
  "portable-pty",
  "serde_json",
 ]
+
+[[package]]
+name = "lmcs-terminal-history"
+version = "0.1.0"
 
 [[package]]
 name = "log"

@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 
 use lmcs_pty::native_pty::NativePtySpawner;
 use lmcs_pty::node_pty::{PtyExitEvent, exit_event};
+use lmcs_pty::output::TerminalOutput;
 use lmcs_pty::session::{PtySession, SessionEvent};
 use lmcs_pty::spawn::PtySpawnInput;
 use lmcs_pty::{Delivery, Env, PendingEvent, Pipe, Platform, Sanitized};
@@ -632,6 +633,83 @@ fn the_pipe_receives_data_then_exit_with_its_original_walker_rules() {
         })
     );
     assert_eq!(pipe.drain_next(pid, identity), None);
+}
+
+#[test]
+fn real_pty_output_updates_bounded_history_without_sanitizing_live_data() {
+    let mut session = spawn(
+        "stty -echo; printf 'prefix\\033[6'; IFS= read -r ack; \
+         printf 'n\\033[31mred\\033[0m'; printf '%1048576s' ''; printf 'tail\\303'; exit 7",
+    );
+    let pid = session.pid();
+    let mut output = TerminalOutput::new(lmcs_terminal_history::BoundedHistory::with_limits(
+        2,
+        64,
+        b"restored\n",
+    ));
+    assert_eq!(output.start(pid), 1);
+    let mut raw = String::new();
+    let mut sequence = 1;
+    let mut waiting_to_acknowledge = false;
+    let mut acknowledged = false;
+    loop {
+        let event = match session.recv_timeout(DEADLINE).unwrap().unwrap() {
+            SessionEvent::Data(data) => PendingEvent::Data(data),
+            SessionEvent::Exit(exit) => PendingEvent::Exit(exit),
+            SessionEvent::Writable => {
+                assert!(waiting_to_acknowledge && !acknowledged);
+                assert_eq!(output.sequence(), sequence);
+                assert_eq!(output.history().value(), b"restored\nprefix");
+                assert_eq!(session.try_write(b"\n").unwrap(), 1);
+                acknowledged = true;
+                continue;
+            }
+        };
+        assert!(output.enqueue(pid, event));
+        sequence += 1;
+        match output.drain_next(pid).unwrap() {
+            Delivery::Output {
+                sequence: stamp,
+                data,
+                ..
+            } => {
+                assert_eq!(stamp, sequence);
+                raw.push_str(&data);
+            }
+            Delivery::Exit {
+                sequence: stamp,
+                exit_code,
+                exit_signal,
+            } => {
+                assert_eq!(stamp, sequence);
+                assert_eq!((exit_code, exit_signal), (Some(7), Some(0)));
+                break;
+            }
+        }
+        assert_eq!(output.drain_next(pid), None);
+        assert!(output.history().bytes() <= 64);
+        if !waiting_to_acknowledge && raw.ends_with("prefix\x1b[6") {
+            assert_eq!(output.history().value(), b"restored\nprefix");
+            waiting_to_acknowledge = true;
+            session.request_writable().unwrap();
+        }
+    }
+    assert!(acknowledged);
+    assert_eq!(
+        raw,
+        format!(
+            "prefix\x1b[6n\x1b[31mred\x1b[0m{}tail\u{fffd}",
+            " ".repeat(1_048_576)
+        )
+    );
+    assert_eq!(
+        output.history().value(),
+        format!("{}tail\u{fffd}", " ".repeat(57)).as_bytes()
+    );
+    assert_eq!(output.history().bytes(), 64);
+    assert_eq!(output.drain_next(pid), None);
+    assert_eq!(session.recv().unwrap(), None);
+    assert!(!output.enqueue(pid, PendingEvent::Data("late".to_string())));
 }
 
 #[test]
