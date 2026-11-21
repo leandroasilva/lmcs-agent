@@ -31,8 +31,18 @@ import {
   ProviderAuthResponse,
   PullRequestListCursors,
   SnapShotKeyChord,
+  TerminalAttachInput,
+  TerminalAttachStreamEvent,
+  TerminalCloseInput,
+  TerminalError,
+  TerminalEvent,
+  TerminalMetadataStreamEvent,
   TerminalOpenInput,
   TerminalResizeInput,
+  TerminalRestartInput,
+  TerminalSessionSnapshot,
+  TerminalSummary,
+  TerminalWriteInput,
   ThreadId,
   TrimmedNonEmptyString,
   TrimmedString,
@@ -1461,6 +1471,340 @@ for (const input of [
     record("constructorDefault", "decode", schema, input);
     record("constructorDefault", "encode", schema, input);
   }
+}
+
+// ── Fatia 5: `terminal.ts` — the first payload module ported, and the two values the
+// numeric sweep never tried ────────────────────────────────────────────────
+//
+// The scalars were swept with `0, 1, -1, 1.5, 65535, 65536, 5`, which decides nothing about
+// `Schema.Int`: it is `Number.isSafeInteger`, so the two values that separate it from an
+// `i64` read are `2^53` (an integer, refused) and the integral float spellings `1e3` and
+// `80.0` (integers, accepted). Measured: `decode(9007199254740992)` throws and
+// `decode(1e3)` gives `1000`. A Rust port that deserialized into `i64` would take the first
+// and refuse the second, in both directions silently.
+for (const [name, schema] of [
+  ["NonNegativeInt", NonNegativeInt],
+  ["PositiveInt", PositiveInt],
+  ["PortSchema", PortSchema],
+] as const) {
+  for (const input of [
+    9_007_199_254_740_991, 9_007_199_254_740_992, -9_007_199_254_740_992, 1e3, 80.0, -0, 1e300,
+  ]) {
+    record(name, "decode", schema, input);
+    record(name, "encode", schema, input);
+  }
+}
+
+// The seven input shapes. What each one is evidence about is not the field list — the Rust
+// struct says that — but the *construct each field is made of*: `optional(NullOr(…))` has
+// three states and the two `Absent`/`Nullable` halves each cover only two of them;
+// `providerInstanceId` is a brand whose checks run on the untrimmed text going out;
+// `data`'s 65 536 is counted in UTF-16 units, so a surrogate pair costs two.
+const sessionId = { threadId: "t-1", terminalId: "term-1" };
+const paddedLongId = `  ${"a".repeat(129)}  `;
+for (const input of [
+  {},
+  sessionId,
+  { ...sessionId, cwd: "/repo" },
+  { ...sessionId, cwd: "  " },
+  { ...sessionId, cwd: 5 },
+  // The three states of `Schema.optional(Schema.NullOr(TrimmedNonEmptyString))`.
+  { ...sessionId, cwd: "/repo", worktreePath: null },
+  { ...sessionId, cwd: "/repo", worktreePath: " /repo " },
+  { ...sessionId, cwd: "/repo", worktreePath: "  " },
+  { ...sessionId, cwd: "/repo", worktreePath: 5 },
+  // Both bounds inclusive, and the integer filter ahead of them.
+  { ...sessionId, cwd: "/repo", cols: 1, rows: 1 },
+  { ...sessionId, cwd: "/repo", cols: 0 },
+  { ...sessionId, cwd: "/repo", cols: 1001 },
+  { ...sessionId, cwd: "/repo", rows: 501 },
+  { ...sessionId, cwd: "/repo", cols: 8e1 },
+  { ...sessionId, cwd: "/repo", cols: "80" },
+  { ...sessionId, cwd: "/repo", cols: null },
+  // The `LenientKeys` record: a bad key loses an entry, a bad value loses the field.
+  { ...sessionId, cwd: "/repo", env: { PATH: "/usr/bin", "1BAD": "v" } },
+  { ...sessionId, cwd: "/repo", env: { PATH: "x".repeat(8_193) } },
+  { ...sessionId, cwd: "/repo", env: null },
+  // The brand, and the fact that its checks see the padded text on the way out.
+  { ...sessionId, cwd: "/repo", providerInstanceId: "codex_work" },
+  { ...sessionId, cwd: "/repo", providerInstanceId: " codex_work " },
+  { ...sessionId, cwd: "/repo", providerInstanceId: "1bad" },
+  { ...sessionId, cwd: "/repo", providerInstanceId: "a".repeat(65) },
+  { ...sessionId, cwd: "/repo", providerInstanceId: 5 },
+  { ...sessionId, cwd: "/repo", terminalId: paddedLongId },
+  { ...sessionId, cwd: "/repo", unknownKey: true },
+]) {
+  record("terminalOpen", "decode", TerminalOpenInput, input);
+  record("terminalOpen", "encode", TerminalOpenInput, input);
+}
+
+// `TerminalAttachInput` — the same fields with `cwd` demoted to optional, plus the one flag
+// that is not on any other input. `restartIfNotRunning` is a plain `Schema.optional(Boolean)`,
+// so an explicit `null` is a failure and not an absence.
+for (const input of [
+  sessionId,
+  { ...sessionId, cwd: "  " },
+  { ...sessionId, restartIfNotRunning: true },
+  { ...sessionId, restartIfNotRunning: null },
+  { ...sessionId, restartIfNotRunning: "yes" },
+  { ...sessionId, cols: 100, rows: 30, env: { A: "b" } },
+  { ...sessionId, providerInstanceId: "codex" },
+]) {
+  record("terminalAttach", "decode", TerminalAttachInput, input);
+  record("terminalAttach", "encode", TerminalAttachInput, input);
+}
+
+// `TerminalWriteInput.data` — `String.check(isNonEmpty()).check(isMaxLength(65_536))` over a
+// **bare** string, so nothing trims and the cap counts UTF-16 units. The last two cases are
+// the pair that separates UTF-16 from codepoints: 32 768 astral characters are 65 536 units
+// and fit, one more is 65 537 and does not, while `String.length`-naive ports see 32 769.
+const astral = "😀".repeat(32_768);
+for (const input of [
+  { ...sessionId, data: "" },
+  { ...sessionId, data: "ls\r\n" },
+  { ...sessionId, data: "  " },
+  { ...sessionId, data: "x".repeat(65_536) },
+  { ...sessionId, data: "x".repeat(65_537) },
+  { ...sessionId, data: astral },
+  { ...sessionId, data: `${astral}x` },
+  { ...sessionId, data: 5 },
+  { ...sessionId, data: null },
+]) {
+  record("terminalWrite", "decode", TerminalWriteInput, input);
+  record("terminalWrite", "encode", TerminalWriteInput, input);
+}
+
+// `TerminalResizeInput` and `TerminalRestartInput` — where `cols`/`rows` are required, which
+// is the only structural difference from the open and attach inputs.
+for (const input of [
+  { ...sessionId },
+  { ...sessionId, cols: 1, rows: 1 },
+  { ...sessionId, cols: 1000, rows: 500 },
+  { ...sessionId, cols: 1001, rows: 500 },
+  { ...sessionId, cols: 1, rows: 501 },
+  { ...sessionId, cols: 1, rows: 500, cwd: "/repo", env: { LC_ALL: "C" } },
+  { ...sessionId, cols: 1, rows: 500, cwd: "  " },
+]) {
+  record("terminalResize", "decode", TerminalResizeInput, input);
+  record("terminalResize", "encode", TerminalResizeInput, input);
+}
+for (const input of [
+  { ...sessionId, cols: 1, rows: 1, cwd: "/repo" },
+  { ...sessionId, cols: 1, rows: 1 },
+  { ...sessionId, cols: 1, rows: 1, cwd: "/repo", worktreePath: null },
+  { ...sessionId, cols: 1, rows: 1, cwd: "/repo", providerInstanceId: "claude" },
+]) {
+  record("terminalRestart", "decode", TerminalRestartInput, input);
+  record("terminalRestart", "encode", TerminalRestartInput, input);
+}
+
+// `TerminalCloseInput` — the one input with an optional `terminalId`, which is how a client
+// closes every shell on a thread.
+for (const input of [
+  { threadId: "t-1" },
+  { threadId: "  " },
+  { threadId: "t-1", terminalId: "term-1" },
+  { threadId: "t-1", terminalId: "  " },
+  { threadId: "t-1", deleteHistory: true },
+  { threadId: "t-1", deleteHistory: null },
+  { threadId: "t-1", terminalId: "term-1", deleteHistory: false },
+]) {
+  record("terminalClose", "decode", TerminalCloseInput, input);
+  record("terminalClose", "encode", TerminalCloseInput, input);
+}
+
+// `TerminalSessionSnapshot` and `TerminalSummary` — the server-written half, where the ids
+// are `Schema.String.check(isNonEmpty())` and **not** the trimming spelling the inputs use.
+// `"  "` is therefore a valid thread id here and a failure in `terminalOpen`, and the same
+// two spaces survive the round trip instead of being trimmed away.
+const snapshotBase = {
+  threadId: "t-1",
+  terminalId: "term-1",
+  cwd: "/repo",
+  worktreePath: null,
+  status: "running",
+  pid: 4160,
+  history: "",
+  exitCode: null,
+  exitSignal: null,
+  label: "zsh",
+  updatedAt: "2026-11-21T00:00:00.000Z",
+};
+for (const input of [
+  {},
+  snapshotBase,
+  { ...snapshotBase, threadId: "  " },
+  { ...snapshotBase, cwd: "  " },
+  // A required key, absent. Spelled by removing it rather than setting it to `undefined`,
+  // which has no JSON form and would leave the case uncomparable.
+  (() => {
+    const { history: _history, ...noHistory } = snapshotBase;
+    return noHistory;
+  })(),
+  // `pid` is `NullOr(Int.check(isGreaterThan(0)))`, so 0 and -1 fail and `4160e0` does not.
+  { ...snapshotBase, pid: null },
+  { ...snapshotBase, pid: 0 },
+  { ...snapshotBase, pid: -1 },
+  { ...snapshotBase, pid: 4160 },
+  { ...snapshotBase, pid: 1.5 },
+  { ...snapshotBase, status: "paused" },
+  { ...snapshotBase, status: null },
+  { ...snapshotBase, exitCode: 1 },
+  { ...snapshotBase, exitCode: 1.5 },
+  { ...snapshotBase, exitSignal: null },
+  { ...snapshotBase, label: "x".repeat(129) },
+  { ...snapshotBase, updatedAt: 5 },
+  { ...snapshotBase, sequence: 0 },
+  { ...snapshotBase, sequence: -1 },
+  { ...snapshotBase, sequence: 1e3 },
+]) {
+  record("terminalSnapshot", "decode", TerminalSessionSnapshot, input);
+  record("terminalSnapshot", "encode", TerminalSessionSnapshot, input);
+}
+for (const input of [
+  { ...snapshotBase, hasRunningSubprocess: true },
+  { ...snapshotBase, hasRunningSubprocess: false },
+  // The summary has no `history` and no `sequence`: both are unknown keys here, dropped
+  // rather than refused, which is the only way to tell the two shapes apart from the wire.
+  { ...snapshotBase, hasRunningSubprocess: true, history: "ls\r\n", sequence: 3 },
+  { ...snapshotBase },
+  { ...snapshotBase, hasRunningSubprocess: null },
+]) {
+  record("terminalSummary", "decode", TerminalSummary, input);
+  record("terminalSummary", "encode", TerminalSummary, input);
+}
+
+// The three stream unions. Every member is `{…base, type, …}`, so `type` is the **fourth**
+// key on the wire for `TerminalEvent` — invisible to this golden, which compares parsed
+// JSON, and pinned byte for byte in the Rust crate's own tests. What the golden does decide
+// is the member set: `snapshot` is a member of the attach stream and not of the event
+// stream, and `started` the other way round.
+for (const input of [
+  { threadId: "t-1", terminalId: "term-1", type: "output", data: "ls\r\n" },
+  { threadId: "t-1", terminalId: "term-1", sequence: 3, type: "output", data: "" },
+  { threadId: "  ", terminalId: "term-1", type: "output", data: "x" },
+  { threadId: "t-1", terminalId: "term-1", sequence: -1, type: "output", data: "x" },
+  { threadId: "t-1", terminalId: "term-1", type: "cleared" },
+  { threadId: "t-1", terminalId: "term-1", type: "closed" },
+  { threadId: "t-1", terminalId: "term-1", type: "exited", exitCode: 0, exitSignal: null },
+  { threadId: "t-1", terminalId: "term-1", type: "error", message: "spawn failed" },
+  { threadId: "t-1", terminalId: "term-1", type: "error", message: "  " },
+  {
+    threadId: "t-1",
+    terminalId: "term-1",
+    type: "activity",
+    hasRunningSubprocess: true,
+    label: "vim",
+  },
+  { threadId: "t-1", terminalId: "term-1", type: "started", snapshot: snapshotBase },
+  { threadId: "t-1", terminalId: "term-1", type: "snapshot", snapshot: snapshotBase },
+  { threadId: "t-1", terminalId: "term-1", type: "nope" },
+  { threadId: "t-1", terminalId: "term-1" },
+]) {
+  record("terminalEvent", "decode", TerminalEvent, input);
+  record("terminalEvent", "encode", TerminalEvent, input);
+}
+for (const input of [
+  { type: "snapshot", terminals: [{ ...snapshotBase, hasRunningSubprocess: true }] },
+  { type: "snapshot", terminals: [] },
+  { type: "snapshot", terminals: [snapshotBase] },
+  { type: "upsert", terminal: { ...snapshotBase, hasRunningSubprocess: false } },
+  { type: "remove", threadId: "t-1", terminalId: "term-1" },
+  { type: "remove", threadId: "t-1" },
+  { type: "remove", threadId: "  ", terminalId: "term-1" },
+  { type: "started", threadId: "t-1", terminalId: "term-1", snapshot: snapshotBase },
+]) {
+  record("terminalMetadata", "decode", TerminalMetadataStreamEvent, input);
+  record("terminalMetadata", "encode", TerminalMetadataStreamEvent, input);
+}
+for (const input of [
+  { threadId: "t-1", terminalId: "term-1", type: "snapshot", snapshot: snapshotBase },
+  { threadId: "t-1", terminalId: "term-1", type: "started", snapshot: snapshotBase },
+  { type: "snapshot", snapshot: snapshotBase },
+  { threadId: "t-1", terminalId: "term-1", type: "output", data: "" },
+]) {
+  record("terminalAttachEvent", "decode", TerminalAttachStreamEvent, input);
+  record("terminalAttachEvent", "encode", TerminalAttachStreamEvent, input);
+}
+
+// `TerminalError` — ten `Schema.TaggedError` classes flattened through `TerminalCwdError`.
+//
+// The Type side is an `Error` **instance**, so a wire object handed to `encodeUnknownSync`
+// throws `AnyOf` (measured) and the encode cases must go through `recordTyped`, which decodes
+// first. That is also the honest round trip. The successful decodes cannot be recorded at all:
+// `toWire`'s `Error` branch projects an instance to `{name, message, cause}`, which drops the
+// declared fields, so only the **failures** are comparable from the decode side — and they are
+// the interesting half of a union: which input matches no member.
+//
+// Three things the recorded encodes pin. `cause` is `Schema.Defect()`, so `null` stays a
+// present null, a `{message}` object comes back as `{name:"Error",message}` in that key order,
+// and a non-object like `5` is held verbatim. The optional `cause` of `TerminalHistoryError`
+// is written **only when the key arrived** — `Object.hasOwn`, not `!== undefined`. And no
+// member carries a `message` field on the wire, because the class getter is not a field.
+for (const encoded of [
+  { _tag: "TerminalCwdNotFoundError", cwd: "/nope" },
+  { _tag: "TerminalCwdNotDirectoryError", cwd: "/etc/hosts" },
+  { _tag: "TerminalCwdStatError", cwd: "/x", cause: { message: "EACCES" } },
+  { _tag: "TerminalCwdStatError", cwd: "/x", cause: null },
+  { _tag: "TerminalHistoryError", operation: "read", threadId: "t-1", terminalId: "term-1" },
+  {
+    _tag: "TerminalHistoryError",
+    operation: "truncate",
+    threadId: "t-1",
+    terminalId: "term-1",
+    cause: { name: "Error", message: "disk", cause: { message: "inner" } },
+  },
+  { _tag: "TerminalSessionLookupError", threadId: "t-1", terminalId: "term-1" },
+  { _tag: "TerminalProviderInstanceNotFoundError", providerInstanceId: "codex_work" },
+  { _tag: "TerminalProviderEnvironmentError", providerInstanceId: "codex", cause: 5 },
+  { _tag: "TerminalNotRunningError", threadId: "t-1", terminalId: "term-1" },
+  {
+    _tag: "TerminalWriteError",
+    threadId: "t-1",
+    terminalId: "term-1",
+    terminalPid: 4160,
+    cause: { message: "pipe" },
+  },
+  {
+    _tag: "TerminalWriteError",
+    threadId: "t-1",
+    terminalId: "term-1",
+    terminalPid: 1.5,
+    cause: { message: "pipe" },
+  },
+  {
+    _tag: "TerminalResizeError",
+    threadId: "t-1",
+    terminalId: "term-1",
+    terminalPid: 4160,
+    cols: 8e1,
+    rows: 30,
+    cause: { message: "ioctl" },
+  },
+]) {
+  recordTyped("terminalError", TerminalError, encoded);
+}
+for (const input of [
+  // No `_tag` at all, an unknown one, and a member whose required `cause` is missing.
+  { threadId: "t-1", terminalId: "term-1" },
+  { _tag: "TerminalSomethingElseError" },
+  { _tag: "TerminalCwdStatError", cwd: "/x" },
+  // `operation` is a closed literal set, so a fourth verb matches no member.
+  { _tag: "TerminalHistoryError", operation: "nope", threadId: "t-1", terminalId: "term-1" },
+  // The size bounds sit inside the error shapes too.
+  {
+    _tag: "TerminalResizeError",
+    threadId: "t-1",
+    terminalId: "term-1",
+    terminalPid: 4160,
+    cols: 1001,
+    rows: 30,
+    cause: { message: "ioctl" },
+  },
+  // A brand is erased at runtime but its checks are not.
+  { _tag: "TerminalProviderInstanceNotFoundError", providerInstanceId: "1bad" },
+]) {
+  record("terminalError", "decode", TerminalError, input);
 }
 
 // The golden has to carry wire bytes, and two kinds of value do not survive

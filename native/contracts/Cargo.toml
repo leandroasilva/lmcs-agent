@@ -13,12 +13,10 @@ strip = true
 
 [dependencies]
 chrono = { version = "0.4.45", default-features = false, features = ["std"] }
+# The first `isPattern` site with a real host moved here from `[dev-dependencies]`:
+# `TerminalEnvKeySchema` and the provider slug are both anchored regexes over a wire string.
+regex = "1.13.1"
 serde = { version = "1.0.228", features = ["derive"] }
 # serde_json's default float parser is not correctly rounded and reads some decimal spellings
 # 1 ULP off. JavaScript's `JSON.parse` is correctly rounded, so parity requires this.
 serde_json = { version = "1.0.154", features = ["float_roundtrip"] }
-
-# Only the golden replay declares a concrete `isPattern` rule so far; the 28 real sites
-# move this to `[dependencies]` when they are ported.
-[dev-dependencies]
-regex = "1.13.1"

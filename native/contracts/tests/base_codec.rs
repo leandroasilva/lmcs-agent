@@ -11,7 +11,14 @@ use lmcs_contracts::base::{
     Absent, AtLeast, AtMost, Between, Bytes, Check, Checked, DateTimeUtc, Defect, DurationMillis,
     EffectOption, FiniteFromString, GreaterThan, JsNumber, Lenient, LenientKeys, LessThan,
     MaxLength, MaxProperties, Maybe, MinLength, Never, NoEdgeWhitespace, NonEmpty, NonNegativeInt,
-    Nullable, Port, PositiveInt, Record, SafeInt, StrictKeys, Trimmed,
+    Nullable, Optional, Port, PositiveInt, Record, SafeInt, StrictKeys, Trimmed,
+};
+use lmcs_contracts::provider_instance::ProviderInstanceId;
+use lmcs_contracts::terminal::{
+    TerminalAttachInput, TerminalAttachStreamEvent, TerminalCloseInput, TerminalCols, TerminalEnv,
+    TerminalEnvKey, TerminalEnvValue, TerminalError, TerminalEvent, TerminalMetadataStreamEvent,
+    TerminalOpenInput, TerminalResizeInput, TerminalRestartInput, TerminalSessionSnapshot,
+    TerminalSummary, TerminalWriteInput,
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -210,17 +217,7 @@ where
     serde_json::to_value(wrap(text.to_owned())).map_err(|_| ())
 }
 
-fn int_like<T, F>(raw: &Value, wrap: F) -> Result<Value, ()>
-where
-    T: Serialize,
-    F: FnOnce(i64) -> Option<T>,
-{
-    let number = raw.as_i64().ok_or(())?;
-    let built = wrap(number).ok_or(())?;
-    serde_json::to_value(built).map_err(|_| ())
-}
-
-/// The `Schema.Number` counterpart of [`int_like`]. Keeps the JSON literal instead of
+/// The `Schema.Number` counterpart of [`safe_int_like`]. Keeps the JSON literal instead of
 /// going through `as_i64`, both so that `2.5` survives at all and so that `1` does not
 /// come back out as `1.0`.
 fn number_like<T, F>(raw: &Value, wrap: F) -> Result<Value, ()>
@@ -232,6 +229,87 @@ where
         return Err(());
     };
     serde_json::to_value(wrap(number.clone())).map_err(|_| ())
+}
+
+/// The encode mirror of a `Schema.Int` field. Not `raw.as_i64()`, which disagrees with
+/// `Number.isSafeInteger` in both directions: it answers `None` for an integral float
+/// spelling like `1e3` and `Some` for `9007199254740992`. The golden normalizes its inputs
+/// through `JSON.stringify` so the first never arrives as a distinct case, but the second
+/// does, and an `as_i64` read would encode a Type value the shipped codec refuses.
+fn safe_int_like<T, F>(raw: &Value, wrap: F) -> Result<Value, ()>
+where
+    T: Serialize,
+    F: FnOnce(i64) -> Option<T>,
+{
+    let Value::Number(number) = raw else {
+        return Err(());
+    };
+    let js = JsNumber(number.clone());
+    if !<SafeInt as Check<JsNumber>>::passes(&js) {
+        return Err(());
+    }
+    let built = wrap(js.0.as_f64().unwrap_or_default() as i64).ok_or(())?;
+    serde_json::to_value(built).map_err(|_| ())
+}
+
+/// Reads a field's text without validating it, which is what an encode mirror needs:
+/// TypeScript runs a `.check` against the **pre-transform** value on the way out, so
+/// `cwd: "  "` is an encodable Type value and writes `""`.
+fn raw_text(fields: &Map<String, Value>, key: &str) -> Result<String, ()> {
+    fields
+        .get(key)
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .ok_or(())
+}
+
+fn raw_optional_text(fields: &Map<String, Value>, key: &str) -> Result<Optional<NonEmpty>, ()> {
+    match fields.get(key) {
+        None => Ok(Optional(Absent(None))),
+        Some(Value::Null) => Ok(Optional(Absent(Some(Nullable(None))))),
+        Some(Value::String(text)) => Ok(Optional(Absent(Some(Nullable(Some(NonEmpty(
+            text.clone(),
+        ))))))),
+        Some(_) => Err(()),
+    }
+}
+
+fn raw_absent_text(fields: &Map<String, Value>, key: &str) -> Result<Absent<NonEmpty>, ()> {
+    match fields.get(key) {
+        None => Ok(Absent(None)),
+        Some(Value::String(text)) => Ok(Absent(Some(NonEmpty(text.clone())))),
+        Some(_) => Err(()),
+    }
+}
+
+fn raw_absent_number<T, F>(fields: &Map<String, Value>, key: &str, wrap: F) -> Result<Absent<T>, ()>
+where
+    F: FnOnce(JsNumber) -> T,
+{
+    match fields.get(key) {
+        None => Ok(Absent(None)),
+        Some(Value::Number(number)) => Ok(Absent(Some(wrap(JsNumber(number.clone()))))),
+        Some(_) => Err(()),
+    }
+}
+
+fn raw_absent_slug(
+    fields: &Map<String, Value>,
+    key: &str,
+) -> Result<Absent<ProviderInstanceId>, ()> {
+    match fields.get(key) {
+        None => Ok(Absent(None)),
+        Some(Value::String(text)) => Ok(Absent(Some(Checked::wrap(NonEmpty(text.clone()))))),
+        Some(_) => Err(()),
+    }
+}
+
+fn raw_bool(fields: &Map<String, Value>, key: &str) -> Result<Absent<bool>, ()> {
+    match fields.get(key) {
+        None => Ok(Absent(None)),
+        Some(Value::Bool(value)) => Ok(Absent(Some(*value))),
+        Some(_) => Err(()),
+    }
 }
 
 /// The encode side of [`Weights`], and the one subject that cannot use [`round`] for it.
@@ -476,18 +554,17 @@ fn binary_path_encode(raw: &Value) -> Result<Value, ()> {
 // Fatia 3c — the last four predicates, and what a `Record` key's failure costs
 // ---------------------------------------------------------------------------
 
-/// `TerminalColsSchema` (`terminal.ts:13`): `Int.check(isGreaterThanOrEqualTo(1))` and then
-/// `.check(isLessThanOrEqualTo(1000))`. Two `.check` calls in a row are two filters on one
-/// schema, which the tuple instance of [`Check`] already models — the interesting part is
-/// that both bounds are **inclusive**, so 1 and 1000 pass and 0 and 1001 do not. Getting
-/// that backwards by one unit is the failure mode these 40 sites exist to catch.
+/// `TerminalColsSchema` (`terminal.ts:13`), the field this subject is a projection of and
+/// now the ported alias itself. Both bounds are **inclusive**, so 1 and 1000 pass and 0 and
+/// 1001 do not; getting that backwards by one unit is the failure mode these 40 sites exist
+/// to catch.
 ///
 /// `Schema.Int` and both filters are predicate-only, so Encoded and Type are the same
 /// `number` and one shape serves both directions: this subject is the rare case where the
 /// encode is exactly the decode backwards.
 #[derive(Deserialize, Serialize)]
 struct TerminalResizeCols {
-    cols: Checked<JsNumber, (SafeInt, (AtLeast<1>, AtMost<1000>))>,
+    cols: TerminalCols,
 }
 
 /// `assistantCitations.ts:24`'s `start` — `NonNegativeInt.check(isLessThanOrEqualTo(
@@ -507,59 +584,92 @@ struct AssistantCitationStart {
 /// predicate is needed for it.
 type TabId = Checked<String, (NoEdgeWhitespace, MinLength<1>)>;
 
-/// `TerminalEnvSchema` (`terminal.ts:21-25`), reached through `TerminalOpenInput.env`. The
-/// key is `String.check(isPattern(…)).check(isMaxLength(128))` — predicates over `string` and
-/// no `decodeTo` — which is the shape whose failures **drop the entry** instead of failing
-/// the record.
-static ENV_KEY_PATTERN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[A-Za-z_][A-Za-z0-9_]*$").expect("valid"));
-
-struct EnvKeyPattern;
-
-impl Check<String> for EnvKeyPattern {
-    fn passes(value: &String) -> bool {
-        ENV_KEY_PATTERN.is_match(value)
-    }
-
-    fn describe() -> String {
-        "a shell variable name".to_owned()
-    }
-}
-
-type EnvKey = Checked<String, (EnvKeyPattern, MaxLength<128>)>;
-type EnvValue = Checked<String, MaxLength<8_192>>;
-type Env = Checked<Record<EnvKey, EnvValue, LenientKeys>, MaxProperties<128>>;
-
+/// `TerminalEnv` (`terminal.ts:21-25`) reached through `TerminalOpenInput.env`, so the subject
+/// is the field alone rather than the whole open input. The key is a pattern **and** a length
+/// cap over a bare `String` with no `decodeTo`, which is the shape whose failures **drop the
+/// entry** instead of failing the record.
 #[derive(Deserialize, Serialize)]
 struct TerminalOpenEnv {
     #[serde(default, skip_serializing_if = "Absent::is_none")]
-    env: Absent<Env>,
+    env: Absent<TerminalEnv>,
 }
 
 /// The encode side builds every key **unchecked**, because that is where TypeScript puts
 /// its checks: on the way out. `Checked::wrap` is what makes an over-long or badly-shaped
 /// key representable at all, and `Record`'s `Serialize` then drops exactly those entries —
 /// after `MaxProperties` has counted them, which is the asymmetry the golden shows.
-fn env_encode(raw: &Value) -> Result<Value, ()> {
-    let fields = raw.as_object().ok_or(())?;
-    let env: Absent<Env> = match fields.get("env") {
-        None => Absent(None),
+fn raw_env(fields: &Map<String, Value>) -> Result<Absent<TerminalEnv>, ()> {
+    let entry = match fields.get("env") {
+        None => return Ok(Absent(None)),
         // `Schema.optional` refuses an explicit `null`, so this is a failure and not an
         // absence — `Absent` is the only field type that gets that distinction.
         Some(Value::Null) => return Err(()),
-        Some(entry) => {
-            let entries = entry.as_object().ok_or(())?;
-            let mut built: BTreeMap<EnvKey, EnvValue> = BTreeMap::new();
-            for (key, value) in entries {
-                built.insert(
-                    Checked::wrap(key.clone()),
-                    Checked::wrap(value.as_str().ok_or(())?.to_owned()),
-                );
-            }
-            Absent(Some(Checked::wrap(Record::new(built))))
-        }
+        Some(entry) => entry,
     };
+    let entries = entry.as_object().ok_or(())?;
+    let mut built: BTreeMap<TerminalEnvKey, TerminalEnvValue> = BTreeMap::new();
+    for (key, value) in entries {
+        built.insert(
+            Checked::wrap(key.clone()),
+            Checked::wrap(value.as_str().ok_or(())?.to_owned()),
+        );
+    }
+    Ok(Absent(Some(Checked::wrap(Record::new(built)))))
+}
+
+fn env_encode(raw: &Value) -> Result<Value, ()> {
+    let env = raw_env(raw.as_object().ok_or(())?)?;
     serde_json::to_value(TerminalOpenEnv { env }).map_err(|_| ())
+}
+
+// The encode mirrors of the three inputs whose recorded cases carry text a *decoder* would
+// refuse. `{cwd: "  "}` is not a valid `TrimmedNonEmptyString` Type value by construction,
+// but the shipped encoder runs its non-empty check on the untrimmed text and then trims, so
+// it succeeds and writes `""`. `round` would decode first and report a failure the golden
+// does not show, which is exactly the mistake these three fns exist to prevent.
+fn open_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let input = TerminalOpenInput {
+        thread_id: NonEmpty(raw_text(fields, "threadId")?),
+        terminal_id: Checked::wrap(NonEmpty(raw_text(fields, "terminalId")?)),
+        cwd: NonEmpty(raw_text(fields, "cwd")?),
+        worktree_path: raw_optional_text(fields, "worktreePath")?,
+        cols: raw_absent_number(fields, "cols", Checked::wrap)?,
+        rows: raw_absent_number(fields, "rows", Checked::wrap)?,
+        env: raw_env(fields)?,
+        provider_instance_id: raw_absent_slug(fields, "providerInstanceId")?,
+    };
+    serde_json::to_value(input).map_err(|_| ())
+}
+
+fn attach_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let input = TerminalAttachInput {
+        thread_id: NonEmpty(raw_text(fields, "threadId")?),
+        terminal_id: Checked::wrap(NonEmpty(raw_text(fields, "terminalId")?)),
+        cwd: raw_absent_text(fields, "cwd")?,
+        worktree_path: raw_optional_text(fields, "worktreePath")?,
+        cols: raw_absent_number(fields, "cols", Checked::wrap)?,
+        rows: raw_absent_number(fields, "rows", Checked::wrap)?,
+        env: raw_env(fields)?,
+        provider_instance_id: raw_absent_slug(fields, "providerInstanceId")?,
+        restart_if_not_running: raw_bool(fields, "restartIfNotRunning")?,
+    };
+    serde_json::to_value(input).map_err(|_| ())
+}
+
+fn close_encode(raw: &Value) -> Result<Value, ()> {
+    let fields = raw.as_object().ok_or(())?;
+    let input = TerminalCloseInput {
+        thread_id: NonEmpty(raw_text(fields, "threadId")?),
+        terminal_id: match fields.get("terminalId") {
+            None => Absent(None),
+            Some(Value::String(text)) => Absent(Some(Checked::wrap(NonEmpty(text.clone())))),
+            Some(_) => return Err(()),
+        },
+        delete_history: raw_bool(fields, "deleteHistory")?,
+    };
+    serde_json::to_value(input).map_err(|_| ())
 }
 
 /// `EnvironmentThemeColors` (`server.ts:514`), the other `LenientKeys` record. Its key is a
@@ -859,21 +969,21 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         "NonNegativeInt",
         (
             |raw| round::<NonNegativeInt>(raw),
-            |raw| int_like(raw, |n| (n >= 0).then_some(NonNegativeInt(n))),
+            |raw| safe_int_like(raw, |n| (n >= 0).then_some(NonNegativeInt(n))),
         ),
     );
     map.insert(
         "PositiveInt",
         (
             |raw| round::<PositiveInt>(raw),
-            |raw| int_like(raw, |n| (n >= 1).then_some(PositiveInt(n))),
+            |raw| safe_int_like(raw, |n| (n >= 1).then_some(PositiveInt(n))),
         ),
     );
     map.insert(
         "PortSchema",
         (
             |raw| round::<Port>(raw),
-            |raw| int_like(raw, |n| u16::try_from(n).ok().filter(|p| *p >= 1).map(Port)),
+            |raw| safe_int_like(raw, |n| u16::try_from(n).ok().filter(|p| *p >= 1).map(Port)),
         ),
     );
     map.insert(
@@ -1270,6 +1380,95 @@ fn codecs() -> BTreeMap<&'static str, (Codec, Codec)> {
         (
             |raw| round::<ConstructorDefault>(raw),
             |raw| round::<ConstructorDefault>(raw),
+        ),
+    );
+    // ── Fatia 5: `terminal.ts`. Nine of the twelve subjects are ordinary round trips — the
+    // input shapes carry no padded text a decoder would refuse but an encoder accepts, and a
+    // stream union re-serializes to the object it decoded from. The three that are not are
+    // the ones with an explicit builder above.
+    map.insert(
+        "terminalOpen",
+        (|raw| round::<TerminalOpenInput>(raw), open_encode),
+    );
+    map.insert(
+        "terminalAttach",
+        (|raw| round::<TerminalAttachInput>(raw), attach_encode),
+    );
+    map.insert(
+        "terminalWrite",
+        (
+            |raw| round::<TerminalWriteInput>(raw),
+            |raw| round::<TerminalWriteInput>(raw),
+        ),
+    );
+    map.insert(
+        "terminalResize",
+        (
+            |raw| round::<TerminalResizeInput>(raw),
+            |raw| round::<TerminalResizeInput>(raw),
+        ),
+    );
+    map.insert(
+        "terminalRestart",
+        (
+            |raw| round::<TerminalRestartInput>(raw),
+            |raw| round::<TerminalRestartInput>(raw),
+        ),
+    );
+    map.insert(
+        "terminalClose",
+        (|raw| round::<TerminalCloseInput>(raw), close_encode),
+    );
+    // The server-written half. No field of either shape trims, so the round trip is honest
+    // in both directions and `threadId: "  "` survives it — which is the point of the two id
+    // spellings existing at all.
+    map.insert(
+        "terminalSnapshot",
+        (
+            |raw| round::<TerminalSessionSnapshot>(raw),
+            |raw| round::<TerminalSessionSnapshot>(raw),
+        ),
+    );
+    map.insert(
+        "terminalSummary",
+        (
+            |raw| round::<TerminalSummary>(raw),
+            |raw| round::<TerminalSummary>(raw),
+        ),
+    );
+    // The three unions. `TerminalEvent` and `TerminalAttachStreamEvent` differ by one member
+    // each, and the golden is what shows a `snapshot` event decoding on one stream and
+    // refusing on the other.
+    map.insert(
+        "terminalEvent",
+        (
+            |raw| round::<TerminalEvent>(raw),
+            |raw| round::<TerminalEvent>(raw),
+        ),
+    );
+    map.insert(
+        "terminalMetadata",
+        (
+            |raw| round::<TerminalMetadataStreamEvent>(raw),
+            |raw| round::<TerminalMetadataStreamEvent>(raw),
+        ),
+    );
+    map.insert(
+        "terminalAttachEvent",
+        (
+            |raw| round::<TerminalAttachStreamEvent>(raw),
+            |raw| round::<TerminalAttachStreamEvent>(raw),
+        ),
+    );
+    // `recordTyped` names the Encoded JSON because the Type side is an `Error` instance, so
+    // this replay's encode decodes first — which is the same round trip `round` performs.
+    // The plain `record` cases under this name are all decode **failures**: a successful
+    // decode renders to `{name, message, cause}` and loses the declared fields.
+    map.insert(
+        "terminalError",
+        (
+            |raw| round::<TerminalError>(raw),
+            |raw| round::<TerminalError>(raw),
         ),
     );
     map
@@ -2166,6 +2365,15 @@ fn replays_the_golden_codec_behaviour() {
         }
     }
 
+    // Printed because the numbers below are only evidence if a reader can see which bucket
+    // a case landed in without editing the test.
+    eprintln!(
+        "replay: {replayed} replayed, {skipped} skipped, {incomparable} incomparable, {typed} \
+         typed, {unrepresentable} unrepresentable, of {} cases and {} subjects",
+        cases.len(),
+        subjects.len(),
+    );
+
     // Guards against the generator quietly shrinking and against this list going stale:
     // every golden subject is either ported or named as unrepresentable, and nothing is
     // named as unrepresentable that the golden no longer produces.
@@ -2182,7 +2390,7 @@ fn replays_the_golden_codec_behaviour() {
         subjects.len(),
         "golden subjects and the Rust tables disagree"
     );
-    assert_eq!(table.len(), 61, "ported subject count changed");
+    assert_eq!(table.len(), 73, "ported subject count changed");
     assert_eq!(
         unrepresentable, 2,
         "dateTimeUtcBare was supposed to be the only subject with no JSON form, and every \
@@ -2201,11 +2409,12 @@ fn replays_the_golden_codec_behaviour() {
          voidSchema cases that yield bare `undefined`"
     );
     assert_eq!(
-        typed, 22,
+        typed, 35,
         "5 durationFromMillis encodes whose Type side is a `Duration`, the 14 defect encodes \
-         whose Type side is an `Error`, and the 3 confirmQuitSetting encodes that \
-         `recordTyped` feeds as a Type-side mode — in all three the golden names the Encoded \
-         JSON and this replay decodes it first"
+         whose Type side is an `Error`, the 3 confirmQuitSetting encodes that `recordTyped` \
+         feeds as a Type-side mode, and the 13 terminalError encodes — the Type side of a \
+         `Schema.TaggedError` is an `Error` instance, which has no JSON spelling of its own. In \
+         all four the golden names the Encoded JSON and this replay decodes it first"
     );
     // Every case is accounted for by exactly one of these five counts, so the sum is the
     // golden's own `codec cases` line and the arithmetic is what a shrink would break.
@@ -2214,5 +2423,5 @@ fn replays_the_golden_codec_behaviour() {
         cases.len(),
         "some case was neither replayed nor classified"
     );
-    assert_eq!(replayed, 1202, "only replayed {replayed} cases");
+    assert_eq!(replayed, 1485, "only replayed {replayed} cases");
 }

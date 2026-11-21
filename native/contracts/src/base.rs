@@ -218,8 +218,10 @@ impl<'de> Deserialize<'de> for NonEmpty {
     }
 }
 
-/// `NonNegativeInt`: an integer `>= 0`. `1.5`, `true` and `"a"` are rejected before
-/// the range check, which is serde's integer behaviour already.
+/// `NonNegativeInt`: an integer `>= 0`.
+///
+/// The integer filter is `Number.isSafeInteger`, not serde's integer parse, so `8e1` is
+/// accepted and `9007199254740992` is refused — see [`bounded_int!`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct NonNegativeInt(pub i64);
 
@@ -231,8 +233,15 @@ pub struct PositiveInt(pub i64);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Port(pub u16);
 
+/// Builds the three `Schema.Int.check(isGreaterThanOrEqualTo(N))` newtypes above.
+///
+/// Both branches of the divergence that matters are measured, so the decode goes through
+/// [`JsNumber`] and narrows afterwards instead of reading `<$inner>::deserialize` directly:
+/// a plain `i64` read **accepts** `9007199254740992` (which `Number.isSafeInteger` refuses)
+/// and **rejects** `8e1` (which the codec sees as 80). The first is the dangerous direction —
+/// a Rust server taking a payload a TypeScript one turns away, failing nothing.
 macro_rules! bounded_int {
-    ($name:ident, $inner:ty, $range:expr, $unexpected:expr) => {
+    ($name:ident, $inner:ty, $range:expr) => {
         impl Serialize for $name {
             fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 let in_range: fn(&$inner) -> bool = $range;
@@ -248,12 +257,26 @@ macro_rules! bounded_int {
 
         impl<'de> Deserialize<'de> for $name {
             fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-                let value = <$inner>::deserialize(deserializer)?;
+                let number = JsNumber::deserialize(deserializer)?;
+                if !<SafeInt as Check<JsNumber>>::passes(&number) {
+                    return Err(de::Error::invalid_value(
+                        Unexpected::Float(number.0.as_f64().unwrap_or_default()),
+                        &concat!(stringify!($name), " (a safe integer)"),
+                    ));
+                }
+                // `SafeInt` has already proved the value integral and inside `2^53-1`, so the
+                // only `i64` conversion left to fail is `u16`'s range.
+                let integral = number.0.as_f64().unwrap_or_default() as i64;
+                let Some(value) = <$inner>::try_from(integral).ok() else {
+                    return Err(de::Error::invalid_value(
+                        Unexpected::Signed(integral),
+                        &stringify!($name),
+                    ));
+                };
                 let in_range: fn(&$inner) -> bool = $range;
                 if !in_range(&value) {
-                    let unexpected: fn($inner) -> Unexpected<'static> = $unexpected;
                     return Err(de::Error::invalid_value(
-                        unexpected(value),
+                        Unexpected::Signed(integral),
                         &stringify!($name),
                     ));
                 }
@@ -263,21 +286,52 @@ macro_rules! bounded_int {
     };
 }
 
-bounded_int!(
-    NonNegativeInt,
-    i64,
-    |value: &i64| *value >= 0,
-    Unexpected::Signed
-);
-bounded_int!(
-    PositiveInt,
-    i64,
-    |value: &i64| *value >= 1,
-    Unexpected::Signed
-);
-bounded_int!(Port, u16, |value: &u16| *value >= 1, |value: u16| {
-    Unexpected::Unsigned(u64::from(value))
-});
+bounded_int!(NonNegativeInt, i64, |value: &i64| *value >= 0);
+bounded_int!(PositiveInt, i64, |value: &i64| *value >= 1);
+bounded_int!(Port, u16, |value: &u16| *value >= 1);
+
+/// One member's literal tag inside an untagged union — `Schema.TaggedStruct`'s first argument
+/// reached through a `Schema.Union`.
+///
+/// A shared Rust enum cannot stand in for these: `#[serde(untagged)]` resolves a union by
+/// trying members **in declaration order** and taking the first that deserializes, so an enum
+/// holding all eight `type` values lets a thin member like `closed` swallow an `error` event
+/// and re-serialize it without its `message`. TypeScript picks the member by its tag and
+/// cannot make that mistake. Measured on the terminal event union, where `{type:"error",
+/// message:"spawn failed"}` decoded to a closed event. Each member therefore gets its own
+/// unit struct, which only deserializes its own string and so cannot match another's input.
+#[macro_export]
+macro_rules! wire_tag {
+    ($name:ident, $wire:literal) => {
+        #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+        pub struct $name;
+
+        impl ::serde::Serialize for $name {
+            fn serialize<S: ::serde::Serializer>(
+                &self,
+                serializer: S,
+            ) -> ::std::result::Result<S::Ok, S::Error> {
+                serializer.serialize_str($wire)
+            }
+        }
+
+        impl<'de> ::serde::Deserialize<'de> for $name {
+            fn deserialize<D: ::serde::Deserializer<'de>>(
+                deserializer: D,
+            ) -> ::std::result::Result<Self, D::Error> {
+                let text = <String as ::serde::Deserialize<'de>>::deserialize(deserializer)?;
+                if text == $wire {
+                    Ok($name)
+                } else {
+                    Err(::serde::de::Error::invalid_value(
+                        ::serde::de::Unexpected::Str(&text),
+                        &$wire,
+                    ))
+                }
+            }
+        }
+    };
+}
 
 /// An optional field whose key must be absent, not null: `Schema.optional` and
 /// `Schema.optionalKey`. Plain `Option<T>` is wrong here because serde decodes an
@@ -340,6 +394,53 @@ impl<'de, T: Deserialize<'de>> Visitor<'de> for AbsentVisitor<T> {
 
     fn visit_some<D: Deserializer<'de>>(self, deserializer: D) -> Result<Absent<T>, D::Error> {
         T::deserialize(deserializer).map(|value| Absent(Some(value)))
+    }
+}
+
+/// `Schema.optional(Schema.NullOr(value))` — the field may be left out, may be `null`, or
+/// may hold the value, and the three states are not interchangeable.
+///
+/// Neither half alone can spell it. [`Absent`] routes an explicit `null` through
+/// `visit_none` and **fails**, which is the right rule for `Schema.optional` alone and the
+/// wrong one here; [`Nullable`] accepts the null but makes the key required. So this is a
+/// third type rather than a nesting of the two: `Absent<Nullable<T>>` holds the three states
+/// but cannot decode them, since the outer `Absent` never reaches the inner one on a null.
+///
+/// Declare it as `#[serde(default, skip_serializing_if = "Optional::is_none")]`. Not
+/// [`EffectOption`], which is `Schema.Option` and crosses in Effect's own internal spelling.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct Optional<T>(pub Absent<Nullable<T>>);
+
+impl<T> Optional<T> {
+    pub fn is_none(&self) -> bool {
+        self.0.is_none()
+    }
+
+    /// The value, if the key was present and was not null.
+    pub fn into_option(self) -> Option<T> {
+        self.0
+            .into_option()
+            .and_then(|nullable| nullable.into_option())
+    }
+}
+
+impl<T: Serialize> Serialize for Optional<T> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        // A Rust `None` here means "the key is absent", which `is_none` skips; a present
+        // null is `Absent(Some(Nullable(None)))` and has to reach the wire as `null`.
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Optional<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let raw = serde_json::Value::deserialize(deserializer)?;
+        if raw.is_null() {
+            return Ok(Optional(Absent(Some(Nullable(None)))));
+        }
+        Ok(Optional(Absent(Some(Nullable(Some(
+            T::deserialize(raw).map_err(de::Error::custom)?,
+        ))))))
     }
 }
 
@@ -667,6 +768,50 @@ impl<const N: usize, T: Length> Check<T> for MinLength<N> {
 
     fn describe() -> String {
         format!("at least {N} long")
+    }
+}
+
+/// `Schema.String.check(isNonEmpty())` — the **untrimmed** sibling of [`NonEmpty`], and the
+/// spelling server→client payloads use for ids they generated themselves.
+///
+/// The difference is wire-visible and it is not cosmetic: `"  "` is a valid `threadId` here
+/// because two spaces are non-empty, where `TrimmedNonEmptyString` refuses it. So the two
+/// cannot share a type. `Schema.isNonEmpty` over an untransformed string is a length
+/// predicate measured in UTF-16 units, which is why no new check is needed for it.
+pub type BareNonEmpty = Checked<String, MinLength<1>>;
+
+/// `Schema.Int`, which is [`SafeInt`] and nothing else: the value stays a JSON number, so
+/// `1.0` and `1e3` are integers and `2^53` is not.
+pub type Int = Checked<JsNumber, SafeInt>;
+
+/// `Schema.Int.check(isGreaterThanOrEqualTo(MIN)).check(isLessThanOrEqualTo(MAX))` — the
+/// two-`.check` spelling `terminal.ts:13` uses for a column count. Both bounds are
+/// inclusive, and the integer filter runs **before** them, which is why `1.5` fails at the
+/// type layer rather than at the bracket.
+pub type BoundedInt<const MIN: i64, const MAX: i64> =
+    Checked<JsNumber, (SafeInt, (AtLeast<MIN>, AtMost<MAX>))>;
+
+impl<const MIN: i64, const MAX: i64> BoundedInt<MIN, MAX> {
+    /// The integer the wire number stands for. Only reachable through a decode or [`new`],
+    /// both of which have run the bracket, so no range check happens here.
+    ///
+    /// Through `f64` rather than `serde_json::Number::as_i64`, because the latter answers
+    /// `None` for a float-typed number: `8e1` is a legal column count — `Number.isSafeInteger`
+    /// sees 80 — and `as_i64` would drop a value the codec accepts.
+    pub fn as_i64(&self) -> i64 {
+        self.0
+            .0
+            .as_f64()
+            .expect("SafeInt rejects anything not finite and integral") as i64
+    }
+
+    /// Build from a Rust integer, which is the one case where the bracket has to be
+    /// re-checked: [`Checked::wrap`] is lax on purpose, so a caller that skipped this could
+    /// hold an out-of-range size and only find out when serialization refused to write it.
+    pub fn new(value: i64) -> Option<Self> {
+        (MIN..=MAX)
+            .contains(&value)
+            .then(|| Checked::wrap(JsNumber(serde_json::Number::from(value))))
     }
 }
 

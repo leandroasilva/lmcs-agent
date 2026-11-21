@@ -1,0 +1,18 @@
+[package]
+name = "lmcs-protocol"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[dependencies]
+# `float_roundtrip` because JavaScript's `JSON.parse` is correctly rounded and serde's default
+# parser is not; `preserve_order` because the envelope's claim is about **bytes**, and a sorted
+# map cannot reproduce a client's key order or hold a payload's keys as they arrived.
+serde_json = { version = "1.0.154", features = ["float_roundtrip", "preserve_order"] }
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+panic = "abort"
+strip = true

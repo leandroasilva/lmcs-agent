@@ -10,6 +10,8 @@
 //! `UNREGISTERED` names the gap instead of hiding it.
 
 pub mod base;
+pub mod provider_instance;
+pub mod terminal;
 
 /// `(key, tag)` pairs from `WS_METHODS` in `contracts/rpc.ts`.
 pub const WS_METHODS: &[(&str, &str)] = &[
