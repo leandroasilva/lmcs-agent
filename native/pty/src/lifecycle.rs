@@ -599,24 +599,32 @@ mod tests {
     }
 
     #[test]
-    fn a_thread_close_without_the_flag_closes_sessions_and_keeps_files() {
-        let logs = Logs::start("thread-no-delete");
-        let current = logs.current("thread-1", DEFAULT_TERMINAL_ID);
-        logs.seed(&current, "keep\n");
-        let mut terminals = terminals(&logs);
-        terminals.insert(
-            "thread-1",
-            DEFAULT_TERMINAL_ID,
-            logs.session("thread-1", DEFAULT_TERMINAL_ID, b"keep\n"),
-        );
-        let published = Published::new();
-        let mut watch = published.watch(&logs, vec![current.clone()]);
-        assert_eq!(
-            terminals.close("thread-1", None, None, &mut watch).unwrap(),
-            Vec::new()
-        );
-        assert_eq!(published.events(), vec![("term-1".to_owned(), 1)]);
-        assert!(logs.exists(&current));
+    fn a_thread_close_with_the_flag_off_closes_sessions_and_keeps_files() {
+        for flag in [None, Some(false)] {
+            let logs = Logs::start(&format!("thread-no-delete-{flag:?}"));
+            let current = logs.current("thread-1", DEFAULT_TERMINAL_ID);
+            let legacy = logs.legacy("thread-1");
+            for path in [&current, &legacy] {
+                logs.seed(path, "keep\n");
+            }
+            let mut terminals = terminals(&logs);
+            terminals.insert(
+                "thread-1",
+                DEFAULT_TERMINAL_ID,
+                logs.session("thread-1", DEFAULT_TERMINAL_ID, b"keep\n"),
+            );
+            let published = Published::new();
+            let mut watch = published.watch(&logs, vec![current.clone()]);
+            assert_eq!(
+                terminals.close("thread-1", None, flag, &mut watch).unwrap(),
+                Vec::new()
+            );
+            assert_eq!(published.events(), vec![("term-1".to_owned(), 1)]);
+            assert!(
+                logs.exists(&current) && logs.exists(&legacy),
+                "{flag:?} never sweeps, so even the legacy name survives"
+            );
+        }
     }
 
     #[test]
@@ -741,6 +749,39 @@ mod tests {
     }
 
     #[test]
+    fn a_stopped_worker_fails_clear_and_restart_before_either_publishes() {
+        let mut logs = Logs::start("stopped-worker-clear");
+        let current = logs.current("thread-1", DEFAULT_TERMINAL_ID);
+        logs.seed(&current, "keep\n");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-1",
+            DEFAULT_TERMINAL_ID,
+            logs.session("thread-1", DEFAULT_TERMINAL_ID, b"keep\n"),
+        );
+        drop(logs.worker.take());
+        let published = Published::new();
+        let mut watch = published.watch(&logs, vec![current.clone()]);
+        for outcome in [
+            terminals.clear("thread-1", DEFAULT_TERMINAL_ID, &mut watch),
+            terminals.restart("thread-1", DEFAULT_TERMINAL_ID, 42, &mut watch),
+        ] {
+            assert_eq!(
+                outcome
+                    .expect_err("the shipped generator stops on a failed persist")
+                    .kind(),
+                io::ErrorKind::BrokenPipe
+            );
+        }
+        assert_eq!(published.events(), Vec::<(String, u64)>::new());
+        assert_eq!(
+            fs::read(&current).unwrap(),
+            b"keep\n",
+            "nothing was written"
+        );
+    }
+
+    #[test]
     fn a_stopped_worker_fails_the_close_before_anything_is_published_or_removed() {
         let mut logs = Logs::start("stopped-worker");
         let current = logs.current("thread-1", DEFAULT_TERMINAL_ID);
@@ -789,11 +830,20 @@ mod tests {
         );
         let published = Published::new();
         let mut watch = published.watch(&logs, vec![]);
+        assert_eq!(
+            terminals.sessions_of("thread-1"),
+            vec!["term-2".to_owned(), "term-1".to_owned()],
+            "a replacement reuses the slot its key first took"
+        );
         terminals.close("thread-1", None, None, &mut watch).unwrap();
         assert_eq!(
             published.events(),
             vec![("term-2".to_owned(), 1), ("term-1".to_owned(), 1)]
         );
         assert!(terminals.is_empty());
+        assert!(
+            terminals.sessions_of("thread-1").is_empty(),
+            "a close frees the registration slot, not only the session"
+        );
     }
 }
