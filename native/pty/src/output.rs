@@ -1,18 +1,24 @@
-use lmcs_terminal_history::{BoundedHistory, sanitize};
+use std::sync::{Arc, Mutex};
+
+use lmcs_terminal_history::{BoundedHistory, SharedHistory, sanitize};
 
 use crate::{Delivery, PendingEvent, Pipe, Sanitized};
 
-/// In-memory output state; spawning, persistence and publication belong to its owner.
+/// In-memory output state; spawning and publication belong to its owner.
+///
+/// The history sits behind a lock the persistence worker can sample without this
+/// state machine knowing about persistence, so `start` keeps restored history
+/// and no transition here touches the disk.
 pub struct TerminalOutput {
     pipe: Pipe,
-    history: BoundedHistory,
+    history: SharedHistory,
 }
 
 impl TerminalOutput {
     pub fn new(history: BoundedHistory) -> Self {
         Self {
             pipe: Pipe::new(),
-            history,
+            history: Arc::new(Mutex::new(history)),
         }
     }
 
@@ -21,7 +27,7 @@ impl TerminalOutput {
     }
 
     pub fn restart(&mut self, pid: u32) -> u64 {
-        self.history.clear();
+        self.history.lock().unwrap().clear();
         self.pipe.start(pid)
     }
 
@@ -34,7 +40,7 @@ impl TerminalOutput {
     }
 
     pub fn clear(&mut self) -> u64 {
-        self.history.clear();
+        self.history.lock().unwrap().clear();
         self.pipe.clear()
     }
 
@@ -43,11 +49,11 @@ impl TerminalOutput {
     }
 
     pub fn drain_next(&mut self, pid: u32) -> Option<Delivery> {
-        let history = &mut self.history;
+        let history = &self.history;
         self.pipe.drain_next(pid, |pending, data| {
             let sanitized = sanitize(pending, data);
             if !sanitized.visible.is_empty() {
-                history.append(sanitized.visible.as_bytes());
+                history.lock().unwrap().append(sanitized.visible.as_bytes());
             }
             Sanitized {
                 visible: sanitized.visible,
@@ -56,8 +62,18 @@ impl TerminalOutput {
         })
     }
 
-    pub fn history(&self) -> &BoundedHistory {
-        &self.history
+    /// The handle the persistence worker samples at write time. Locking it while
+    /// waiting on a persist drain deadlocks the worker; see [`SharedHistory`].
+    pub fn shared_history(&self) -> SharedHistory {
+        self.history.clone()
+    }
+
+    pub fn history_value(&self) -> Vec<u8> {
+        self.history.lock().unwrap().value()
+    }
+
+    pub fn history_bytes(&self) -> usize {
+        self.history.lock().unwrap().bytes()
     }
 
     pub fn sequence(&self) -> u64 {
@@ -100,7 +116,7 @@ mod tests {
             assert_eq!(output.enqueue(7, data(chunk)), index == 0);
         }
         assert_eq!(output.sequence(), 1);
-        assert_eq!(output.history().value(), b"");
+        assert_eq!(output.history_value(), b"");
         let visible = ["prompt", "", "\x1b[31mred\x1b[0m", "", ""];
         let mut retained = String::new();
         for (index, (chunk, visible)) in chunks.iter().zip(visible).enumerate() {
@@ -114,7 +130,7 @@ mod tests {
                 })
             );
             retained.push_str(visible);
-            assert_eq!(output.history().value(), retained.as_bytes());
+            assert_eq!(output.history_value(), retained.as_bytes());
         }
         assert_eq!(output.queued(), 0);
         assert_eq!(output.drain_next(7), None);
@@ -136,7 +152,7 @@ mod tests {
                     history_grew: true,
                 })
             );
-            assert_eq!(output.history().value(), expected.as_bytes());
+            assert_eq!(output.history_value(), expected.as_bytes());
         }
     }
 
@@ -146,10 +162,10 @@ mod tests {
         output.start(7);
         output.enqueue(7, data("old\x1b["));
         let held = output.drain_next(7).unwrap();
-        assert_eq!(output.history().value(), b"old");
+        assert_eq!(output.history_value(), b"old");
         assert!(!output.enqueue(7, data("discarded")));
         assert_eq!(output.clear(), 3);
-        assert_eq!(output.history().value(), b"");
+        assert_eq!(output.history_value(), b"");
         assert_eq!(output.queued(), 0);
         assert!(output.enqueue(7, data("6nnew")));
         assert_eq!(
@@ -161,7 +177,7 @@ mod tests {
                 history_grew: true,
             })
         );
-        assert_eq!(output.history().value(), b"6nnew");
+        assert_eq!(output.history_value(), b"6nnew");
         assert!(matches!(held, Delivery::Output { sequence: 2, .. }));
         assert_eq!(output.drain_next(7), None);
     }
@@ -185,7 +201,7 @@ mod tests {
                 exit_signal: Some(0)
             })
         );
-        assert_eq!(output.history().value(), b"kept");
+        assert_eq!(output.history_value(), b"kept");
         assert_eq!(output.queued(), 0);
         assert_eq!(output.drain_next(7), None);
         assert!(!output.enqueue(7, data("late")));
@@ -195,22 +211,22 @@ mod tests {
     fn start_preserves_restored_history_and_restart_clears_it() {
         let mut output = TerminalOutput::new(BoundedHistory::new(b"restored"));
         assert_eq!(output.start(7), 1);
-        assert_eq!(output.history().value(), b"restored");
+        assert_eq!(output.history_value(), b"restored");
         output.enqueue(7, data("before\x1b["));
         assert!(output.drain_next(7).is_some());
         output.enqueue(7, data("queued"));
         assert_eq!(output.restart(8), 3);
-        assert_eq!(output.history().value(), b"");
+        assert_eq!(output.history_value(), b"");
         assert_eq!(output.queued(), 0);
         assert!(!output.enqueue(7, data("stale")));
         assert!(output.enqueue(8, data("6nnew")));
         assert!(output.drain_next(8).is_some());
-        assert_eq!(output.history().value(), b"6nnew");
+        assert_eq!(output.history_value(), b"6nnew");
         output.stop();
-        assert_eq!(output.history().value(), b"6nnew");
+        assert_eq!(output.history_value(), b"6nnew");
         assert!(!output.enqueue(8, data("stopped")));
         assert_eq!(output.close(), 5);
-        assert_eq!(output.history().value(), b"6nnew");
+        assert_eq!(output.history_value(), b"6nnew");
     }
 
     #[test]
@@ -223,8 +239,20 @@ mod tests {
         assert!(output.enqueue(8, data("new-but-lost")));
         assert_eq!(output.drain_next(7), None);
         assert_eq!(output.queued(), 0);
-        assert_eq!(output.history().value(), b"");
+        assert_eq!(output.history_value(), b"");
         assert_eq!(output.drain_next(8), None);
         assert_eq!(output.sequence(), 3);
+    }
+
+    #[test]
+    fn the_shared_handle_is_the_one_the_history_accessors_read() {
+        let mut output = TerminalOutput::new(BoundedHistory::with_limits(2, 128, b"restored"));
+        let shared = output.shared_history();
+        shared.lock().unwrap().append(b" owner");
+        assert_eq!(output.history_value(), b"restored owner");
+        assert_eq!(output.history_bytes(), 14);
+        output.clear();
+        assert_eq!(shared.lock().unwrap().value(), b"");
+        assert!(output.shared_history().try_lock().is_ok());
     }
 }

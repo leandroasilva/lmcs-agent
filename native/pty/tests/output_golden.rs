@@ -14,6 +14,14 @@ impl Drop for HistoryDirectory {
     }
 }
 
+// The shipped manager wrote synchronously at its own call sites; this test does the same
+// instead of going through the debounced worker, whose timing the golden cannot observe.
+fn write_history(path: &std::path::Path, output: &TerminalOutput) {
+    let history = output.shared_history();
+    let history = history.lock().unwrap();
+    write_file(path, &history).unwrap();
+}
+
 #[test]
 fn output_snapshots_reopen_and_clear_without_persisting_raw_queries() {
     let path = std::env::temp_dir().join(format!(
@@ -46,22 +54,22 @@ fn output_snapshots_reopen_and_clear_without_persisting_raw_queries() {
     }
     assert_eq!(std::fs::read(&path).unwrap(), b"restored\n");
     output.close();
-    write_file(&path, output.history()).unwrap();
+    write_history(&path, &output);
     let reopened = read_file(&path, 128, 3).unwrap();
     assert_eq!(
         reopened.history,
         "restored\nprompt\x1b[31mred\x1b[0m\r\ndone"
     );
     assert!(!reopened.needs_rewrite);
-    assert_eq!(std::fs::read(&path).unwrap(), output.history().value());
+    assert_eq!(std::fs::read(&path).unwrap(), output.history_value());
 
     output.start(8);
     output.clear();
-    write_file(&path, output.history()).unwrap();
+    write_history(&path, &output);
     assert!(read_file(&path, 128, 3).unwrap().history.is_empty());
     assert!(output.enqueue(8, PendingEvent::Data("new".to_string())));
     assert!(output.drain_next(8).is_some());
-    write_file(&path, output.history()).unwrap();
+    write_history(&path, &output);
     assert_eq!(read_file(&path, 128, 3).unwrap().history, "new");
 }
 
@@ -101,7 +109,7 @@ fn replay(limits: (usize, usize), chunks: &[String], expected: &[u8]) {
     assert_eq!(burst.queued(), chunks.len());
     assert_eq!(burst.sequence(), started);
     assert!(
-        burst.history().value().is_empty(),
+        burst.history_value().is_empty(),
         "history changed before dequeue"
     );
     let mut burst_deliveries = Vec::new();
@@ -128,7 +136,7 @@ fn replay(limits: (usize, usize), chunks: &[String], expected: &[u8]) {
         assert_eq!(output.queued(), 0, "{schedule} {limits:?}");
         assert_eq!(output.sequence(), started + chunks.len() as u64);
         assert_eq!(
-            output.history().value(),
+            output.history_value(),
             expected,
             "{schedule} {limits:?}: history differs from the shipped persisted log"
         );

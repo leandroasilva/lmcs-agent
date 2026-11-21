@@ -659,7 +659,7 @@ fn real_pty_output_updates_bounded_history_without_sanitizing_live_data() {
             SessionEvent::Writable => {
                 assert!(waiting_to_acknowledge && !acknowledged);
                 assert_eq!(output.sequence(), sequence);
-                assert_eq!(output.history().value(), b"restored\nprefix");
+                assert_eq!(output.history_value(), b"restored\nprefix");
                 assert_eq!(session.try_write(b"\n").unwrap(), 1);
                 acknowledged = true;
                 continue;
@@ -687,9 +687,9 @@ fn real_pty_output_updates_bounded_history_without_sanitizing_live_data() {
             }
         }
         assert_eq!(output.drain_next(pid), None);
-        assert!(output.history().bytes() <= 64);
+        assert!(output.history_bytes() <= 64);
         if !waiting_to_acknowledge && raw.ends_with("prefix\x1b[6") {
-            assert_eq!(output.history().value(), b"restored\nprefix");
+            assert_eq!(output.history_value(), b"restored\nprefix");
             waiting_to_acknowledge = true;
             session.request_writable().unwrap();
         }
@@ -703,10 +703,10 @@ fn real_pty_output_updates_bounded_history_without_sanitizing_live_data() {
         )
     );
     assert_eq!(
-        output.history().value(),
+        output.history_value(),
         format!("{}tail\u{fffd}", " ".repeat(57)).as_bytes()
     );
-    assert_eq!(output.history().bytes(), 64);
+    assert_eq!(output.history_bytes(), 64);
     assert_eq!(output.drain_next(pid), None);
     assert_eq!(session.recv().unwrap(), None);
     assert!(!output.enqueue(pid, PendingEvent::Data("late".to_string())));
