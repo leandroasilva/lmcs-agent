@@ -170,12 +170,7 @@ impl Manager {
         persist: PersistHandle,
         on_warning: impl FnMut(LogLine) + Send + 'static,
     ) -> Self {
-        Self::build(
-            Terminals::new(logs_dir),
-            logs_dir,
-            persist,
-            on_warning,
-        )
+        Self::build(Terminals::new(logs_dir), logs_dir, persist, on_warning)
     }
 
     /// `makeWithOptions`, with the ceiling on inactive sessions the shipped manager reads from its
@@ -322,14 +317,10 @@ impl Manager {
         at: &str,
     ) -> Vec<(Subscriber, Frame)> {
         let mut events = Vec::new();
-        self.terminals.mark_running(
-            thread_id,
-            terminal_id,
-            pid,
-            requested,
-            at,
-            &mut |event| events.push(event.clone()),
-        );
+        self.terminals
+            .mark_running(thread_id, terminal_id, pid, requested, at, &mut |event| {
+                events.push(event.clone())
+            });
         self.deliver(thread_id, &events)
     }
 
@@ -364,14 +355,10 @@ impl Manager {
         at: &str,
     ) -> Vec<(Subscriber, Frame)> {
         let mut events = Vec::new();
-        self.terminals.exit(
-            thread_id,
-            terminal_id,
-            sequence,
-            exit,
-            at,
-            &mut |event| events.push(event.clone()),
-        );
+        self.terminals
+            .exit(thread_id, terminal_id, sequence, exit, at, &mut |event| {
+                events.push(event.clone())
+            });
         self.deliver(thread_id, &events)
     }
 
@@ -428,6 +415,13 @@ impl Manager {
     /// `close`. The warnings the removals could not avoid are this call's to hand to the owner, and the
     /// shipped order puts each one after the event that precedes it: persist and drain, then `closed`,
     /// then the unlink.
+    ///
+    /// The `closed` frames are staged rather than published from inside the table's callback, which costs
+    /// nothing here: the table already publishes before it removes, and a closed event's metadata frame is
+    /// a remove built from the event's own ids (`stream::metadata_frame`), so there is no row left to read
+    /// either way. What the staging does mean is that a persist failure partway through a thread close
+    /// discards the frames of the sessions that were already closed — recorded as a divergence for the
+    /// transport, since the shipped call had already written them.
     pub fn close(
         &mut self,
         thread_id: &str,

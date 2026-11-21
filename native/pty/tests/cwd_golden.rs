@@ -635,3 +635,321 @@ fn replays_shipped_terminal_cwd_validation() {
         trace.display()
     );
 }
+
+/// The same capture, replayed through the ported call sites rather than the rule alone.
+///
+/// The test above feeds `assert_valid_cwd` the `stat` the shipped run measured, which is what lets it
+/// prove a reason-to-tag mapping no host-independent test can. That strength is also its limit: it says
+/// nothing about *where* the rule runs. This one builds the nine fixtures for real and drives
+/// [`Manager::open`] and [`Manager::restart`], so the guard is asked the same question the shipped
+/// `openLocked` and `restartResolved` were — a real `stat` of a real path — and both halves of the
+/// capture have to agree: the verdict, and the silence around a refusal.
+///
+/// The silence is the point. A golden that only compared tags would pass a port that validated after the
+/// session table was read, killed the live shell, or rewrote the history file on the way to saying no.
+#[cfg(unix)]
+mod call_site {
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    use std::sync::{Arc, Mutex};
+
+    use lmcs_pty::lifecycle::{LaunchAsk, Size, Worktree};
+    use lmcs_pty::manager::{LogLine, Manager, Open, Restart};
+    use lmcs_terminal_history::{HistoryPersistence, history_path};
+
+    use super::*;
+
+    /// The key every replayed call uses. The trace masks its own thread and terminal names out of the
+    /// artifact, and no part of the rule reads them.
+    const THREAD: &str = "thread-a";
+    const TERMINAL: &str = "term-a";
+    const PID: u32 = 4242;
+    const AT: &str = "2026-11-21T00:00:00.000Z";
+
+    /// The capture's fixtures, built for real.
+    struct Fixtures {
+        base: PathBuf,
+        root: PathBuf,
+        logs: PathBuf,
+        /// The parent that stops a `stat` from reaching its child, opened up again on drop so the
+        /// directory the test made is a directory the test can remove.
+        locked: PathBuf,
+    }
+
+    impl Fixtures {
+        fn new(case: &str) -> Self {
+            let base =
+                std::env::temp_dir().join(format!("lmcs-cwd-site-{}-{case}", std::process::id()));
+            let _ = fs::remove_dir_all(&base);
+            let root = base.join("fixtures");
+            let logs = base.join("logs");
+            let locked = root.join("locked");
+            fs::create_dir_all(&logs).unwrap();
+            fs::create_dir_all(root.join("dir")).unwrap();
+            fs::write(root.join("plain.txt"), "not a directory\n").unwrap();
+            symlink("dir", root.join("link-dir")).unwrap();
+            symlink("gone", root.join("link-broken")).unwrap();
+            fs::create_dir_all(locked.join("inner")).unwrap();
+            fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+            Self {
+                base,
+                root,
+                logs,
+                locked,
+            }
+        }
+
+        /// The trace's masked spelling of a fixture, in this run's own words. The message interpolates the
+        /// directory exactly as it was named, so unmasking is what lets the two texts be compared.
+        fn spelled(&self, masked: &str) -> String {
+            masked.replace("<tmp>", &self.root.display().to_string())
+        }
+
+        fn path(&self, label: &str) -> String {
+            let masked = fixture_path(label).unwrap_or_else(|| {
+                panic!("trace named a fixture the golden has no path for: {label}")
+            });
+            self.spelled(masked)
+        }
+
+        fn history(&self) -> PathBuf {
+            history_path(&self.logs, THREAD, TERMINAL)
+        }
+    }
+
+    impl Drop for Fixtures {
+        fn drop(&mut self) {
+            let _ = fs::set_permissions(&self.locked, fs::Permissions::from_mode(0o755));
+            let _ = fs::remove_dir_all(&self.base);
+        }
+    }
+
+    #[test]
+    fn replays_the_shipped_open_and_restart_call_sites() {
+        let Some(trace) = std::env::var_os("LMCS_TERMINAL_CWD_TRACE") else {
+            eprintln!(
+                "skipped call-site golden: LMCS_TERMINAL_CWD_TRACE unset; no cross-language check ran"
+            );
+            return;
+        };
+        let parsed = parse(&PathBuf::from(trace));
+        let mut driven = 0;
+        let mut accepted = 0;
+        let mut probes = 0;
+        let mut refusals: BTreeSet<String> = BTreeSet::new();
+        let mut excluded: Vec<String> = Vec::new();
+
+        for case in &parsed.cases {
+            let fixtures = Fixtures::new(&case.name);
+            let worker = HistoryPersistence::start(fixtures.logs.clone(), drop)
+                .expect("the persistence worker the call sites drain through");
+            let lines = Arc::new(Mutex::new(Vec::new()));
+            let recorded = lines.clone();
+            let mut manager =
+                Manager::new(&fixtures.logs, worker.handle(), move |line: LogLine| {
+                    recorded.lock().unwrap().push(line);
+                });
+            let size = Some(Size {
+                cols: 120,
+                rows: 30,
+            });
+
+            for window in &case.windows {
+                match window.kind.as_str() {
+                    // An attach on a live record read no directory, and the port's `attach` is a
+                    // subscription that reads none either — the record has to survive it unchanged.
+                    "attach" if window.stats.is_empty() => {
+                        let before = manager.state(THREAD, TERMINAL).cloned();
+                        manager.attach(THREAD, TERMINAL);
+                        assert_eq!(
+                            manager.state(THREAD, TERMINAL).cloned(),
+                            before,
+                            "{} {} a subscription disturbed the record",
+                            case.name,
+                            window.id
+                        );
+                        probes += 1;
+                    }
+                    // An attach on an absent record opens one, so its guard is `openLocked`'s. That path
+                    // is not ported yet, which is a counted gap rather than a passing assertion.
+                    "attach" => excluded.push(format!(
+                        "{} {}: open-on-attach is not ported, so this call has no site here",
+                        case.name, window.id
+                    )),
+                    "open" | "restart" => {
+                        let stat = window.stats.first().unwrap_or_else(|| {
+                            panic!(
+                                "{} {} a validating call read no directory",
+                                case.name, window.id
+                            )
+                        });
+                        let cwd = fixtures.path(&stat.label);
+                        if fs::metadata(&cwd).is_ok() != stat.spelling().starts_with("ok ") {
+                            // The unsearchable parent answers a `stat` where the mode bits should refuse
+                            // it — root, or an ACL that grants the read. Replaying that window would ask
+                            // the port a question the capture never answered.
+                            excluded.push(format!(
+                                "{} {}: the host let a stat through {} that the capture refused",
+                                case.name, window.id, stat.label
+                            ));
+                            continue;
+                        }
+                        let before_state = manager.state(THREAD, TERMINAL).cloned();
+                        let before_launch = manager.launch(THREAD, TERMINAL).cloned();
+                        let before_disk = fs::read(fixtures.history()).ok();
+                        let ask = LaunchAsk {
+                            cwd: cwd.clone(),
+                            worktree: Worktree::Unnamed,
+                            env: None,
+                        };
+                        let outcome = if window.kind == "open" {
+                            manager
+                                .open(&Open {
+                                    thread_id: THREAD,
+                                    terminal_id: TERMINAL,
+                                    ask: &ask,
+                                    requested: size,
+                                    at: AT,
+                                })
+                                .map(|_| ())
+                        } else {
+                            manager
+                                .restart(&Restart {
+                                    thread_id: THREAD,
+                                    terminal_id: TERMINAL,
+                                    pid: PID,
+                                    ask: &ask,
+                                    requested: size,
+                                    at: AT,
+                                })
+                                .map(|_| ())
+                        };
+                        driven += 1;
+                        match (window.status.as_str(), outcome) {
+                            ("ok", Ok(())) => {
+                                accepted += 1;
+                                if window.kind == "open" {
+                                    manager.start(THREAD, TERMINAL, PID, size, AT);
+                                }
+                                // Nothing in this path canonicalizes, so the record keeps the name the
+                                // caller used: a link to a directory is remembered as the link.
+                                let launch = manager
+                                    .launch(THREAD, TERMINAL)
+                                    .expect("an accepted call records a launch")
+                                    .clone();
+                                assert_eq!(
+                                    launch.cwd, cwd,
+                                    "{} {} the record kept a path other than the one it was handed",
+                                    case.name, window.id
+                                );
+                                if let Some(traced) = window.snapshots.first() {
+                                    assert_eq!(
+                                        dir_tail(&launch.cwd),
+                                        traced.as_str(),
+                                        "{} {} the record kept a different directory than the shipped one",
+                                        case.name,
+                                        window.id
+                                    );
+                                }
+                            }
+                            ("ok", Err(failure)) => panic!(
+                                "{} {} the shipped call accepted {} and the port refused it: {} {}",
+                                case.name,
+                                window.id,
+                                stat.label,
+                                failure.tag().unwrap_or("-"),
+                                failure.message()
+                            ),
+                            (status, Ok(())) => panic!(
+                                "{} {} the shipped call refused {} with {status} and the port accepted it",
+                                case.name, window.id, stat.label
+                            ),
+                            (status, Err(failure)) => {
+                                let tag = status
+                                    .strip_prefix("err:")
+                                    .expect("a traced refusal carries its tag");
+                                assert_eq!(
+                                    failure.tag(),
+                                    Some(tag),
+                                    "{} {} refusal tag",
+                                    case.name,
+                                    window.id
+                                );
+                                let traced = window.message.as_ref().unwrap_or_else(|| {
+                                    panic!(
+                                        "{} {} the trace refused without a message",
+                                        case.name, window.id
+                                    )
+                                });
+                                assert_eq!(
+                                    failure.message(),
+                                    fixtures.spelled(traced),
+                                    "{} {} refusal message",
+                                    case.name,
+                                    window.id
+                                );
+                                refusals.insert(tag.to_owned());
+                                assert!(
+                                    lines.lock().unwrap().is_empty(),
+                                    "{} {} a refusal logged: {:?}",
+                                    case.name,
+                                    window.id,
+                                    *lines.lock().unwrap()
+                                );
+                                assert_eq!(
+                                    fs::read(fixtures.history()).ok(),
+                                    before_disk,
+                                    "{} {} a refusal touched the history file",
+                                    case.name,
+                                    window.id
+                                );
+                                assert_eq!(
+                                    manager.state(THREAD, TERMINAL).cloned(),
+                                    before_state,
+                                    "{} {} a refusal changed the record",
+                                    case.name,
+                                    window.id
+                                );
+                                assert_eq!(
+                                    manager.launch(THREAD, TERMINAL).cloned(),
+                                    before_launch,
+                                    "{} {} a refusal rewrote the launch",
+                                    case.name,
+                                    window.id
+                                );
+                            }
+                        }
+                    }
+                    // A probe window is an emit or an exit the harness stamped to keep its events in
+                    // order; no Manager call answered it, so there is no call site to replay.
+                    _ => {}
+                }
+            }
+        }
+
+        assert!(driven > 0, "the capture held no open or restart call");
+        assert!(
+            accepted >= 2,
+            "the replay accepted {accepted} calls, too few to fix a path"
+        );
+        for refusal in REFUSALS {
+            let tag = refusal.trim_start_matches("err:");
+            assert!(
+                refusals.contains(tag),
+                "the call sites never refused with {tag}, so the wiring is unproven: {refusals:?}",
+            );
+        }
+        eprintln!(
+            "cwd call sites: {} replayed, {} accepted, {} refusal tags, {} attach probes, {} excluded{}",
+            driven,
+            accepted,
+            refusals.len(),
+            probes,
+            excluded.len(),
+            if excluded.is_empty() {
+                String::new()
+            } else {
+                format!(": {}", excluded.join("; "))
+            },
+        );
+    }
+}

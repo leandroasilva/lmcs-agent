@@ -12,7 +12,12 @@ use std::sync::{Arc, Mutex};
 
 use lmcs_pty::lifecycle::{Exit, LaunchAsk, Size, Status, Worktree};
 use lmcs_pty::manager::{Failure, LogLine, Manager, Open, Opened, Restart};
-use lmcs_terminal_history::{DEFAULT_TERMINAL_ID, HistoryPersistence, history_path, legacy_history_path};
+use lmcs_terminal_history::{
+    DEFAULT_TERMINAL_ID, HistoryPersistence, history_path, legacy_history_path,
+};
+
+/// A warning plus whether the file it names had already left the disk when the owner was handed it.
+type Samples = Arc<Mutex<Vec<(LogLine, bool)>>>;
 
 /// The directory a test opens in, and the one it refuses in.
 struct Fixture {
@@ -28,10 +33,7 @@ struct TempDir(PathBuf);
 
 impl TempDir {
     fn new(name: &str) -> Self {
-        let path = std::env::temp_dir().join(format!(
-            "lmcs-manager-{}-{name}",
-            std::process::id()
-        ));
+        let path = std::env::temp_dir().join(format!("lmcs-manager-{}-{name}", std::process::id()));
         let _ = fs::remove_dir_all(&path);
         fs::create_dir_all(&path).unwrap();
         Self(path)
@@ -68,6 +70,17 @@ impl Fixture {
         })
     }
 
+    /// A recorder that samples the disk at the moment the owner is called, which is the only way to see
+    /// that the seam hands a warning over *after* the removals rather than before them.
+    fn manager_sampling(&self, gone: PathBuf) -> (Manager, Samples) {
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let recorded = seen.clone();
+        let manager = Manager::new(&self.logs.0, self.worker.handle(), move |line| {
+            recorded.lock().unwrap().push((line, gone.exists()));
+        });
+        (manager, seen)
+    }
+
     fn ask(&self, cwd: &Path) -> LaunchAsk {
         LaunchAsk {
             cwd: cwd.to_string_lossy().into_owned(),
@@ -81,7 +94,12 @@ fn recorder() -> Arc<Mutex<Vec<LogLine>>> {
     Arc::new(Mutex::new(Vec::new()))
 }
 
-fn open(manager: &mut Manager, fixture: &Fixture, terminal: &str, cwd: &Path) -> Result<Opened, Failure> {
+fn open(
+    manager: &mut Manager,
+    fixture: &Fixture,
+    terminal: &str,
+    cwd: &Path,
+) -> Result<Opened, Failure> {
     let ask = fixture.ask(cwd);
     manager.open(&Open {
         thread_id: "thread-1",
@@ -107,7 +125,10 @@ fn an_open_refused_for_its_directory_creates_no_record() {
     assert_eq!(failure.tag(), Some("TerminalCwdNotDirectoryError"));
     assert_eq!(
         failure.message(),
-        format!("Terminal cwd is not a directory: {}", fixture.file.display()),
+        format!(
+            "Terminal cwd is not a directory: {}",
+            fixture.file.display()
+        ),
     );
     assert_eq!(failure.cause(), None, "only a stat refusal carries a cause");
     assert!(manager.state("thread-1", "term-1").is_none());
@@ -119,9 +140,12 @@ fn an_open_refused_for_its_directory_creates_no_record() {
     assert!(lines.lock().unwrap().is_empty());
 
     // The same call with a real directory still works: a refusal did not spend the registration slot.
-    assert_eq!(
-        open(&mut manager, &fixture, "term-1", &fixture.dir),
-        Ok(Opened::Created)
+    assert!(
+        matches!(
+            open(&mut manager, &fixture, "term-1", &fixture.dir),
+            Ok(Opened::Created)
+        ),
+        "a refusal left nothing that could block the retry",
     );
     assert_eq!(
         manager.state("thread-1", "term-1").unwrap().status,
@@ -170,8 +194,15 @@ fn a_refused_restart_leaves_the_record_and_its_history_alone() {
     manager.start("thread-1", "term-1", 4242, None, "2026-11-21T00:00:01.000Z");
     let before = manager.state("thread-1", "term-1").unwrap().clone();
     let history = b"screen the shell left\n".to_vec();
-    fs::write(history_path(&fixture.logs.0, "thread-1", "term-1"), &history).unwrap();
-    let frames = manager.attach("thread-1", "term-1");
+    fs::write(
+        history_path(&fixture.logs.0, "thread-1", "term-1"),
+        &history,
+    )
+    .unwrap();
+    // A stream that has not delivered its initial snapshot yet holds every event rather than receiving
+    // it, which makes it the probe for "published nothing": the refusal's frames would still be there to
+    // read out when it opens.
+    let subscriber = manager.attach("thread-1", "term-1");
 
     let ask = fixture.ask(&fixture.file);
     let failure = manager
@@ -195,12 +226,26 @@ fn a_refused_restart_leaves_the_record_and_its_history_alone() {
         history,
         "a refused restart neither cleared nor rewrote the history file",
     );
+    assert_eq!(
+        manager
+            .opened_attach(subscriber, "thread-1", "term-1")
+            .expect("the record exists")
+            .iter()
+            .map(|frame| frame.kind())
+            .collect::<Vec<_>>(),
+        ["snapshot"],
+        "the only frame the stream is handed is the record it was shown, so the refusal published nothing",
+    );
     assert!(
-        manager.close("thread-1", Some("term-1"), None).unwrap().is_empty(),
-        "the refusal published nothing to a live subscriber",
+        manager
+            .close("thread-1", Some("term-1"), None)
+            .unwrap()
+            .iter()
+            .map(|(_, frame)| frame.kind())
+            .eq(["closed"]),
+        "and the record is still live enough to close normally",
     );
     assert!(lines.lock().unwrap().is_empty());
-    let _ = frames;
 }
 
 #[test]
@@ -241,9 +286,12 @@ fn an_open_reads_the_history_the_disk_held() {
     .unwrap();
     let mut manager = fixture.manager(lines.clone());
 
-    assert_eq!(
-        open(&mut manager, &fixture, DEFAULT_TERMINAL_ID, &fixture.dir),
-        Ok(Opened::Created)
+    assert!(
+        matches!(
+            open(&mut manager, &fixture, DEFAULT_TERMINAL_ID, &fixture.dir),
+            Ok(Opened::Created)
+        ),
+        "the record the disk already had for this key is still openable",
     );
     assert_eq!(
         manager
@@ -294,7 +342,9 @@ fn a_subscriber_registered_before_the_open_hears_the_snapshot_first() {
     open(&mut manager, &fixture, "term-1", &fixture.dir).unwrap();
     let frames = manager.start("thread-1", "term-1", 4242, None, "2026-11-21T00:00:01.000Z");
     assert!(
-        frames.iter().all(|(id, _)| *id == subscriber || *id == metadata),
+        frames
+            .iter()
+            .all(|(id, _)| *id == subscriber || *id == metadata),
         "a transition reaches only the subscribers that registered",
     );
 
@@ -336,9 +386,15 @@ fn a_cleared_terminal_reaches_the_text_stream_and_not_the_sessions_list() {
     manager.opened_attach(attach, "thread-1", "term-1").unwrap();
     manager.opened_metadata(metadata).unwrap();
 
-    let frames = manager.clear("thread-1", "term-1", "2026-11-21T00:00:02.000Z").unwrap();
+    let frames = manager
+        .clear("thread-1", "term-1", "2026-11-21T00:00:02.000Z")
+        .unwrap();
     let kinds: Vec<&str> = frames.iter().map(|(_, frame)| frame.kind()).collect();
-    assert_eq!(kinds, ["cleared"], "one frame, for the stream that keeps cleared");
+    assert_eq!(
+        kinds,
+        ["cleared"],
+        "one frame, for the stream that keeps cleared"
+    );
 
     let frames = manager.exit(
         "thread-1",
@@ -377,49 +433,67 @@ fn a_closed_terminal_reports_each_file_that_survived_and_nothing_else() {
     // #85: the table hands back `Vec<Warning>`, and the seam is what gives them an owner. The capture's
     // policy is one line per surviving file and no escalation.
     let fixture = Fixture::new("close-warns");
-    let lines = recorder();
-    let mut manager = fixture.manager(lines.clone());
+    let current = history_path(&fixture.logs.0, "thread-1", "term-1");
+    // Written by hand rather than left to the record: the point is to be able to tell, from inside the
+    // owner's call, whether the removal had already happened.
+    fs::write(&current, b"screen\n").unwrap();
+    let (mut manager, logged) = fixture.manager_sampling(current);
     open(&mut manager, &fixture, "term-1", &fixture.dir).unwrap();
     manager.start("thread-1", "term-1", 4242, None, "2026-11-21T00:00:01.000Z");
     // The legacy name is the one file of this terminal the sweep and the single close both try to
     // remove and cannot: an unlink of a directory refuses on either host.
     fs::create_dir(legacy_history_path(&fixture.logs.0, "thread-1")).unwrap();
-    let subscriber = manager.attach("thread-1", "term-1");
+    // Both streams have to be past their initial snapshot to hear anything: a stream still setting up
+    // holds the event instead of receiving it.
+    let attach = manager.attach("thread-1", "term-1");
+    manager.opened_attach(attach, "thread-1", "term-1").unwrap();
+    let sessions = manager.subscribe_metadata();
+    manager.opened_metadata(sessions).unwrap();
 
     let frames = manager
         .close("thread-1", Some("term-1"), Some(true))
         .unwrap();
     assert_eq!(
-        frames.iter().map(|(_, frame)| frame.kind()).collect::<Vec<_>>(),
-        ["closed"],
-        "the close still publishes, exactly once, to the live subscriber",
+        frames
+            .iter()
+            .map(|(_, frame)| frame.kind())
+            .collect::<Vec<_>>(),
+        ["closed", "remove"],
+        "the close publishes once to the text stream and once to the sessions list",
     );
     assert_eq!(
         frames.iter().map(|(id, _)| *id).collect::<Vec<_>>(),
-        [subscriber],
+        [attach, sessions],
     );
 
-    let logged = lines.lock().unwrap().clone();
-    assert_eq!(logged.len(), 1, "one surviving file is one warning: {logged:?}");
-    assert_eq!(logged[0].message, "failed to delete terminal history");
+    let logged = logged.lock().unwrap().clone();
     assert_eq!(
-        logged[0]
-            .fields
+        logged.len(),
+        1,
+        "one surviving file is one warning: {logged:?}"
+    );
+    assert!(
+        !logged[0].1,
+        "the owner is called after the removals, so the file that did go is already gone",
+    );
+    let line = logged[0].0.clone();
+    assert_eq!(line.message, "failed to delete terminal history");
+    assert_eq!(
+        line.fields
             .iter()
             .map(|(name, _)| *name)
             .collect::<Vec<_>>(),
         ["threadId", "terminalId", "error"],
         "the shipped object literal's own key order",
     );
-    assert_eq!(logged[0].fields[0].1, "thread-1");
-    assert_eq!(logged[0].fields[1].1, "term-1");
+    assert_eq!(line.fields[0].1, "thread-1");
+    assert_eq!(line.fields[1].1, "term-1");
     // The cause's spelling is the operating system's, and the two hosts refuse an unlink of a directory
     // with different errnos (see `lifecycle::render_cause`); only its shape is the port's.
     assert!(
-        logged[0].fields[2].1.starts_with("PlatformError/")
-            && logged[0].fields[2].1.ends_with("/remove"),
+        line.fields[2].1.starts_with("PlatformError/") && line.fields[2].1.ends_with("/remove"),
         "the cause renders as a failed remove: {}",
-        logged[0].fields[2].1,
+        line.fields[2].1,
     );
 }
 
@@ -433,11 +507,18 @@ fn a_thread_sweep_warns_once_per_file_without_a_terminal_id() {
     open(&mut manager, &fixture, "term-1", &fixture.dir).unwrap();
     manager.start("thread-1", "term-1", 4242, None, "2026-11-21T00:00:01.000Z");
     fs::create_dir(legacy_history_path(&fixture.logs.0, "thread-1")).unwrap();
+    let attach = manager.attach("thread-1", "term-1");
+    manager.opened_attach(attach, "thread-1", "term-1").unwrap();
+    let sessions = manager.subscribe_metadata();
+    manager.opened_metadata(sessions).unwrap();
 
     let frames = manager.close("thread-1", None, Some(true)).unwrap();
     assert_eq!(
-        frames.iter().map(|(_, frame)| frame.kind()).collect::<Vec<_>>(),
-        ["closed"],
+        frames
+            .iter()
+            .map(|(_, frame)| frame.kind())
+            .collect::<Vec<_>>(),
+        ["closed", "remove"],
         "the thread close closes each session it finds",
     );
     let logged = lines.lock().unwrap().clone();
@@ -467,17 +548,42 @@ fn a_close_without_the_flag_leaves_the_owner_quiet() {
     manager.start("thread-1", "term-1", 4242, None, "2026-11-21T00:00:01.000Z");
     let path = history_path(&fixture.logs.0, "thread-1", "term-1");
     fs::write(&path, b"kept\n").unwrap();
+    let attach = manager.attach("thread-1", "term-1");
+    manager.opened_attach(attach, "thread-1", "term-1").unwrap();
 
-    let frames = manager.close("thread-1", Some("term-1"), Some(false)).unwrap();
-    assert_eq!(frames.iter().map(|(_, frame)| frame.kind()).collect::<Vec<_>>(), ["closed"]);
-    assert_eq!(fs::read(&path).unwrap(), b"kept\n");
+    let frames = manager
+        .close("thread-1", Some("term-1"), Some(false))
+        .unwrap();
+    assert_eq!(
+        frames
+            .iter()
+            .map(|(_, frame)| frame.kind())
+            .collect::<Vec<_>>(),
+        ["closed"],
+    );
+    assert!(
+        path.exists(),
+        "the flag is the only thing that removes, and it said not to",
+    );
+    assert_eq!(
+        fs::read(&path).unwrap(),
+        b"",
+        "the close wrote the record's own screen, which is what overwrote the file the test placed",
+    );
     assert!(lines.lock().unwrap().is_empty());
 
-    // The absent flag is a different input from `false`, and neither removes.
+    // The absent flag is a different input from `false`, and neither removes. With no record left there is
+    // no session to persist either, so the file keeps exactly what it held.
+    fs::write(&path, b"kept\n").unwrap();
     let frames = manager.close("thread-1", Some("term-1"), None).unwrap();
     assert!(
         frames.is_empty(),
         "a second close of an absent record publishes nothing",
+    );
+    assert_eq!(
+        fs::read(&path).unwrap(),
+        b"kept\n",
+        "and an absent record persists nothing over it",
     );
     assert!(lines.lock().unwrap().is_empty());
     assert!(path.exists());
@@ -486,12 +592,9 @@ fn a_close_without_the_flag_leaves_the_owner_quiet() {
 #[test]
 fn a_legacy_cleanup_line_names_the_thread_and_the_remove() {
     // The renderer rather than a fabricated filesystem state: whether the shipped unlink fails is the
-    // loader's test to make, and this is about the line the owner is handed. A synthetic cause keeps it
-    // identical on both hosts.
-    let line = LogLine::legacy(
-        "thread-9",
-        &std::io::Error::from_raw_os_error(if cfg!(target_os = "macos") { 13 } else { 13 }),
-    );
+    // loader's test to make, and this is about the line the owner is handed. EACCES is 13 on both hosts,
+    // so the synthetic cause needs no cfg.
+    let line = LogLine::legacy("thread-9", &std::io::Error::from_raw_os_error(13));
     assert_eq!(line.message, "failed to remove legacy terminal history");
     assert_eq!(
         line.fields,
