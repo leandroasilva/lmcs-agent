@@ -15,32 +15,68 @@ const READ_BYTES: usize = 4096;
 pub struct PtyReader {
     pid: u32,
     receiver: Option<Receiver<String>>,
+    worker: ReaderWorker,
+}
+
+pub(super) struct ReaderWorker {
     wake: Option<UnixStream>,
     worker: Option<JoinHandle<io::Result<()>>>,
 }
 
-impl PtyReader {
-    pub(super) fn spawn(pid: u32, fd: OwnedFd) -> io::Result<Self> {
+impl ReaderWorker {
+    pub(super) fn spawn(
+        pid: u32,
+        fd: OwnedFd,
+        emit: impl FnMut(String) -> bool + Send + 'static,
+        closed: impl FnOnce() + Send + 'static,
+    ) -> io::Result<Self> {
         let (wake, cancellation) = UnixStream::pair()?;
         let mut readiness = Readiness::new(fd.as_raw_fd(), Some(cancellation.as_raw_fd()), false)?;
-        let (sender, receiver) = mpsc::sync_channel(QUEUED_CHUNKS);
         let worker = thread::Builder::new()
             .name(format!("pty-read-{pid}"))
             .spawn(move || {
                 let mut file = File::from(fd);
-                let result = pump(
-                    &mut file,
-                    || readiness.wait(),
-                    |data| sender.send(data).is_ok(),
-                );
+                let result = pump(&mut file, || readiness.wait(), emit);
+                drop(file);
                 drop(cancellation);
+                closed();
                 result
             })?;
         Ok(Self {
-            pid,
-            receiver: Some(receiver),
             wake: Some(wake),
             worker: Some(worker),
+        })
+    }
+
+    pub(super) fn join(&mut self) -> io::Result<()> {
+        let result = match self.worker.take() {
+            Some(worker) => worker
+                .join()
+                .map_err(|_| io::Error::other("PTY reader panicked"))?,
+            None => Ok(()),
+        };
+        self.wake.take();
+        result
+    }
+
+    pub(super) fn request_stop(&mut self) {
+        self.wake.take();
+    }
+
+    pub(super) fn stop(&mut self) -> io::Result<()> {
+        self.request_stop();
+        self.join()
+    }
+}
+
+impl PtyReader {
+    pub(super) fn spawn(pid: u32, fd: OwnedFd) -> io::Result<Self> {
+        let (sender, receiver) = mpsc::sync_channel(QUEUED_CHUNKS);
+        let worker = ReaderWorker::spawn(pid, fd, move |data| sender.send(data).is_ok(), || {})?;
+        Ok(Self {
+            pid,
+            receiver: Some(receiver),
+            worker,
         })
     }
 
@@ -53,8 +89,7 @@ impl PtyReader {
             Ok(data) => Ok(Some(data)),
             Err(_) => {
                 self.receiver.take();
-                self.join()?;
-                self.wake.take();
+                self.worker.join()?;
                 Ok(None)
             }
         }
@@ -83,20 +118,10 @@ impl PtyReader {
         self.stop()
     }
 
-    fn join(&mut self) -> io::Result<()> {
-        match self.worker.take() {
-            Some(worker) => worker
-                .join()
-                .map_err(|_| io::Error::other("PTY reader panicked"))?,
-            None => Ok(()),
-        }
-    }
-
     fn stop(&mut self) -> io::Result<()> {
         // Disconnect send before waking read: either operation can be where the worker is blocked.
         self.receiver.take();
-        self.wake.take();
-        self.join()
+        self.worker.stop()
     }
 }
 
@@ -253,7 +278,7 @@ mod tests {
             Some("ok".to_string())
         );
         assert_eq!(reader.recv_timeout(Duration::from_secs(5)).unwrap(), None);
-        assert!(reader.worker.is_none());
+        assert!(reader.worker.worker.is_none());
         assert_eq!(reader.recv().unwrap(), None);
     }
 
@@ -286,8 +311,10 @@ mod tests {
         let reader = PtyReader {
             pid: 7,
             receiver: Some(receiver),
-            wake: Some(wake),
-            worker: Some(worker),
+            worker: ReaderWorker {
+                wake: Some(wake),
+                worker: Some(worker),
+            },
         };
         ready.recv_timeout(Duration::from_secs(5)).unwrap();
         let (done, completion) = mpsc::channel();
@@ -313,8 +340,10 @@ mod tests {
             let mut reader = PtyReader {
                 pid: 7,
                 receiver: Some(receiver),
-                wake: Some(wake),
-                worker: Some(worker),
+                worker: ReaderWorker {
+                    wake: Some(wake),
+                    worker: Some(worker),
+                },
             };
             let error = if cancel {
                 reader.cancel().err()

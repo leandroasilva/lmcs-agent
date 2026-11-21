@@ -197,6 +197,16 @@ impl NativePtyProcess {
         self.writer.flush()
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(super) fn try_write(&mut self, data: &[u8]) -> io::Result<usize> {
+        loop {
+            match self.writer.write(data) {
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                result => return result,
+            }
+        }
+    }
+
     /// Takes the two numbers in the order the shipped interface uses them, so the swap stays
     /// inside [`pty_size`].
     pub fn resize(&mut self, cols: u32, rows: u32) -> io::Result<()> {
@@ -229,6 +239,15 @@ impl NativePtyProcess {
         }
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(super) fn signal_unreaped(&mut self, signal: Option<&str>) -> io::Result<()> {
+        // The session reserves this PID until its WNOWAIT observer has joined.
+        send_signal(
+            self.pid,
+            kill_argument(self.platform, signal).unwrap_or("SIGHUP"),
+        )
+    }
+
     pub fn reader_mut(&mut self) -> io::Result<&mut (dyn Read + Send + 'static)> {
         self.reader.as_deref_mut().ok_or_else(|| {
             io::Error::new(
@@ -241,6 +260,14 @@ impl NativePtyProcess {
     /// Transfers exclusive output ownership while keeping input, resize and child control here.
     #[cfg(unix)]
     pub fn start_reader(&mut self) -> io::Result<crate::reader::PtyReader> {
+        self.start_output(crate::reader::PtyReader::spawn)
+    }
+
+    #[cfg(unix)]
+    pub(super) fn start_output<T>(
+        &mut self,
+        spawn: impl FnOnce(u32, std::os::fd::OwnedFd) -> io::Result<T>,
+    ) -> io::Result<T> {
         use std::os::fd::BorrowedFd;
 
         self.reader_mut()?;
@@ -254,7 +281,7 @@ impl NativePtyProcess {
         let flags = crate::readiness::status_flags(fd)?;
         // A child may flush output after readiness; nonblocking read keeps cancellation reachable.
         crate::readiness::set_status_flags(fd, flags | libc::O_NONBLOCK)?;
-        let reader = match crate::reader::PtyReader::spawn(self.pid, owned) {
+        let reader = match spawn(self.pid, owned) {
             Ok(reader) => reader,
             Err(error) => {
                 crate::readiness::set_status_flags(fd, flags)?;
@@ -295,6 +322,10 @@ impl NativePtyProcess {
 
     /// Cancel the detached reader first; unread PTY output can otherwise stall reaping on macOS.
     pub fn close_and_wait(self) -> io::Result<PtyExitEvent> {
+        wait_child(&mut *self.close_io()?)
+    }
+
+    pub(super) fn close_io(self) -> io::Result<Box<dyn Child + Send + Sync>> {
         #[cfg(unix)]
         if let Some(fd) = self.master.as_raw_fd() {
             // portable-pty's writer Drop attempts to write VEOF even when input is full.
@@ -305,17 +336,17 @@ impl NativePtyProcess {
             master,
             reader,
             writer,
-            mut child,
+            child,
             ..
         } = self;
         drop(reader);
         drop(writer);
         drop(master);
-        wait_child(&mut *child)
+        Ok(child)
     }
 }
 
-fn wait_child(child: &mut dyn Child) -> io::Result<PtyExitEvent> {
+pub(super) fn wait_child(child: &mut dyn Child) -> io::Result<PtyExitEvent> {
     // portable-pty's mapped status loses the numeric Unix signal.
     #[cfg(unix)]
     if let Some(child) = child.downcast_mut::<std::process::Child>() {

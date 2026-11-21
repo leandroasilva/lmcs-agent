@@ -22,6 +22,8 @@ pub mod pipe;
 pub mod reader;
 #[cfg(unix)]
 mod readiness;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod session;
 pub mod shell;
 pub mod spawn;
 pub mod utf8;
