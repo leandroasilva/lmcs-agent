@@ -378,7 +378,7 @@ fn replays_shipped_manager_close_publications_warnings_and_disk() {
                 case.name,
                 session.terminal
             );
-            terminals.insert(&case.thread, &session.terminal, output);
+            terminals.insert(&case.thread, &session.terminal, output, "t0");
         }
         // What the shipped run had on disk when its close started. A terminal that never persisted
         // has no file, so existence is compared rather than assumed.

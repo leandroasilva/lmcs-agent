@@ -69,6 +69,12 @@ impl PersistedOutput {
         Ok(sequence)
     }
 
+    /// `startSession`'s failure path: handles are cleaned and the sequence advances, with nothing
+    /// persisted, because a spawn that never ran has no history to keep.
+    pub fn fail_start(&mut self) -> u64 {
+        self.output.close()
+    }
+
     /// Persists retained history, so a later reader reopens what the session ended with.
     pub fn close(&mut self) -> io::Result<u64> {
         let sequence = self.output.close();

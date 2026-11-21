@@ -29,6 +29,7 @@ mod readiness;
 pub mod session;
 pub mod shell;
 pub mod spawn;
+pub mod stream;
 pub mod utf8;
 
 pub use env::{Env, create_terminal_spawn_env, normalized_runtime_env};
