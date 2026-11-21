@@ -13,8 +13,8 @@ pub use file::{read_file, write_file};
 pub use persist::{HistoryPersistence, PersistHandle, PersistWarning, SharedHistory};
 pub use sanitize::{Sanitized, sanitize};
 pub use store::{
-    DEFAULT_TERMINAL_ID, HistoryOperation, LoadedHistory, TerminalHistoryError, history_path,
-    legacy_history_path, load_history,
+    DEFAULT_TERMINAL_ID, DeleteFailure, HistoryOperation, LoadedHistory, TerminalHistoryError,
+    delete_history, delete_thread_history, history_path, legacy_history_path, load_history,
 };
 pub use tail::{HistoryTail, Restored, history_tail, restore};
 

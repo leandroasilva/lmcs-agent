@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::fmt;
 use std::fs;
 use std::io;
@@ -8,15 +9,23 @@ use crate::{BoundedHistory, Restored, read_file, write_file};
 pub const DEFAULT_TERMINAL_ID: &str = "term-1";
 
 pub fn history_path(logs_dir: &Path, thread_id: &str, terminal_id: &str) -> PathBuf {
+    logs_dir.join(history_file_name(thread_id, terminal_id))
+}
+
+fn history_file_name(thread_id: &str, terminal_id: &str) -> String {
     let thread = base64_url(thread_id);
     if terminal_id == DEFAULT_TERMINAL_ID {
-        logs_dir.join(format!("terminal_{thread}.log"))
+        format!("terminal_{thread}.log")
     } else {
-        logs_dir.join(format!("terminal_{thread}_{}.log", base64_url(terminal_id)))
+        format!("terminal_{thread}_{}.log", base64_url(terminal_id))
     }
 }
 
 pub fn legacy_history_path(logs_dir: &Path, thread_id: &str) -> PathBuf {
+    logs_dir.join(legacy_file_name(thread_id))
+}
+
+fn legacy_file_name(thread_id: &str) -> String {
     // The legacy JavaScript regex replaces UTF-16 units, not Unicode scalar values.
     let name: String = thread_id
         .encode_utf16()
@@ -25,7 +34,7 @@ pub fn legacy_history_path(logs_dir: &Path, thread_id: &str) -> PathBuf {
             _ => '_',
         })
         .collect();
-    logs_dir.join(format!("{name}.log"))
+    format!("{name}.log")
 }
 
 fn base64_url(text: &str) -> String {
@@ -114,6 +123,7 @@ trait HistoryIo {
     fn read(&mut self, path: &Path, byte_limit: usize, line_limit: usize) -> io::Result<Restored>;
     fn write(&mut self, path: &Path, history: &BoundedHistory) -> io::Result<()>;
     fn remove(&mut self, path: &Path) -> io::Result<()>;
+    fn read_dir(&mut self, dir: &Path) -> io::Result<Vec<OsString>>;
 }
 
 struct Disk;
@@ -136,6 +146,15 @@ impl HistoryIo for Disk {
             Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
             result => result,
         }
+    }
+
+    fn read_dir(&mut self, dir: &Path) -> io::Result<Vec<OsString>> {
+        // `readdir` with `recursive: false`: entry names, in whatever order the directory gives
+        // them. Node does not sort and neither do we, so the sweep order is filesystem order on
+        // both sides.
+        fs::read_dir(dir)?
+            .map(|entry| entry.map(|entry| entry.file_name()))
+            .collect()
     }
 }
 
@@ -196,6 +215,83 @@ fn load_with(
         history: BoundedHistory::with_limits(line_limit, byte_limit, b""),
         cleanup_warning: None,
     })
+}
+
+/// A history file the disk refused to remove. Both shipped deletion paths log a warning and
+/// return success, so a failure here never reaches the caller's result — only its logs.
+#[derive(Debug)]
+pub struct DeleteFailure {
+    pub path: PathBuf,
+    pub cause: io::Error,
+}
+
+/// `deleteHistory`: the terminal's own file, plus the legacy file for the default terminal only.
+/// The legacy removal is attempted even if the first one failed, and a missing file is not a
+/// failure — the shipped call passes `force: true`, which only swallows `ENOENT`.
+pub fn delete_history(logs_dir: &Path, thread_id: &str, terminal_id: &str) -> Vec<DeleteFailure> {
+    delete_history_with(&mut Disk, logs_dir, thread_id, terminal_id)
+}
+
+/// `deleteAllHistoryForThread`: sweep the directory for everything that belongs to this thread —
+/// its default file, its legacy file, and every secondary file named under its encoded prefix. An
+/// unreadable directory is silently empty, as the shipped `orElseSucceed` is, and one file that
+/// cannot be removed never stops the ones after it.
+pub fn delete_thread_history(logs_dir: &Path, thread_id: &str) -> Vec<DeleteFailure> {
+    delete_thread_history_with(&mut Disk, logs_dir, thread_id)
+}
+
+fn delete_history_with(
+    disk: &mut impl HistoryIo,
+    logs_dir: &Path,
+    thread_id: &str,
+    terminal_id: &str,
+) -> Vec<DeleteFailure> {
+    let mut failures = Vec::new();
+    let current = history_path(logs_dir, thread_id, terminal_id);
+    if let Err(cause) = disk.remove(&current) {
+        failures.push(DeleteFailure {
+            path: current,
+            cause,
+        });
+    }
+    if terminal_id == DEFAULT_TERMINAL_ID {
+        let legacy = legacy_history_path(logs_dir, thread_id);
+        if let Err(cause) = disk.remove(&legacy) {
+            failures.push(DeleteFailure {
+                path: legacy,
+                cause,
+            });
+        }
+    }
+    failures
+}
+
+fn delete_thread_history_with(
+    disk: &mut impl HistoryIo,
+    logs_dir: &Path,
+    thread_id: &str,
+) -> Vec<DeleteFailure> {
+    let Ok(entries) = disk.read_dir(logs_dir) else {
+        return Vec::new();
+    };
+    let thread = base64_url(thread_id);
+    let default_name = OsString::from(history_file_name(thread_id, DEFAULT_TERMINAL_ID));
+    let legacy_name = OsString::from(legacy_file_name(thread_id));
+    let prefix = format!("terminal_{thread}_");
+    let mut failures = Vec::new();
+    for entry in entries {
+        let matches = entry == default_name
+            || entry == legacy_name
+            || entry.to_string_lossy().starts_with(&prefix);
+        if !matches {
+            continue;
+        }
+        let path = logs_dir.join(&entry);
+        if let Err(cause) = disk.remove(&path) {
+            failures.push(DeleteFailure { path, cause });
+        }
+    }
+    failures
 }
 
 #[cfg(test)]
@@ -272,6 +368,10 @@ mod tests {
         fn remove(&mut self, path: &Path) -> io::Result<()> {
             self.record("remove", path)?;
             Disk.remove(path)
+        }
+        fn read_dir(&mut self, dir: &Path) -> io::Result<Vec<OsString>> {
+            self.record("read_dir", dir)?;
+            Disk.read_dir(dir)
         }
     }
 
@@ -528,6 +628,206 @@ mod tests {
             .unwrap();
         assert_eq!(error.operation, HistoryOperation::Migrate);
         assert!(!current.exists());
+    }
+
+    fn names(disk: &TrackedDisk) -> String {
+        disk.calls.join(",")
+    }
+
+    #[test]
+    fn deleting_the_default_terminal_removes_current_then_legacy() {
+        let dir = TempDir::new();
+        let current = history_path(&dir.0, "thread", "term-1");
+        let legacy = legacy_history_path(&dir.0, "thread");
+        fs::write(&current, b"current").unwrap();
+        fs::write(&legacy, b"legacy").unwrap();
+        let mut disk = TrackedDisk::default();
+        assert!(delete_history_with(&mut disk, &dir.0, "thread", "term-1").is_empty());
+        assert_eq!(
+            names(&disk),
+            "remove:terminal_dGhyZWFk.log,remove:thread.log"
+        );
+        assert!(!current.exists() && !legacy.exists());
+    }
+
+    #[test]
+    fn a_missing_history_is_not_a_delete_failure() {
+        let dir = TempDir::new();
+        fs::write(dir.0.join("unrelated.txt"), b"keep").unwrap();
+        let mut disk = TrackedDisk::default();
+        assert!(delete_history_with(&mut disk, &dir.0, "thread", "term-1").is_empty());
+        assert_eq!(fs::read(dir.0.join("unrelated.txt")).unwrap(), b"keep");
+        // The parent directory does not have to exist either: the shipped call is `force: true`.
+        let missing = dir.0.join("absent");
+        assert!(delete_history(&missing, "thread", "term-1").is_empty());
+        assert!(!missing.exists());
+    }
+
+    #[test]
+    fn deleting_a_secondary_never_touches_the_legacy_file() {
+        let dir = TempDir::new();
+        let secondary = history_path(&dir.0, "thread", "term-2");
+        let legacy = legacy_history_path(&dir.0, "thread");
+        fs::write(&secondary, b"secondary").unwrap();
+        fs::write(&legacy, b"legacy").unwrap();
+        let mut disk = TrackedDisk::default();
+        assert!(delete_history_with(&mut disk, &dir.0, "thread", "term-2").is_empty());
+        assert_eq!(names(&disk), "remove:terminal_dGhyZWFk_dGVybS0y.log");
+        assert!(!secondary.exists());
+        assert_eq!(fs::read(&legacy).unwrap(), b"legacy");
+    }
+
+    #[test]
+    fn a_failed_removal_is_a_warning_and_the_other_removal_still_runs() {
+        let dir = TempDir::new();
+        let current = history_path(&dir.0, "thread", "term-1");
+        let legacy = legacy_history_path(&dir.0, "thread");
+        fs::write(&current, b"current").unwrap();
+        fs::write(&legacy, b"legacy").unwrap();
+        let mut disk = TrackedDisk {
+            failure: Some(("remove".to_owned(), current.clone())),
+            ..Default::default()
+        };
+        let failures = delete_history_with(&mut disk, &dir.0, "thread", "term-1");
+        assert_eq!(failures.len(), 1);
+        assert_eq!(failures[0].path, current);
+        assert_eq!(failures[0].cause.kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(
+            names(&disk),
+            "remove:terminal_dGhyZWFk.log,remove:thread.log",
+            "the legacy removal is not gated on the first one succeeding"
+        );
+        assert_eq!(fs::read(&current).unwrap(), b"current");
+        assert!(!legacy.exists());
+    }
+
+    #[test]
+    fn the_thread_sweep_matches_exactly_three_name_rules() {
+        let dir = TempDir::new();
+        let thread = "thread";
+        let mine = [
+            history_path(&dir.0, thread, "term-1"),
+            history_path(&dir.0, thread, "term-2"),
+            history_path(&dir.0, thread, "term-99"),
+            legacy_history_path(&dir.0, thread),
+        ];
+        let others = [
+            history_path(&dir.0, "other", "term-1"),
+            history_path(&dir.0, "other", "term-2"),
+            legacy_history_path(&dir.0, "other"),
+            dir.0.join("unrelated.log"),
+            dir.0.join("terminal_dGhyZWFk.txt"),
+            dir.0.join("terminal_dGhyZWFkx.log"),
+        ];
+        for path in mine.iter().chain(others.iter()) {
+            fs::write(path, b"content").unwrap();
+        }
+        // A name that matches the rules but is not a file: attempted, and its failure is a warning.
+        fs::create_dir(dir.0.join("terminal_dGhyZWFk_dir.log")).unwrap();
+
+        let mut disk = TrackedDisk::default();
+        let failures = delete_thread_history_with(&mut disk, &dir.0, thread);
+        let removed: std::collections::HashSet<_> = disk
+            .calls
+            .iter()
+            .filter_map(|call| call.strip_prefix("remove:"))
+            .map(str::to_owned)
+            .collect();
+        assert_eq!(
+            removed,
+            [
+                "terminal_dGhyZWFk.log",
+                "terminal_dGhyZWFk_dGVybS0y.log",
+                "terminal_dGhyZWFk_dGVybS05OQ.log",
+                "thread.log",
+                "terminal_dGhyZWFk_dir.log",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+            "default, every secondary and the legacy name — nothing else"
+        );
+        for path in &mine {
+            assert!(!path.exists(), "{} survived", path.display());
+        }
+        for path in &others {
+            assert!(path.exists(), "{} was swept", path.display());
+        }
+        assert_eq!(
+            failures.len(),
+            1,
+            "the matching directory could not be unlinked"
+        );
+        assert_eq!(failures[0].path, dir.0.join("terminal_dGhyZWFk_dir.log"));
+    }
+
+    #[test]
+    fn two_ids_that_sanitize_to_one_legacy_name_share_its_deletion() {
+        let dir = TempDir::new();
+        let legacy = legacy_history_path(&dir.0, "t1read?");
+        assert_eq!(legacy, legacy_history_path(&dir.0, "t1read!"));
+        fs::write(&legacy, b"shared").unwrap();
+        let current = history_path(&dir.0, "t1read?", "term-1");
+        fs::write(&current, b"mine").unwrap();
+        assert!(delete_history(&dir.0, "t1read?", "term-1").is_empty());
+        assert!(
+            !legacy.exists(),
+            "deleting one id's history removes the file the other id would restore"
+        );
+    }
+
+    #[test]
+    fn an_unreadable_directory_sweeps_nothing_and_warns_nothing() {
+        let dir = TempDir::new();
+        let mut disk = TrackedDisk {
+            failure: Some(("read_dir".to_owned(), dir.0.clone())),
+            ..Default::default()
+        };
+        assert!(delete_thread_history_with(&mut disk, &dir.0, "thread").is_empty());
+        assert_eq!(disk.calls.len(), 1);
+        assert!(disk.calls[0].starts_with("read_dir:"));
+        // A directory that does not exist is the same silent case, with the real disk.
+        assert!(delete_thread_history(&dir.0.join("absent"), "thread").is_empty());
+    }
+
+    #[test]
+    fn one_unremovable_file_never_stops_the_sweep() {
+        let dir = TempDir::new();
+        let blocked = history_path(&dir.0, "thread", "term-1");
+        let secondary = history_path(&dir.0, "thread", "term-2");
+        let legacy = legacy_history_path(&dir.0, "thread");
+        for path in [&blocked, &secondary, &legacy] {
+            fs::write(path, b"content").unwrap();
+        }
+        let mut disk = TrackedDisk {
+            failure: Some(("remove".to_owned(), blocked.clone())),
+            ..Default::default()
+        };
+        let failures = delete_thread_history_with(&mut disk, &dir.0, "thread");
+        assert_eq!(failures.len(), 1);
+        assert_eq!(failures[0].path, blocked);
+        assert_eq!(
+            disk.calls
+                .iter()
+                .filter(|call| call.starts_with("remove:"))
+                .count(),
+            3,
+            "every matched name is attempted"
+        );
+        assert!(!secondary.exists() && !legacy.exists());
+    }
+
+    #[test]
+    fn the_real_disk_deletes_without_seeding_anything() {
+        let dir = TempDir::new();
+        let thread = "thread";
+        for terminal in ["term-1", "term-2"] {
+            fs::write(history_path(&dir.0, thread, terminal), b"x").unwrap();
+        }
+        fs::write(legacy_history_path(&dir.0, thread), b"x").unwrap();
+        assert!(delete_thread_history(&dir.0, thread).is_empty());
+        assert_eq!(fs::read_dir(&dir.0).unwrap().count(), 0);
+        assert!(delete_history(&dir.0, thread, "term-1").is_empty());
     }
 
     fn unhex(value: &str) -> Vec<u8> {

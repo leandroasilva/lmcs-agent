@@ -3,8 +3,11 @@
 //! `apps/server/src/terminal/Manager.ts`.
 
 use std::io;
+use std::path::{Path, PathBuf};
 
-use lmcs_terminal_history::{PersistHandle, SharedHistory};
+use lmcs_terminal_history::{
+    DeleteFailure, PersistHandle, SharedHistory, delete_history, delete_thread_history,
+};
 
 use crate::output::TerminalOutput;
 use crate::{Delivery, PendingEvent};
@@ -18,6 +21,7 @@ use crate::{Delivery, PendingEvent};
 pub struct PersistedOutput {
     output: TerminalOutput,
     persist: PersistHandle,
+    logs_dir: PathBuf,
     thread_id: String,
     terminal_id: String,
 }
@@ -26,12 +30,14 @@ impl PersistedOutput {
     pub fn new(
         output: TerminalOutput,
         persist: PersistHandle,
+        logs_dir: &Path,
         thread_id: &str,
         terminal_id: &str,
     ) -> Self {
         Self {
             output,
             persist,
+            logs_dir: logs_dir.to_path_buf(),
             thread_id: thread_id.to_owned(),
             terminal_id: terminal_id.to_owned(),
         }
@@ -74,6 +80,19 @@ impl PersistedOutput {
     /// reopening a history file that a previous session may still be holding dirty.
     pub fn flush(&mut self) -> io::Result<()> {
         self.persist.drain(&self.thread_id, &self.terminal_id)
+    }
+
+    /// `deleteHistory`, which the reference manager runs *after* publishing `closed`. Call it
+    /// after `close`: a write still queued for this key would land after the removal and put the
+    /// file back. Failures are the caller's to log, exactly as the shipped warnings are.
+    pub fn delete_history(&self) -> Vec<DeleteFailure> {
+        delete_history(&self.logs_dir, &self.thread_id, &self.terminal_id)
+    }
+
+    /// `deleteAllHistoryForThread`, reached by closing a thread without a terminal id. Same
+    /// warning policy, and the same requirement that this key's queued work be drained first.
+    pub fn delete_thread_history(&self) -> Vec<DeleteFailure> {
+        delete_thread_history(&self.logs_dir, &self.thread_id)
     }
 
     pub fn drain_next(&mut self, pid: u32) -> Option<Delivery> {
