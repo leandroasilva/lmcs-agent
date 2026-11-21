@@ -17,6 +17,7 @@ pub mod env;
 pub mod exit_drain;
 pub mod jsstr;
 pub mod lifecycle;
+pub mod manager;
 pub mod native_pty;
 pub mod node_pty;
 pub mod output;
@@ -37,6 +38,7 @@ pub use cwd::{
     CwdError, FileKind, StatOutcome, StatReason, assert_valid_cwd, assert_valid_cwd_path,
 };
 pub use env::{Env, create_terminal_spawn_env, normalized_runtime_env};
+pub use manager::{Failure, LogLine, Manager, Open, Opened, Restart};
 pub use pipe::{Delivery, PendingEvent, Pipe, Sanitized};
 pub use shell::{ShellCandidate, resolve_shell_candidates};
 pub use spawn::{PtySpawnError, Spawned, Spawner, try_spawn};

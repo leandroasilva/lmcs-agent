@@ -383,14 +383,24 @@ impl Warning {
 /// One measured divergence: the directory a sweep matched prints `PlatformError/Unknown/remove`
 /// through Node, while an unlink of a directory reports `EPERM`, so the port prints
 /// `PermissionDenied`. The message and fields are the log contract; the cause string is not.
-fn render(cause: &DeleteFailure) -> String {
-    let reason = match cause.cause.kind() {
+///
+/// Measured on Linux too, and there the two agree for a different reason: `unlink` of a directory
+/// reports `EISDIR` rather than `EPERM`, and Rust leaves that as `IsADirectory` instead of folding
+/// it into `PermissionDenied`, so the port falls through to `Unknown` the way Node does. The Linux
+/// probe of `rm` on a directory reports `ERR_FS_EISDIR` and `EPERM` has no case either, so the
+/// shipped string is `Unknown` on both hosts while the syscall underneath differs.
+pub(crate) fn render_cause(cause: &io::Error, method: &str) -> String {
+    let reason = match cause.kind() {
         io::ErrorKind::NotFound => "NotFound",
         io::ErrorKind::PermissionDenied => "PermissionDenied",
         io::ErrorKind::AlreadyExists => "AlreadyExists",
         _ => "Unknown",
     };
-    format!("PlatformError/{reason}/remove")
+    format!("PlatformError/{reason}/{method}")
+}
+
+fn render(cause: &DeleteFailure) -> String {
+    render_cause(&cause.cause, "remove")
 }
 
 fn terminal_warning(thread_id: &str, terminal_id: &str, cause: &DeleteFailure) -> Warning {
@@ -1446,7 +1456,13 @@ mod tests {
             warnings[0].terminal_id.as_deref(),
             Some(DEFAULT_TERMINAL_ID)
         );
+        // The undeletable legacy entry is a directory, and an unlink of a directory refuses with a
+        // different errno per host: EPERM here, which `ErrorKind` spells PermissionDenied, and EISDIR
+        // on Linux, which it leaves as IsADirectory and `render` reports as Unknown. See `render`.
+        #[cfg(target_os = "macos")]
         assert_eq!(warnings[0].error, "PlatformError/PermissionDenied/remove");
+        #[cfg(not(target_os = "macos"))]
+        assert_eq!(warnings[0].error, "PlatformError/Unknown/remove");
         assert!(!logs.exists(&current), "the file that could go, went");
     }
 

@@ -607,9 +607,19 @@ fn an_unremovable_history_file_is_reported_and_not_fatal() {
     let failures = output.delete_history();
     assert_eq!(failures.len(), 1, "the directory cannot be unlinked");
     assert_eq!(failures[0].path, path);
+    // The refusal is the operating system's own, and the two hosts refuse an unlink of a directory
+    // with different errnos: EPERM on macOS, which `ErrorKind` reports as PermissionDenied, and
+    // EISDIR on Linux, which it reports as IsADirectory.
+    #[cfg(target_os = "macos")]
     assert_eq!(
         failures[0].cause.kind(),
         std::io::ErrorKind::PermissionDenied,
+        "the operating system's own refusal is what the caller logs"
+    );
+    #[cfg(not(target_os = "macos"))]
+    assert_eq!(
+        failures[0].cause.kind(),
+        std::io::ErrorKind::IsADirectory,
         "the operating system's own refusal is what the caller logs"
     );
     assert!(
