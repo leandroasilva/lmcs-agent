@@ -62,6 +62,14 @@ impl PersistedOutput {
         Ok(sequence)
     }
 
+    /// `openLocked`'s reset of a terminal it is handing to a different launch (Manager.ts:2592):
+    /// history cleared and written immediately, with no sequence and no event. The write is what makes
+    /// a later reader see an empty screen rather than the one the killed shell left behind.
+    pub fn reset_history(&mut self) -> io::Result<()> {
+        self.output.reset_history();
+        self.persist_now()
+    }
+
     /// Persists the cleared history before the caller publishes `restarted`.
     pub fn restart(&mut self, pid: u32) -> io::Result<u64> {
         let sequence = self.output.restart(pid);

@@ -44,6 +44,13 @@ impl TerminalOutput {
         self.pipe.clear()
     }
 
+    /// The re-open's clear: the retained screen and the walk are dropped, the process is left alone and
+    /// no sequence is taken, because the shipped path writes a file rather than publishing an event.
+    pub fn reset_history(&mut self) {
+        self.history.lock().unwrap().clear();
+        self.pipe.clear_quietly();
+    }
+
     pub fn enqueue(&mut self, pid: u32, event: PendingEvent) -> bool {
         self.pipe.enqueue(pid, event)
     }
@@ -180,6 +187,36 @@ mod tests {
         assert_eq!(output.history_value(), b"6nnew");
         assert!(matches!(held, Delivery::Output { sequence: 2, .. }));
         assert_eq!(output.drain_next(7), None);
+    }
+
+    #[test]
+    fn resetting_history_leaves_the_numbering_and_the_process_alone() {
+        let mut output = TerminalOutput::default();
+        output.start(7);
+        output.enqueue(7, data("old\x1b["));
+        assert!(matches!(
+            output.drain_next(7),
+            Some(Delivery::Output { .. })
+        ));
+        assert_eq!(output.history_value(), b"old");
+        output.reset_history();
+        assert_eq!(output.history_value(), b"", "the retained screen is gone");
+        assert_eq!(output.sequence(), 2, "and no number went with it");
+        assert_eq!(output.queued(), 0);
+        assert!(
+            output.enqueue(7, data("new")),
+            "the process is still the one that was running"
+        );
+        assert_eq!(
+            output.drain_next(7),
+            Some(Delivery::Output {
+                sequence: 3,
+                data: "new".to_string(),
+                visible: "new".to_string(),
+                history_grew: true,
+            }),
+            "the next event takes the number `clear` would have spent"
+        );
     }
 
     #[test]

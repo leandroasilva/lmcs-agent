@@ -23,7 +23,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use lmcs_pty::lifecycle::{Event, Exit, Status, Terminals, Write, WriteError};
+use lmcs_pty::lifecycle::{Event, Exit, LaunchAsk, Status, Terminals, Write, WriteError};
 use lmcs_pty::node_pty::exit_event;
 use lmcs_pty::output::TerminalOutput;
 use lmcs_pty::persisted::PersistedOutput;
@@ -569,6 +569,8 @@ impl Replay {
             &thread,
             terminal,
             self.logs.session(&thread, terminal),
+            None,
+            &LaunchAsk::default(),
             &insert_stamp,
         );
         let mut events = Vec::new();
@@ -578,6 +580,7 @@ impl Replay {
                 &thread,
                 terminal,
                 "Failed to spawn PTY process",
+                None,
                 &stamp,
                 &mut |event| events.push(event_row(event)),
             )
@@ -586,7 +589,7 @@ impl Replay {
             let stamp = self.read();
             let sequence =
                 self.terminals
-                    .mark_running(&thread, terminal, pid, &stamp, &mut |event| {
+                    .mark_running(&thread, terminal, pid, None, &stamp, &mut |event| {
                         events.push(event_row(event))
                     });
             self.processes
@@ -736,11 +739,15 @@ impl Replay {
         let pid = 7400 + self.processes.len() as u32;
         let stamp = self.read();
         let mut events = Vec::new();
-        let restarted = self
-            .terminals
-            .restart(&thread, terminal, pid, &stamp, &mut |event| {
-                events.push(event_row(event))
-            });
+        let restarted = self.terminals.restart(
+            &thread,
+            terminal,
+            pid,
+            None,
+            &LaunchAsk::default(),
+            &stamp,
+            &mut |event| events.push(event_row(event)),
+        );
         self.publish(events);
         match restarted {
             Ok(()) => {

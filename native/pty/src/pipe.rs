@@ -108,10 +108,7 @@ impl Pipe {
         self.process = false;
         self.running = false;
         self.pid = None;
-        self.queue.clear();
-        self.cursor = 0;
-        self.draining = false;
-        self.pending_control_sequence.clear();
+        self.drop_walk();
     }
 
     /// `closeSession`, which stops the process and publishes `closed` with its own sequence.
@@ -122,11 +119,16 @@ impl Pipe {
     }
 
     pub fn clear(&mut self) -> u64 {
-        self.queue.clear();
-        self.cursor = 0;
-        self.draining = false;
-        self.pending_control_sequence.clear();
+        self.drop_walk();
         self.advance()
+    }
+
+    /// `clear` without the number: the shipped re-open drops the queue as part of a history clear that
+    /// publishes nothing, so it must not take a sequence either. Measured on
+    /// `cwd-change-resets-history`, where the record goes from sequence 1 to 3 across the reset and the
+    /// 2 it never had is the `started` that follows.
+    pub fn clear_quietly(&mut self) {
+        self.drop_walk();
     }
 
     /// Whether a callback still has a session to deliver to. Three separate fields, three
@@ -241,6 +243,15 @@ impl Pipe {
         self.queue.len().saturating_sub(self.cursor)
     }
 
+    /// The four fields the shipped code resets together whenever a session's work is thrown away:
+    /// `pendingProcessEvents`, its index, the drain flag, and `pendingHistoryControlSequence`.
+    fn drop_walk(&mut self) {
+        self.queue.clear();
+        self.cursor = 0;
+        self.draining = false;
+        self.pending_control_sequence.clear();
+    }
+
     /// `advanceEventSequence`: the stamp is taken when the event is dequeued, not when it is
     /// delivered, which is why a publication suspended across a `close` keeps the lower sequence.
     fn advance(&mut self) -> u64 {
@@ -339,6 +350,54 @@ mod tests {
             pipe.queued(),
             0,
             "the queue is dropped, not left for the next session"
+        );
+    }
+
+    #[test]
+    fn a_quiet_clear_drops_the_walk_without_numbering_it() {
+        let mut pipe = Pipe::new();
+        let _ = pipe.start(7);
+        pipe.enqueue(7, data("held"));
+        pipe.enqueue(7, data("queued"));
+        pipe.clear_quietly();
+        assert_eq!(pipe.sequence(), 1, "the reset owns no number of its own");
+        assert_eq!(pipe.queued(), 0);
+        assert!(
+            pipe.accepts(7),
+            "unlike `stop`, this clear leaves the process alone"
+        );
+        // Measured on `cwd-change-resets-history`: the record goes from 1 to 3 across a reset that owns
+        // the 2 for nobody, because the shipped clear writes a file instead of publishing an event.
+        assert_eq!(
+            pipe.start(8),
+            2,
+            "the next event takes the number after `started`"
+        );
+    }
+
+    #[test]
+    fn a_quiet_clear_also_drops_a_partial_escape() {
+        let mut pipe = Pipe::new();
+        let _ = pipe.start(7);
+        pipe.enqueue(7, data("\x1b[3"));
+        let _ = pipe.drain_next(7, |_, text| Sanitized {
+            visible: String::new(),
+            pending: text.to_string(),
+        });
+        pipe.clear_quietly();
+        pipe.enqueue(7, data("X"));
+        let mut held = Vec::new();
+        let _ = pipe.drain_next(7, |pending, text| {
+            held.push(pending.to_owned());
+            Sanitized {
+                visible: text.to_owned(),
+                pending: String::new(),
+            }
+        });
+        assert_eq!(
+            held,
+            vec![String::new()],
+            "the escape half-consumed before the reset is not carried into the new screen"
         );
     }
 

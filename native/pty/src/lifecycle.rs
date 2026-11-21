@@ -124,9 +124,101 @@ pub struct Exit {
     pub exit_signal: Option<i32>,
 }
 
+/// The viewport a client asks an `open`, `attach`, `restart` or `resize` for. `DEFAULT` is what the
+/// shipped defaults (Manager.ts:101-102, `DEFAULT_OPEN_COLS`/`DEFAULT_OPEN_ROWS`) give a call that
+/// names no size, and a record keeps its size because one thing reads it back: the equality gate a
+/// re-open or an attach runs before it touches the process.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Size {
+    pub cols: u32,
+    pub rows: u32,
+}
+
+impl Size {
+    pub const DEFAULT: Self = Self {
+        cols: 120,
+        rows: 30,
+    };
+}
+
+/// The size a record starts with when its `open` named none, so `Session::default()` cannot hold a
+/// viewport no shipped path ever produces.
+impl Default for Size {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+/// What a call said about the worktree the terminal runs in. `Unnamed` is not "no worktree": a
+/// re-`open` that names none keeps the recorded path (Manager.ts:2580-2581) while a create and a
+/// `restart` clear it (Manager.ts:2528, :2981). An `Option<String>` cannot tell those apart, and the
+/// difference is a history reset or not.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum Worktree {
+    /// `input.worktreePath === undefined`.
+    #[default]
+    Unnamed,
+    /// `input.worktreePath === null`, which is an input, not an absent one.
+    Cleared,
+    At(String),
+}
+
+/// The launch a call asked for, before the record's own rules apply to it. The environment is the raw
+/// input because `normalizedRuntimeEnv` is this crate's job, not its caller's.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LaunchAsk {
+    pub cwd: String,
+    pub worktree: Worktree,
+    pub env: Option<Vec<(String, String)>>,
+}
+
+/// The launch a record remembers (Manager.ts:341-347's `cwd`, `worktreePath`, `runtimeEnv`). Two
+/// records of the same terminal id are different terminals when these differ, which is what the
+/// re-`open` comparison in [`Terminals::reopen`] is about.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Launch {
+    pub cwd: String,
+    pub worktree_path: Option<String>,
+    /// Already normalized, so an empty environment and no environment are the one record they are
+    /// measured to be.
+    pub runtime_env: Option<Vec<(String, String)>>,
+}
+
+impl Launch {
+    /// The record a create writes (Manager.ts:2527-2547, and identically at :2948-2968): a worktree the
+    /// call did not name is no worktree.
+    #[must_use]
+    pub fn opened(ask: &LaunchAsk) -> Self {
+        Self {
+            cwd: ask.cwd.clone(),
+            worktree_path: match &ask.worktree {
+                Worktree::At(path) => Some(path.clone()),
+                Worktree::Unnamed | Worktree::Cleared => None,
+            },
+            runtime_env: crate::normalized_runtime_env(ask.env.clone()),
+        }
+    }
+
+    /// What a re-`open` would write onto a record that already exists: same two fields, and the
+    /// worktree falls back to the recorded one rather than to nothing.
+    #[must_use]
+    pub fn next_after(&self, ask: &LaunchAsk) -> Self {
+        Self {
+            cwd: ask.cwd.clone(),
+            worktree_path: match &ask.worktree {
+                Worktree::Unnamed => self.worktree_path.clone(),
+                Worktree::Cleared => None,
+                Worktree::At(path) => Some(path.clone()),
+            },
+            runtime_env: crate::normalized_runtime_env(ask.env.clone()),
+        }
+    }
+}
+
 /// The state the shipped manager keeps beside a session's output that the exit and retention rules
-/// read. Cwd, the worktree path, cols, rows and the display label belong to spawn and the wire: no
-/// exit, retention or fan-out rule reads them.
+/// read. The display label belongs to spawn and the wire: no exit, retention or fan-out rule reads it.
+/// The size is kept because the open and attach gates compare against it, and the launch is kept on
+/// [`Entry`] beside it because the re-`open` gate compares against that too.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Session {
     pub status: Status,
@@ -138,12 +230,18 @@ pub struct Session {
     /// `updatedAt` as the text the shipped sort compares. Text, not a clock, makes the ordering rule
     /// the contract and leaves reading time to the owner.
     pub updated_at: String,
+    /// The viewport the process last had, which is what makes a second attach at the same size cost
+    /// nothing and a third at the old size cost a resize.
+    pub size: Size,
 }
 
-/// One table entry: what the session's output is doing, and what the manager says about it.
+/// One table entry: what the session's output is doing, what the manager says about it, and the launch
+/// the re-`open` gate compares a new call against. The launch lives here rather than in `Session`
+/// because three shipped paths reassign that whole struct and none of them is about the launch.
 struct Entry {
     output: PersistedOutput,
     state: Session,
+    launch: Launch,
 }
 
 /// A metadata view row, in the order the shipped manager hands it to the client.
@@ -202,6 +300,45 @@ pub enum Resize {
     NotRunning,
     /// The size to apply to the process, which is the one step that can fail and reach the client.
     Applied { cols: u32, rows: u32 },
+}
+
+/// What the table said about the viewport an `open` or an `attach` asked for. This is the one place
+/// the manager compares sizes, and like `resize` no outcome publishes an event.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Viewport {
+    /// No record under this key, so the caller opens one instead of attaching to it.
+    Missing,
+    /// A record with no live process. `openLocked` (Manager.ts:2611) starts one, which is the branch
+    /// this port leaves to its caller; the stream path (Manager.ts:2684) skips the gate and answers
+    /// with a snapshot of a dead terminal.
+    NotRunning,
+    /// The record already has this viewport, so nothing reaches the process and no stamp moves. The
+    /// reason a second client watching the same terminal does not reorder the sessions list.
+    Unchanged,
+    /// The size to hand the process. The record already remembers it and carries the new stamp.
+    Applied(Size),
+}
+
+/// What the table said about an `open` of a terminal it already has (Manager.ts:2574-2607). The two
+/// resetting outcomes differ in what the caller owes the process: a `Stopped` pid has to be killed and
+/// unsubscribed, a `Reset` has nothing to kill.
+///
+/// Both have already dropped the retained screen and written the empty file. Neither publishes an
+/// event or takes a sequence, and only `Stopped` stamps the record: measured on
+/// `cwd-change-publishes-no-cleared` the sequence goes 1 to 3 across a reset that owns the 2 for
+/// nobody, and on `exited-branch-kills-nothing` the same reset leaves the stamp where it was.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Reopen {
+    /// No record under this key, so the caller creates one.
+    Missing,
+    /// Same launch and a live process, so the retained screen survives. The one quiet outcome.
+    Kept,
+    /// A different launch, and the process that was running under the old one. The record is now
+    /// `exited` and stamped, as `stopProcess` leaves it.
+    Stopped { pid: u32 },
+    /// History was thrown away and nobody was killed: either a different launch with no process, or
+    /// the same launch on a record that had already exited or failed to start.
+    Reset,
 }
 
 impl WriteError {
@@ -338,12 +475,16 @@ impl Terminals {
     }
 
     /// Registers a session as `starting` stamped `at`, replacing any live one under the same key, and
-    /// runs the retention pass `openLocked` calls right after inserting (Manager.ts:2557).
+    /// runs the retention pass `openLocked` calls right after inserting (Manager.ts:2557). `requested`
+    /// is the call's own size, which the shipped record falls back to `DEFAULT_OPEN_COLS`/`_ROWS` for.
+    /// `ask` is what the call named as its launch, which the new record takes the resolved form of.
     pub fn insert(
         &mut self,
         thread_id: &str,
         terminal_id: &str,
         output: PersistedOutput,
+        requested: Option<Size>,
+        ask: &LaunchAsk,
         at: &str,
     ) -> Option<PersistedOutput> {
         let key = (thread_id.to_owned(), terminal_id.to_owned());
@@ -354,9 +495,11 @@ impl Terminals {
             key,
             Entry {
                 output,
+                launch: Launch::opened(ask),
                 state: Session {
                     status: Status::Starting,
                     updated_at: at.to_owned(),
+                    size: requested.unwrap_or_default(),
                     ..Session::default()
                 },
             },
@@ -389,6 +532,10 @@ impl Terminals {
     /// `startSession`'s success path: the process is live, so the session leaves retention's count.
     /// The sequence is the pipe's, which is why the transition owns the `output.start` call.
     ///
+    /// `requested` is the size the shipped call writes onto the record before it spawns
+    /// (Manager.ts:2196), so a start that never ran keeps the viewport its caller asked for. `None`
+    /// means the call named none, which the shipped code reads as the record's own size.
+    ///
     /// A record retention already dropped has nothing to mark. That is where this port parts ways with
     /// the shipped manager, which goes on mutating the detached object and publishes `started` for it:
     /// measured on `cap-zero-open`, a ceiling of `0` evicts the session `open` is creating and the
@@ -399,6 +546,7 @@ impl Terminals {
         thread_id: &str,
         terminal_id: &str,
         pid: u32,
+        requested: Option<Size>,
         at: &str,
         publish: &mut dyn FnMut(&Event),
     ) -> Option<u64> {
@@ -406,6 +554,7 @@ impl Terminals {
             .sessions
             .get_mut(&(thread_id.to_owned(), terminal_id.to_owned()))?;
         let sequence = entry.output.start(pid);
+        let remembered = entry.state.size;
         entry.state = Session {
             status: Status::Running,
             pid: Some(pid),
@@ -414,6 +563,7 @@ impl Terminals {
             exit_code: None,
             exit_signal: None,
             updated_at: at.to_owned(),
+            size: requested.unwrap_or(remembered),
         };
         publish(&Event::Started {
             terminal_id: terminal_id.to_owned(),
@@ -432,6 +582,7 @@ impl Terminals {
         thread_id: &str,
         terminal_id: &str,
         message: &str,
+        requested: Option<Size>,
         at: &str,
         publish: &mut dyn FnMut(&Event),
     ) -> Option<u64> {
@@ -439,9 +590,11 @@ impl Terminals {
             .sessions
             .get_mut(&(thread_id.to_owned(), terminal_id.to_owned()))?;
         let sequence = entry.output.fail_start();
+        let remembered = entry.state.size;
         entry.state = Session {
             status: Status::Error,
             updated_at: at.to_owned(),
+            size: requested.unwrap_or(remembered),
             ..Session::default()
         };
         self.evict();
@@ -523,10 +676,11 @@ impl Terminals {
     ///
     /// Both early returns are silent in the shipped call, because `ResizeObserver` traffic is already
     /// in flight when a terminal closes or has yet to spawn. The size is handed back for the caller to
-    /// apply to the process, which is where `TerminalResizeError` comes from. The shipped record also
-    /// keeps the size, but only `open`'s equality gate reads it again (Manager.ts:2626, :2684) and that
-    /// path is not ported yet, so the port leaves it with the caller's process rather than inventing a
-    /// field nothing here consumes.
+    /// apply to the process, which is where `TerminalResizeError` comes from, and the record keeps it,
+    /// which is what the next attach's gate compares against.
+    ///
+    /// This call has no equality gate of its own: the shipped one resizes and stamps even when the
+    /// viewport is the one the terminal already had, unlike `viewport` below.
     pub fn resize(
         &mut self,
         thread_id: &str,
@@ -544,8 +698,111 @@ impl Terminals {
         if entry.state.status != Status::Running || entry.state.pid.is_none() {
             return Resize::NotRunning;
         }
+        entry.state.size = Size { cols, rows };
         entry.state.updated_at = at.to_owned();
         Resize::Applied { cols, rows }
+    }
+
+    /// The size check an `open` of a live terminal (Manager.ts:2626) and an `attach`
+    /// (Manager.ts:2684) run before either touches the process. Measured on
+    /// `attach-of-a-running-terminal-keeps-its-size` a matching viewport costs no pty call and leaves
+    /// the stamp the sessions list sorts on exactly where it was, and on
+    /// `attach-sizes-are-remembered-between-clients` the size a *previous client* asked for is the one
+    /// compared, so a third client asking for the original viewport resizes again.
+    ///
+    /// The two shipped sites key on slightly different things — `openLocked` on `process` alone, after
+    /// its own branch that starts a session when there is none, and the stream path on
+    /// `process && status === "running"` — which agree here because a record only carries a pid while
+    /// it runs.
+    pub fn viewport(
+        &mut self,
+        thread_id: &str,
+        terminal_id: &str,
+        requested: Size,
+        at: &str,
+    ) -> Viewport {
+        let Some(entry) = self
+            .sessions
+            .get_mut(&(thread_id.to_owned(), terminal_id.to_owned()))
+        else {
+            return Viewport::Missing;
+        };
+        if entry.state.status != Status::Running || entry.state.pid.is_none() {
+            return Viewport::NotRunning;
+        }
+        if entry.state.size == requested {
+            return Viewport::Unchanged;
+        }
+        entry.state.size = requested;
+        entry.state.updated_at = at.to_owned();
+        Viewport::Applied(requested)
+    }
+
+    /// The other half of re-`open`ing a terminal that already has a record: the launch comparison
+    /// (Manager.ts:2575-2607) that runs before either the size gate or the spawn. A launch change stops
+    /// the process and throws the retained screen away; an unchanged launch on a record that had
+    /// already exited or failed throws the screen away without a process to stop.
+    ///
+    /// Three of the four outcomes clear history and write the empty file, and none of them takes a
+    /// sequence or publishes, which is why the caller's `started` is the next number the record owns.
+    /// The write is what a later reader sees: without it, reopening a terminal at a new directory
+    /// shows the screen the killed shell left on disk.
+    ///
+    /// A stopped process is the caller's to kill, unsubscribe and hand to the escalation timer, and
+    /// retention runs the way `stopProcess` runs it — after the record has gone inactive.
+    pub fn reopen(
+        &mut self,
+        thread_id: &str,
+        terminal_id: &str,
+        ask: &LaunchAsk,
+        at: &str,
+    ) -> io::Result<Reopen> {
+        let key = (thread_id.to_owned(), terminal_id.to_owned());
+        let Some(entry) = self.sessions.get_mut(&key) else {
+            return Ok(Reopen::Missing);
+        };
+        let next = entry.launch.next_after(ask);
+        let changed = next != entry.launch;
+        entry.launch = next;
+
+        let mut stopped = None;
+        let outcome = if changed {
+            match entry.state.pid.take() {
+                Some(pid) => {
+                    // `stopProcess`: the record goes inactive with no event of its own, and this is the
+                    // one reset that stamps it. `exitCode`/`exitSignal` are left alone because the
+                    // shipped call does not touch them, and a running record has none.
+                    entry.state.status = Status::Exited;
+                    entry.state.updated_at = at.to_owned();
+                    entry.output.stop();
+                    stopped = Some(pid);
+                    Reopen::Stopped { pid }
+                }
+                None => Reopen::Reset,
+            }
+        } else if matches!(entry.state.status, Status::Exited | Status::Error) {
+            Reopen::Reset
+        } else {
+            Reopen::Kept
+        };
+
+        if outcome != Reopen::Kept {
+            entry.output.reset_history()?;
+        }
+        if let Some(pid) = stopped {
+            self.evict();
+            return Ok(Reopen::Stopped { pid });
+        }
+        Ok(outcome)
+    }
+
+    /// The launch the record remembers, which is the row the re-`open` gate compares against and the
+    /// only way to see the absent-worktree rule from outside the table.
+    #[must_use]
+    pub fn launch(&self, thread_id: &str, terminal_id: &str) -> Option<&Launch> {
+        self.sessions
+            .get(&(thread_id.to_owned(), terminal_id.to_owned()))
+            .map(|entry| &entry.launch)
     }
 
     /// `readTerminalMetadata` (Manager.ts:2714): one row of the sessions view, which is what the
@@ -615,9 +872,7 @@ impl Terminals {
                 .then_with(|| left_key.cmp(right_key))
         });
         rows.into_iter()
-            .map(|((thread_id, terminal_id), entry)| {
-                row(thread_id, terminal_id, &entry.state)
-            })
+            .map(|((thread_id, terminal_id), entry)| row(thread_id, terminal_id, &entry.state))
             .collect()
     }
 
@@ -646,22 +901,38 @@ impl Terminals {
     /// new pid — one event, not a `restarted` followed by a `started` (measured on
     /// `restart-after-exit`). Retention runs on the same site as Manager.ts:2976, after the record is
     /// live again, so a restarted terminal is never the one the ceiling takes.
+    ///
+    /// The launch is rewritten even though a restart always resets (Manager.ts:2980-2982), and it takes
+    /// the create path's resolution: a restart that names no worktree clears the recorded one, which is
+    /// the opposite of what a re-`open` does.
+    ///
+    /// The one transition that names both a new process and a new launch, so it carries the whole
+    /// shipped input: the viewport for the shell, the launch to rewrite, and the stamp. Grouping any of
+    /// them into a struct would serve the lint rather than the call.
+    #[allow(clippy::too_many_arguments)]
     pub fn restart(
         &mut self,
         thread_id: &str,
         terminal_id: &str,
         pid: u32,
+        requested: Option<Size>,
+        ask: &LaunchAsk,
         at: &str,
         publish: &mut dyn FnMut(&Event),
     ) -> io::Result<()> {
         let entry = self.require_mut(thread_id, terminal_id)?;
         let sequence = entry.output.restart(pid)?;
+        entry.launch = Launch::opened(ask);
+        let remembered = entry.state.size;
         entry.state = Session {
             status: Status::Running,
             pid: Some(pid),
             exit_code: None,
             exit_signal: None,
             updated_at: at.to_owned(),
+            // The shipped call is `input.cols ?? session.cols` (Manager.ts:2985), so a restart that
+            // names no viewport keeps the one the terminal already had.
+            size: requested.unwrap_or(remembered),
         };
         publish(&Event::Restarted {
             terminal_id: terminal_id.to_owned(),
@@ -932,6 +1203,8 @@ mod tests {
             "thread-1",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-1", DEFAULT_TERMINAL_ID, b"live\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         let published = Published::new();
@@ -994,6 +1267,8 @@ mod tests {
                 "thread-1",
                 DEFAULT_TERMINAL_ID,
                 logs.session("thread-1", DEFAULT_TERMINAL_ID, b"keep\n"),
+                None,
+                &LaunchAsk::default(),
                 "t0",
             );
             let published = Published::new();
@@ -1024,6 +1299,8 @@ mod tests {
             "thread-1",
             "term-2",
             logs.session("thread-1", "term-2", b"mine\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         let published = Published::new();
@@ -1055,18 +1332,24 @@ mod tests {
             "thread-1",
             "term-2",
             logs.session("thread-1", "term-2", b"a\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         terminals.insert(
             "thread-1",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-1", DEFAULT_TERMINAL_ID, b"b\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         terminals.insert(
             "thread-2",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-2", DEFAULT_TERMINAL_ID, b"c\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         let published = Published::new();
@@ -1105,6 +1388,8 @@ mod tests {
                 "thread-1",
                 DEFAULT_TERMINAL_ID,
                 logs.session("thread-1", DEFAULT_TERMINAL_ID, b"keep\n"),
+                None,
+                &LaunchAsk::default(),
                 "t0",
             );
             let published = Published::new();
@@ -1133,6 +1418,8 @@ mod tests {
             "thread-1",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-1", DEFAULT_TERMINAL_ID, b"written\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         let published = Published::new();
@@ -1215,6 +1502,8 @@ mod tests {
             "thread-1",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-1", DEFAULT_TERMINAL_ID, b"restored\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         let published = Published::new();
@@ -1228,7 +1517,15 @@ mod tests {
             "the cleared history reached disk"
         );
         terminals
-            .restart("thread-1", DEFAULT_TERMINAL_ID, 42, "t0", &mut watch)
+            .restart(
+                "thread-1",
+                DEFAULT_TERMINAL_ID,
+                42,
+                None,
+                &LaunchAsk::default(),
+                "t0",
+                &mut watch,
+            )
             .unwrap();
         assert_eq!(
             published.events(),
@@ -1254,6 +1551,8 @@ mod tests {
             "thread-1",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-1", DEFAULT_TERMINAL_ID, b"keep\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         drop(logs.worker.take());
@@ -1261,7 +1560,15 @@ mod tests {
         let mut watch = published.watch(&logs, vec![current.clone()]);
         for outcome in [
             terminals.clear("thread-1", DEFAULT_TERMINAL_ID, "t0", &mut watch),
-            terminals.restart("thread-1", DEFAULT_TERMINAL_ID, 42, "t0", &mut watch),
+            terminals.restart(
+                "thread-1",
+                DEFAULT_TERMINAL_ID,
+                42,
+                None,
+                &LaunchAsk::default(),
+                "t0",
+                &mut watch,
+            ),
         ] {
             assert_eq!(
                 outcome
@@ -1288,6 +1595,8 @@ mod tests {
             "thread-1",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-1", DEFAULT_TERMINAL_ID, b"keep\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         // Stopping the worker is what the immediate paths report as an error.
@@ -1315,18 +1624,24 @@ mod tests {
             "thread-1",
             "term-2",
             logs.session("thread-1", "term-2", b"first\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         terminals.insert(
             "thread-1",
             DEFAULT_TERMINAL_ID,
             logs.session("thread-1", DEFAULT_TERMINAL_ID, b"second\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         terminals.insert(
             "thread-1",
             "term-2",
             logs.session("thread-1", "term-2", b"reopened\n"),
+            None,
+            &LaunchAsk::default(),
             "t0",
         );
         let published = Published::new();
@@ -1450,11 +1765,20 @@ mod tests {
             "thread-a",
             "term-1",
             logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
         let mut events: Vec<String> = Vec::new();
         assert_eq!(
-            terminals.mark_running("thread-a", "term-1", 7400, "t2", &mut recorder(&mut events)),
+            terminals.mark_running(
+                "thread-a",
+                "term-1",
+                7400,
+                None,
+                "t2",
+                &mut recorder(&mut events)
+            ),
             Some(1)
         );
         // The drain owns the sequence the exit event reports, so the transition takes it as given.
@@ -1499,12 +1823,16 @@ mod tests {
             "thread-a",
             "term-1",
             logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
         terminals.insert(
             "thread-a",
             "term-2",
             logs.session("thread-a", "term-2", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
         let mut events: Vec<String> = Vec::new();
@@ -1517,6 +1845,7 @@ mod tests {
             "thread-a",
             "term-2",
             "failed to spawn",
+            None,
             "t2",
             &mut |event| {
                 events.push(describe(event));
@@ -1527,7 +1856,7 @@ mod tests {
             Err(WriteError::NotRunning),
             "a spawn that failed keeps its record, and the record still refuses input"
         );
-        terminals.mark_running("thread-a", "term-1", 7400, "t3", &mut |event| {
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t3", &mut |event| {
             events.push(describe(event));
         });
         assert_eq!(terminals.write("thread-a", "term-1"), Ok(Write::Delivered));
@@ -1560,9 +1889,11 @@ mod tests {
             "thread-a",
             "term-1",
             logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
-        terminals.mark_running("thread-a", "term-1", 7400, "t2", &mut |_| {});
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
         let output = terminals
             .session("thread-a", "term-1")
             .expect("the session is live");
@@ -1598,10 +1929,19 @@ mod tests {
             "thread-a",
             "term-1",
             logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
         let mut events: Vec<String> = Vec::new();
-        terminals.mark_running("thread-a", "term-1", 7400, "t2", &mut recorder(&mut events));
+        terminals.mark_running(
+            "thread-a",
+            "term-1",
+            7400,
+            None,
+            "t2",
+            &mut recorder(&mut events),
+        );
         let (sequence, exit) = drain_exit(&mut terminals, "thread-a", "term-1", 7400, 2, None);
         terminals.exit(
             "thread-a",
@@ -1612,7 +1952,15 @@ mod tests {
             &mut recorder(&mut events),
         );
         terminals
-            .restart("thread-a", "term-1", 7401, "t4", &mut recorder(&mut events))
+            .restart(
+                "thread-a",
+                "term-1",
+                7401,
+                None,
+                &LaunchAsk::default(),
+                "t4",
+                &mut recorder(&mut events),
+            )
             .unwrap();
         assert_eq!(
             events,
@@ -1641,6 +1989,8 @@ mod tests {
             "thread-a",
             "term-1",
             logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
         let mut events: Vec<String> = Vec::new();
@@ -1649,6 +1999,7 @@ mod tests {
                 "thread-a",
                 "term-1",
                 "failed to spawn",
+                None,
                 "t2",
                 &mut recorder(&mut events)
             ),
@@ -1692,12 +2043,15 @@ mod tests {
                 "thread-a",
                 terminal,
                 logs.session("thread-a", terminal, b""),
+                None,
+                &LaunchAsk::default(),
                 stamps[0],
             );
             terminals.mark_running(
                 "thread-a",
                 terminal,
                 pid,
+                None,
                 stamps[1],
                 &mut recorder(&mut events),
             );
@@ -1752,9 +2106,18 @@ mod tests {
                 "thread-a",
                 terminal,
                 logs.session("thread-a", terminal, b""),
+                None,
+                &LaunchAsk::default(),
                 "t",
             );
-            terminals.mark_running("thread-a", terminal, pid, "t", &mut recorder(&mut events));
+            terminals.mark_running(
+                "thread-a",
+                terminal,
+                pid,
+                None,
+                "t",
+                &mut recorder(&mut events),
+            );
             let (sequence, exit) = drain_exit(&mut terminals, "thread-a", terminal, pid, 0, None);
             terminals.exit(
                 "thread-a",
@@ -1786,12 +2149,15 @@ mod tests {
                 "thread-a",
                 terminal,
                 logs.session("thread-a", terminal, b""),
+                None,
+                &LaunchAsk::default(),
                 stamps[0],
             );
             terminals.mark_running(
                 "thread-a",
                 terminal,
                 pid,
+                None,
                 stamps[1],
                 &mut recorder(&mut events),
             );
@@ -1809,9 +2175,18 @@ mod tests {
             "thread-a",
             "term-3",
             logs.session("thread-a", "term-3", b""),
+            None,
+            &LaunchAsk::default(),
             "t6",
         );
-        terminals.mark_running("thread-a", "term-3", 7402, "t7", &mut recorder(&mut events));
+        terminals.mark_running(
+            "thread-a",
+            "term-3",
+            7402,
+            None,
+            "t7",
+            &mut recorder(&mut events),
+        );
         let (sequence, exit) = drain_exit(&mut terminals, "thread-a", "term-3", 7402, 0, None);
         terminals.exit(
             "thread-a",
@@ -1843,12 +2218,16 @@ mod tests {
             "thread-a",
             "term-1",
             logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
         terminals.insert(
             "thread-a",
             "term-2",
             logs.session("thread-a", "term-2", b""),
+            None,
+            &LaunchAsk::default(),
             "t2",
         );
         assert_eq!(
@@ -1873,6 +2252,8 @@ mod tests {
             "thread-a",
             "term-1",
             logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
             "t1",
         );
         assert_eq!(
@@ -1898,6 +2279,8 @@ mod tests {
                 "thread-a",
                 terminal,
                 logs.session("thread-a", terminal, b""),
+                None,
+                &LaunchAsk::default(),
                 stamp,
             );
         }
@@ -1916,5 +2299,989 @@ mod tests {
     fn the_default_ceiling_is_the_shipped_one() {
         let logs = Logs::start("default-ceiling");
         assert_eq!(Terminals::new(&logs.dir).retention(), 128);
+    }
+
+    #[test]
+    fn a_resize_stamps_the_record_and_publishes_nothing() {
+        let logs = Logs::start("resize-stamp");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
+            "t1",
+        );
+        let mut events: Vec<(String, u64)> = Vec::new();
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |event| {
+            events.push((event.terminal_id().to_owned(), event.sequence()));
+        });
+        assert_eq!(
+            terminals.resize("thread-a", "term-1", 132, 43, "t3"),
+            Resize::Applied {
+                cols: 132,
+                rows: 43
+            },
+            "a running terminal hands the caller the size to apply to the process"
+        );
+        assert_eq!(events.len(), 1, "a resize announces nothing");
+        let state = terminals.state("thread-a", "term-1").unwrap();
+        assert_eq!(
+            state.updated_at, "t3",
+            "the resize is a stamping site, so the record the view sorts on moves"
+        );
+        assert_eq!(
+            state.status,
+            Status::Running,
+            "nothing else about the record changes"
+        );
+        // The sequence the next event gets is the only way to see whether an intervening mutation
+        // consumed one, and a resize does not.
+        terminals
+            .clear("thread-a", "term-1", "t5", &mut |event| {
+                events.push((event.terminal_id().to_owned(), event.sequence()));
+            })
+            .expect("the terminal is still in the table");
+        assert_eq!(
+            events,
+            vec![("term-1".to_owned(), 1), ("term-1".to_owned(), 2)],
+            "the cleared event follows the start with nothing in between: a resize consumes no sequence"
+        );
+    }
+
+    #[test]
+    fn a_resize_of_a_terminal_that_is_not_running_is_silent() {
+        let logs = Logs::start("resize-idle");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
+            "t1",
+        );
+        assert_eq!(
+            terminals.resize("thread-a", "term-1", 100, 30, "t2"),
+            Resize::NotRunning,
+            "a terminal that has not spawned has no process to size"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t1",
+            "the shipped call returns before it touches the record, so a starting terminal keeps its open stamp"
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t3", &mut |_| {});
+        terminals.exit("thread-a", "term-1", 2, Exit::default(), "t4", &mut |_| {});
+        assert_eq!(
+            terminals.resize("thread-a", "term-1", 10, 10, "t5"),
+            Resize::NotRunning,
+            "the exited record keeps its exit stamp: ResizeObserver traffic racing an exit is dropped"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t4"
+        );
+        assert_eq!(
+            terminals.resize("thread-a", "term-9", 10, 10, "t6"),
+            Resize::Missing,
+            "a resize of a terminal the table never had is not an error either"
+        );
+        assert_eq!(
+            terminals.metadata("thread-a", "term-9"),
+            None,
+            "and it has no row for the metadata stream to upsert"
+        );
+    }
+
+    #[test]
+    fn a_record_that_named_no_viewport_starts_with_the_shipped_one() {
+        let logs = Logs::start("open-default-viewport");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
+            "t1",
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().size,
+            Size {
+                cols: 120,
+                rows: 30
+            },
+            "DEFAULT_OPEN_COLS and DEFAULT_OPEN_ROWS (Manager.ts:101) are the record's first viewport"
+        );
+        terminals.insert(
+            "thread-a",
+            "term-2",
+            logs.session("thread-a", "term-2", b""),
+            Some(Size {
+                cols: 100,
+                rows: 24,
+            }),
+            &LaunchAsk::default(),
+            "t2",
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-2").unwrap().size,
+            Size {
+                cols: 100,
+                rows: 24
+            },
+            "a call that names a viewport wins over the default"
+        );
+    }
+
+    #[test]
+    fn an_attach_at_the_viewport_the_terminal_already_has_costs_the_process_nothing() {
+        let logs = Logs::start("attach-same-viewport");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            Some(Size {
+                cols: 100,
+                rows: 24,
+            }),
+            &LaunchAsk::default(),
+            "t1",
+        );
+        let mut events: Vec<String> = Vec::new();
+        terminals.mark_running(
+            "thread-a",
+            "term-1",
+            7400,
+            None,
+            "t1",
+            &mut recorder(&mut events),
+        );
+        assert_eq!(events, vec!["started term-1 1 pid 7400".to_owned()]);
+        assert_eq!(
+            terminals.viewport(
+                "thread-a",
+                "term-1",
+                Size {
+                    cols: 100,
+                    rows: 24
+                },
+                "t2",
+            ),
+            Viewport::Unchanged,
+            "the second client gets a snapshot and the pty is never touched"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t1",
+            "a matching viewport leaves the stamp the sessions list sorts on alone, so the row does not move"
+        );
+        assert_eq!(
+            events,
+            vec!["started term-1 1 pid 7400".to_owned()],
+            "and nothing is published"
+        );
+    }
+
+    #[test]
+    fn an_attach_at_a_new_viewport_is_remembered_and_restamps_without_publishing() {
+        let logs = Logs::start("attach-new-viewport");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            Some(Size {
+                cols: 100,
+                rows: 24,
+            }),
+            &LaunchAsk::default(),
+            "t1",
+        );
+        let mut events: Vec<String> = Vec::new();
+        terminals.mark_running(
+            "thread-a",
+            "term-1",
+            7400,
+            None,
+            "t1",
+            &mut recorder(&mut events),
+        );
+        let asked = Size {
+            cols: 132,
+            rows: 43,
+        };
+        assert_eq!(
+            terminals.viewport("thread-a", "term-1", asked, "t2"),
+            Viewport::Applied(asked),
+            "the caller hands this size to the process"
+        );
+        assert_eq!(terminals.state("thread-a", "term-1").unwrap().size, asked);
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t2"
+        );
+        assert_eq!(
+            terminals.viewport("thread-a", "term-1", asked, "t3"),
+            Viewport::Unchanged,
+            "the record kept the size, so asking for it again is free"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t2",
+            "and the second answer did not stamp"
+        );
+        assert_eq!(
+            events,
+            vec!["started term-1 1 pid 7400".to_owned()],
+            "neither answer publishes an event",
+        );
+    }
+
+    #[test]
+    fn the_size_an_earlier_client_asked_for_is_the_one_a_later_client_is_compared_against() {
+        let logs = Logs::start("attach-remembered-viewport");
+        let mut terminals = terminals(&logs);
+        let open = Size {
+            cols: 100,
+            rows: 24,
+        };
+        let wide = Size {
+            cols: 132,
+            rows: 43,
+        };
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            Some(open),
+            &LaunchAsk::default(),
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t1", &mut |_| {});
+        assert_eq!(
+            terminals.viewport("thread-a", "term-1", wide, "t2"),
+            Viewport::Applied(wide)
+        );
+        assert_eq!(
+            terminals.viewport(
+                "thread-a",
+                "term-1",
+                Size {
+                    cols: 132,
+                    rows: 20
+                },
+                "t3",
+            ),
+            Viewport::Applied(Size {
+                cols: 132,
+                rows: 20
+            }),
+            "the same width with a shorter height is still a different viewport"
+        );
+        assert_eq!(
+            terminals.viewport("thread-a", "term-1", open, "t4"),
+            Viewport::Applied(open),
+            "a third client asking for the viewport the terminal opened with resizes again: the gate compares the current size, not the first one"
+        );
+        assert_eq!(terminals.state("thread-a", "term-1").unwrap().size, open);
+    }
+
+    #[test]
+    fn the_viewport_gate_skips_a_terminal_that_has_no_process() {
+        let logs = Logs::start("attach-idle-viewport");
+        let mut terminals = terminals(&logs);
+        let asked = Size { cols: 90, rows: 20 };
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
+            "t1",
+        );
+        assert_eq!(
+            terminals.viewport("thread-a", "term-1", asked, "t2"),
+            Viewport::NotRunning,
+            "an unspawned record is `openLocked`'s branch that starts a session, and the stream gate skips it"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t1"
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
+        terminals.exit("thread-a", "term-1", 2, Exit::default(), "t3", &mut |_| {});
+        assert_eq!(
+            terminals.viewport("thread-a", "term-1", asked, "t4"),
+            Viewport::NotRunning,
+            "measured on attach-of-an-exited-terminal-skips-the-size-gate: the snapshot a client gets names the exit's stamp, not a newer one"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t3",
+            "so an attach after an exit cannot reorder the sessions list"
+        );
+        assert_eq!(
+            terminals.viewport("thread-a", "term-9", asked, "t5"),
+            Viewport::Missing,
+            "a terminal the table never had is what tells the caller to open one"
+        );
+    }
+
+    #[test]
+    fn a_resize_has_no_gate_of_its_own() {
+        let logs = Logs::start("resize-is-not-the-gate");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            Some(Size {
+                cols: 100,
+                rows: 24,
+            }),
+            &LaunchAsk::default(),
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t1", &mut |_| {});
+        assert_eq!(
+            terminals.resize("thread-a", "term-1", 100, 24, "t2"),
+            Resize::Applied {
+                cols: 100,
+                rows: 24
+            },
+            "resizeLocked never compares: the same viewport twice is two pty calls"
+        );
+        assert_eq!(
+            terminals.resize("thread-a", "term-1", 100, 24, "t3"),
+            Resize::Applied {
+                cols: 100,
+                rows: 24
+            },
+            "and each one stamps"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t3",
+            "the record carries the last resize's stamp"
+        );
+        assert_eq!(
+            terminals.resize("thread-a", "term-1", 132, 43, "t4"),
+            Resize::Applied {
+                cols: 132,
+                rows: 43
+            },
+            "and a resize that changes the viewport is still just a resize"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().size,
+            Size {
+                cols: 132,
+                rows: 43
+            },
+            "the record keeps the size the resize applied, not the one the terminal opened with"
+        );
+        assert_eq!(
+            terminals.viewport(
+                "thread-a",
+                "term-1",
+                Size {
+                    cols: 132,
+                    rows: 43
+                },
+                "t5",
+            ),
+            Viewport::Unchanged,
+            "which is the size the next attach is compared against"
+        );
+        assert_eq!(
+            terminals.viewport(
+                "thread-a",
+                "term-1",
+                Size {
+                    cols: 100,
+                    rows: 24
+                },
+                "t6",
+            ),
+            Viewport::Applied(Size {
+                cols: 100,
+                rows: 24
+            }),
+            "and asking for the open viewport again costs a resize"
+        );
+    }
+
+    #[test]
+    fn a_restart_that_names_no_viewport_keeps_the_size_the_terminal_had() {
+        let logs = Logs::start("restart-keeps-viewport");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            Some(Size {
+                cols: 100,
+                rows: 24,
+            }),
+            &LaunchAsk::default(),
+            "t1",
+        );
+        let mut events: Vec<String> = Vec::new();
+        terminals.mark_running(
+            "thread-a",
+            "term-1",
+            7400,
+            None,
+            "t1",
+            &mut recorder(&mut events),
+        );
+        terminals.exit("thread-a", "term-1", 2, Exit::default(), "t2", &mut |_| {});
+        terminals
+            .restart(
+                "thread-a",
+                "term-1",
+                7401,
+                None,
+                &LaunchAsk::default(),
+                "t3",
+                &mut recorder(&mut events),
+            )
+            .unwrap();
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().size,
+            Size {
+                cols: 100,
+                rows: 24
+            },
+            "input.cols ?? session.cols (Manager.ts:2985): a restart with no viewport restarts the same window"
+        );
+        terminals
+            .restart(
+                "thread-a",
+                "term-1",
+                7402,
+                Some(Size { cols: 80, rows: 20 }),
+                &LaunchAsk::default(),
+                "t4",
+                &mut |_| {},
+            )
+            .unwrap();
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().size,
+            Size { cols: 80, rows: 20 },
+            "and one that names a viewport moves it, because the shipped start writes the size before spawning"
+        );
+        assert_eq!(
+            events.len(),
+            2,
+            "a restart publishes once, as it did before the size existed"
+        );
+    }
+
+    #[test]
+    fn a_failed_start_leaves_the_viewport_it_asked_for() {
+        let logs = Logs::start("failed-start-viewport");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
+            "t1",
+        );
+        let asked = Size { cols: 90, rows: 20 };
+        let mut events: Vec<String> = Vec::new();
+        terminals.mark_error(
+            "thread-a",
+            "term-1",
+            "Failed to spawn PTY process",
+            Some(asked),
+            "t2",
+            &mut recorder(&mut events),
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().size,
+            asked,
+            "Manager.ts:2196 writes the size before the spawn, so the error record is already sized"
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t3", &mut |_| {});
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().size,
+            asked,
+            "and a start that names no viewport comes back on it rather than on the open default"
+        );
+    }
+
+    #[test]
+    fn one_row_of_the_view_is_the_row_the_upsert_would_carry() {
+        let logs = Logs::start("single-row");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &LaunchAsk::default(),
+            "t1",
+        );
+        terminals.insert(
+            "thread-a",
+            "term-2",
+            logs.session("thread-a", "term-2", b""),
+            None,
+            &LaunchAsk::default(),
+            "t2",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t3", &mut |_| {});
+        let single = terminals
+            .metadata("thread-a", "term-1")
+            .expect("a running terminal has a row");
+        assert_eq!(
+            (
+                single.status,
+                single.pid,
+                single.updated_at.as_str(),
+                terminals.metadata("thread-a", "term-2").unwrap().status
+            ),
+            (Status::Running, Some(7400), "t3", Status::Starting),
+            "the read reports the record as it stands, whichever terminal it is"
+        );
+        assert_eq!(
+            terminals.view()[0],
+            single,
+            "the whole-table view and the read the metadata stream performs are the same row, in the same shape"
+        );
+        let warnings = terminals
+            .close("thread-a", Some("term-1"), None, &mut |_| {})
+            .expect("a close of a live session succeeds");
+        assert!(
+            warnings.is_empty(),
+            "no history was removed, so there is nothing for the caller to log"
+        );
+        assert_eq!(
+            terminals.metadata("thread-a", "term-1"),
+            None,
+            "a terminal that left the table reads as no row, which is why its event produces no frame"
+        );
+    }
+    /// An `open` of a terminal the table already has, naming only a directory.
+    fn relaunch(cwd: &str) -> LaunchAsk {
+        LaunchAsk {
+            cwd: cwd.to_owned(),
+            ..LaunchAsk::default()
+        }
+    }
+
+    fn runtime(pairs: &[(&str, &str)]) -> Option<Vec<(String, String)>> {
+        Some(
+            pairs
+                .iter()
+                .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
+                .collect(),
+        )
+    }
+
+    /// One delivered chunk plus the write it queued: what a terminal that printed leaves on disk,
+    /// which is the thing a reset has to make disappear.
+    fn print(terminals: &mut Terminals, thread: &str, terminal: &str, pid: u32, text: &str) {
+        let session = terminals
+            .session(thread, terminal)
+            .expect("the terminal is in the table");
+        session.enqueue(pid, PendingEvent::Data(text.to_owned()));
+        assert!(
+            matches!(session.drain_next(pid), Some(Delivery::Output { .. })),
+            "the chunk walks"
+        );
+        assert!(
+            session.drain_next(pid).is_none(),
+            "and the walk runs to idle, which is what frees the next event to start one"
+        );
+        session.flush().unwrap();
+    }
+
+    fn on_disk(logs: &Logs, thread: &str, terminal: &str) -> Vec<u8> {
+        fs::read(logs.current(thread, terminal)).unwrap_or_default()
+    }
+
+    #[test]
+    fn reopening_on_the_same_launch_keeps_the_screen_and_touches_nothing() {
+        let logs = Logs::start("reopen-same-launch");
+        let mut terminals = terminals(&logs);
+        let ask = LaunchAsk {
+            cwd: "/a".to_owned(),
+            worktree: Worktree::At("/w/a".to_owned()),
+            env: runtime(&[("LMCS_A", "1")]),
+        };
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            Some(Size {
+                cols: 100,
+                rows: 24,
+            }),
+            &ask,
+            "t1",
+        );
+        let published = Published::new();
+        let mut watch = published.watch(&logs, Vec::new());
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut watch);
+        print(&mut terminals, "thread-a", "term-1", 7400, "typed\n");
+        let before = terminals.state("thread-a", "term-1").unwrap().clone();
+
+        assert_eq!(
+            terminals.reopen("thread-a", "term-1", &ask, "t3").unwrap(),
+            Reopen::Kept
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap(),
+            &before,
+            "an unchanged launch touches nothing: not the process, not the stamp, not the screen"
+        );
+        assert_eq!(
+            on_disk(&logs, "thread-a", "term-1"),
+            b"typed\n",
+            "and the file keeps what the session printed"
+        );
+        assert_eq!(
+            published.events(),
+            vec![("term-1".to_owned(), 1)],
+            "the start is the only event, because a quiet re-open takes no sequence"
+        );
+    }
+
+    #[test]
+    fn another_directory_stops_the_process_and_empties_the_screen() {
+        let logs = Logs::start("reopen-cwd");
+        let mut terminals = terminals(&logs);
+        let before = relaunch("/a");
+        let after = relaunch("/b");
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &before,
+            "t1",
+        );
+        let published = Published::new();
+        let mut watch = published.watch(&logs, Vec::new());
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut watch);
+        print(&mut terminals, "thread-a", "term-1", 7400, "typed\n");
+
+        assert_eq!(
+            terminals
+                .reopen("thread-a", "term-1", &after, "t3")
+                .unwrap(),
+            Reopen::Stopped { pid: 7400 },
+            "the caller is handed the process it has to kill"
+        );
+        let state = terminals.state("thread-a", "term-1").unwrap();
+        assert_eq!(
+            (state.status.as_str(), state.pid, state.updated_at.as_str()),
+            ("exited", None, "t3"),
+            "`stopProcess` leaves the record inactive and stamped, with no event of its own"
+        );
+        assert_eq!(
+            terminals.launch("thread-a", "term-1").unwrap().cwd,
+            "/b",
+            "the record now belongs to the launch that replaces the shell"
+        );
+        assert_eq!(
+            on_disk(&logs, "thread-a", "term-1"),
+            b"",
+            "the screen the killed shell left is not what a later reader gets"
+        );
+        assert_eq!(
+            terminals.session("thread-a", "term-1").unwrap().sequence(),
+            2,
+            "the reset spends no sequence, so the `started` that follows takes 3"
+        );
+        assert_eq!(
+            published.events(),
+            vec![("term-1".to_owned(), 1)],
+            "no `cleared` and no `exited` reach a client"
+        );
+    }
+
+    #[test]
+    fn an_unnamed_worktree_keeps_the_recorded_one_and_a_null_clears_it() {
+        let logs = Logs::start("reopen-worktree");
+        let mut terminals = terminals(&logs);
+        let recorded = LaunchAsk {
+            cwd: "/a".to_owned(),
+            worktree: Worktree::At("/w/a".to_owned()),
+            env: None,
+        };
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &recorded,
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
+        print(&mut terminals, "thread-a", "term-1", 7400, "typed\n");
+        let unnamed = LaunchAsk {
+            cwd: "/a".to_owned(),
+            ..LaunchAsk::default()
+        };
+        assert_eq!(
+            terminals
+                .reopen("thread-a", "term-1", &unnamed, "t3")
+                .unwrap(),
+            Reopen::Kept,
+            "a client that only knows the terminal id does not move the terminal"
+        );
+        assert_eq!(
+            on_disk(&logs, "thread-a", "term-1"),
+            b"typed\n",
+            "and it does not throw away what is on screen either"
+        );
+        assert_eq!(
+            terminals
+                .reopen(
+                    "thread-a",
+                    "term-1",
+                    &LaunchAsk {
+                        cwd: "/a".to_owned(),
+                        worktree: Worktree::Cleared,
+                        env: None,
+                    },
+                    "t4",
+                )
+                .unwrap(),
+            Reopen::Stopped { pid: 7400 },
+            "naming no worktree is an input, not a question"
+        );
+        assert_eq!(
+            terminals
+                .launch("thread-a", "term-1")
+                .unwrap()
+                .worktree_path,
+            None
+        );
+    }
+
+    #[test]
+    fn environment_equality_is_content_and_not_order() {
+        let logs = Logs::start("reopen-env");
+        let mut terminals = terminals(&logs);
+        let ask = |env| LaunchAsk {
+            cwd: "/a".to_owned(),
+            worktree: Worktree::Unnamed,
+            env,
+        };
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &ask(runtime(&[("LMCS_A", "1"), ("LMCS_B", "2")])),
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
+        print(&mut terminals, "thread-a", "term-1", 7400, "typed\n");
+        assert_eq!(
+            terminals
+                .reopen(
+                    "thread-a",
+                    "term-1",
+                    &ask(runtime(&[("LMCS_B", "2"), ("LMCS_A", "1")])),
+                    "t3"
+                )
+                .unwrap(),
+            Reopen::Kept,
+            "the normalization sorts, so insertion order is not a change"
+        );
+        assert_eq!(
+            terminals
+                .reopen("thread-a", "term-1", &ask(runtime(&[])), "t4")
+                .unwrap(),
+            Reopen::Stopped { pid: 7400 },
+            "an empty map is no map, which drops both entries"
+        );
+        assert_eq!(
+            terminals.launch("thread-a", "term-1").unwrap().runtime_env,
+            None,
+            "and the record keeps the normalized form, not the empty input"
+        );
+    }
+
+    #[test]
+    fn an_absent_environment_and_an_empty_one_are_the_same_record() {
+        let logs = Logs::start("reopen-absent-env");
+        let mut terminals = terminals(&logs);
+        let empty = LaunchAsk {
+            cwd: "/a".to_owned(),
+            worktree: Worktree::Unnamed,
+            env: runtime(&[]),
+        };
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &empty,
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
+        print(&mut terminals, "thread-a", "term-1", 7400, "typed\n");
+        let absent = LaunchAsk {
+            env: None,
+            ..empty.clone()
+        };
+        assert_eq!(
+            terminals
+                .reopen("thread-a", "term-1", &absent, "t3")
+                .unwrap(),
+            Reopen::Kept,
+            "switching between the two cannot read as a context change"
+        );
+        assert_eq!(on_disk(&logs, "thread-a", "term-1"), b"typed\n");
+    }
+
+    #[test]
+    fn a_terminal_that_already_exited_resets_without_a_kill_or_a_stamp() {
+        let logs = Logs::start("reopen-exited");
+        let mut terminals = terminals(&logs);
+        let ask = relaunch("/a");
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &ask,
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
+        print(&mut terminals, "thread-a", "term-1", 7400, "typed\n");
+        let (sequence, exit) = drain_exit(&mut terminals, "thread-a", "term-1", 7400, 3, None);
+        terminals.exit("thread-a", "term-1", sequence, exit, "t4", &mut |_| {});
+        assert_eq!(
+            terminals.reopen("thread-a", "term-1", &ask, "t5").unwrap(),
+            Reopen::Reset,
+            "the same launch on a dead shell is still a new session, but there is nobody to kill"
+        );
+        let state = terminals.state("thread-a", "term-1").unwrap();
+        assert_eq!(
+            (state.status.as_str(), state.updated_at.as_str()),
+            ("exited", "t4"),
+            "the reset runs outside `stopProcess`, so the exit keeps its stamp"
+        );
+        assert_eq!(
+            on_disk(&logs, "thread-a", "term-1"),
+            b"",
+            "and the dead shell's screen is still thrown away"
+        );
+        assert_eq!(
+            terminals.session("thread-a", "term-1").unwrap().sequence(),
+            3,
+            "the exit took 3 and the reset adds nothing to it"
+        );
+    }
+
+    #[test]
+    fn a_starting_terminal_of_another_directory_resets_without_a_pid() {
+        let logs = Logs::start("reopen-starting");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b"restored\n"),
+            None,
+            &relaunch("/a"),
+            "t1",
+        );
+        assert_eq!(
+            terminals
+                .reopen("thread-a", "term-1", &relaunch("/b"), "t2")
+                .unwrap(),
+            Reopen::Reset,
+            "a spawn that has not landed cannot be stopped, so the reset reports no kill"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().updated_at,
+            "t1",
+            "and nothing stamps it either: the record was already inactive"
+        );
+        assert_eq!(
+            on_disk(&logs, "thread-a", "term-1"),
+            b"",
+            "the history a previous run restored is emptied before the new shell starts"
+        );
+    }
+
+    #[test]
+    fn a_stopped_reopen_puts_the_record_back_in_retention_s_count() {
+        let logs = Logs::start("reopen-retention");
+        let mut terminals = Terminals::with_retention(&logs.dir, 1);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b""),
+            None,
+            &relaunch("/a"),
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
+        terminals.insert(
+            "thread-a",
+            "term-2",
+            logs.session("thread-a", "term-2", b""),
+            None,
+            &relaunch("/a"),
+            "t3",
+        );
+        assert_eq!(
+            terminals
+                .reopen("thread-a", "term-1", &relaunch("/b"), "t4")
+                .unwrap(),
+            Reopen::Stopped { pid: 7400 }
+        );
+        assert_eq!(
+            terminals.take_evictions(),
+            vec![("thread-a".to_owned(), "term-2".to_owned())],
+            "`stopProcess` runs the eviction pass, so the terminal that just went inactive joins the count"
+        );
+    }
+
+    #[test]
+    fn a_reopen_that_cannot_write_reports_it_and_publishes_nothing() {
+        let mut logs = Logs::start("reopen-write-fails");
+        let current = logs.current("thread-a", "term-1");
+        let mut terminals = terminals(&logs);
+        terminals.insert(
+            "thread-a",
+            "term-1",
+            logs.session("thread-a", "term-1", b"keep\n"),
+            None,
+            &relaunch("/a"),
+            "t1",
+        );
+        terminals.mark_running("thread-a", "term-1", 7400, None, "t2", &mut |_| {});
+        drop(logs.worker.take());
+        assert_eq!(
+            terminals
+                .reopen("thread-a", "term-1", &relaunch("/b"), "t3")
+                .expect_err("the shipped `yield*` on persistHistory stops the open")
+                .kind(),
+            io::ErrorKind::BrokenPipe
+        );
+        assert!(
+            !logs.exists(&current),
+            "a reset that cannot write leaves the file it was given"
+        );
+        assert_eq!(
+            terminals.state("thread-a", "term-1").unwrap().status,
+            Status::Exited,
+            "but the process was already stopped, which is the order the shipped call runs in"
+        );
     }
 }

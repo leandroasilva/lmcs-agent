@@ -286,7 +286,10 @@ pub enum MetadataFrame {
     /// One row, read from the table when the frame is built rather than copied from the event.
     Upsert { terminal: Metadata },
     /// A terminal that left the table.
-    Remove { thread_id: String, terminal_id: String },
+    Remove {
+        thread_id: String,
+        terminal_id: String,
+    },
 }
 
 impl MetadataFrame {
@@ -322,9 +325,8 @@ pub fn metadata_frame(
             terminal_id: publication.terminal_id.clone(),
         });
     }
-    read(&publication.thread_id, &publication.terminal_id).map(|terminal| MetadataFrame::Upsert {
-        terminal,
-    })
+    read(&publication.thread_id, &publication.terminal_id)
+        .map(|terminal| MetadataFrame::Upsert { terminal })
 }
 
 /// One client's metadata stream: every event of every terminal, held until the sessions view lands.
@@ -551,5 +553,493 @@ impl Fanout {
                 .map(Frame::Metadata)
                 .collect(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lifecycle::Status;
+
+    fn event(kind: Kind, thread: &str, terminal: &str, sequence: u64) -> Publication {
+        Publication::new(kind, thread, terminal, Some(sequence))
+    }
+
+    fn started(thread: &str, terminal: &str, sequence: Option<u64>, stamp: &str) -> Publication {
+        Publication::new(Kind::Started, thread, terminal, sequence).with_snapshot(Snapshot {
+            thread_id: thread.to_owned(),
+            terminal_id: terminal.to_owned(),
+            updated_at: stamp.to_owned(),
+            sequence,
+        })
+    }
+
+    fn snap(thread: &str, terminal: &str, sequence: Option<u64>, stamp: &str) -> Snapshot {
+        Snapshot {
+            thread_id: thread.to_owned(),
+            terminal_id: terminal.to_owned(),
+            updated_at: stamp.to_owned(),
+            sequence,
+        }
+    }
+
+    fn row(thread: &str, terminal: &str, status: Status, stamp: &str) -> Metadata {
+        Metadata {
+            thread_id: thread.to_owned(),
+            terminal_id: terminal.to_owned(),
+            status,
+            pid: (status == Status::Running).then_some(7400),
+            exit_code: None,
+            exit_signal: None,
+            updated_at: stamp.to_owned(),
+        }
+    }
+
+    /// The table the metadata stream reads, as a plain list of rows: the stream's rules are about
+    /// *when* a read happens, not about what a session table holds.
+    fn reader(rows: Vec<Metadata>) -> impl FnMut(&str, &str) -> Option<Metadata> {
+        move |thread: &str, terminal: &str| {
+            rows.iter()
+                .find(|entry| entry.thread_id == thread && entry.terminal_id == terminal)
+                .cloned()
+        }
+    }
+
+    fn attach_kinds(frames: &[AttachFrame]) -> Vec<&'static str> {
+        frames.iter().map(AttachFrame::kind).collect()
+    }
+
+    fn metadata_kinds(frames: &[MetadataFrame]) -> Vec<&'static str> {
+        frames.iter().map(MetadataFrame::kind).collect()
+    }
+
+    fn delivered_kinds(frames: &[(Subscriber, Frame)]) -> Vec<&'static str> {
+        frames.iter().map(|(_, frame)| frame.kind()).collect()
+    }
+
+    fn delivered_ids(frames: &[(Subscriber, Frame)]) -> Vec<Subscriber> {
+        frames.iter().map(|(subscriber, _)| *subscriber).collect()
+    }
+
+    #[test]
+    fn only_text_and_cleared_history_leave_the_sessions_list_alone() {
+        let publishing = [
+            Kind::Started,
+            Kind::Exited,
+            Kind::Closed,
+            Kind::Error,
+            Kind::Restarted,
+            Kind::Activity,
+        ];
+        for kind in publishing {
+            assert!(
+                kind.publishes_metadata(),
+                "{} changes the row a client renders",
+                kind.as_str()
+            );
+        }
+        for kind in [Kind::Output, Kind::Cleared] {
+            assert!(
+                !kind.publishes_metadata(),
+                "{} leaves the sessions list untouched",
+                kind.as_str()
+            );
+        }
+        assert_eq!(
+            Kind::from_event(&Event::Cleared {
+                terminal_id: "term-1".to_owned(),
+                sequence: 4,
+            }),
+            Kind::Cleared
+        );
+        assert_eq!(
+            event(Kind::Restarted, "thread-a", "term-1", 1).thread_id,
+            "thread-a",
+            "the wire text is what the client switches on"
+        );
+        assert_eq!(
+            [
+                Kind::Started,
+                Kind::Output,
+                Kind::Exited,
+                Kind::Closed,
+                Kind::Error,
+                Kind::Cleared,
+                Kind::Restarted,
+                Kind::Activity,
+            ]
+            .map(Kind::as_str),
+            [
+                "started",
+                "output",
+                "exited",
+                "closed",
+                "error",
+                "cleared",
+                "restarted",
+                "activity"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_started_arrives_as_a_snapshot_and_the_rest_as_themselves() {
+        // `terminalEventToAttachEvent` answers for all eight kinds, so the fan-out never drops one.
+        for kind in [
+            Kind::Output,
+            Kind::Exited,
+            Kind::Closed,
+            Kind::Error,
+            Kind::Cleared,
+            Kind::Restarted,
+            Kind::Activity,
+        ] {
+            let publication = event(kind, "thread-a", "term-1", 3);
+            let AttachFrame::Event(carried) = attach_frame(&publication) else {
+                panic!("{} reaches the client as itself", kind.as_str());
+            };
+            assert_eq!(carried, publication);
+        }
+        let publication = started("thread-a", "term-1", Some(3), "t3");
+        let AttachFrame::Snapshot { snapshot } = attach_frame(&publication) else {
+            panic!("a started is never delivered as started");
+        };
+        assert_eq!(
+            snapshot.updated_at, "t3",
+            "the frame carries the event's own snapshot, which is the session as the start stamped it"
+        );
+        let bare = Publication::new(Kind::Started, "thread-a", "term-1", Some(3));
+        let AttachFrame::Snapshot { snapshot } = attach_frame(&bare) else {
+            panic!("a started without a snapshot is answered, not dropped");
+        };
+        assert_eq!(
+            (snapshot.thread_id.as_str(), snapshot.terminal_id.as_str()),
+            ("thread-a", "term-1"),
+            "the event's own identifiers survive; nothing invents a session"
+        );
+    }
+
+    #[test]
+    fn a_frame_at_or_before_the_snapshot_is_dropped() {
+        let initial = snap("thread-a", "term-1", Some(5), "t5");
+        for sequence in [0, 4, 5] {
+            assert!(
+                is_duplicate(
+                    &event(Kind::Exited, "thread-a", "term-1", sequence),
+                    &initial
+                ),
+                "sequence {sequence} is already in the snapshot the client is about to get"
+            );
+        }
+        assert!(
+            !is_duplicate(&event(Kind::Exited, "thread-a", "term-1", 6), &initial),
+            "the next sequence is news"
+        );
+        assert!(
+            !is_duplicate(
+                &event(Kind::Output, "thread-a", "term-1", 6),
+                &snap("thread-a", "term-1", Some(5), "t5")
+            ),
+            "the rule does not care which kind it is covering, only where it landed"
+        );
+    }
+
+    #[test]
+    fn an_unsequenced_started_is_dropped_only_by_its_own_stamp() {
+        let initial = snap("thread-a", "term-1", None, "t5");
+        // The shipped ternary's false branch reads a snapshot only off a started event.
+        assert!(
+            !is_duplicate(
+                &Publication::new(Kind::Exited, "thread-a", "term-1", None),
+                &initial
+            ),
+            "an unsequenced event that is not a start is news, whatever the snapshot would have said"
+        );
+        assert!(
+            is_duplicate(&started("thread-a", "term-1", None, "t5"), &initial),
+            "same session, same stamp: the snapshot describes it"
+        );
+        assert!(
+            is_duplicate(&started("thread-a", "term-1", None, "t1"), &initial),
+            "same session, older stamp: the snapshot is fresher than the event"
+        );
+        assert!(
+            !is_duplicate(&started("thread-a", "term-1", None, "t6"), &initial),
+            "a later stamp is news even without a sequence"
+        );
+        assert!(
+            !is_duplicate(&started("thread-a", "term-2", None, "t1"), &initial),
+            "another terminal's start is not covered by this snapshot"
+        );
+        assert!(
+            !is_duplicate(&started("thread-b", "term-1", None, "t1"), &initial),
+            "another thread's start is not covered either"
+        );
+        let restarted = Publication::new(Kind::Restarted, "thread-a", "term-1", None)
+            .with_snapshot(snap("thread-a", "term-1", None, "t1"));
+        assert!(
+            !is_duplicate(&restarted, &initial),
+            "only a started event's snapshot is read, whatever else carries one"
+        );
+        assert!(
+            !is_duplicate(
+                &Publication::new(Kind::Started, "thread-a", "term-1", None),
+                &initial
+            ),
+            "a started with no snapshot at all cannot be shown to describe the session"
+        );
+    }
+
+    #[test]
+    fn an_attach_holds_events_until_its_snapshot_lands() {
+        let mut stream = AttachStream::new("thread-a", "term-1");
+        assert_eq!(
+            stream.offer(&event(Kind::Output, "thread-a", "term-1", 1)),
+            None,
+            "nothing is delivered before the initial snapshot"
+        );
+        assert_eq!(
+            stream.offer(&event(Kind::Exited, "thread-a", "term-1", 2)),
+            None
+        );
+        assert!(!stream.is_live());
+
+        let frames = stream.opened(&snap("thread-a", "term-1", Some(2), "t2"));
+        assert_eq!(
+            attach_kinds(&frames),
+            ["snapshot"],
+            "the exited event at sequence 2 is the state the snapshot describes"
+        );
+
+        let output = event(Kind::Output, "thread-a", "term-1", 3);
+        assert_eq!(
+            stream.offer(&output),
+            Some(AttachFrame::Event(output.clone())),
+            "after the snapshot, an event goes straight out"
+        );
+        assert!(stream.is_live());
+
+        let later = started("thread-a", "term-1", Some(4), "t4");
+        assert_eq!(
+            stream.offer(&later),
+            Some(AttachFrame::Snapshot {
+                snapshot: snap("thread-a", "term-1", Some(4), "t4"),
+            }),
+            "a terminal that starts again is announced to an already-attached client as a snapshot"
+        );
+    }
+
+    #[test]
+    fn an_attach_buffers_its_own_start_and_keeps_the_rest() {
+        let mut stream = AttachStream::new("thread-a", "term-1");
+        // What `attachStream` of a closed terminal does: subscribe, then open, which publishes a
+        // started the initial snapshot already describes.
+        stream.offer(&started("thread-a", "term-1", Some(1), "t1"));
+        stream.offer(&event(Kind::Output, "thread-a", "term-1", 2));
+        stream.offer(&event(Kind::Exited, "thread-a", "term-1", 3));
+        let frames = stream.opened(&snap("thread-a", "term-1", Some(1), "t1"));
+        assert_eq!(
+            attach_kinds(&frames),
+            ["snapshot", "output", "exited"],
+            "the start the open caused is dropped and the events after it are replayed in order"
+        );
+    }
+
+    #[test]
+    fn an_attach_never_holds_a_neighbour_s_event() {
+        let mut stream = AttachStream::new("thread-a", "term-1");
+        let neighbour = event(Kind::Exited, "thread-a", "term-2", 1);
+        let other_thread = event(Kind::Exited, "thread-b", "term-1", 1);
+        assert_eq!(stream.offer(&neighbour), None);
+        assert_eq!(stream.offer(&other_thread), None);
+        let frames = stream.opened(&snap("thread-a", "term-1", Some(0), "t0"));
+        assert_eq!(
+            attach_kinds(&frames),
+            ["snapshot"],
+            "the filter runs before the buffering decision, so a neighbour's exit is never replayed"
+        );
+        assert!(
+            !stream.matches(&neighbour)
+                && stream.matches(&event(Kind::Output, "thread-a", "term-1", 4)),
+            "the same predicate the shipped listener returns on"
+        );
+    }
+
+    #[test]
+    fn a_metadata_snapshot_lands_before_events_read_the_table_now() {
+        let mut stream = MetadataStream::new();
+        let rows = vec![row("thread-a", "term-1", Status::Exited, "t3")];
+        let mut read = reader(rows.clone());
+        assert!(
+            stream
+                .offer(&event(Kind::Output, "thread-a", "term-1", 1), &mut read)
+                .is_empty(),
+            "nothing is delivered before the view"
+        );
+        // The two events that do belong to the sessions list are held too: delivering one before the
+        // view would have the client render a row it has not seen the list of, and delivering it only
+        // before the view would lose it, so the hold is what makes the replay below non-empty.
+        assert_eq!(
+            stream.offer(&event(Kind::Restarted, "thread-a", "term-1", 2), &mut read),
+            Vec::new(),
+            "a restarted event arriving before the view is held, not delivered and not dropped"
+        );
+        assert_eq!(
+            stream.offer(&event(Kind::Exited, "thread-a", "term-1", 3), &mut read),
+            Vec::new()
+        );
+        assert!(!stream.is_live());
+
+        let frames = stream.opened(rows.clone(), &mut read);
+        assert_eq!(
+            metadata_kinds(&frames),
+            ["snapshot", "upsert", "upsert"],
+            "the two metadata events held for one terminal replay as the same row twice, because the read happens now rather than when each event was published — and the held output produced nothing"
+        );
+        let MetadataFrame::Upsert { terminal } = &frames[1] else {
+            panic!("a restarted event is an upsert");
+        };
+        assert_eq!(
+            terminal.updated_at, "t3",
+            "the row is the current one, not the one the event described"
+        );
+        assert!(
+            stream
+                .offer(&event(Kind::Cleared, "thread-a", "term-1", 4), &mut read)
+                .is_empty(),
+            "a cleared terminal does not rewrite the list"
+        );
+        assert!(
+            stream
+                .offer(&event(Kind::Output, "thread-a", "term-1", 5), &mut read)
+                .is_empty(),
+            "neither does text"
+        );
+        assert_eq!(
+            metadata_kinds(&stream.offer(&event(Kind::Error, "thread-a", "term-1", 6), &mut read)),
+            ["upsert"]
+        );
+    }
+
+    #[test]
+    fn a_closed_terminal_loses_its_row_even_when_the_table_forgot_it() {
+        let mut stream = MetadataStream::new();
+        let mut read = reader(Vec::new());
+        let closed = event(Kind::Closed, "thread-a", "term-1", 3);
+        // Live delivery: the shipped rule answers a closed event from the event, not from the table.
+        stream.opened(Vec::new(), &mut read);
+        assert_eq!(
+            stream.offer(&closed, &mut read),
+            vec![MetadataFrame::Remove {
+                thread_id: "thread-a".to_owned(),
+                terminal_id: "term-1".to_owned(),
+            }],
+            "a remove needs no row, which is why a client still learns about a terminal that left"
+        );
+        assert_eq!(
+            stream.offer(&event(Kind::Exited, "thread-a", "term-1", 4), &mut read),
+            Vec::new(),
+            "an exited event for a terminal the table no longer has produces nothing"
+        );
+    }
+
+    #[test]
+    fn the_registry_delivers_in_subscription_order() {
+        let rows = vec![
+            row("thread-a", "term-1", Status::Running, "t2"),
+            row("thread-a", "term-2", Status::Running, "t1"),
+        ];
+        let mut read = reader(rows.clone());
+        let mut fanout = Fanout::new();
+        let first = fanout.attach("thread-a", "term-1");
+        let watcher = fanout.metadata();
+        let second = fanout.attach("thread-a", "term-1");
+        assert_eq!(fanout.len(), 3);
+        // Each client finishes its own lookup: two terminals and the whole list, all live.
+        for subscriber in [first, second] {
+            fanout.opened_attach(subscriber, &snap("thread-a", "term-1", Some(5), "t2"));
+        }
+        fanout.opened_metadata(watcher, rows.clone(), &mut read);
+        assert!(
+            fanout.is_live(first) && fanout.is_live(watcher) && fanout.is_live(second),
+            "an attach of one terminal and a sessions watcher share the registry"
+        );
+
+        let exited = event(Kind::Exited, "thread-a", "term-1", 6);
+        let delivered = fanout.publish(&exited, &mut read);
+        assert_eq!(
+            delivered_ids(&delivered),
+            vec![first, watcher, second],
+            "two clients of one terminal and the sessions watcher hear the same event in the order they subscribed"
+        );
+        assert_eq!(delivered_kinds(&delivered), ["exited", "upsert", "exited"]);
+
+        let neighbour = event(Kind::Exited, "thread-a", "term-2", 7);
+        assert_eq!(
+            delivered_ids(&fanout.publish(&neighbour, &mut read)),
+            vec![watcher],
+            "only the sessions watcher hears a terminal it did not attach to"
+        );
+
+        // A client whose lookup is still in flight when an event lands: it holds the event and replays
+        // it after its own snapshot, which is the window the duplicate rule exists for.
+        let late = fanout.attach("thread-a", "term-1");
+        assert_eq!(
+            delivered_ids(&fanout.publish(&exited, &mut read)),
+            vec![first, watcher, second],
+            "the setting-up client delivers nothing yet"
+        );
+        assert_eq!(
+            fanout.opened_attach(late, &snap("thread-a", "term-1", Some(5), "t2")),
+            Some(vec![
+                Frame::Attach(AttachFrame::Snapshot {
+                    snapshot: snap("thread-a", "term-1", Some(5), "t2"),
+                }),
+                Frame::Attach(AttachFrame::Event(exited.clone())),
+            ]),
+            "the held event is above the snapshot it must not duplicate, so it follows it"
+        );
+    }
+
+    #[test]
+    fn a_detached_subscriber_hears_nothing() {
+        let rows = vec![row("thread-a", "term-1", Status::Exited, "t1")];
+        let mut read = reader(rows.clone());
+        let mut fanout = Fanout::new();
+        let attach = fanout.attach("thread-a", "term-1");
+        let watcher = fanout.metadata();
+        assert!(!fanout.is_live(attach));
+        assert!(
+            fanout
+                .publish(&event(Kind::Exited, "thread-a", "term-1", 0), &mut read)
+                .is_empty(),
+            "a subscriber that has not delivered its initial frame holds the event instead of losing it"
+        );
+        assert!(fanout.unsubscribe(attach));
+        assert!(
+            !fanout.unsubscribe(attach),
+            "the remove function is idempotent, so a late websocket close cannot drop a new client"
+        );
+        assert_eq!(fanout.len(), 1);
+        assert!(
+            fanout
+                .opened_attach(attach, &snap("thread-a", "term-1", Some(0), "t0"))
+                .is_none(),
+            "an id that is gone gets no initial frame"
+        );
+        fanout.opened_metadata(watcher, rows, &mut read);
+        assert_eq!(
+            delivered_ids(
+                &fanout.publish(&event(Kind::Exited, "thread-a", "term-1", 1), &mut read)
+            ),
+            vec![watcher],
+            "the remaining subscriber is untouched"
+        );
+        assert!(fanout.unsubscribe(watcher));
+        assert!(fanout.is_empty());
+        assert_eq!(
+            fanout.publish(&event(Kind::Exited, "thread-a", "term-1", 2), &mut read),
+            Vec::new()
+        );
     }
 }

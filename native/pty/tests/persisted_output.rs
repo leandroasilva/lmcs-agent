@@ -239,6 +239,61 @@ fn clear_restart_and_close_persist_before_the_caller_continues() {
     assert_eq!(output.drain_next(8), None);
 }
 
+/// `openLocked`'s reset of a terminal it is handing to another launch: the file is written before the
+/// call returns, and no number is spent on it.
+#[test]
+fn a_reset_writes_an_empty_file_and_spends_no_sequence() {
+    let harness = Harness::start("reset");
+    let path = harness.path("thread-1", "term-1");
+    let mut output = harness.attach("thread-1", "term-1");
+    output.start(7);
+    grow(&mut output, 7, "left behind");
+    output.flush().unwrap();
+    assert_eq!(read(&path), b"restored\nleft behind");
+    assert_eq!(output.sequence(), 2);
+
+    assert!(output.reset_history().is_ok());
+    assert_eq!(
+        read(&path),
+        b"",
+        "the screen the killed shell left is not what a later reader gets"
+    );
+    assert_eq!(
+        output.sequence(),
+        2,
+        "the reset owns no number, unlike `clear`"
+    );
+    assert!(
+        output.enqueue(7, data("next")),
+        "the dropped walk leaves nothing running"
+    );
+    assert_eq!(
+        output.drain_next(7),
+        Some(Delivery::Output {
+            sequence: 3,
+            data: "next".to_string(),
+            visible: "next".to_string(),
+            history_grew: true,
+        }),
+        "the event after the reset takes the number `clear` would have spent"
+    );
+}
+
+#[test]
+fn a_reset_creates_the_file_of_a_terminal_that_never_printed() {
+    let harness = Harness::start("reset-never-printed");
+    let path = harness.path("thread-1", "term-1");
+    let mut output = harness.attach("thread-1", "term-1");
+    output.start(7);
+    assert!(!path.exists());
+    assert!(output.reset_history().is_ok());
+    assert_eq!(
+        read(&path),
+        b"",
+        "the shipped reset persists unconditionally, so an empty screen becomes a real file"
+    );
+}
+
 #[test]
 fn close_persists_even_when_the_session_never_printed() {
     let harness = Harness::start("silent");

@@ -14,7 +14,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use lmcs_pty::PendingEvent;
 use lmcs_pty::lifecycle::{
-    Event, TERMINAL_DELETE_WARNING, THREAD_DELETE_WARNING, Terminals, Warning,
+    Event, LaunchAsk, TERMINAL_DELETE_WARNING, THREAD_DELETE_WARNING, Terminals, Warning,
 };
 use lmcs_pty::output::TerminalOutput;
 use lmcs_pty::persisted::PersistedOutput;
@@ -378,7 +378,14 @@ fn replays_shipped_manager_close_publications_warnings_and_disk() {
                 case.name,
                 session.terminal
             );
-            terminals.insert(&case.thread, &session.terminal, output, "t0");
+            terminals.insert(
+                &case.thread,
+                &session.terminal,
+                output,
+                None,
+                &LaunchAsk::default(),
+                "t0",
+            );
         }
         // What the shipped run had on disk when its close started. A terminal that never persisted
         // has no file, so existence is compared rather than assumed.
