@@ -26,7 +26,9 @@
 //   O  seq phase id statusHex                       Manager call boundary (issue / return);
 //                                                      status "-" at issue, else "ok" or the
 //                                                      rendered failure at return
-//   S  id statusHex historyHex pid                  open snapshot returned by the Manager
+//   S  id statusHex historyHex pid                  open snapshot returned by the Manager; sorts
+//                                                      directly after the O return row that
+//                                                      carries it (shares its seq)
 //   E  seq typeHex terminalIdHex eventSeq valid     a published TerminalEvent
 //   M  seq method target basenameHex optsHex payloadHex
 //                                                      a tracked FileSystem call issued inside
@@ -35,7 +37,7 @@
 //                                                      the directory itself, opts records the
 //                                                      options argument (force / flat), payload
 //                                                      is the write content or "-"
-//   N  seq done method target statusHex [payloadHex] the same call settled; status "ok" or the
+//   N  seq done method target status [payloadHex]  the same call settled; status "ok" or the
 //                                                      rendered PlatformError; on readdir success
 //                                                      the payload is the RAW readdir entry
 //                                                      order, deliberately never sorted
@@ -59,8 +61,6 @@
 // ---------------------------------------------------------------------------
 
 import * as NodeAssert from "node:assert/strict";
-import * as NodeFs from "node:fs/promises";
-import * as NodePath from "node:path";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { DEFAULT_TERMINAL_ID, TerminalEvent } from "@lmcstools/core";
 import * as Effect from "effect/Effect";
@@ -84,6 +84,8 @@ const OUT_FILE =
 const DECODED_FILE = OUT_FILE.replace(/\.txt$/, "-decoded.txt");
 
 const SWEEP_REPEATS = 5;
+// Separator for readdir payload lists; 0x01 cannot appear in a filename.
+const ENTRY_SEPARATOR = String.fromCharCode(1);
 
 // ---------------------------------------------------------------------------
 // Record encoding
@@ -103,6 +105,17 @@ interface Row {
 }
 
 const hex = (value: string) => Buffer.from(value, "utf8").toString("hex");
+
+// Repository lint forbids JSON.stringify; quote control characters by hand so the note rows stay
+// readable for ids like "a\u000f\u00c3".
+const showId = (value: string): string =>
+  `"${Array.from(value)
+    .map((char) => {
+      if (char === '"' || char === "\\") return `\\${char}`;
+      const code = char.codePointAt(0)!;
+      return code < 0x20 || code === 0x7f ? `\\u${code.toString(16).padStart(4, "0")}` : char;
+    })
+    .join("")}"`;
 
 const encodeRow = (row: Row): string => {
   const line = [row.code]
@@ -124,15 +137,17 @@ const encodeRow = (row: Row): string => {
   return line;
 };
 
-const decodeRow = (row: Row): string => {
-  const parts = [row.code].concat(
-    row.fields.map((field) => {
-      if (field.kind === "raw") return String(field.value);
-      const decoded = Buffer.from(field.value, "hex").toString("utf8");
-      return `"${decoded.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "\\r")}"`;
-    }),
-  );
-  return parts.join("\t");
+// The decoded copy hex-decodes the ENCODED line (not the in-memory field value) according to the
+// row's field kinds, so what a human reads is exactly what the machine row encodes.
+const decodeRow = (row: Row, line: string): string => {
+  const parts = line.split("\t");
+  const decoded = row.fields.map((field, index) => {
+    const value = parts[index + 1] ?? "";
+    if (field.kind === "raw") return value;
+    const text = Buffer.from(value, "hex").toString("utf8");
+    return `"${text.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "\\r")}"`;
+  });
+  return [parts[0], ...decoded].join("\t");
 };
 
 const ident = (value: string) => {
@@ -218,7 +233,12 @@ const warnText = (message: unknown): string => {
 
 const warnMeta = (message: unknown): Record<string, unknown> | undefined => {
   if (!Array.isArray(message)) return undefined;
-  const parts = message.slice(1).filter(Predicate.isRecord);
+  const parts = message
+    .slice(1)
+    .filter(
+      (part): part is Record<string, unknown> =>
+        typeof part === "object" && part !== null && !Array.isArray(part),
+    );
   if (parts.length === 0) return undefined;
   const merged: Record<string, unknown> = {};
   for (const part of parts) Object.assign(merged, part);
@@ -310,6 +330,9 @@ type Step =
   | { readonly kind: "awaitEvent"; readonly id: string; readonly type: string }
   | { readonly kind: "close"; readonly id: string; readonly spec: CloseSpec }
   | { readonly kind: "seed"; readonly entries: ReadonlyArray<SeedEntry> }
+  // makeWithOptions creates the logs dir at startup (Manager.ts:1524), so probing a genuinely
+  // missing directory requires wiping it after construction and before the traced close.
+  | { readonly kind: "wipeLogsDir" }
   | { readonly kind: "sample"; readonly phase: "pre" | "post" };
 
 interface CaseSpec {
@@ -574,7 +597,9 @@ const caseSpecs: ReadonlyArray<CaseSpec> = [
     ],
     faults: [{ method: "remove", basename: legacyBasename("thread-1"), label: "legacy" }],
   },
-  // Q8(iii): injected failure on one file inside the thread-wide sweep.
+  // Q8(iii): injected failure on the FIRST file of the thread-wide sweep (readdir order puts
+  // the default-terminal name first), so the later removals prove the sweep continues past a
+  // failure instead of aborting the forEach.
   {
     name: "fault-sweep-one-file",
     threadId: HOST,
@@ -588,9 +613,7 @@ const caseSpecs: ReadonlyArray<CaseSpec> = [
       { kind: "close", id: "close-1", spec: { threadId: HOST, deleteHistory: true } },
       { kind: "sample", phase: "post" },
     ],
-    faults: [
-      { method: "remove", basename: currentBasename(HOST, "term-2"), label: "sweep-term-2" },
-    ],
+    faults: [{ method: "remove", basename: currentBasename(HOST, CURRENT), label: "sweep-first" }],
   },
   // Q8(iv): injected failure on readDirectory itself during the sweep.
   {
@@ -608,14 +631,16 @@ const caseSpecs: ReadonlyArray<CaseSpec> = [
     ],
     faults: [{ method: "readDirectory", basename: null, label: "readdir" }],
   },
-  // Q8(v): the logs directory itself is missing during the sweep: readDirectory fails and the
-  // failure is swallowed by orElseSucceed.
+  // Q8(v): the logs directory is genuinely missing when the sweep runs (Manager creates it at
+  // startup, so wipe it right before the traced close): readDirectory fails and the failure is
+  // swallowed by orElseSucceed.
   {
     name: "missing-logs-dir-sweep",
     threadId: HOST,
     createLogsDir: false,
     seeds: [],
     steps: [
+      { kind: "wipeLogsDir" },
       { kind: "close", id: "close-1", spec: { threadId: HOST, deleteHistory: true } },
       { kind: "sample", phase: "post" },
     ],
@@ -629,6 +654,7 @@ const caseSpecs: ReadonlyArray<CaseSpec> = [
     createLogsDir: false,
     seeds: [],
     steps: [
+      { kind: "wipeLogsDir" },
       {
         kind: "close",
         id: "close-1",
@@ -637,9 +663,11 @@ const caseSpecs: ReadonlyArray<CaseSpec> = [
     ],
     faults: [],
   },
-  // Q9: the thread-wide sweep removes the shared legacy-named file owned by LEGACY_B. Also
-  // proves the b64-prefix rule on its own: LEGACY_B starts with LEGACY_A, so
-  // `terminal_<b64(x/y)>_` matches LEGACY_B's current-file name.
+  // Q9: the thread-wide sweep of "x/y" removes the shared sanitized legacy file `x_y.log` even
+  // though it was written for "x:y" (legacy rule is exact-name on the sanitized id). The b64
+  // prefix rule does NOT catch "x:y"'s current file: b64("x/y")="eC95" is not a prefix of the
+  // "eDp5" path segment, so the victim's current file must survive. (The b64 prefix collision
+  // itself is proven separately in thread-sweep-multi via HOST/OTHER.)
   {
     name: "legacy-name-sweep-collision",
     threadId: LEGACY_A,
@@ -651,7 +679,6 @@ const caseSpecs: ReadonlyArray<CaseSpec> = [
         basename: currentBasename(LEGACY_B, CURRENT),
         content: "other-thread-current\n",
       },
-      { kind: "file", basename: legacyBasename(LEGACY_A), content: "legacy\n" },
     ],
     steps: [
       { kind: "close", id: "close-1", spec: { threadId: LEGACY_A, deleteHistory: true } },
@@ -721,6 +748,7 @@ interface ObsSampleEntry {
 }
 
 interface ObsSample {
+  readonly seq: number;
   readonly phase: "pre" | "post";
   readonly failed: boolean;
   readonly entries: ReadonlyArray<ObsSampleEntry>;
@@ -738,15 +766,21 @@ interface ObsWarn {
 interface CaseResult {
   readonly name: string;
   readonly threadId: string;
+  readonly createLogsDir: boolean;
   readonly calls: ReadonlyArray<ObsCall>;
   readonly events: ReadonlyArray<ObsEvent>;
   readonly boundaries: ReadonlyArray<ObsBoundary>;
-  readonly snapshots: ReadonlyArray<{ id: string; status: string; history: string; pid: number }>;
+  readonly snapshots: ReadonlyArray<{
+    id: string;
+    seq: number;
+    status: string;
+    history: string;
+    pid: number;
+  }>;
   readonly samples: ReadonlyArray<ObsSample>;
   readonly warns: ReadonlyArray<ObsWarn>;
   readonly closeOk: boolean;
   readonly faults: ReadonlyArray<{ label: string; method: string; basename: string; hit: boolean }>;
-  readonly note: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -880,7 +914,7 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
       call.done = nextSeq();
       if (result._tag === "Success") {
         // Raw readdir order, recorded unsorted so any instability stays visible.
-        call.payload = result.success.join("\u0001");
+        call.payload = result.success.join(ENTRY_SEPARATOR);
       } else {
         call.status = `err:${renderError(result.failure)}`;
       }
@@ -911,9 +945,14 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
 
   const events: ObsEvent[] = [];
   const boundaries: ObsBoundary[] = [];
-  const snapshots: CaseResult["snapshots"] = [];
+  const snapshots: Array<{
+    id: string;
+    seq: number;
+    status: string;
+    history: string;
+    pid: number;
+  }> = [];
   const samples: ObsSample[] = [];
-  let note: string | null = null;
 
   const eventSignals = yield* Effect.acquireRelease(Queue.unbounded<void>(), Queue.shutdown);
   const adapter = new TracePtyAdapter();
@@ -956,10 +995,10 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
   });
   yield* seedNow(spec.seeds);
 
-  const sample = Effect.fnUntraced(function* (phase: "pre" | "post") {
+  const sample = Effect.fnUntraced(function* (phase: "pre" | "post", seq: number) {
     const listing = yield* Effect.result(fs.readDirectory(logsDir, { recursive: false }));
     if (listing._tag === "Failure") {
-      samples.push({ phase, failed: true, entries: [] });
+      samples.push({ seq, phase, failed: true, entries: [] });
       return;
     }
     const entries: ObsSampleEntry[] = [];
@@ -977,7 +1016,7 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
         content: Buffer.from(bytes).toString("utf8"),
       });
     }
-    samples.push({ phase, failed: false, entries });
+    samples.push({ seq, phase, failed: false, entries });
   });
 
   let eventCursor = 0;
@@ -1012,6 +1051,7 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
           boundaries.push({ seq: nextSeq(), phase: "return", id: step.id, status: "ok" });
           snapshots.push({
             id: step.id,
+            seq: globalSeq,
             status: result.success.status,
             history: result.success.history,
             pid: result.success.pid ?? -1,
@@ -1022,6 +1062,7 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
         case "emit": {
           boundaries.push({ seq: nextSeq(), phase: "issue", id: step.id, status: null });
           yield* Effect.sync(() => adapter.live().emitOutput(step.data));
+          boundaries.push({ seq: nextSeq(), phase: "return", id: step.id, status: "ok" });
           break;
         }
         case "awaitWrites": {
@@ -1055,9 +1096,13 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
           yield* seedNow(step.entries);
           break;
         }
+        case "wipeLogsDir": {
+          yield* fs.remove(logsDir, { recursive: true, force: true });
+          break;
+        }
         case "sample": {
-          nextSeq();
-          yield* sample(step.phase);
+          const seq = nextSeq();
+          yield* sample(step.phase, seq);
           break;
         }
       }
@@ -1097,6 +1142,7 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
   return {
     name: spec.name,
     threadId: spec.threadId,
+    createLogsDir: spec.createLogsDir,
     calls: state.calls,
     events,
     boundaries,
@@ -1110,7 +1156,6 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
       basename: fault.basename ?? "-",
       hit: fault.hit === true,
     })),
-    note,
   } satisfies CaseResult;
 });
 
@@ -1118,121 +1163,148 @@ const runCase = Effect.fnUntraced(function* (spec: CaseSpec) {
 // Row rendering
 // ---------------------------------------------------------------------------
 
-const sortKeyOf = (row: Row): [number, number] => {
-  const first = row.fields[0];
-  const seq = first?.kind === "raw" ? Number(first.value) : 0;
-  const rank = row.code === "M" ? 0 : row.code === "O" || row.code === "E" ? 1 : 2;
-  return [seq, rank];
-};
+// One chronological stream per case: every row that carries a seq participates in the sort.
+// Ranks only break same-seq ties: an S snapshot shares the seq of its O return row, and a G
+// warning shares the N completion seq of the call whose failure triggered it (the logger samples
+// the counter without consuming it). D/R sample blocks carry the seq the sample step consumed.
+interface TimedRow {
+  readonly seq: number;
+  readonly rank: number;
+  readonly row: Row;
+}
 
-const callRows = (calls: ReadonlyArray<ObsCall>): Row[] => {
-  const rows: Row[] = [];
-  for (const call of calls) {
-    rows.push({
-      code: "M",
-      fields: [
-        raw(call.seq),
-        raw(call.method),
-        raw(call.basename === "-" ? "-" : "f"),
-        hyphenOrHex(call.basename),
-        raw(call.opts),
-        hyphenOrHex(call.payload),
-      ],
-    });
-    rows.push({
-      code: "N",
-      fields: [
-        raw(call.done),
-        raw(call.seq),
-        raw(call.method),
-        raw(call.basename === "-" ? "-" : "f"),
-        raw(call.status),
-        ...(call.method === "readdir" ? [hyphenOrHex(call.payload)] : []),
-      ],
+const timedRows = (result: CaseResult): Row[] => {
+  const timed: TimedRow[] = [];
+  for (const boundary of result.boundaries) {
+    timed.push({
+      seq: boundary.seq,
+      rank: 0,
+      row: {
+        code: "O",
+        fields: [
+          raw(boundary.seq),
+          hexOf(boundary.phase),
+          hexOf(boundary.id),
+          hyphenOrHex(boundary.status),
+        ],
+      },
     });
   }
-  return rows;
-};
-
-const eventRows = (events: ReadonlyArray<ObsEvent>): Row[] =>
-  events.map((event): Row => ({
-    code: "E",
-    fields: [
-      raw(event.seq),
-      hexOf(event.type),
-      hexOf(event.terminalId),
-      raw(event.eventSeq),
-      raw(event.valid ? 1 : 0),
-    ],
-  }));
-
-const boundaryRows = (boundaries: ReadonlyArray<ObsBoundary>): Row[] =>
-  boundaries.map((boundary): Row => ({
-    code: "O",
-    fields: [
-      raw(boundary.seq),
-      hexOf(boundary.phase),
-      hexOf(boundary.id),
-      hyphenOrHex(boundary.status),
-    ],
-  }));
-
-const sampleRows = (samples: ReadonlyArray<ObsSample>): Row[] => {
-  const rows: Row[] = [];
-  for (const sample of samples) {
-    for (const entry of sample.entries) {
-      rows.push({
-        code: "D",
+  for (const snapshot of result.snapshots) {
+    timed.push({
+      seq: snapshot.seq,
+      rank: 1,
+      row: {
+        code: "S",
         fields: [
-          hexOf(sample.phase),
-          hexOf(entry.basename),
-          raw(entry.isDir ? "d" : "f"),
-          hyphenOrHex(entry.content),
+          raw(snapshot.id),
+          hexOf(snapshot.status),
+          hexOf(snapshot.history),
+          raw(snapshot.pid),
         ],
+      },
+    });
+  }
+  for (const event of result.events) {
+    timed.push({
+      seq: event.seq,
+      rank: 2,
+      row: {
+        code: "E",
+        fields: [
+          raw(event.seq),
+          hexOf(event.type),
+          hexOf(event.terminalId),
+          raw(event.eventSeq),
+          raw(event.valid ? 1 : 0),
+        ],
+      },
+    });
+  }
+  for (const call of result.calls) {
+    timed.push({
+      seq: call.seq,
+      rank: 3,
+      row: {
+        code: "M",
+        fields: [
+          raw(call.seq),
+          raw(call.method),
+          raw(call.basename === "-" ? "-" : "f"),
+          hyphenOrHex(call.basename),
+          raw(call.opts),
+          hyphenOrHex(call.payload),
+        ],
+      },
+    });
+    timed.push({
+      seq: call.done,
+      rank: 4,
+      row: {
+        code: "N",
+        fields: [
+          raw(call.done),
+          raw(call.seq),
+          raw(call.method),
+          raw(call.basename === "-" ? "-" : "f"),
+          raw(call.status),
+          ...(call.method === "readdir" ? [hyphenOrHex(call.payload)] : []),
+        ],
+      },
+    });
+  }
+  for (const warn of result.warns) {
+    timed.push({
+      seq: warn.seq,
+      rank: 5,
+      row: {
+        code: "G",
+        fields: [
+          raw(warn.seq),
+          hexOf(warn.level),
+          hexOf(warn.message),
+          hexOf(warn.keys.join(",")),
+          raw(warn.injected ? 1 : 0),
+          hexOf(warn.errorTag),
+        ],
+      },
+    });
+  }
+  for (const sample of result.samples) {
+    for (const entry of sample.entries) {
+      timed.push({
+        seq: sample.seq,
+        rank: 6,
+        row: {
+          code: "D",
+          fields: [
+            hexOf(sample.phase),
+            hexOf(entry.basename),
+            raw(entry.isDir ? "d" : "f"),
+            hyphenOrHex(entry.content),
+          ],
+        },
       });
     }
-    rows.push({ code: "R", fields: [hexOf(sample.phase), raw(sample.failed ? 1 : 0)] });
-  }
-  return rows;
-};
-
-const warnRows = (warns: ReadonlyArray<ObsWarn>): Row[] =>
-  warns.map((warn): Row => ({
-    code: "G",
-    fields: [
-      raw(warn.seq),
-      hexOf(warn.level),
-      hexOf(warn.message),
-      hexOf(warn.keys.join(",")),
-      raw(warn.injected ? 1 : 0),
-      hexOf(warn.errorTag),
-    ],
-  }));
-
-const claimRows = (claims: ReadonlyArray<[string, boolean, string]>): Row[] =>
-  claims.map(([id, ok, detail]): Row => ({
-    code: "A",
-    fields: [hexOf(id), raw(ok ? "match" : "diff"), hexOf(detail)],
-  }));
-
-const caseRows = (result: CaseResult): Row[] => {
-  const rows: Row[] = [{ code: "C", fields: [raw(result.name), hexOf(result.threadId), raw(1)] }];
-  rows.push(...callRows(result.calls));
-  rows.push(...eventRows(result.events));
-  rows.push(...boundaryRows(result.boundaries));
-  for (const snapshot of result.snapshots) {
-    rows.push({
-      code: "S",
-      fields: [
-        raw(snapshot.id),
-        hexOf(snapshot.status),
-        hexOf(snapshot.history),
-        raw(snapshot.pid),
-      ],
+    timed.push({
+      seq: sample.seq,
+      rank: 7,
+      row: { code: "R", fields: [hexOf(sample.phase), raw(sample.failed ? 1 : 0)] },
     });
   }
-  rows.push(...sampleRows(result.samples));
-  rows.push(...warnRows(result.warns));
+  return timed
+    .sort((left, right) => left.seq - right.seq || left.rank - right.rank)
+    .map((entry) => entry.row);
+};
+
+const caseRows = (result: CaseResult): Row[] => {
+  const rows: Row[] = [
+    {
+      code: "C",
+      fields: [raw(result.name), hexOf(result.threadId), raw(result.createLogsDir ? 1 : 0)],
+    },
+  ];
+  rows.push(...timedRows(result));
   for (const fault of result.faults) {
     rows.push({
       code: "L",
@@ -1245,10 +1317,15 @@ const caseRows = (result: CaseResult): Row[] => {
     });
   }
   rows.push(...claimRows(evaluateClaims(result)));
-  if (result.note !== null) rows.push({ code: "Q", fields: [hexOf(result.note)] });
   rows.push({ code: "X", fields: [raw(result.name)] });
   return rows;
 };
+
+const claimRows = (claims: ReadonlyArray<[string, boolean, string]>): Row[] =>
+  claims.map(([id, ok, detail]): Row => ({
+    code: "A",
+    fields: [hexOf(id), raw(ok ? "match" : "diff"), hexOf(detail)],
+  }));
 
 // ---------------------------------------------------------------------------
 // Claims: one A row per question the trace must answer. These are measured conclusions: a
@@ -1473,15 +1550,15 @@ const evaluateClaims = (result: CaseResult): Array<[string, boolean, string]> =>
         ),
       );
       add(
-        "q6-single-close-events-are-false-here",
-        rms.filter((rm) => rm.status === "ok").length === 5,
+        "q6-five-ok-removes-plus-one-eisdir",
+        rms.length === 6 && rms.filter((rm) => rm.status === "ok").length === 5,
         summary(rms),
       );
       break;
     }
     case "thread-close-no-delete": {
       add(
-        "q6-no-readdir-no-remove-without-deleteHistory",
+        "q6-no-readdir-no-remove-without-delete-history",
         readdirOf(result).length === 0 && removesOf(result).length === 0,
         `${readdirOf(result).length}/${removesOf(result).length}`,
       );
@@ -1545,14 +1622,20 @@ const evaluateClaims = (result: CaseResult): Array<[string, boolean, string]> =>
     }
     case "fault-sweep-one-file": {
       const rms = removesOf(result);
-      const target = currentBasename(HOST, "term-2");
+      const target = currentBasename(HOST, CURRENT);
+      const others = [currentBasename(HOST, "term-2"), currentBasename(HOST, "term-9")];
       const warn = result.warns[0];
       add(
-        "q8iii-others-still-removed",
+        "q8iii-sweep-continues-after-failure",
         rms.length === 3 &&
-          rms.filter((rm) => rm.status === "ok").length === 2 &&
-          rms.some((rm) => rm.basename === target && rm.status.startsWith("err")),
-        summary(rms),
+          rms[0]!.basename === target &&
+          rms[0]!.status.startsWith("err") &&
+          rms.slice(1).every((rm) => rm.status === "ok") &&
+          others.every((name) => postOf(result, name) === undefined),
+        `${summary(rms)} post=${result.samples
+          .find((s) => s.phase === "post")
+          ?.entries.map((e) => e.basename)
+          .join(",")}`,
       );
       add(
         "q8iii-sweep-warning-text-and-fields",
@@ -1564,7 +1647,7 @@ const evaluateClaims = (result: CaseResult): Array<[string, boolean, string]> =>
       );
       add(
         "q8iii-faulty-file-survives",
-        postOf(result, target)?.content === "host-term-2\n",
+        postOf(result, target)?.content === "stale-current\n",
         String(postOf(result, target)?.content),
       );
       break;
@@ -1614,16 +1697,20 @@ const evaluateClaims = (result: CaseResult): Array<[string, boolean, string]> =>
       const shared = legacyBasename(LEGACY_B);
       const victimCurrent = currentBasename(LEGACY_B, CURRENT);
       add(
-        "q9-sweep-removes-other-threads-shared-legacy-file",
-        rms.some((rm) => rm.basename === shared && rm.status === "ok") &&
+        "q9-sweep-removes-shared-legacy-name",
+        rms.map((rm) => rm.basename).join(">") === shared &&
+          rms.every((rm) => rm.status === "ok") &&
           postOf(result, shared) === undefined,
         summary(rms),
       );
       add(
-        "q9-prefix-hit-on-legacy-b-current",
-        rms.some((rm) => rm.basename === victimCurrent && rm.status === "ok") &&
-          postOf(result, victimCurrent) === undefined,
-        summary(rms),
+        "q9-victim-current-survives-no-b64-prefix",
+        !rms.some((rm) => rm.basename === victimCurrent) &&
+          postOf(result, victimCurrent)?.content === "other-thread-current\n",
+        `${summary(rms)} post=${result.samples
+          .find((s) => s.phase === "post")
+          ?.entries.map((e) => e.basename)
+          .join(",")}`,
       );
       break;
     }
@@ -1667,23 +1754,36 @@ const removalPattern = (result: CaseResult): string => {
   return marks.map((mark) => mark.mark).join("");
 };
 
-const sweepSignature = (result: CaseResult): string => {
-  const readdir = readdirOf(result)[0];
-  const readdirOrder =
-    readdir?.payload
-      ?.split("\u0001")
-      .map((name) => basenameOf(name))
-      .join(">") ?? "none";
-  const removeOrder = removesOf(result)
-    .map((rm) => rm.basename)
-    .join(">");
-  const statuses = removesOf(result)
-    .map((rm) => rm.status)
-    .join(",");
-  return `readdir[${readdirOrder}] remove[${removeOrder}] status[${statuses}] pattern[${removalPattern(result)}]`;
-};
-
 const basenameOf = (value: string) => value.split("/").at(-1) ?? value;
+
+interface SweepObservation {
+  readonly name: string;
+  readonly readdir: string;
+  readonly order: string;
+  readonly statuses: string;
+  readonly pattern: string;
+}
+
+// Per-run structured observation: raw readdir order, removal order, removal statuses and the
+// issue/completion interleave pattern. Nothing is sorted away.
+const sweepObservation = (result: CaseResult): SweepObservation => ({
+  name: result.name,
+  readdir:
+    readdirOf(result)[0]
+      ?.payload?.split(ENTRY_SEPARATOR)
+      .map((name) => basenameOf(name))
+      .join(">") ?? "none",
+  order: removesOf(result)
+    .map((rm) => rm.basename)
+    .join(">"),
+  statuses: removesOf(result)
+    .map((rm) => rm.status)
+    .join(","),
+  pattern: removalPattern(result),
+});
+
+const sweepSignature = (observation: SweepObservation) =>
+  `readdir[${observation.readdir}] remove[${observation.order}] status[${observation.statuses}] pattern[${observation.pattern}]`;
 
 // ---------------------------------------------------------------------------
 // Main
@@ -1703,7 +1803,7 @@ const run = Effect.gen(function* () {
       code: "Q",
       fields: [
         hexOf(
-          `collision-host=${HOST}->${b64(HOST)}, collision-other=${JSON.stringify(OTHER)}->${b64(OTHER)} (starts with ${b64(HOST)}_)`,
+          `collision-host=${HOST}->${b64(HOST)}, collision-other=${showId(OTHER)}->${b64(OTHER)} (starts with ${b64(HOST)}_)`,
         ),
       ],
     },
@@ -1711,7 +1811,7 @@ const run = Effect.gen(function* () {
       code: "Q",
       fields: [
         hexOf(
-          `legacy-collision=${JSON.stringify(LEGACY_A)} and ${JSON.stringify(LEGACY_B)} both sanitize to ${legacyBasename(LEGACY_A)}`,
+          `legacy-collision=${showId(LEGACY_A)} and ${showId(LEGACY_B)} both sanitize to ${legacyBasename(LEGACY_A)}`,
         ),
       ],
     },
@@ -1759,41 +1859,54 @@ const run = Effect.gen(function* () {
     ]),
   );
 
-  const signatures = sweepRuns.map(sweepSignature);
-  const orders = signatures.map((signature) => signature.match(/remove\[[^\]]*\]/)?.[0] ?? "?");
-  const patterns = signatures.map((signature) => signature.match(/pattern\[[^\]]*\]/)?.[0] ?? "?");
-  const orderStable = orders.every((order) => order === orders[0]);
-  const patternStable = patterns.every((pattern) => pattern === patterns[0]);
+  // Q7: per-run structured observations. The interleave pattern is decided from the recorded
+  // issue (M) and completion (N) seqs, never from a guess: "idid..." means every removal fully
+  // settles before the next is issued (sequential), "iiiddd" would mean concurrent fan-out.
+  const observations = sweepRuns.map(sweepObservation);
+  const signatures = observations.map(sweepSignature);
+  const stable =
+    signatures.length > 0 && signatures.every((signature) => signature === signatures[0]);
+  const patterns = observations.map((observation) => observation.pattern);
+  const pattern = patterns[0] ?? "";
+  const sequential = stable && /^(id)+$/.test(pattern);
   rows.push(
     ...claimRows([
+      ["q7-removal-order-stable-across-runs", stable, signatures.join(" ;; ")],
       [
-        "q7-removal-order-stable-across-runs",
-        orderStable && patternStable,
-        sweepRuns.map((r) => r.name).join(",") + " => " + signatures.join(" ;; "),
-      ],
-      [
-        "q7-sequential-or-concurrent",
-        true,
-        patternStable
-          ? /^id+$/.test(patterns[0]!.slice(8, -1)) || patterns[0] === "pattern[id]"
-            ? "pattern " +
-              patterns[0] +
-              ": each removal fully settles before the next is issued => SEQUENTIAL"
-            : patterns[0]!.slice(8, -1).includes("i") &&
-                patterns[0]!.slice(8, -1).replace(/^i+/, "").includes("i")
-              ? "pattern " + patterns[0] + ": issues interleave with completions, needs reading"
-              : "pattern " + patterns[0]
-          : "unstable patterns: " + patterns.join(","),
+        "q7-sweep-sequential",
+        sequential,
+        sequential
+          ? `pattern ${pattern}: each removal fully settles before the next is issued => SEQUENTIAL`
+          : /^i+d+$/.test(pattern)
+            ? `pattern ${pattern}: all removals issued before the first completion => CONCURRENT`
+            : `unstable or unreadable patterns: ${patterns.join(",")}`,
       ],
     ]),
   );
 
   rows.push({ code: "Z", fields: [raw(caseCount), raw(sweepRuns.length), raw("end")] });
-  return { rows, caseCount, sweepRuns: sweepRuns.length };
+
+  const encoded = rows.map(encodeRow);
+  NodeAssert.ok(
+    encoded.every((line) => !line.includes("\n")),
+    "row contains a newline",
+  );
+  const decoded = rows.map((row, index) => decodeRow(row, encoded[index]!));
+  // The repository lint forbids node:fs in scripts, so the output files are written through the
+  // Effect FileSystem service itself.
+  const fsOut = yield* FileSystem.FileSystem;
+  const outPath = yield* Path.Path;
+  yield* fsOut.makeDirectory(outPath.dirname(OUT_FILE), { recursive: true });
+  yield* fsOut.writeFileString(OUT_FILE, `${encoded.join("\n")}\n`);
+  yield* fsOut.writeFileString(DECODED_FILE, `${decoded.join("\n")}\n`);
+  process.stderr.write(
+    `terminal history delete trace: ${caseCount} cases (${sweepRuns.length} sweep repeats), ${rows.length} rows -> ${OUT_FILE}\n`,
+  );
+  process.stdout.write(`${rows.length}\n`);
 });
 
 try {
-  const { rows, caseCount, sweepRuns } = await Effect.runPromise(
+  await Effect.runPromise(
     run.pipe(
       Effect.provide(
         Layer.mergeAll(
@@ -1804,20 +1917,9 @@ try {
       ),
     ),
   );
-  const encoded = rows.map(encodeRow);
-  const decoded = rows.map(decodeRow);
-  NodeAssert.ok(
-    encoded.every((line) => !line.includes("\n")),
-    "row contains a newline",
-  );
-  await NodeFs.mkdir(NodePath.dirname(OUT_FILE), { recursive: true });
-  await NodeFs.writeFile(OUT_FILE, `${encoded.join("\n")}\n`, "utf8");
-  await NodeFs.writeFile(DECODED_FILE, `${decoded.join("\n")}\n`, "utf8");
-  process.stderr.write(
-    `terminal history delete trace: ${caseCount} cases (${sweepRuns} sweep repeats), ${rows.length} rows -> ${OUT_FILE}\n`,
-  );
-  process.stdout.write(`${rows.length}\n`);
 } catch (cause) {
-  process.stderr.write(`${String(cause)}\n`);
+  process.stderr.write(
+    `${cause instanceof Error ? (cause.stack ?? String(cause)) : String(cause)}\n`,
+  );
   process.exitCode = 1;
 }

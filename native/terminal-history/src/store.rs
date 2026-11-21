@@ -297,7 +297,7 @@ fn delete_thread_history_with(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
+    use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
     use std::sync::atomic::{AtomicU64, Ordering};
 
     struct TempDir(PathBuf);
@@ -777,6 +777,55 @@ mod tests {
     }
 
     #[test]
+    fn a_sweep_takes_the_file_of_the_thread_whose_encoding_starts_with_the_prefix() {
+        // Measured: id `a` encodes to `YQ`, and a different id whose encoding begins with `YQ_`
+        // has its files caught by the prefix rule. The shipped sweep deletes them, so this one does
+        // too — a single close does not, because it only ever names its own thread.
+        let dir = TempDir::new();
+        let host = "a";
+        let victim = "a\u{f}\u{c3}";
+        let victim_current = history_path(&dir.0, victim, "term-1");
+        let victim_secondary = history_path(&dir.0, victim, "term-2");
+        assert_eq!(
+            victim_current.file_name().unwrap().to_str().unwrap(),
+            "terminal_YQ_Dgw.log",
+        );
+        fs::write(&victim_current, b"other-thread").unwrap();
+        fs::write(&victim_secondary, b"other-thread").unwrap();
+        assert!(delete_history(&dir.0, host, "term-1").is_empty());
+        assert!(
+            victim_current.exists() && victim_secondary.exists(),
+            "the victim's files are neither this thread's current nor its legacy name"
+        );
+        assert!(delete_thread_history(&dir.0, host).is_empty());
+        assert!(
+            !victim_current.exists() && !victim_secondary.exists(),
+            "both encoded names start with the swept thread's prefix"
+        );
+    }
+
+    #[test]
+    fn a_sweep_takes_a_legacy_name_that_another_thread_also_owns() {
+        let dir = TempDir::new();
+        let victim = "x:y";
+        let victim_current = history_path(&dir.0, victim, "term-1");
+        let shared = legacy_history_path(&dir.0, victim);
+        assert_eq!(shared, legacy_history_path(&dir.0, "x/y"));
+        assert_eq!(shared.file_name().unwrap().to_str().unwrap(), "x_y.log");
+        fs::write(&victim_current, b"mine").unwrap();
+        fs::write(&shared, b"shared").unwrap();
+        assert!(delete_thread_history(&dir.0, "x/y").is_empty());
+        assert!(
+            !shared.exists(),
+            "the legacy name is matched exactly, whoever wrote it"
+        );
+        assert!(
+            victim_current.exists(),
+            "terminal_eDp5.log is not under terminal_eC95_, so the sweep leaves it"
+        );
+    }
+
+    #[test]
     fn an_unreadable_directory_sweeps_nothing_and_warns_nothing() {
         let dir = TempDir::new();
         let mut disk = TrackedDisk {
@@ -977,6 +1026,248 @@ mod tests {
         eprintln!(
             "history migration golden: {} cases, {failures} fatal errors, {warnings} cleanup warning; real files with injected boundary failures",
             names.len()
+        );
+    }
+
+    /// One `terminal-history-delete-trace.ts` case, as the shipped `TerminalManager` ran it.
+    #[derive(Default)]
+    struct Replay {
+        name: String,
+        thread: String,
+        has_logs_dir: bool,
+        pre: Vec<(String, Option<Vec<u8>>)>,
+        post: Vec<(String, Option<Vec<u8>>)>,
+        removals: Vec<(String, bool)>,
+        swept: bool,
+        closed: Option<String>,
+        fault: Option<(String, String)>,
+        sample_failed: bool,
+    }
+
+    fn decode(value: &str) -> String {
+        String::from_utf8(unhex(value)).unwrap()
+    }
+
+    fn listing(dir: &Path) -> Vec<(String, Option<Vec<u8>>)> {
+        let mut entries: Vec<_> = fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .map(|name| {
+                let path = dir.join(&name);
+                let content = if path.is_dir() {
+                    None
+                } else {
+                    Some(fs::read(path).unwrap())
+                };
+                (name, content)
+            })
+            .collect();
+        entries.sort();
+        entries
+    }
+
+    #[test]
+    fn replays_shipped_manager_deletions_targets_order_failures_and_disk_state() {
+        let Some(trace) = std::env::var_os("LMCS_TERMINAL_HISTORY_DELETE_TRACE") else {
+            eprintln!(
+                "skipped history deletion golden: LMCS_TERMINAL_HISTORY_DELETE_TRACE unset; no cross-language check ran"
+            );
+            return;
+        };
+        let mut default_terminal = String::new();
+        let mut cases: Vec<Replay> = Vec::new();
+        let mut pending: HashMap<u64, usize> = HashMap::new();
+        for line in fs::read_to_string(trace).unwrap().lines() {
+            let field: Vec<_> = line.split('\t').collect();
+            match field[0] {
+                "H" => default_terminal = decode(field[1]),
+                "C" => {
+                    pending.clear();
+                    cases.push(Replay {
+                        name: field[1].to_owned(),
+                        thread: decode(field[2]),
+                        has_logs_dir: field[3] == "1",
+                        ..Default::default()
+                    });
+                }
+                "E" => {
+                    let case = cases.last_mut().unwrap();
+                    if decode(field[2]) == "closed" {
+                        case.closed = Some(decode(field[3]));
+                    }
+                }
+                "M" => {
+                    let case = cases.last_mut().unwrap();
+                    match field[2] {
+                        "rm" => {
+                            pending.insert(field[1].parse().unwrap(), case.removals.len());
+                            case.removals.push((decode(field[4]), true));
+                        }
+                        "readdir" => case.swept = true,
+                        _ => {}
+                    }
+                }
+                "N" if field[3] == "rm" => {
+                    let index = pending[&field[2].parse::<u64>().unwrap()];
+                    cases.last_mut().unwrap().removals[index].1 = field[5] == "ok";
+                }
+                "D" => {
+                    let content = (field[4] != "-").then(|| unhex(field[4]));
+                    let entry = (decode(field[2]), content);
+                    if decode(field[1]) == "pre" {
+                        cases.last_mut().unwrap().pre.push(entry);
+                    } else {
+                        cases.last_mut().unwrap().post.push(entry);
+                    }
+                }
+                "L" => {
+                    cases.last_mut().unwrap().fault = Some((field[2].to_owned(), decode(field[3])));
+                }
+                "R" if field[2] == "1" && decode(field[1]) == "post" => {
+                    cases.last_mut().unwrap().sample_failed = true;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(
+            cases
+                .iter()
+                .map(|case| &case.name)
+                .collect::<HashSet<_>>()
+                .len(),
+            cases.len(),
+            "duplicate case name in the trace"
+        );
+        assert_eq!(default_terminal, "term-1");
+
+        let mut swept = 0;
+        let mut skipped = 0;
+        let mut faults = 0;
+        for case in &cases {
+            let root = TempDir::new();
+            let logs = if case.has_logs_dir {
+                root.0.clone()
+            } else {
+                root.0.join("absent")
+            };
+            let mut seeds: BTreeMap<String, Option<Vec<u8>>> = BTreeMap::new();
+            for (name, content) in case.pre.iter().chain(case.post.iter()) {
+                seeds.insert(name.clone(), content.clone());
+            }
+            if case.swept {
+                // A sweep proved its files existed; a case that sampled nothing still lists them
+                // in the removals it recorded, so the filter has the same directory to judge.
+                for (name, _ok) in &case.removals {
+                    seeds
+                        .entry(name.clone())
+                        .or_insert_with(|| Some(b"measured\n".to_vec()));
+                }
+            }
+            if case.has_logs_dir {
+                fs::create_dir_all(&logs).unwrap();
+                for (name, content) in &seeds {
+                    match content {
+                        None => fs::create_dir(logs.join(name)).unwrap(),
+                        Some(bytes) => fs::write(logs.join(name), bytes).unwrap(),
+                    }
+                }
+            }
+            let failure = case.fault.as_ref().map(|(op, target)| {
+                faults += 1;
+                if op == "readdir" {
+                    ("read_dir".to_owned(), logs.clone())
+                } else {
+                    ("remove".to_owned(), logs.join(target))
+                }
+            });
+
+            let mut disk = TrackedDisk {
+                failure,
+                ..Default::default()
+            };
+            let failures = if case.removals.is_empty() && !case.swept {
+                // The shipped `deleteHistory` flag is the caller's decision, so the faithful replay
+                // of a case with no removal is no call at all — and a state the port leaves alone.
+                assert_eq!(case.pre, case.post, "{}: nothing was deleted", case.name);
+                skipped += 1;
+                Vec::new()
+            } else if case.swept {
+                swept += 1;
+                delete_thread_history_with(&mut disk, &logs, &case.thread)
+            } else {
+                let terminal = case.closed.clone().unwrap_or(default_terminal.clone());
+                delete_history_with(&mut disk, &logs, &case.thread, &terminal)
+            };
+            let attempts: Vec<_> = disk
+                .calls
+                .iter()
+                .filter_map(|call| call.strip_prefix("remove:"))
+                .map(str::to_owned)
+                .collect();
+            let expected: Vec<_> = case
+                .removals
+                .iter()
+                .map(|(name, _ok)| name.clone())
+                .collect();
+            if case.swept {
+                // Removal order is `readdir` order on both sides, so only the set is comparable.
+                assert_eq!(
+                    attempts.iter().collect::<BTreeSet<_>>(),
+                    expected.iter().collect::<BTreeSet<_>>(),
+                    "{}: sweep attempts",
+                    case.name
+                );
+            } else {
+                assert_eq!(attempts, expected, "{}: current before legacy", case.name);
+            }
+            let failed: BTreeSet<_> = case
+                .removals
+                .iter()
+                .filter(|(_name, ok)| !*ok)
+                .map(|(name, _ok)| name.clone())
+                .collect();
+            assert_eq!(
+                failures.len(),
+                failed.len(),
+                "{}: reported failures",
+                case.name
+            );
+            for failure in &failures {
+                assert_eq!(
+                    failure.path.parent().unwrap(),
+                    logs.as_path(),
+                    "{}",
+                    case.name
+                );
+                let name = failure.path.file_name().unwrap().to_str().unwrap();
+                assert!(
+                    failed.contains(name),
+                    "{}: unexpected failure on {name}",
+                    case.name
+                );
+            }
+            if !case.has_logs_dir {
+                assert!(!logs.exists(), "{}: deletion creates nothing", case.name);
+            } else if !case.sample_failed {
+                let expected_state: Vec<_> = {
+                    let mut state = case.post.clone();
+                    state.sort();
+                    state
+                };
+                assert_eq!(listing(&logs), expected_state, "{}: disk state", case.name);
+            }
+        }
+        assert_eq!(cases.len(), 22, "the shipped trace case count changed");
+        assert_eq!(swept, 10, "thread sweeps replayed");
+        assert_eq!(
+            skipped, 3,
+            "closes that deleted nothing replayed as no call"
+        );
+        assert_eq!(faults, 4, "injected disk failures replayed");
+        eprintln!(
+            "history deletion golden: {} shipped cases replayed — {swept} thread sweeps, {} single deletes, {skipped} no-delete closes, {faults} injected failures, real directories",
+            cases.len(),
+            cases.len() - swept - skipped,
         );
     }
 }
