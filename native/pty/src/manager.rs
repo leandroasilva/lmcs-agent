@@ -162,7 +162,9 @@ impl Failure {
             Self::NotRunning {
                 thread_id,
                 terminal_id,
-            } => format!("Terminal is not running for thread: {thread_id}, terminal: {terminal_id}"),
+            } => {
+                format!("Terminal is not running for thread: {thread_id}, terminal: {terminal_id}")
+            }
             Self::Write {
                 thread_id,
                 terminal_id,
@@ -594,7 +596,9 @@ impl Manager {
     /// than [`Manager::state`] so the gate names the one field it depends on.
     #[must_use]
     pub fn state_size(&self, thread_id: &str, terminal_id: &str) -> Option<Size> {
-        self.terminals.state(thread_id, terminal_id).map(|state| state.size)
+        self.terminals
+            .state(thread_id, terminal_id)
+            .map(|state| state.size)
     }
 
     /// `clear`: history is written before the event, and a write that fails stops the call there, so

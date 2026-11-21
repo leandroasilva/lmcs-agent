@@ -77,10 +77,14 @@ fn text(value: &str) -> String {
     }
 }
 
+/// The case being read: `(name, threads, pids seen, claims so far)`, assembled into an
+/// [`Expected`] when its `X` row arrives.
+type Pending = (String, Vec<String>, Vec<u32>, Vec<Row>);
+
 fn parse(trace: &Path) -> (String, Vec<Expected>) {
     let mut default_terminal = String::new();
     let mut cases: Vec<Expected> = Vec::new();
-    let mut building: Option<(String, Vec<String>, Vec<u32>, Vec<Row>)> = None;
+    let mut building: Option<Pending> = None;
     for line in fs::read_to_string(trace).expect("trace file").lines() {
         let fields: Vec<&str> = line.split('\t').collect();
         match fields[0] {
@@ -109,7 +113,11 @@ fn parse(trace: &Path) -> (String, Vec<Expected>) {
                 .as_mut()
                 .expect("claim outside a case")
                 .3
-                .push(vec![unhex(fields[1]), fields[2].to_owned(), unhex(fields[3])]),
+                .push(vec![
+                    unhex(fields[1]),
+                    fields[2].to_owned(),
+                    unhex(fields[3]),
+                ]),
             "X" => {
                 let (name, threads, pids, claims) =
                     building.take().expect("case end without a case");
@@ -214,16 +222,17 @@ fn rank_of(stamp: &str) -> usize {
 }
 
 fn peek(children: &Rc<RefCell<Vec<Child>>>) -> Child {
-    children
-        .borrow()
-        .first()
-        .cloned()
-        .unwrap_or_else(fresh)
+    children.borrow().first().cloned().unwrap_or_else(fresh)
 }
 
 /// The seam, the children it was told about, and everything the claims read.
 struct Replay {
+    /// The two owners the replay exists beside: the directory the history files would land in, and the
+    /// worker that would take them. Neither is read after construction, and dropping either early would
+    /// let the seam write into a directory that no longer exists.
+    #[allow(dead_code)]
     logs: TempDir,
+    #[allow(dead_code)]
     worker: HistoryPersistence,
     manager: Manager,
     threads: Vec<String>,
@@ -237,12 +246,13 @@ struct Replay {
     views: Vec<Vec<Row>>,
     /// One entry per client call, holding what the capture's return boundary said.
     calls: Vec<(String, String)>,
+    /// The last error a call answered with. Sticky, because the capture read its stored error *after*
+    /// the next call had already succeeded, and a successful call leaves the one it found alone.
     failure: Option<Failure>,
     spawns: usize,
     clock: usize,
     stamps: Vec<String>,
     fail_spawn: bool,
-    park: bool,
     pid: u32,
     metadata: Subscriber,
 }
@@ -276,7 +286,6 @@ impl Replay {
             clock: 0,
             stamps: Vec::new(),
             fail_spawn: false,
-            park: false,
             pid,
             metadata,
         }
@@ -355,6 +364,9 @@ impl Replay {
             Ok(Opened::Existing(Reopen::Kept)) => {
                 self.calls.push((format!("open:{id}"), "ok".to_owned()));
                 if let Some(asked) = self.viewport(asked) {
+                    // The shipped gate compares against the *record*, which is what the capture's
+                    // `thrown-size-not-remembered` claim says a failed call leaves untouched.
+                    let remembered = self.manager.state_size(&thread_id, terminal);
                     let at = self.stamp();
                     let children = self.children.clone();
                     let outcome = self.manager.viewport(
@@ -364,9 +376,7 @@ impl Replay {
                         &at,
                         move |_pid, size| child_resize(&children, size),
                     );
-                    let expected = if peek(&self.children).last_cols == i64::from(asked.cols)
-                        && peek(&self.children).last_rows == i64::from(asked.rows)
-                    {
+                    let expected = if remembered == Some(asked) {
                         Viewport::Unchanged
                     } else {
                         Viewport::Applied(asked)
@@ -425,13 +435,12 @@ impl Replay {
     }
 
     fn write(&mut self, thread: usize, terminal: &str, data: &str) -> bool {
-        self.failure = None;
         let thread_id = self.thread(thread);
         let children = self.children.clone();
         let payload = data.to_owned();
-        let outcome = self
-            .manager
-            .write(&thread_id, terminal, move |_pid| child_write(&children, &payload));
+        let outcome = self.manager.write(&thread_id, terminal, move |_pid| {
+            child_write(&children, &payload)
+        });
         let status = match &outcome {
             Ok(_) => "ok".to_owned(),
             Err(failure) => format!("err:{}", failure.tag().unwrap_or("defect")),
@@ -447,18 +456,14 @@ impl Replay {
     }
 
     fn resize(&mut self, thread: usize, terminal: &str, cols: u32, rows: u32) -> bool {
-        self.failure = None;
         let thread_id = self.thread(thread);
         let children = self.children.clone();
         let at = self.stamp();
-        let outcome = self.manager.resize(
-            &thread_id,
-            terminal,
-            cols,
-            rows,
-            &at,
-            move |_pid, size| child_resize(&children, size),
-        );
+        let outcome =
+            self.manager
+                .resize(&thread_id, terminal, cols, rows, &at, move |_pid, size| {
+                    child_resize(&children, size)
+                });
         let status = match &outcome {
             Ok(()) => "ok".to_owned(),
             Err(failure) => format!("err:{}", failure.tag().unwrap_or("defect")),
@@ -533,7 +538,10 @@ impl Replay {
     }
 
     fn last(&self) -> Child {
-        self.samples.last().cloned().unwrap_or_else(|| peek(&self.children))
+        self.samples
+            .last()
+            .cloned()
+            .unwrap_or_else(|| peek(&self.children))
     }
 
     fn claim(&mut self, claims: &mut Vec<Row>, id: &str, held: bool, detail: String) {
@@ -714,7 +722,12 @@ impl Replay {
             .iter()
             .filter(|(kind, status)| kind == "resize" && status == "ok")
             .count();
-        self.claim(claims, "both-resizes-succeed", moves == 2, format!("ok={moves}"));
+        self.claim(
+            claims,
+            "both-resizes-succeed",
+            moves == 2,
+            format!("ok={moves}"),
+        );
     }
 
     fn exited(&mut self, claims: &mut Vec<Row>) {
@@ -858,7 +871,8 @@ impl Replay {
         self.claim(
             claims,
             "starting-resize-is-silent",
-            held && self.last().resizes == 0 && self.views[0][0][4] == self.views.last().unwrap()[0][4],
+            held && self.last().resizes == 0
+                && self.views[0][0][4] == self.views.last().unwrap()[0][4],
             format!("resizes={}", self.last().resizes),
         );
         self.start_child(&thread_id, "term-1", None);
@@ -991,7 +1005,12 @@ impl Replay {
         self.set_throw(false, false);
         let later = self.write(0, "term-1", "y");
         self.sample();
-        self.claim(claims, "later-write-still-works", later, self.status_of("write", 1));
+        self.claim(
+            claims,
+            "later-write-still-works",
+            later,
+            self.status_of("write", 1),
+        );
     }
 
     fn resize_throws(&mut self, claims: &mut Vec<Row>) {

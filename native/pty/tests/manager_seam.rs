@@ -10,7 +10,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use lmcs_pty::lifecycle::{Exit, LaunchAsk, Size, Status, Worktree};
+use lmcs_pty::lifecycle::{Exit, LaunchAsk, Size, Status, Viewport, Worktree, Write};
 use lmcs_pty::manager::{Failure, LogLine, Manager, Open, Opened, Restart};
 use lmcs_pty::stream::{Frame, Subscriber};
 use lmcs_terminal_history::{
@@ -668,5 +668,407 @@ fn a_legacy_cleanup_line_names_the_thread_and_the_remove() {
             ("threadId", "thread-9".to_owned()),
             ("error", "PlatformError/PermissionDenied/remove".to_owned()),
         ],
+    );
+}
+
+/// The child calls a step made, in the order it made them.
+type Calls = Arc<Mutex<Vec<String>>>;
+
+fn calls() -> Calls {
+    Arc::new(Mutex::new(Vec::new()))
+}
+
+/// Record one write against the pid the seam chose, and answer with `Err` when the test wants the
+/// process to have refused.
+fn note_write(notes: &Calls, fail: bool) -> impl FnOnce(u32) -> Result<(), std::io::Error> {
+    let notes = notes.clone();
+    move |pid| {
+        notes.lock().unwrap().push(format!("write:{pid}"));
+        if fail {
+            Err(std::io::Error::from_raw_os_error(13))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+fn note_resize(notes: &Calls, fail: bool) -> impl FnOnce(u32, Size) -> Result<(), std::io::Error> {
+    let notes = notes.clone();
+    move |pid, size| {
+        notes
+            .lock()
+            .unwrap()
+            .push(format!("resize:{pid}:{}x{}", size.cols, size.rows));
+        if fail {
+            Err(std::io::Error::from_raw_os_error(25))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+/// A terminal the shell has actually been started for, which is the only state a `write` reaches.
+fn running(manager: &mut Manager, fixture: &Fixture, size: Size) {
+    open(manager, fixture, "term-1", &fixture.dir).unwrap();
+    manager.start(
+        "thread-1",
+        "term-1",
+        4242,
+        Some(size),
+        "2026-11-21T00:00:01.000Z",
+    );
+}
+
+#[test]
+fn a_write_hands_the_child_the_pid_the_record_holds_and_stamps_nothing() {
+    // The measured half of `write` (Manager.ts:2869) that the goldens cannot show on their own: the pid
+    // the seam chose is the one the child saw, and the call left both the sequence and the stamp alone.
+    let fixture = Fixture::new("write-delivered");
+    let lines = recorder();
+    let mut manager = fixture.manager(lines.clone());
+    running(
+        &mut manager,
+        &fixture,
+        Size {
+            cols: 120,
+            rows: 30,
+        },
+    );
+    let before = manager.state("thread-1", "term-1").unwrap().clone();
+    let sequence = manager.snapshot("thread-1", "term-1").unwrap().sequence;
+
+    let notes = calls();
+    let outcome = manager.write("thread-1", "term-1", note_write(&notes, false));
+    assert!(
+        matches!(outcome, Ok(Write::Delivered { pid: 4242 })),
+        "the record's own pid is the one the child was called with: {outcome:?}",
+    );
+    assert_eq!(*notes.lock().unwrap(), vec!["write:4242".to_owned()]);
+    assert_eq!(
+        manager.state("thread-1", "term-1"),
+        Some(&before),
+        "input the shell accepted is not a state change the sessions list has to re-sort",
+    );
+    assert_eq!(
+        manager.snapshot("thread-1", "term-1").unwrap().sequence,
+        sequence
+    );
+    assert_eq!(manager.view().len(), 1);
+    assert!(lines.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_refused_write_names_the_pid_and_leaves_the_terminal_running() {
+    // The capture's `write-throws`: the child said no, the client gets a `TerminalWriteError` carrying
+    // the pid, and the record is still running for the next call.
+    let fixture = Fixture::new("write-refused");
+    let lines = recorder();
+    let mut manager = fixture.manager(lines.clone());
+    running(
+        &mut manager,
+        &fixture,
+        Size {
+            cols: 120,
+            rows: 30,
+        },
+    );
+    let before = manager.state("thread-1", "term-1").unwrap().clone();
+    let notes = calls();
+
+    let failure = manager
+        .write("thread-1", "term-1", note_write(&notes, true))
+        .expect_err("the child refused");
+    assert_eq!(failure.tag(), Some("TerminalWriteError"));
+    assert_eq!(
+        failure.message(),
+        "Failed to write to terminal for thread: thread-1, terminal: term-1, PID: 4242",
+    );
+    assert_eq!(
+        failure.fields().unwrap(),
+        vec![
+            ("threadId", "thread-1".to_owned()),
+            ("terminalId", "term-1".to_owned()),
+            ("terminalPid", "4242".to_owned()),
+        ],
+        "the pid is the third field, which is the order the contracts declare and the wire carries",
+    );
+    assert_eq!(
+        failure.cause().unwrap(),
+        "PlatformError/PermissionDenied/write",
+        "the port renders the errno it was given rather than a library's own text",
+    );
+    assert_eq!(manager.state("thread-1", "term-1"), Some(&before));
+
+    // The refusal cost the record nothing: the next write still reaches the shell.
+    assert!(matches!(
+        manager.write("thread-1", "term-1", note_write(&notes, false)),
+        Ok(Write::Delivered { pid: 4242 }),
+    ));
+    assert_eq!(*notes.lock().unwrap(), vec!["write:4242".to_owned(); 2]);
+}
+
+#[test]
+fn a_write_distinguishes_the_shell_that_has_not_arrived_from_the_one_that_left() {
+    // The capture's three silences in one place, because only the seam puts them beside each other:
+    // a starting record refuses (nothing to write to yet), an exited one answers `ok` and drops the
+    // bytes, and an absent key is the lookup error. None of them reaches a child.
+    let fixture = Fixture::new("write-without-child");
+    let lines = recorder();
+    let mut manager = fixture.manager(lines);
+    running(
+        &mut manager,
+        &fixture,
+        Size {
+            cols: 120,
+            rows: 30,
+        },
+    );
+    let notes = calls();
+    manager.exit(
+        "thread-1",
+        "term-1",
+        9,
+        Exit {
+            exit_code: Some(0),
+            exit_signal: None,
+        },
+        "2026-11-21T00:00:05.000Z",
+    );
+
+    let outcome = manager.write("thread-1", "term-1", note_write(&notes, false));
+    assert!(
+        matches!(outcome, Ok(Write::Swallowed)),
+        "typing at a dead shell is dropped with a success, not refused: {outcome:?}",
+    );
+    assert!(notes.lock().unwrap().is_empty());
+
+    // A second terminal the caller opened but has not started yet is a different answer.
+    open(&mut manager, &fixture, "term-2", &fixture.dir).unwrap();
+    let starting = manager.state("thread-1", "term-2").unwrap().clone();
+    assert_eq!(starting.status, Status::Starting);
+    let failure = manager
+        .write("thread-1", "term-2", note_write(&notes, false))
+        .expect_err("no process yet");
+    assert_eq!(failure.tag(), Some("TerminalNotRunningError"));
+    assert_eq!(
+        failure.message(),
+        "Terminal is not running for thread: thread-1, terminal: term-2",
+    );
+    assert_eq!(manager.state("thread-1", "term-2"), Some(&starting));
+
+    let failure = manager
+        .write("thread-1", "term-9", note_write(&notes, false))
+        .expect_err("no record, no write");
+    assert_eq!(failure.tag(), Some("TerminalSessionLookupError"));
+    assert_eq!(
+        failure.message(),
+        "Unknown terminal thread: thread-1, terminal: term-9",
+    );
+    assert!(notes.lock().unwrap().is_empty());
+}
+
+#[test]
+fn resize_asks_the_child_before_it_believes_the_size() {
+    // `resizeLocked` (Manager.ts:2892) runs the process call first and only then writes `cols`, `rows`
+    // and the stamp, so a refusal leaves the record exactly as the shell still is.
+    let fixture = Fixture::new("resize-order");
+    let lines = recorder();
+    let mut manager = fixture.manager(lines);
+    running(
+        &mut manager,
+        &fixture,
+        Size {
+            cols: 120,
+            rows: 30,
+        },
+    );
+    let notes = calls();
+
+    manager
+        .resize(
+            "thread-1",
+            "term-1",
+            80,
+            20,
+            "2026-11-21T00:00:02.000Z",
+            note_resize(&notes, false),
+        )
+        .unwrap();
+    assert_eq!(*notes.lock().unwrap(), vec!["resize:4242:80x20".to_owned()]);
+    let after = manager.state("thread-1", "term-1").unwrap().clone();
+    assert_eq!(after.size, Size { cols: 80, rows: 20 });
+    assert_eq!(after.updated_at, "2026-11-21T00:00:02.000Z");
+    assert_eq!(
+        manager.view().len(),
+        1,
+        "a viewport the client asked for is not a session the list gained",
+    );
+
+    let sequence = manager.snapshot("thread-1", "term-1").unwrap().sequence;
+    let failure = manager
+        .resize(
+            "thread-1",
+            "term-1",
+            40,
+            10,
+            "2026-11-21T00:00:03.000Z",
+            note_resize(&notes, true),
+        )
+        .expect_err("the child refused the size");
+    assert_eq!(failure.tag(), Some("TerminalResizeError"));
+    assert_eq!(
+        failure.fields().unwrap(),
+        vec![
+            ("threadId", "thread-1".to_owned()),
+            ("terminalId", "term-1".to_owned()),
+            ("terminalPid", "4242".to_owned()),
+            ("cols", "40".to_owned()),
+            ("rows", "10".to_owned()),
+        ],
+    );
+    let refused = manager.state("thread-1", "term-1").unwrap().clone();
+    assert_eq!(
+        refused.size,
+        Size { cols: 80, rows: 20 },
+        "the size the shell never took is not remembered"
+    );
+    assert_eq!(
+        refused.updated_at, after.updated_at,
+        "and neither is the stamp the sessions list sorts on",
+    );
+    assert_eq!(
+        manager.snapshot("thread-1", "term-1").unwrap().sequence,
+        sequence
+    );
+    assert_eq!(
+        *notes.lock().unwrap(),
+        vec![
+            "resize:4242:80x20".to_owned(),
+            "resize:4242:40x10".to_owned()
+        ],
+        "the refused call still reached the child, which is what makes the order observable",
+    );
+}
+
+#[test]
+fn resize_of_a_starting_or_absent_terminal_is_silent() {
+    // The two silences the capture recorded as `ok` boundaries with no pty call at all: the gate asks
+    // for a pid, finds none, and returns without a stamp.
+    let fixture = Fixture::new("resize-quiet");
+    let lines = recorder();
+    let mut manager = fixture.manager(lines);
+    open(&mut manager, &fixture, "term-1", &fixture.dir).unwrap();
+    let starting = manager.state("thread-1", "term-1").unwrap().clone();
+
+    let notes = calls();
+    for terminal in ["term-1", "term-9"] {
+        manager
+            .resize(
+                "thread-1",
+                terminal,
+                120,
+                40,
+                "2026-11-21T00:00:02.000Z",
+                note_resize(&notes, false),
+            )
+            .unwrap();
+    }
+    assert!(notes.lock().unwrap().is_empty());
+    assert_eq!(manager.state("thread-1", "term-1"), Some(&starting));
+    assert!(manager.state("thread-1", "term-9").is_none());
+}
+
+#[test]
+fn the_viewport_gate_only_asks_for_a_size_the_record_lacks() {
+    // `openLocked`'s kept-process branch (Manager.ts:2626) and the stream's (Manager.ts:2684) share this
+    // gate, so the four answers are the whole rule: nothing to attach to, nothing live, already right,
+    // and the size to hand the process.
+    let fixture = Fixture::new("viewport-gate");
+    let lines = recorder();
+    let mut manager = fixture.manager(lines);
+    let notes = calls();
+    let at = |manager: &mut Manager, asked: Size, fail: bool| {
+        manager
+            .viewport(
+                "thread-1",
+                "term-1",
+                asked,
+                "2026-11-21T00:00:09.000Z",
+                note_resize(&notes, fail),
+            )
+            .unwrap()
+    };
+
+    assert_eq!(
+        at(&mut manager, Size { cols: 80, rows: 20 }, false),
+        Viewport::Missing,
+        "an unopened key is the caller's to open, not to size",
+    );
+    assert!(manager.state("thread-1", "term-1").is_none());
+
+    open(&mut manager, &fixture, "term-1", &fixture.dir).unwrap();
+    assert_eq!(
+        at(&mut manager, Size { cols: 80, rows: 20 }, false),
+        Viewport::NotRunning,
+    );
+    assert!(notes.lock().unwrap().is_empty());
+
+    manager.start(
+        "thread-1",
+        "term-1",
+        4242,
+        Some(Size {
+            cols: 120,
+            rows: 30,
+        }),
+        "2026-11-21T00:00:01.000Z",
+    );
+    let stamp = manager
+        .state("thread-1", "term-1")
+        .unwrap()
+        .updated_at
+        .clone();
+    assert_eq!(
+        at(
+            &mut manager,
+            Size {
+                cols: 120,
+                rows: 30,
+            },
+            false
+        ),
+        Viewport::Unchanged,
+    );
+    assert!(notes.lock().unwrap().is_empty());
+    assert_eq!(
+        manager.state("thread-1", "term-1").unwrap().updated_at,
+        stamp,
+        "a matching viewport costs the sessions list a re-sort it does not need",
+    );
+
+    assert_eq!(
+        at(&mut manager, Size { cols: 90, rows: 21 }, false),
+        Viewport::Applied(Size { cols: 90, rows: 21 }),
+    );
+    assert_eq!(*notes.lock().unwrap(), vec!["resize:4242:90x21".to_owned()]);
+    assert_eq!(
+        manager.state("thread-1", "term-1").unwrap().size,
+        Size { cols: 90, rows: 21 },
+    );
+
+    // The refused gate is the refused resize: the error the client reads, and a record that stayed.
+    let failure = manager
+        .viewport(
+            "thread-1",
+            "term-1",
+            Size { cols: 10, rows: 8 },
+            "2026-11-21T00:00:10.000Z",
+            note_resize(&notes, true),
+        )
+        .expect_err("the child refused");
+    assert_eq!(failure.tag(), Some("TerminalResizeError"));
+    assert_eq!(
+        manager.state("thread-1", "term-1").unwrap().size,
+        Size { cols: 90, rows: 21 },
     );
 }

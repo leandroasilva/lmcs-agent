@@ -705,9 +705,7 @@ impl Terminals {
             .get(&(thread_id.to_owned(), terminal_id.to_owned()))
         {
             None => Resize::Missing,
-            Some(entry)
-                if entry.state.status != Status::Running || entry.state.pid.is_none() =>
-            {
+            Some(entry) if entry.state.status != Status::Running || entry.state.pid.is_none() => {
                 Resize::NotRunning
             }
             Some(_) => Resize::Applied { cols, rows },
@@ -744,8 +742,9 @@ impl Terminals {
         rows: u32,
         at: &str,
     ) {
-        if let Some(entry) =
-            self.sessions.get_mut(&(thread_id.to_owned(), terminal_id.to_owned()))
+        if let Some(entry) = self
+            .sessions
+            .get_mut(&(thread_id.to_owned(), terminal_id.to_owned()))
         {
             entry.state.size = Size { cols, rows };
             entry.state.updated_at = at.to_owned();
