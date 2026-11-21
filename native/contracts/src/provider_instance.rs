@@ -1,9 +1,9 @@
 //! The provider-instance routing key, ported from the slug schemas in
 //! `packages/core/src/contracts/providerInstance.ts`.
 //!
-//! Only `ProviderInstanceId` is ported so far, because that is the whole of what
-//! `terminal.ts` reaches for. The rest of that file — the driver kind, the config envelope
-//! and the map — belongs to `server.ts`'s settings and arrives with them.
+//! Both `ProviderInstanceId` and `ProviderDriverKind` are here because every provider
+//! runtime event carries both. The rest of that file — the config envelope and the map —
+//! belongs to `server.ts`'s settings and arrives with them.
 //!
 //! A `Schema.brand` is **erased at runtime**: the wire value is the plain refined string,
 //! and the brand exists only so TypeScript cannot pass a `ProjectId` where a
@@ -12,6 +12,7 @@
 
 use crate::base::{Check, Checked, MaxLength, NonEmpty};
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
 /// `PROVIDER_SLUG_PATTERN` (`providerInstance.ts:49`): a letter, then letters, digits,
@@ -41,3 +42,19 @@ impl Check<NonEmpty> for ProviderSlugPattern {
 /// direction: on the trimmed value coming off the wire, and on the raw value going out.
 /// `" codex "` therefore decodes to `"codex"` and refuses to encode.
 pub type ProviderInstanceId = Checked<NonEmpty, (MaxLength<64>, ProviderSlugPattern)>;
+
+/// `ProviderDriverKind` (`providerInstance.ts:64`) — the same `slugSchema` under a different
+/// brand, so the wire behaviour is identical and only the TypeScript type differs. Rust has
+/// no brand to lean on, which is why this is a newtype rather than a second alias: a
+/// `provider` field and an `instanceId` field must not be interchangeable in the port even
+/// though they are interchangeable on the wire.
+///
+/// Both are **open**: an unknown driver kind must decode, because a fork's threads outlive
+/// the build that registered it.
+///
+/// Deliberately no `Hash`/`Ord`: [`Checked`] orders and hashes nothing, and the port has no
+/// map keyed by a driver kind yet. Add them to [`Checked`] when one needs it, rather than
+/// here, so the bound stays with the type that carries it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ProviderDriverKind(pub ProviderInstanceId);

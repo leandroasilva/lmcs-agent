@@ -14,6 +14,7 @@ import * as RpcSchema from "effect/unstable/rpc/RpcSchema";
 import {
   AssistantCitation,
   ClientSettingsSchema,
+  classifyTaskAgentKind,
   CodexSettings,
   ContextMenuItemSchema,
   DesktopPreviewRecordingSaveInputSchema,
@@ -29,7 +30,12 @@ import {
   PortSchema,
   PositiveInt,
   ProviderAuthResponse,
+  ProviderRuntimeEvent,
+  ProviderUsageLimitsUpdate,
   PullRequestListCursors,
+  RuntimeEventRaw,
+  ServerProviderUsageLimits,
+  ServerProviderUsageWindow,
   SnapShotKeyChord,
   TerminalAttachInput,
   TerminalAttachStreamEvent,
@@ -1805,6 +1811,510 @@ for (const input of [
   { _tag: "TerminalProviderInstanceNotFoundError", providerInstanceId: "1bad" },
 ]) {
   record("terminalError", "decode", TerminalError, input);
+}
+
+// ── Fatia 6: `providerRuntime.ts` + `providerUsageLimits.ts` ───────────────
+//
+// This is the payload every provider adapter emits, so nothing in the provider phase can be
+// ported before it. Two things the terminal union did not exercise: **49 members discriminated
+// only by a required literal `type`**, and a base struct whose nine optional fields have to
+// round-trip in declaration order — the probe measured the encoder writing
+// `eventId, provider, providerInstanceId, threadId, createdAt, turnId, itemId, requestId,
+// providerRefs, raw, type, payload`, i.e. exactly the field order of the spread.
+//
+// `IsoDateTime` is `Schema.String` here, **not** a parsed date: the probe fed
+// `2026-11-21T03:04:05.000+02:00` and got the same spelling back. A port that parsed and
+// re-rendered it would normalize the offset to `Z` and diverge on every event a non-UTC
+// emitter produced.
+const rtBase = {
+  eventId: "e-1",
+  provider: "claude",
+  threadId: "t-1",
+  createdAt: "2026-11-21T00:00:00.000Z",
+};
+
+// One minimal valid payload per tag, **in union declaration order**, so the recorded order is
+// also the order the Rust enum declares its variants. Then the same input with `{}` as payload,
+// which is only `ok` for the payloads that are entirely optional — the count of those is the
+// measurement of which members have a required field.
+const rtMinimal: ReadonlyArray<readonly [string, unknown]> = [
+  ["session.started", {}],
+  ["session.configured", { config: {} }],
+  ["session.state.changed", { state: "ready" }],
+  ["session.exited", {}],
+  ["thread.started", {}],
+  ["thread.state.changed", { state: "active" }],
+  ["thread.metadata.updated", {}],
+  ["thread.token-usage.updated", { usage: { usedTokens: 1 } }],
+  ["thread.realtime.started", {}],
+  ["thread.realtime.item-added", { item: 1 }],
+  ["thread.realtime.audio.delta", { audio: 1 }],
+  ["thread.realtime.error", { message: "mic failed" }],
+  ["thread.realtime.closed", {}],
+  ["turn.started", {}],
+  ["turn.completed", { state: "completed" }],
+  ["turn.aborted", { reason: "user" }],
+  ["turn.plan.updated", { plan: [{ step: "s", status: "pending" }] }],
+  ["turn.proposed.delta", { delta: "" }],
+  ["turn.proposed.completed", { planMarkdown: "p" }],
+  ["turn.diff.updated", { unifiedDiff: "" }],
+  ["item.started", { itemType: "plan" }],
+  ["item.updated", { itemType: "plan" }],
+  ["item.completed", { itemType: "plan" }],
+  ["content.delta", { streamKind: "assistant_text", delta: "" }],
+  ["request.opened", { requestType: "permission_approval" }],
+  ["request.resolved", { requestType: "permission_approval" }],
+  [
+    "user-input.requested",
+    {
+      questions: [{ id: "q", header: "h", question: "?", options: [] }],
+    },
+  ],
+  ["user-input.resolved", { answers: {} }],
+  ["task.started", { taskId: "tk-1" }],
+  ["task.progress", { taskId: "tk-1", description: "d" }],
+  ["task.updated", { taskId: "tk-1" }],
+  ["task.completed", { taskId: "tk-1", status: "completed" }],
+  ["hook.started", { hookId: "h", hookName: "n", hookEvent: "e" }],
+  ["hook.progress", { hookId: "h" }],
+  ["hook.completed", { hookId: "h", outcome: "success" }],
+  ["tool.progress", {}],
+  ["tool.summary", { summary: "s" }],
+  ["auth.status", {}],
+  ["account.updated", { account: 1 }],
+  ["account.rate-limits.updated", { limits: { windows: [] } }],
+  ["mcp.status.updated", { status: 1 }],
+  ["mcp.oauth.completed", { success: true }],
+  ["model.rerouted", { fromModel: "a", toModel: "b", reason: "r" }],
+  ["config.warning", { summary: "s" }],
+  ["deprecation.notice", { summary: "s" }],
+  ["files.persisted", { files: [{ filename: "a.png", fileId: "f-1" }] }],
+  ["tool.denied", { toolName: "bash" }],
+  ["runtime.warning", { message: "m" }],
+  ["runtime.error", { message: "m" }],
+];
+for (const [type, payload] of rtMinimal) {
+  record("providerRuntime", "decode", ProviderRuntimeEvent, { ...rtBase, type, payload });
+  record("providerRuntime", "encode", ProviderRuntimeEvent, { ...rtBase, type, payload });
+  record("providerRuntime", "decode", ProviderRuntimeEvent, { ...rtBase, type, payload: {} });
+}
+
+// The base: which fields are optional, in what order they come back out, and what a
+// `type`/`payload` mismatch does. With every member carrying its own required literal the
+// union cannot swallow a richer payload the way the terminal one did — recorded so the claim
+// is measured rather than assumed.
+for (const input of [
+  {
+    ...rtBase,
+    providerInstanceId: "claude_work",
+    turnId: "tu-1",
+    itemId: "it-1",
+    requestId: "rq-1",
+    providerRefs: { providerTurnId: "pt", providerItemId: "pi", providerRequestId: "pr" },
+    raw: { source: "claude.sdk.message", method: " m ", messageType: "t", payload: { x: [1, 2] } },
+    type: "session.configured",
+    payload: { config: { a: 1 } },
+  },
+  { ...rtBase, provider: "  claude  ", type: "session.configured", payload: { config: {} } },
+  // A driver kind is an **open** slug, so a fork's unknown provider must still decode.
+  { ...rtBase, provider: "ollama_fork", type: "session.configured", payload: { config: {} } },
+  { ...rtBase, provider: "1bad", type: "session.configured", payload: { config: {} } },
+  { ...rtBase, provider: "", type: "session.configured", payload: { config: {} } },
+  {
+    ...rtBase,
+    createdAt: "2026-11-21T03:04:05.000+02:00",
+    type: "session.configured",
+    payload: { config: {} },
+  },
+  { ...rtBase, createdAt: "not a date", type: "session.configured", payload: { config: {} } },
+  { ...rtBase, type: "runtime.error", payload: { message: "m", class: "not_a_class" } },
+  { ...rtBase, type: "runtime.error", payload: { message: "m", class: 42 } },
+  // The mismatch that would have been a swallow: right payload, wrong tag.
+  { ...rtBase, type: "tool.denied", payload: { message: "m", class: "unknown" } },
+  { ...rtBase, type: "runtime.error", payload: { toolName: "bash" } },
+  { ...rtBase, type: "session.started", payload: { message: "  " } },
+  { ...rtBase, type: "session.started", payload: { message: " x " } },
+  { ...rtBase, type: "session.started", payload: { resume: { any: [1, null, "s"] } } },
+  { ...rtBase, type: "unknown-key", payload: {} },
+  { ...rtBase, type: "session.started", payload: {}, extra: 1 },
+  { ...rtBase, type: "session.started" },
+  { ...rtBase, eventId: "", type: "session.configured", payload: { config: {} } },
+  { ...rtBase, threadId: " ", type: "session.configured", payload: { config: {} } },
+]) {
+  record("providerRuntime", "decode", ProviderRuntimeEvent, input);
+  record("providerRuntime", "encode", ProviderRuntimeEvent, input);
+}
+
+// `contentIndex`/`summaryIndex`/`exitCode` are bare `Schema.Int` and `totalCostUsd`/
+// `elapsedSeconds` are bare `Schema.Number`: the same safe-integer gate the newtypes carry, but
+// inline, so `2.5` and `2^53` refuse while `80.0` and `-3` do not.
+for (const [type, payload] of [
+  ["content.delta", { streamKind: "command_output", delta: "x", contentIndex: 2.5 }],
+  ["content.delta", { streamKind: "command_output", delta: "x", contentIndex: 80.0 }],
+  [
+    "content.delta",
+    { streamKind: "command_output", delta: "x", contentIndex: 9_007_199_254_740_992 },
+  ],
+  [
+    "content.delta",
+    { streamKind: "command_output", delta: "x", contentIndex: -3, summaryIndex: 0 },
+  ],
+  ["content.delta", { streamKind: "command_output", delta: "x", contentIndex: "1" }],
+  ["content.delta", { streamKind: "nope", delta: "" }],
+  ["hook.completed", { hookId: "h", outcome: "error", exitCode: 80.0 }],
+  ["hook.completed", { hookId: "h", outcome: "error", exitCode: 1.5 }],
+  ["hook.completed", { hookId: "h", outcome: "killed" }],
+  ["hook.progress", { hookId: "h", output: "", stdout: "", stderr: "" }],
+  ["turn.completed", { state: "completed", totalCostUsd: 0.1 }],
+  ["turn.completed", { state: "completed", totalCostUsd: 1e21 }],
+  ["turn.completed", { state: "completed", totalCostUsd: "1" }],
+  ["turn.completed", { state: "completed", stopReason: null }],
+  ["turn.completed", { state: "completed", stopReason: "  " }],
+  ["turn.completed", { state: "completed", modelUsage: { a: 1, "b c": 2 } }],
+  ["turn.completed", { state: "nope" }],
+  ["tool.progress", { elapsedSeconds: 1.5, taskId: "tk-1" }],
+] as const) {
+  record("providerRuntime", "decode", ProviderRuntimeEvent, { ...rtBase, type, payload });
+  record("providerRuntime", "encode", ProviderRuntimeEvent, { ...rtBase, type, payload });
+}
+
+// The two-member `TurnTokenUsage` union. The members differ by **both** `usageStatus` and
+// which counts are required, so declaration order could hide a fallthrough: a `complete`
+// missing `inputTokens` must fail rather than be read as `partial`.
+for (const tokenUsage of [
+  { usageStatus: "complete", inputTokens: 1, outputTokens: 2, hasSubagents: false },
+  { usageStatus: "complete", inputTokens: 1, hasSubagents: false },
+  { usageStatus: "partial", hasSubagents: true },
+  { usageStatus: "unavailable", hasSubagents: false, inputTokens: 9 },
+  {
+    usageStatus: "complete",
+    inputTokens: 1,
+    outputTokens: 2,
+    hasSubagents: false,
+    usageScope: "subagent",
+  },
+  { usageStatus: "partial", inputTokens: 1.5, hasSubagents: false },
+  { usageStatus: "unknown_status", hasSubagents: false },
+]) {
+  const input = { ...rtBase, type: "turn.aborted", payload: { reason: "r", tokenUsage } };
+  record("providerRuntime", "decode", ProviderRuntimeEvent, input);
+  record("providerRuntime", "encode", ProviderRuntimeEvent, input);
+}
+
+// `ToolActivityIcon` is three `TaggedStruct`s whose tag is a key named `type` *inside* the
+// icon, one of which nests a further two-member tagged union with a checked leaf
+// (`isMaxLength(512)` **and** `isPattern(/^[A-Za-z0-9._-]+$/u)`). The `_` in the pattern is the
+// reason a `\w` port is not equivalent, and the `u` flag means a non-ASCII astral appId is
+// refused rather than counted as one code point.
+for (const payload of [
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "website", pageUrl: "https://a" },
+    toolSource: { key: "k", name: "n", kind: "browser" },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: {
+      _tag: "website",
+      pageUrl: "https://a",
+      faviconUrl: "  https://f  ",
+      faviconUrlDark: "",
+    },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "native-app", app: { _tag: "app-id", appId: "com_a.B-1" } },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "native-app", app: { _tag: "app-id", appId: "_leading" } },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "native-app", app: { _tag: "app-id", appId: "a".repeat(513) } },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "native-app", app: { _tag: "app-id", appId: "a😀" } },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "native-app", app: { _tag: "display-name", displayName: "  Notes  " } },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "native-app", app: { _tag: "display-name", displayName: "x".repeat(161) } },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "themed-logo", logoUrl: "https://l".padEnd(4096, "x") },
+  },
+  {
+    itemType: "mcp_tool_call",
+    toolIcon: { _tag: "themed-logo", logoUrl: "https://l".padEnd(4097, "x") },
+  },
+  { itemType: "mcp_tool_call", toolIcon: { type: "other" } },
+  { itemType: "mcp_tool_call", toolSource: { key: "k", name: "n", kind: "nope" } },
+  {
+    itemType: "mcp_tool_call",
+    toolSource: {
+      key: "k",
+      name: "n",
+      kind: "integration",
+      icon: { _tag: "themed-logo", logoUrl: "u" },
+    },
+  },
+  { itemType: "nope" },
+  { itemType: "command_execution", status: "declined", agentId: " a ", parentToolUseId: "" },
+  { itemType: "command_execution", data: { nested: { deep: [1, "a", null] } }, detail: " d " },
+]) {
+  const input = { ...rtBase, type: "item.updated", payload };
+  record("providerRuntime", "decode", ProviderRuntimeEvent, input);
+  record("providerRuntime", "encode", ProviderRuntimeEvent, input);
+}
+
+// The task linkage spread onto four payloads: 19 optional fields, one array of structs, one
+// closed literal pair, and a boolean that clients read as "keep this out of the parent log".
+for (const payload of [
+  {
+    taskId: "tk-1",
+    taskType: "subagent",
+    agentKind: "agent",
+    agentId: "a",
+    phases: [{ index: 0, title: "p" }],
+  },
+  { taskId: "tk-1", taskType: "subagent", agentKind: "background" },
+  { taskId: "tk-1", agentKind: "nope" },
+  { taskId: "tk-1", phases: [{ index: 1.5, title: "p" }] },
+  { taskId: "tk-1", phases: [{ index: 0, title: "  " }] },
+  { taskId: "tk-1", runHandles: { runId: " r " }, timelineBypass: true, agentPath: "/root/marlow" },
+  { taskId: "tk-1", typedUsage: { totalTokens: 0 }, usage: { any: "shape" } },
+  { taskId: "tk-1", typedUsage: {} },
+  { taskId: "tk-1", attempt: -1, agentIndex: 0, phaseIndex: 2, isBackgrounded: false },
+  { taskId: "tk-1", endedAt: "2026-11-21T00:00:00.000Z" },
+]) {
+  const input = { ...rtBase, type: "task.progress", payload };
+  record("providerRuntime", "decode", ProviderRuntimeEvent, input);
+  record("providerRuntime", "encode", ProviderRuntimeEvent, input);
+}
+
+// `Schema.withConstructorDefault` was measured wire-neutral at the top level in fatia 4;
+// re-measured here where the field sits inside a struct **inside an array**, which is the case
+// a nested default could plausibly behave differently in.
+for (const payload of [
+  { questions: [{ id: "q", header: "h", question: "?", options: [] }] },
+  { questions: [{ id: "q", header: "h", question: "?", options: [], multiSelect: false }] },
+  { questions: [{ id: "q", header: "h", question: "?", options: [], multiSelect: true }] },
+  { questions: [{ id: "q", header: "h", question: "?", options: [], multiSelect: null }] },
+  {
+    questions: [
+      { id: "q", header: "h", question: "?", options: [{ label: " l ", description: "" }] },
+    ],
+    responseMode: "message",
+  },
+  { questions: [{ id: "q", header: "h", question: "?", options: [{ label: "l" }] }] },
+  { questions: [] },
+]) {
+  const input = { ...rtBase, type: "user-input.requested", payload };
+  record("providerRuntime", "decode", ProviderRuntimeEvent, input);
+  record("providerRuntime", "encode", ProviderRuntimeEvent, input);
+}
+
+for (const payload of [
+  {
+    options: [
+      { decision: "accept", label: "l" },
+      { decision: "cancel", label: " c ", warning: "w" },
+    ],
+  },
+  { options: [{ decision: "nope", label: "l" }] },
+  { options: [{ label: "l" }] },
+  { args: [1, "a", null] },
+]) {
+  const input = {
+    ...rtBase,
+    type: "request.opened",
+    payload: { requestType: "command_execution_approval", ...payload },
+  };
+  record("providerRuntime", "decode", ProviderRuntimeEvent, input);
+  record("providerRuntime", "encode", ProviderRuntimeEvent, input);
+}
+
+for (const payload of [
+  { files: [{ filename: "a", fileId: "b" }], failed: [{ filename: "c", error: "e" }] },
+  { files: [] },
+  { files: [{ filename: "  ", fileId: "b" }] },
+  { files: [{ filename: "a" }] },
+  { limits: { windows: [] } },
+  { limits: {} },
+  { status: null },
+  { success: "yes" },
+  { summary: "s", precedingToolUseIds: [" a ", ""] },
+]) {
+  const type =
+    payload.files !== undefined
+      ? "files.persisted"
+      : payload.limits !== undefined
+        ? "account.rate-limits.updated"
+        : payload.status !== undefined
+          ? "mcp.status.updated"
+          : payload.success !== undefined
+            ? "mcp.oauth.completed"
+            : "tool.summary";
+  const input = { ...rtBase, type, payload };
+  record("providerRuntime", "decode", ProviderRuntimeEvent, input);
+  record("providerRuntime", "encode", ProviderRuntimeEvent, input);
+}
+
+// `RuntimeEventRaw.source` is eight literals plus a `TemplateLiteral(["acp.", String, ".extension"])`.
+// Measured: the template accepts `acp..extension` (the middle `String` matches empty) and
+// `acp.a.b.extension`, and rejects anything else — so the port is a prefix/suffix test, not a
+// regex, and a `acp.` **or** `.extension` alone is not enough.
+for (const source of [
+  "codex.app-server.notification",
+  "codex.app-server.request",
+  "codex.eventmsg",
+  "claude.sdk.message",
+  "claude.sdk.permission",
+  "codex.sdk.thread-event",
+  "opencode.sdk.event",
+  "acp.jsonrpc",
+  "acp.x.extension",
+  "acp..extension",
+  "acp.a.b.extension",
+  "acp.",
+  ".extension",
+  "acp.x",
+  "x.extension",
+  "",
+]) {
+  record("runtimeEventRaw", "decode", RuntimeEventRaw, { source, payload: {} });
+  record("runtimeEventRaw", "encode", RuntimeEventRaw, { source, payload: {} });
+}
+for (const raw of [
+  { source: "acp.jsonrpc", method: "", payload: 1 },
+  { source: "acp.jsonrpc", messageType: " m ", payload: null },
+  { source: "acp.jsonrpc" },
+  { source: "acp.jsonrpc", payload: undefined },
+]) {
+  record("runtimeEventRaw", "decode", RuntimeEventRaw, raw);
+  record("runtimeEventRaw", "encode", RuntimeEventRaw, raw);
+}
+
+// `usedPercent` is the **only** `Schema.isBetween` in the ported surface: inclusive at both ends,
+// and `NaN`/`Infinity` fall out because the comparisons are false — a Rust `>= && <=` over
+// `f64` reproduces that without an explicit gate, which is worth pinning. `-0` decodes and the
+// wire writes `0`. `NaN` and `Infinity` cannot be expressed as JSON at all (the walk renders
+// them as `null`), which is a declared blind spot rather than a gap: a runtime event only ever
+// arrives over JSON, so the wire cannot carry them either.
+for (const usedPercent of [0, 1, 100, 100.000001, -0, -0.000001, 1e308, 1e-320, "50", null]) {
+  const window = { id: "five_hour", kind: "session", label: "5h", usedPercent };
+  record("providerUsageWindow", "decode", ServerProviderUsageWindow, window);
+  record("providerUsageWindow", "encode", ServerProviderUsageWindow, window);
+}
+for (const window of [
+  {
+    id: " five_hour ",
+    kind: "weekly",
+    label: " 1w ",
+    usedPercent: 1,
+    resetsAt: "2026-11-22T00:00:00.000Z",
+  },
+  { id: "five_hour", kind: "session", label: "5h", usedPercent: 1, windowDurationMins: 300 },
+  { id: "five_hour", kind: "session", label: "5h", usedPercent: 1, windowDurationMins: -1 },
+  { id: "five_hour", kind: "session", label: "5h", usedPercent: 1, windowDurationMins: 1.5 },
+  { id: "", kind: "session", label: "5h", usedPercent: 1 },
+  { id: "five_hour", kind: "daily", label: "5h", usedPercent: 1 },
+  { id: "five_hour", kind: "session", usedPercent: 1 },
+]) {
+  record("providerUsageWindow", "decode", ServerProviderUsageWindow, window);
+  record("providerUsageWindow", "encode", ServerProviderUsageWindow, window);
+}
+// `windows` is `ForwardCompatibleArray`, so an element that does not decode is **dropped**
+// rather than failing the whole snapshot — the one place in this file where a bad row is
+// silently discarded instead of refused.
+for (const limits of [
+  { checkedAt: "2026-11-21T00:00:00.000Z", windows: [] },
+  {
+    checkedAt: "2026-11-21T00:00:00.000Z",
+    windows: [
+      { id: "ok", kind: "other", label: "l", usedPercent: 1 },
+      "junk",
+      null,
+      { id: "bad", kind: "session", label: "l", usedPercent: 200 },
+      { id: "ok2", kind: "monthly", label: "m", usedPercent: 0 },
+    ],
+  },
+  { checkedAt: "2026-11-21T00:00:00.000Z", windows: [], resetCredits: { availableCount: 0 } },
+  {
+    checkedAt: "2026-11-21T00:00:00.000Z",
+    windows: [],
+    resetCredits: {
+      availableCount: 2,
+      nextCreditId: " c ",
+      nextExpiresAt: "2026-12-01T00:00:00.000Z",
+    },
+  },
+  { checkedAt: "2026-11-21T00:00:00.000Z", windows: [], resetCredits: {} },
+  { checkedAt: "2026-11-21T00:00:00.000Z", windows: [], unavailable: { reason: "unsupported" } },
+  {
+    checkedAt: "2026-11-21T00:00:00.000Z",
+    windows: [],
+    unavailable: { reason: "probeFailed", message: "  " },
+  },
+  { checkedAt: "2026-11-21T00:00:00.000Z", windows: [], unavailable: { reason: "other" } },
+  { checkedAt: "2026-11-21T00:00:00.000Z", windows: [], unavailable: null },
+  { checkedAt: "2026-11-21T00:00:00.000Z" },
+  { checkedAt: "not a date", windows: [] },
+  { checkedAt: "2026-11-21T00:00:00.000Z", windows: {} },
+]) {
+  record("providerUsageLimits", "decode", ServerProviderUsageLimits, limits);
+  record("providerUsageLimits", "encode", ServerProviderUsageLimits, limits);
+}
+for (const update of [
+  { windows: [] },
+  {},
+  { windows: [{ id: "a", kind: "session", label: "l", usedPercent: 50 }] },
+  { windows: "x" },
+]) {
+  record("providerUsageLimitsUpdate", "decode", ProviderUsageLimitsUpdate, update);
+  record("providerUsageLimitsUpdate", "encode", ProviderUsageLimitsUpdate, update);
+}
+
+// `classifyTaskAgentKind` is not a codec: it is the one pure function in this module, twelve
+// lines of `!== undefined` and a `trim().length > 0` gate over two denylists. Its rows join the
+// same `codecs` list under their own subject, because the replay dispatches by subject name and
+// a function is just another builder that maps an input row to an output value. The table is
+// exhaustive over the interesting space rather than sampled, because the whole
+// point is which of the four conditions is load-bearing — `""` and `"  "` are **not** agent
+// linkage, `MONITOR` and `" monitor "` are **not** in the set, and an absent `taskType` with a
+// real `agentId` is background.
+const pureRows: Array<{ input: unknown; ok: unknown }> = [];
+for (const taskType of [
+  undefined,
+  "monitor",
+  "monitor_mcp",
+  "local_bash",
+  "shell",
+  "plan",
+  "dream",
+  "subagent",
+  "local_agent",
+  "local_workflow",
+  "MONITOR",
+  " monitor ",
+  "",
+  "  ",
+] as const) {
+  for (const agentId of [undefined, "", " ", "  ", "a1", " a "] as const) {
+    pureRows.push({
+      input: { taskType, agentId },
+      ok: classifyTaskAgentKind({ taskType, agentId }),
+    });
+  }
+}
+for (const row of pureRows) {
+  cases.push({ case: `classifyTaskAgentKind.decode`, input: row.input, ok: row.ok });
 }
 
 // The golden has to carry wire bytes, and two kinds of value do not survive

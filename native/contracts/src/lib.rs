@@ -11,6 +11,8 @@
 
 pub mod base;
 pub mod provider_instance;
+pub mod provider_runtime;
+pub mod provider_usage_limits;
 pub mod terminal;
 
 /// `(key, tag)` pairs from `WS_METHODS` in `contracts/rpc.ts`.
