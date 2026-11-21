@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 
 use lmcs_pty::lifecycle::{Exit, LaunchAsk, Size, Status, Worktree};
 use lmcs_pty::manager::{Failure, LogLine, Manager, Open, Opened, Restart};
+use lmcs_pty::stream::{Frame, Subscriber};
 use lmcs_terminal_history::{
     DEFAULT_TERMINAL_ID, HistoryPersistence, history_path, legacy_history_path,
 };
@@ -270,6 +271,11 @@ fn a_restart_of_an_absent_terminal_refuses_with_the_lookup_error() {
         failure.message(),
         "Unknown terminal thread: thread-1, terminal: gone",
     );
+    assert_eq!(
+        failure.cause(),
+        None,
+        "the lookup swallows its cause the way the shipped defect does",
+    );
     assert!(lines.lock().unwrap().is_empty());
 }
 
@@ -342,10 +348,8 @@ fn a_subscriber_registered_before_the_open_hears_the_snapshot_first() {
     open(&mut manager, &fixture, "term-1", &fixture.dir).unwrap();
     let frames = manager.start("thread-1", "term-1", 4242, None, "2026-11-21T00:00:01.000Z");
     assert!(
-        frames
-            .iter()
-            .all(|(id, _)| *id == subscriber || *id == metadata),
-        "a transition reaches only the subscribers that registered",
+        frames.is_empty(),
+        "a stream that has not delivered its initial snapshot yet holds the start rather than hearing it",
     );
 
     let attach = manager
@@ -369,6 +373,68 @@ fn a_subscriber_registered_before_the_open_hears_the_snapshot_first() {
             .filter(|_| !manager.detach(metadata))
             .is_some(),
         "detaching reports the first removal and nothing after it",
+    );
+}
+
+#[test]
+fn each_transition_the_seam_publishes_reaches_both_live_streams() {
+    // The three deliveries no other case watches: every other test either runs while a stream is still
+    // setting up, so the event is held rather than heard, or after the record has left the table.
+    let fixture = Fixture::new("deliver-live");
+    let lines = recorder();
+    let mut manager = fixture.manager(lines.clone());
+    open(&mut manager, &fixture, "term-1", &fixture.dir).unwrap();
+    let attach = manager.attach("thread-1", "term-1");
+    let sessions = manager.subscribe_metadata();
+    manager.opened_attach(attach, "thread-1", "term-1").unwrap();
+    manager.opened_metadata(sessions).unwrap();
+    let kinds = |frames: &[(Subscriber, Frame)]| {
+        frames
+            .iter()
+            .map(|(_, frame)| frame.kind())
+            .collect::<Vec<_>>()
+    };
+
+    assert_eq!(
+        manager
+            .start("thread-1", "term-1", 4242, None, "2026-11-21T00:00:01.000Z")
+            .iter()
+            .map(|(id, frame)| (*id, frame.kind()))
+            .collect::<Vec<_>>(),
+        [(attach, "snapshot"), (sessions, "upsert")],
+        "a started reaches the text stream as the snapshot the dedup rule reads, and the list as a row",
+    );
+    let ask = fixture.ask(&fixture.dir);
+    assert_eq!(
+        kinds(
+            &manager
+                .restart(&Restart {
+                    thread_id: "thread-1",
+                    terminal_id: "term-1",
+                    pid: 7777,
+                    ask: &ask,
+                    requested: None,
+                    at: "2026-11-21T00:00:02.000Z",
+                })
+                .unwrap()
+        ),
+        ["restarted", "upsert"],
+        "a restart is the one transition whose own name survives to the text stream",
+    );
+    assert_eq!(
+        kinds(&manager.fail_start(
+            "thread-1",
+            "term-1",
+            "posix_spawnp failed.",
+            None,
+            "2026-11-21T00:00:03.000Z",
+        )),
+        ["error", "upsert"],
+        "and a spawn that never started is an error on both",
+    );
+    assert!(
+        lines.lock().unwrap().is_empty(),
+        "a delivery is not a warning: {lines:?}",
     );
 }
 

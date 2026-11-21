@@ -684,7 +684,7 @@ impl Replay {
         let thread = self.thread(thread);
         self.boundary("write", &format!("write-{terminal}"), "-");
         let status = match self.terminals.write(&thread, terminal) {
-            Ok(Write::Delivered) | Ok(Write::Swallowed) => "ok".to_owned(),
+            Ok(Write::Delivered { .. }) | Ok(Write::Swallowed) => "ok".to_owned(),
             Err(error) => format!("err:{}", error.as_str()),
         };
         self.boundary("write", &format!("write-{terminal}"), &status);

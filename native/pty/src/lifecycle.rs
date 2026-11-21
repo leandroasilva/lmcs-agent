@@ -274,8 +274,9 @@ fn row(thread_id: &str, terminal_id: &str, state: &Session) -> Metadata {
 /// What the table said about a client's write.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Write {
-    /// A running session with a process, so the caller hands the bytes to the shell.
-    Delivered,
+    /// A running session with a process, so the caller hands the bytes to the shell. The pid is the
+    /// one the failure the caller may come back with has to name.
+    Delivered { pid: u32 },
     /// The session already exited: the shipped write returns success and drops the input, which is
     /// what a client typing into a dead terminal gets.
     Swallowed,
@@ -659,8 +660,8 @@ impl Terminals {
         if state.status == Status::Exited {
             return Ok(Write::Swallowed);
         }
-        if state.status == Status::Running && state.pid.is_some() {
-            return Ok(Write::Delivered);
+        if let (Status::Running, Some(pid)) = (state.status, state.pid) {
+            return Ok(Write::Delivered { pid });
         }
         Err(WriteError::NotRunning)
     }
@@ -699,18 +700,56 @@ impl Terminals {
         rows: u32,
         at: &str,
     ) -> Resize {
-        let Some(entry) = self
+        let asked = match self
             .sessions
-            .get_mut(&(thread_id.to_owned(), terminal_id.to_owned()))
-        else {
-            return Resize::Missing;
+            .get(&(thread_id.to_owned(), terminal_id.to_owned()))
+        {
+            None => Resize::Missing,
+            Some(entry)
+                if entry.state.status != Status::Running || entry.state.pid.is_none() =>
+            {
+                Resize::NotRunning
+            }
+            Some(_) => Resize::Applied { cols, rows },
         };
-        if entry.state.status != Status::Running || entry.state.pid.is_none() {
-            return Resize::NotRunning;
+        if let Resize::Applied { cols, rows } = asked {
+            self.resize_apply(thread_id, terminal_id, cols, rows, at);
         }
-        entry.state.size = Size { cols, rows };
-        entry.state.updated_at = at.to_owned();
-        Resize::Applied { cols, rows }
+        asked
+    }
+
+    /// `resizeLocked`'s read half (Manager.ts:2892-2899): the pid whose process the new size belongs
+    /// to, or `None` for either of the two silent answers. The seam needs the split because the shipped
+    /// call runs the library **before** it writes the size, so a library call that throws leaves both
+    /// the viewport and the stamp where they were — measured on `resize-throws`, where the follow-up
+    /// open at the thrown size still crosses its gate and resizes.
+    #[must_use]
+    pub fn resize_ask(&self, thread_id: &str, terminal_id: &str) -> Option<u32> {
+        let state = &self
+            .sessions
+            .get(&(thread_id.to_owned(), terminal_id.to_owned()))?
+            .state;
+        match (state.status, state.pid) {
+            (Status::Running, Some(pid)) => Some(pid),
+            _ => None,
+        }
+    }
+
+    /// The two writes `resizeLocked` makes once the process has accepted the new size.
+    pub fn resize_apply(
+        &mut self,
+        thread_id: &str,
+        terminal_id: &str,
+        cols: u32,
+        rows: u32,
+        at: &str,
+    ) {
+        if let Some(entry) =
+            self.sessions.get_mut(&(thread_id.to_owned(), terminal_id.to_owned()))
+        {
+            entry.state.size = Size { cols, rows };
+            entry.state.updated_at = at.to_owned();
+        }
     }
 
     /// The size check an `open` of a live terminal (Manager.ts:2626) and an `attach`
@@ -1875,7 +1914,11 @@ mod tests {
         terminals.mark_running("thread-a", "term-1", 7400, None, "t3", &mut |event| {
             events.push(describe(event));
         });
-        assert_eq!(terminals.write("thread-a", "term-1"), Ok(Write::Delivered));
+        assert_eq!(
+            terminals.write("thread-a", "term-1"),
+            Ok(Write::Delivered { pid: 7400 }),
+            "the decision carries the pid the write error would name"
+        );
         let (sequence, exit) = drain_exit(&mut terminals, "thread-a", "term-1", 7400, 3, None);
         terminals.exit("thread-a", "term-1", sequence, exit, "t4", &mut |event| {
             events.push(describe(event))

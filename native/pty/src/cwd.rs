@@ -187,6 +187,16 @@ impl CwdError {
             .map(|reason| format!("PlatformError/{}/stat", reason.tag()))
     }
 
+    /// The directory as the client named it, which every one of the three refusals carries.
+    #[must_use]
+    pub fn cwd(&self) -> String {
+        match self {
+            Self::NotFound { cwd } | Self::NotDirectory { cwd } | Self::Stat { cwd, .. } => {
+                cwd.clone()
+            }
+        }
+    }
+
     /// The reason the `stat` failed, for a caller that needs the tag without the rendered string.
     #[must_use]
     pub const fn stat_reason(&self) -> Option<StatReason> {
