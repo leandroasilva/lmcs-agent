@@ -370,10 +370,6 @@ mod tests {
         fn exists(&self, path: &Path) -> bool {
             path.symlink_metadata().is_ok()
         }
-
-        fn contents(&self, paths: &[&Path]) -> Vec<bool> {
-            paths.iter().map(|path| self.exists(path)).collect()
-        }
     }
 
     impl Drop for Logs {
@@ -388,8 +384,10 @@ mod tests {
     /// What the publisher saw: the event, and which history files were still on disk at that
     /// moment. Reading the disk inside the callback is what makes a removal that jumped the
     /// publication observable.
+    type Seen = Vec<(String, u64, Vec<bool>)>;
+
     #[derive(Clone)]
-    struct Published(Arc<Mutex<Vec<(String, u64, Vec<bool>)>>>);
+    struct Published(Arc<Mutex<Seen>>);
 
     impl Published {
         fn new() -> Self {
@@ -764,8 +762,7 @@ mod tests {
                 Some(true),
                 &mut watch,
             )
-            .err()
-            .expect("a stopped worker fails the immediate persist");
+            .expect_err("a stopped worker fails the immediate persist");
         assert_eq!(failure.kind(), io::ErrorKind::BrokenPipe);
         assert_eq!(published.events(), Vec::<(String, u64)>::new());
         assert!(logs.exists(&current));

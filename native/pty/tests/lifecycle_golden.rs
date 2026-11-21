@@ -274,7 +274,7 @@ impl Publications {
         }
     }
 
-    fn taken(&self) -> Vec<(String, u64, Vec<Option<Vec<u8>>>)> {
+    fn taken(&self) -> Observed {
         self.0.lock().unwrap().clone()
     }
 }
