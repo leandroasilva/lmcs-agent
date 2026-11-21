@@ -234,6 +234,55 @@ fn input_backpressure_preserves_the_full_write_after_starting_the_reader() {
 }
 
 #[test]
+fn child_status_is_observed_without_consuming_reader_eof_and_is_cached() {
+    for (command, expected) in [
+        ("exit 7", exit_event(7, Some(0))),
+        ("kill -9 $$", exit_event(0, Some(9))),
+    ] {
+        let mut child = ChildGuard::spawn(&format!(
+            "stty -echo; printf ready; IFS= read -r ack; {command}"
+        ));
+        let mut reader = child.process().start_reader().unwrap();
+        assert_eq!(
+            reader.recv_timeout(DEADLINE).unwrap().as_deref(),
+            Some("ready")
+        );
+        assert_eq!(child.process().try_wait().unwrap(), None);
+        let pid = child.process().pid();
+        let (done, completion) = mpsc::channel();
+        let observer = thread::spawn(move || {
+            let mut info = std::mem::MaybeUninit::<libc::siginfo_t>::uninit();
+            loop {
+                let result = unsafe {
+                    libc::waitid(
+                        libc::P_PID,
+                        pid,
+                        info.as_mut_ptr(),
+                        libc::WEXITED | libc::WNOWAIT,
+                    )
+                };
+                if result == 0 {
+                    done.send(Ok(())).unwrap();
+                    break;
+                }
+                let error = io::Error::last_os_error();
+                if error.kind() != io::ErrorKind::Interrupted {
+                    done.send(Err(error)).unwrap();
+                    break;
+                }
+            }
+        });
+        child.process().write("\n").unwrap();
+        completion.recv_timeout(DEADLINE).unwrap().unwrap();
+        observer.join().unwrap();
+        assert_eq!(child.process().try_wait().unwrap(), Some(expected));
+        assert_eq!(child.process().try_wait().unwrap(), Some(expected));
+        assert_eq!(child.wait(), expected);
+        assert_eq!(reader.recv_timeout(DEADLINE).unwrap(), None);
+    }
+}
+
+#[test]
 fn reader_output_matches_the_real_node_pty_probe() {
     let Ok(path) = std::env::var("LMCS_READER_TRACE") else {
         eprintln!("skipped reader live golden: set LMCS_READER_TRACE to the node-pty probe trace");

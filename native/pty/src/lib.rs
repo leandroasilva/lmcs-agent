@@ -13,6 +13,7 @@
 //! and `apps/server/scripts/terminal-pipe-trace.ts` and `tests/pipe_golden.rs` for the read side.
 
 pub mod env;
+pub mod exit_drain;
 pub mod jsstr;
 pub mod native_pty;
 pub mod node_pty;

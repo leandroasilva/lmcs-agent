@@ -218,6 +218,10 @@ impl NativePtyProcess {
     /// dropping the signal rather than by choosing a gentler one. ConPTY therefore takes the
     /// library's own terminate here, and POSIX keeps the hangup.
     pub fn kill(&mut self, signal: Option<&str>) -> io::Result<()> {
+        // Reaping and signaling share this exclusive owner; a reaped PID is no longer ours.
+        if self.try_wait()?.is_some() {
+            return Ok(());
+        }
         match kill_argument(self.platform, signal) {
             Some(name) => send_signal(self.pid, name),
             None if self.platform.is_win32() => self.child.kill(),
@@ -267,6 +271,26 @@ impl NativePtyProcess {
     /// finite, so a server that never reads it is a server whose shell stopped mid-`cat`.
     pub fn wait(&mut self) -> io::Result<PtyExitEvent> {
         wait_child(&mut *self.child)
+    }
+
+    /// Checks child status independently of output EOF and preserves the cached numeric signal.
+    pub fn try_wait(&mut self) -> io::Result<Option<PtyExitEvent>> {
+        #[cfg(unix)]
+        if let Some(child) =
+            (&mut *self.child as &mut dyn Child).downcast_mut::<std::process::Child>()
+        {
+            return child
+                .try_wait()
+                .map(|status| status.as_ref().map(exit_event_of));
+        }
+        self.child.try_wait().map(|status| {
+            status.map(|status| {
+                exit_event(
+                    i32::try_from(status.exit_code()).unwrap_or(1),
+                    status.signal().map(|_| 0),
+                )
+            })
+        })
     }
 
     /// Cancel the detached reader first; unread PTY output can otherwise stall reaping on macOS.
@@ -407,6 +431,29 @@ mod tests {
             "{:?}",
             error.messages()
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn kill_after_reaping_never_uses_the_old_pid() {
+        let args = vec!["-c".to_string(), "exit 7".to_string()];
+        let mut process = NativePtySpawner::new(Platform::from_node_str(std::env::consts::OS))
+            .spawn(&PtySpawnInput {
+                shell: "/bin/sh",
+                args: Some(&args),
+                cwd: "/",
+                cols: 80,
+                rows: 24,
+                env: &Env::new(),
+            })
+            .unwrap();
+        assert_eq!(process.wait().unwrap(), exit_event(7, Some(0)));
+        // An impossible PID makes a missing guard fail without targeting a reused real PID.
+        process.pid = u32::MAX;
+        for signal in [None, Some("SIGHUP"), Some("SIGTERM"), Some("SIGKILL")] {
+            process.kill(signal).unwrap();
+        }
+        assert_eq!(process.try_wait().unwrap(), Some(exit_event(7, Some(0))));
     }
 
     #[cfg(unix)]
