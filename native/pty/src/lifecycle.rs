@@ -23,18 +23,9 @@ pub const THREAD_DELETE_WARNING: &str = "failed to delete terminal histories for
 /// the session's own drain, so only the three transitions that history is ordered against are here.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Event {
-    Cleared {
-        terminal_id: String,
-        sequence: u64,
-    },
-    Restarted {
-        terminal_id: String,
-        sequence: u64,
-    },
-    Closed {
-        terminal_id: String,
-        sequence: u64,
-    },
+    Cleared { terminal_id: String, sequence: u64 },
+    Restarted { terminal_id: String, sequence: u64 },
+    Closed { terminal_id: String, sequence: u64 },
 }
 
 impl Event {
@@ -224,7 +215,12 @@ impl Terminals {
                 Vec::new()
             });
         };
-        self.close_session(thread_id, terminal_id, delete_history == Some(true), publish)
+        self.close_session(
+            thread_id,
+            terminal_id,
+            delete_history == Some(true),
+            publish,
+        )
     }
 
     /// `closeSession`: persist and drain when a session exists, publish only for a session that was
@@ -456,7 +452,12 @@ mod tests {
         let mut watch = published.watch(&logs, vec![current.clone(), legacy.clone()]);
         assert_eq!(
             terminals
-                .close("thread-1", Some(DEFAULT_TERMINAL_ID), Some(true), &mut watch)
+                .close(
+                    "thread-1",
+                    Some(DEFAULT_TERMINAL_ID),
+                    Some(true),
+                    &mut watch
+                )
                 .unwrap(),
             Vec::new()
         );
@@ -481,7 +482,12 @@ mod tests {
         let mut watch = published.watch(&logs, vec![current.clone(), legacy.clone()]);
         assert_eq!(
             terminals
-                .close("thread-1", Some(DEFAULT_TERMINAL_ID), Some(true), &mut watch)
+                .close(
+                    "thread-1",
+                    Some(DEFAULT_TERMINAL_ID),
+                    Some(true),
+                    &mut watch
+                )
                 .unwrap(),
             Vec::new()
         );
@@ -575,7 +581,9 @@ mod tests {
         let published = Published::new();
         let mut watch = published.watch(&logs, vec![host_a.clone(), host_b.clone()]);
         assert_eq!(
-            terminals.close("thread-1", None, Some(true), &mut watch).unwrap(),
+            terminals
+                .close("thread-1", None, Some(true), &mut watch)
+                .unwrap(),
             Vec::new()
         );
         assert_eq!(
@@ -629,7 +637,12 @@ mod tests {
         let published = Published::new();
         let mut watch = published.watch(&logs, vec![current.clone()]);
         let warnings = terminals
-            .close("thread-1", Some(DEFAULT_TERMINAL_ID), Some(true), &mut watch)
+            .close(
+                "thread-1",
+                Some(DEFAULT_TERMINAL_ID),
+                Some(true),
+                &mut watch,
+            )
             .unwrap();
         assert_eq!(warnings.len(), 1);
         assert_eq!(warnings[0].message, TERMINAL_DELETE_WARNING);
@@ -641,7 +654,10 @@ mod tests {
                 ("error", warnings[0].error.clone()),
             ]
         );
-        assert_eq!(warnings[0].terminal_id.as_deref(), Some(DEFAULT_TERMINAL_ID));
+        assert_eq!(
+            warnings[0].terminal_id.as_deref(),
+            Some(DEFAULT_TERMINAL_ID)
+        );
         assert_eq!(warnings[0].error, "PlatformError/PermissionDenied/remove");
         assert!(!logs.exists(&current), "the file that could go, went");
     }
@@ -681,7 +697,9 @@ mod tests {
         let published = Published::new();
         let mut watch = published.watch(&logs, vec![]);
         assert_eq!(
-            terminals.close("thread-1", None, Some(true), &mut watch).unwrap(),
+            terminals
+                .close("thread-1", None, Some(true), &mut watch)
+                .unwrap(),
             Vec::new()
         );
         assert!(!logs.dir.exists(), "a sweep creates no directory");
@@ -699,7 +717,9 @@ mod tests {
         );
         let published = Published::new();
         let mut watch = published.watch(&logs, vec![current.clone()]);
-        terminals.clear("thread-1", DEFAULT_TERMINAL_ID, &mut watch).unwrap();
+        terminals
+            .clear("thread-1", DEFAULT_TERMINAL_ID, &mut watch)
+            .unwrap();
         assert_eq!(
             fs::read(&current).unwrap(),
             b"",
@@ -713,7 +733,13 @@ mod tests {
             vec![("term-1".to_owned(), 1), ("term-1".to_owned(), 2)]
         );
         assert_eq!(fs::read(&current).unwrap(), b"");
-        assert_eq!(terminals.session("thread-1", DEFAULT_TERMINAL_ID).unwrap().queued(), 0);
+        assert_eq!(
+            terminals
+                .session("thread-1", DEFAULT_TERMINAL_ID)
+                .unwrap()
+                .queued(),
+            0
+        );
     }
 
     #[test]
@@ -732,7 +758,12 @@ mod tests {
         let published = Published::new();
         let mut watch = published.watch(&logs, vec![current.clone()]);
         let failure = terminals
-            .close("thread-1", Some(DEFAULT_TERMINAL_ID), Some(true), &mut watch)
+            .close(
+                "thread-1",
+                Some(DEFAULT_TERMINAL_ID),
+                Some(true),
+                &mut watch,
+            )
             .err()
             .expect("a stopped worker fails the immediate persist");
         assert_eq!(failure.kind(), io::ErrorKind::BrokenPipe);
