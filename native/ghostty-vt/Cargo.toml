@@ -1,0 +1,23 @@
+[package]
+name = "lmcs-ghostty-vt"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[dependencies]
+# The engine is the same `ghostty-vt.wasm` the shipped web client runs (decision #30), so the
+# host is a wasm runtime rather than a Zig-built library. `cranelift` is the only backend this
+# target needs; `winch`/`pulley` and the rest of wasmtime's defaults stay off to keep the
+# bundle small.
+wasmtime = { version = "44.0.3", default-features = false, features = ["runtime", "cranelift"] }
+serde_json = "1.0.154"
+
+[dev-dependencies]
+wasmtime = { version = "44.0.3", default-features = false, features = ["runtime", "cranelift"] }
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+panic = "abort"
+strip = true
