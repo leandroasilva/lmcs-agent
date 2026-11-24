@@ -644,6 +644,13 @@ fn header(headers: &Value, wanted: &str) -> String {
 // The branch order, off the source
 // ---------------------------------------------------------------------------
 
+/// The row's own credential. Named here because it is the field the *ticket* never carries
+/// (`SessionStore.ts:882-951` reads `scopes: row.value.scopes`), so every success below has to prove the
+/// same thing: what the connection may do came from the store, not from the bytes the client sent.
+fn credentialed() -> Vec<String> {
+    vec!["orchestration:read".to_owned(), "orchestration:operate".to_owned()]
+}
+
 /// `SessionStore.ts:882-951` is nine denials and one success, and they are two wire shapes apart at
 /// most, so what a replay can lose is which branch *ran*. That is knowable only from the error tag,
 /// which is what `mapSessionVerificationErrors` (`EnvironmentAuth.ts:543-552`) reads before it writes a
@@ -659,10 +666,12 @@ fn the_branch_order_is_the_functions() {
         session_id: "sess_01".to_owned(),
         expires_at: future + 1,
         revoked: false,
+        scopes: credentialed(),
     });
     let accepted = |session_id: &str| {
         Ok(Verified {
             session_id: session_id.to_owned(),
+            scopes: credentialed(),
         })
     };
 
@@ -784,6 +793,7 @@ fn the_branch_order_is_the_functions() {
         session_id: "sess_01".to_owned(),
         expires_at: future,
         revoked: false,
+        scopes: credentialed(),
     });
     assert_eq!(
         denied(&token, future, None, at),
@@ -799,6 +809,7 @@ fn the_branch_order_is_the_functions() {
                 session_id: "sess_01".to_owned(),
                 expires_at: future + 1,
                 revoked: true,
+                scopes: credentialed(),
             }),
         ),
         Denial::WebSocketSessionRevoked,

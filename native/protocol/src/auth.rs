@@ -753,6 +753,10 @@ pub struct StoredSession {
     pub expires_at: i64,
     /// `revokedAt !== null`, which is the last check a live session meets.
     pub revoked: bool,
+    /// `row.value.scopes`, i.e. what the credential covers. The ticket never carries them — `WebSocketClaims`
+    /// is `v`/`kind`/`sid`/`iat`/`exp` (`SessionStore.ts:852-858`) — so a server that read scopes off the
+    /// payload would be taking authorization from the client.
+    pub scopes: Vec<String>,
 }
 
 /// What the row lookup returned. A failure is its own case because it is the only one that reaches a
@@ -765,9 +769,24 @@ pub enum Stored {
 }
 
 /// A session the ticket proved.
+///
+/// `scopes` are the row's, in the row's order, and they are the whole reason this type is not just a
+/// `String`: they are what [`crate::session::Gate`] is built from, which is the only thing `ws.ts`'s
+/// dispatch consults per request. The rest of `VerifiedSession` (`method`, `client`, `subject`, the
+/// echoed `token`) is what handlers and services read, and belongs to the layer above this crate.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Verified {
     pub session_id: String,
+    pub scopes: Vec<String>,
+}
+
+impl Verified {
+    /// The connection's gate, i.e. `ws.ts:3811`'s `session` handed to `makeWsRpcLayer` and read on every
+    /// request (`ws.ts:609`/`616`). Consumed because one ticket proves one connection.
+    #[must_use]
+    pub fn gate(self) -> crate::session::Gate {
+        crate::session::Gate::new(self.scopes)
+    }
 }
 
 /// Why the ticket was refused. Each name is the error class the shipped server yields, which is how
@@ -901,6 +920,7 @@ pub fn verify(
             }
             Ok(Verified {
                 session_id: row.session_id,
+                scopes: row.scopes,
             })
         }
     }
@@ -1095,13 +1115,15 @@ mod tests {
                 session_id: sid.to_owned(),
                 expires_at: 1_800_000_000_000,
                 revoked: false,
+                scopes: vec!["orchestration:read".to_owned()],
             })
         };
         let token = mint("sess_01", 1_700_000_000_000.0, 1_700_000_300_000.0, &secret);
         assert_eq!(
             verify(&token, now, &secret, None, live).unwrap(),
             Verified {
-                session_id: "sess_01".to_owned()
+                session_id: "sess_01".to_owned(),
+                scopes: vec!["orchestration:read".to_owned()],
             }
         );
         assert_eq!(
@@ -1159,10 +1181,12 @@ mod tests {
                     session_id: sid.to_owned(),
                     expires_at: 100,
                     revoked: false,
+                    scopes: Vec::new(),
                 }
             )),
             Upgrade::Accepted(Verified {
-                session_id: "s".to_owned()
+                session_id: "s".to_owned(),
+                scopes: Vec::new(),
             })
         );
     }
