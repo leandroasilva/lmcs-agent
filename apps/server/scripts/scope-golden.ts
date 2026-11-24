@@ -351,6 +351,14 @@ const scenario = (name: string, forScopes: ReadonlyArray<string>, input?: string
   scopes = forScopes;
 };
 
+/**
+ * The recorder's listeners read `event.data`, which the declared `Event` does not carry, and this
+ * project's `lib` does not name `EventListener` — so the target type is read off the constructor.
+ */
+type WsListener = Parameters<(typeof globalThis.WebSocket.prototype)["addEventListener"]>[1];
+const asListener = (listener: (event: { readonly data: unknown }) => void) =>
+  listener as unknown as WsListener;
+
 const recordingConstructor = (url: string, options?: unknown) => {
   const ws = new globalThis.WebSocket(url, options as string | string[] | undefined);
   return {
@@ -373,13 +381,13 @@ const recordingConstructor = (url: string, options?: unknown) => {
         );
         return;
       }
-      ws.addEventListener(type, listener, opts);
+      ws.addEventListener(type, asListener(listener), opts);
     },
     removeEventListener(
       type: "open" | "message" | "error" | "close",
       listener: (event: { readonly data: unknown }) => void,
     ) {
-      ws.removeEventListener(type, listener);
+      ws.removeEventListener(type, asListener(listener));
     },
     close(code?: number, reason?: string) {
       ws.close(code, reason);
@@ -446,21 +454,24 @@ type Case = {
  */
 type Client = Record<string, (payload: unknown) => Effect.Effect<unknown, unknown>>;
 
-/** The client is keyed by tag, so a case naming a method the group lost is a broken case, not a call. */
-const methodOf = <A>(client: Client, method: string) => {
-  const call = client[method] as ((payload: unknown) => A) | undefined;
+const send = (
+  client: Client,
+  method: string,
+  payload: unknown,
+): Effect.Effect<unknown, unknown, never> => {
+  // The client is keyed by tag, so a case naming a method the group lost is a broken case, not a call.
+  const call = client[method];
   if (call === undefined) throw new Error(`the recorded group has no ${method}`);
-  return call;
+  return call(payload);
 };
-
-const send = (client: Client, method: string, payload: unknown) =>
-  methodOf(client, method)(payload);
 /**
  * A stream rpc hands back a `Stream`; nothing is pulled until it is run, and pulling is what makes the
  * server write.
  */
 const drain = (client: Client, method: string, payload: unknown) =>
-  methodOf<Stream.Stream<unknown, unknown>>(client, method)(payload).pipe(Stream.runDrain);
+  (client[method] as unknown as (input: unknown) => Stream.Stream<unknown, unknown>)(payload).pipe(
+    Stream.runDrain,
+  );
 
 const cases: Array<Case> = [
   // 1-3. The gate's two answers for one declared method, and whether the second answer is survivable.
