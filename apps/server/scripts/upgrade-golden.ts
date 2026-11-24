@@ -615,6 +615,12 @@ type Expect = {
   /** Exact text expected for a given frame index, uncompressed or after inflation. */
   readonly answer?: string;
   readonly answerSha?: string;
+  /**
+   * Exact on-wire payload length of the single answer frame. Used only where the length **is** the
+   * claim, i.e. the length-field boundaries, since a case that answers 127 bytes does not pin what
+   * happens at 126.
+   */
+  readonly lengthBytes?: number;
 };
 
 type Scenario = {
@@ -816,6 +822,18 @@ const deflateOffer = (extra: Array<string> = []) => [
 
 const SIZE_SIZES = [100, 900, 1000, 1100, 4000];
 
+/** The codes the close battery sends, one scenario each: boundaries and two interior points. */
+const CLOSE_CODES = [
+  999, 1001, 1004, 1005, 1006, 1007, 1011, 1012, 1013, 1015, 1016, 3000, 4999, 5000,
+];
+
+/**
+ * The close codes the transport refuses to echo, answered with `1002` instead — measured at every
+ * boundary (`999`, `1004`–`1006`, `1015`/`1016`, `5000`) and at two interior points. Everything else
+ * in `1000`–`1013` and all of `3000`–`4999` comes back as the peer wrote it.
+ */
+const refusedCloseCodes = [999, 1004, 1005, 1006, 1015, 1016, 5000];
+
 const SCENARIOS: Array<Scenario> = [
   // --- handshake ---------------------------------------------------------
   {
@@ -921,9 +939,11 @@ const SCENARIOS: Array<Scenario> = [
   },
   {
     name: "offer.unknownParam",
+    // Refused outright: an unknown parameter is not dropped, the handshake fails. Nothing is sent after
+    // it, because there is no connection to send on.
     upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; foo=bar"],
     send: [{ label: "plain", bytes: encodeFrame(1, utf8(requestFrame(9042, "plain"))) }],
-    expect: { upgraded: true, c2s: 1, s2c: 1 },
+    expect: { upgraded: false, c2s: 0, s2c: 0 },
   },
   {
     name: "offer.everyParam",
@@ -947,6 +967,38 @@ const SCENARIOS: Array<Scenario> = [
     // about it in the response.
     upgradeExtra: ["Sec-WebSocket-Extensions: foo; bar=1"],
     expect: { upgraded: true, c2s: 0, s2c: 0 },
+  },
+  {
+    name: "offer.clientMaxValue",
+    // The same parameter *with* a value, which is the difference `handshake.deflate` cannot see: the
+    // browser sends the bare form and the answer drops it.
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits=10"],
+    expect: { upgraded: true, c2s: 0, s2c: 0 },
+  },
+  {
+    name: "offer.serverMaxOutOfRange",
+    // A `server_max_window_bits` outside 9..=15: either it is a parameter the server declines to
+    // implement (answer bare) or it is an unacceptable offer (refusal), and the two differ in the
+    // client's error message. It is a refusal — same as an unknown parameter, and for the same reason:
+    // `ws` will not answer for a window size it cannot honour.
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=16"],
+    expect: { upgraded: false, c2s: 0, s2c: 0 },
+  },
+  {
+    name: "offer.repeatedParam",
+    // The same parameter twice, which is a malformed offer rather than a redundant one.
+    upgradeExtra: [
+      "Sec-WebSocket-Extensions: permessage-deflate; client_no_context_takeover; client_no_context_takeover",
+    ],
+    expect: { upgraded: false, c2s: 0, s2c: 0 },
+  },
+  {
+    name: "offer.protocolAndDeflate",
+    // Both optional headers at once, which pins their **order** — the one claim a per-header table
+    // cannot make.
+    upgradeExtra: ["Sec-WebSocket-Protocol: t3", ...deflateOffer()],
+    send: [{ label: "plain", bytes: encodeFrame(1, utf8(requestFrame(9046, "plain"))) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1 },
   },
   {
     name: "offer.bigNoTakeover",
@@ -1042,6 +1094,37 @@ const SCENARIOS: Array<Scenario> = [
       answerSha: sha(exitOf(9130, { s: repeat("a", 100000) })),
     },
   },
+  ...[125, 126, 65_535, 65_536].map((target) => {
+    // The answer's own byte count, minus the fixed `Exit` text around the string, is the payload the
+    // frame has to carry — so the case asks for exactly the `s` length that lands the frame on the
+    // boundary rather than near it. Nothing else in the file reaches 126 or 65536: the smallest
+    // uncompressed answer is 59 bytes and the largest 16-bit one is 2119.
+    const id = 9140 + [125, 126, 65_535, 65_536].indexOf(target);
+    // The fixed text is the prefix plus the four characters every answer ends with: the string's own
+    // closing quote and the three closing braces of value, exit and envelope.
+    const prefix = `{"_tag":"Exit","requestId":${id},"exit":{"_tag":"Success","value":{"s":"`;
+    const size = target - prefix.length - 4;
+    return {
+      name: `length.exact${target}`,
+      // Uncompressed on purpose: a deflated answer's length is `ws`'s zlib output, so the only way to
+      // drive the length field to an exact value is to skip the extension negotiation.
+      send: [
+        {
+          label: "size",
+          bytes: encodeFrame(1, utf8(requestFrame(id, "size", { s: repeat("a", size) }))),
+        },
+      ],
+      settleMs: 900,
+      deadlineMs: 9000,
+      expect: {
+        upgraded: true,
+        c2s: 1,
+        s2c: 1,
+        lengthBytes: target,
+        answerSha: sha(exitOf(id, { s: repeat("a", size) })),
+      } satisfies Expect,
+    };
+  }),
   {
     name: "frame.streamDeflated",
     upgradeExtra: deflateOffer(),
@@ -1283,9 +1366,24 @@ const SCENARIOS: Array<Scenario> = [
     send: [{ label: "close", bytes: encodeFrame(8, Buffer.alloc(0), { masked: false }) }],
     expect: { upgraded: true, c2s: 1, s2c: 1, closes: ["1002"] },
   },
+  // The close-code table, one case per boundary. A code the transport refuses answers with `1002`
+  // instead of the peer's own number, which is the only way a client learns its code was not taken —
+  // and the only way the port knows which numbers it may echo.
+  ...[999, 1001, 1004, 1005, 1006, 1007, 1011, 1012, 1013, 1015, 1016, 3000, 4999, 5000].map(
+    (code) => ({
+      name: `close.code${code}`,
+      send: [{ label: "close", bytes: closeBytes(code, "") }],
+      settleMs: 200,
+      expect: {
+        upgraded: true,
+        c2s: 1,
+        s2c: 1,
+        closes: refusedCloseCodes.includes(code) ? ["1002"] : [String(code)],
+      } satisfies Expect,
+    }),
+  ),
   {
-    name: "client.requestThenClose",
-    // The race a real disconnect produces: the request and the close arrive back to back, so the
+    name: "client.requestThenClose", // The race a real disconnect produces: the request and the close arrive back to back, so the
     // server answers the request **and** echoes the close, in that order, on a socket that is going
     // away underneath it.
     send: [
@@ -1463,6 +1561,8 @@ const SCENARIOS: Array<Scenario> = [
  * file gave up on the connection. Rejections are not listed: their FIN races that window.
  */
 const tcpAfterClose: Record<string, "open" | "fin"> = {
+  // Every close the transport answers — the peer's own, echoed or replaced — ends TCP as well.
+  ...Object.fromEntries(CLOSE_CODES.map((code) => [`close.code${code}`, "fin"])),
   // --- the server writes `8800` because the protocol layer told it to ----------
   "teardown.null": "open",
   "teardown.batchWithNull": "open",
@@ -1516,17 +1616,76 @@ const recordTable = () => {
  *   - a request the *router* never accepts (no `upgrade` header, wrong method, wrong path) goes through
  *     Node's response pipeline, which stamps `date`, keeps the connection alive and switches the body to
  *     a chunked encoding — so its body is literally `0\r\n\r\n`, an empty chunked response.
+ *
+ * The last three cases in the list are worth naming: an unknown `permessage-deflate` parameter, a
+ * `server_max_window_bits` outside the supported range and a repeated parameter are not quietly dropped
+ * — the **handshake fails**. A Rust port that implements the negotiation as "keep the parameters I
+ * know", or that normalizes a duplicate, would upgrade clients `ws` turns away. All three answer with
+ * the same sentence, so the refusal is the only observable difference between them.
  */
 const refusalHeaders: Record<string, Array<string>> = {
   "handshake.missingKey": ["connection", "content-type", "content-length"],
   "handshake.version7": ["connection", "content-type", "content-length", "sec-websocket-version"],
   "offer.unknownParam": ["connection", "content-type", "content-length"],
+  "offer.serverMaxOutOfRange": ["connection", "content-type", "content-length"],
+  "offer.repeatedParam": ["connection", "content-type", "content-length"],
   "handshake.noUpgradeHeader": ["date", "connection", "keep-alive", "transfer-encoding"],
   // The 404s omit the `keep-alive: timeout=5` the 400 carries, which is Node's own decision about a
   // response whose body it wrote before the handler ran. Pinned because it is byte-stable across runs,
   // not because the port has to reproduce it: no client reads that header.
   "handshake.postMethod": ["date", "connection", "transfer-encoding"],
   "handshake.otherPath": ["date", "connection", "transfer-encoding"],
+};
+
+/**
+ * The `Sec-WebSocket-Extensions` answer each offer earns, keyed by the offer rather than by the case,
+ * because most of the 55 upgrades in this file share the same browser offer.
+ *
+ * Three of these rows are the port's business, not trivia:
+ *
+ *   - `client_max_window_bits` **alone** is dropped and the answer comes back bare, while
+ *     `server_max_window_bits=10` and both `*_no_context_takeover` flags are echoed verbatim — so the
+ *     rule is not "echo what was offered" nor "drop what is unknown" but *keep only what you implement*.
+ *   - an unknown parameter (`foo=bar`) refuses the whole handshake rather than being dropped.
+ *   - an offer that does not mention `permessage-deflate` at all still upgrades, with no header back.
+ */
+const answersForOffer: Record<string, string | null> = {
+  "": null,
+  "permessage-deflate": "permessage-deflate",
+  "permessage-deflate; client_max_window_bits": "permessage-deflate",
+  "permessage-deflate; client_no_context_takeover":
+    "permessage-deflate; client_no_context_takeover",
+  "permessage-deflate; server_max_window_bits=10": "permessage-deflate; server_max_window_bits=10",
+  "permessage-deflate; server_no_context_takeover":
+    "permessage-deflate; server_no_context_takeover",
+  "permessage-deflate; server_no_context_takeover; client_no_context_takeover; server_max_window_bits=10; client_max_window_bits=10":
+    "permessage-deflate; server_no_context_takeover; client_no_context_takeover; server_max_window_bits=10; client_max_window_bits=10",
+  "permessage-deflate; client_max_window_bits=10": "permessage-deflate; client_max_window_bits=10",
+  "permessage-deflate; client_max_window_bits, foo": "permessage-deflate",
+  "foo; bar=1": null,
+};
+
+/**
+ * The exact text `ws` writes for the refusals it produces itself, which is what its
+ * `content-length` counts. The router's refusals are not here: they carry a chunked encoding and no
+ * body at all, which the writer rule below is the claim about.
+ */
+const refusalBodies: Record<string, string> = {
+  "handshake.missingKey": "Missing or invalid Sec-WebSocket-Key header",
+  "handshake.version7": "Missing or invalid Sec-WebSocket-Version header",
+  // The three negotiation refusals share one sentence, so a port cannot tell an out-of-range window
+  // from a repeated parameter from an unknown one by the body — only by the fact that it refuses.
+  "offer.unknownParam": "Invalid or unacceptable Sec-WebSocket-Extensions header",
+  "offer.serverMaxOutOfRange": "Invalid or unacceptable Sec-WebSocket-Extensions header",
+  "offer.repeatedParam": "Invalid or unacceptable Sec-WebSocket-Extensions header",
+};
+
+/** The offer a case sent, or `""` for none. */
+const offerOf = (name: string): string => {
+  const line = (SCENARIOS.find((s) => s.name === name)?.upgradeExtra ?? []).find((l) =>
+    l.startsWith("Sec-WebSocket-Extensions:"),
+  );
+  return line === undefined ? "" : line.slice("Sec-WebSocket-Extensions:".length).trim();
 };
 
 /**
@@ -1569,6 +1728,15 @@ const check = (): Array<string> => {
         out.push(`${event.case}: the upgrade carried an unexpected ${extra}`);
       }
     }
+    // `offer.protocolAndDeflate` is the only case that answers both optional headers, so this is where
+    // their order is a claim rather than an assumption: `ws` writes the protocol before the extension.
+    const protocol = names.indexOf("sec-websocket-protocol");
+    const extensions = names.indexOf("sec-websocket-extensions");
+    if (protocol !== -1 && extensions !== -1 && protocol > extensions) {
+      out.push(
+        `${event.case}: answered the protocol after the extension, which is ${JSON.stringify(names)}`,
+      );
+    }
     for (const [name, value] of folded(event.headers)) {
       if (name === "sec-websocket-accept" && value !== EXPECTED_ACCEPT) {
         out.push(
@@ -1584,14 +1752,19 @@ const check = (): Array<string> => {
         out.push(`${event.case}: negotiated ${JSON.stringify(value)} is not permessage-deflate`);
       }
     }
-    // `permessage-deflate` appears exactly where it was offered, which is a claim about the negotiation
-    // rather than about the frames that followed.
-    const offered = (SCENARIOS.find((s) => s.name === event.case)?.upgradeExtra ?? []).some(
-      (line) => line.startsWith("Sec-WebSocket-Extensions:"),
-    );
-    const hasExtension = names.includes("sec-websocket-extensions");
-    if (offered !== hasExtension) {
-      out.push(`${event.case}: offered=${offered} but the response carried ${hasExtension}`);
+    // The offer→answer mapping, which is the whole of what `deflate::negotiate` has to get right.
+    const offer = offerOf(event.case);
+    const expected = answersForOffer[offer];
+    if (expected === undefined) {
+      out.push(`${event.case}: offer ${JSON.stringify(offer)} is not listed`);
+    } else {
+      const answered =
+        folded(event.headers).find(([name]) => name === "sec-websocket-extensions")?.[1] ?? null;
+      if (answered !== expected) {
+        out.push(
+          `${event.case}: offered ${JSON.stringify(offer)}, answered ${JSON.stringify(answered)}, expected ${JSON.stringify(expected)}`,
+        );
+      }
     }
   }
 
@@ -1617,6 +1790,21 @@ const check = (): Array<string> => {
       out.push(
         `${event.case}: body ${JSON.stringify(event.body)} does not match its ${chunked ? "chunked" : "length-carrying"} writer`,
       );
+    }
+    const text = refusalBodies[event.case];
+    if (text !== undefined) {
+      if (event.body !== text) {
+        out.push(
+          `${event.case}: body was ${JSON.stringify(event.body)}, expected ${JSON.stringify(text)}`,
+        );
+      }
+      // The length header counts those bytes, so a port that rewords the sentence has to rewrite it.
+      const length = folded(event.headers).find(([name]) => name === "content-length")?.[1];
+      if (length !== String(Buffer.byteLength(text, "utf8"))) {
+        out.push(
+          `${event.case}: content-length ${length} is not ${Buffer.byteLength(text, "utf8")}`,
+        );
+      }
     }
   }
 
@@ -1666,7 +1854,12 @@ const check = (): Array<string> => {
       // One answer frame is a claim about content as well as count: either the plain payload or what the
       // compressed payload inflates to has to be exactly what the protocol layer wrote.
       const plain = answers[0]!.payload ?? answers[0]!.inflated;
-      const digest = answers[0]!.payloadSha ?? answers[0]!.inflatedSha;
+      // A frame's content is recorded as text when it is short and as a digest when it is not, so the
+      // claim has to hash the text it was given to stay a claim about content rather than about size.
+      const digest =
+        answers[0]!.payloadSha ??
+        answers[0]!.inflatedSha ??
+        (plain === undefined ? undefined : sha(plain));
       if (scenario.expect.answer !== undefined && plain !== scenario.expect.answer) {
         out.push(
           `${scenario.name}: answer was ${JSON.stringify(plain)?.slice(0, 160)}, expected ${JSON.stringify(scenario.expect.answer).slice(0, 160)}`,
@@ -1677,6 +1870,28 @@ const check = (): Array<string> => {
           `${scenario.name}: answer sha ${digest} is not the ${scenario.expect.answerSha} the rpc's own success schema produces`,
         );
       }
+      if (
+        scenario.expect.lengthBytes !== undefined &&
+        answers[0]!.payloadBytes !== scenario.expect.lengthBytes
+      ) {
+        out.push(
+          `${scenario.name}: answer was ${answers[0]!.payloadBytes} bytes on the wire, expected exactly ${scenario.expect.lengthBytes}`,
+        );
+      }
+    }
+  }
+
+  // The length field is the *minimal* one for the payload, which is the rule a port writing
+  // `frame.encode` has to reproduce byte for byte: 7-bit below 126, 16-bit below 65536, 64-bit above.
+  // Every answer frame in the artifact is checked, and the four `length.exact*` cases put a measured
+  // payload on each side of both boundaries.
+  for (const frame of frames.filter((f) => f.direction === "s2c")) {
+    const expected =
+      frame.payloadBytes <= 125 ? "7bit" : frame.payloadBytes <= 65_535 ? "16bit" : "64bit";
+    if (frame.lengthField !== expected) {
+      out.push(
+        `${frame.case}: ${frame.payloadBytes}-byte payload used ${frame.lengthField}, expected ${expected}`,
+      );
     }
   }
 
@@ -1709,6 +1924,28 @@ const check = (): Array<string> => {
     )
     .map((f) => f.case);
   if (unreadable.length > 0) out.push(`text answer(s) with no recorded content: ${unreadable}`);
+
+  // ---------------------------------------------------------------- compression
+  //
+  // Which answers the server deflates is the one transport decision the offer does not state, and it
+  // splits on context takeover rather than on size alone:
+  //
+  //   - no `permessage-deflate` answered → nothing is ever compressed;
+  //   - takeover (the default) → **every** answer is compressed, including the 63-byte `plain` reply and
+  //     the 4053-byte stream chunk, so `ws`'s documented 1024-byte threshold does not apply;
+  //   - `server_no_context_takeover` → the threshold applies, which is what `offer.smallNoTakeover`
+  //     (975 bytes, raw) and `offer.bigNoTakeover` (4075 bytes, RSV1) measure on either side of it.
+  for (const frame of frames.filter((f) => f.direction === "s2c" && f.opcode === 1)) {
+    const answer = answersForOffer[offerOf(frame.case)] ?? null;
+    const plain = frame.inflatedBytes ?? frame.payloadBytes;
+    const expected =
+      answer !== null && (answer.includes("server_no_context_takeover") ? plain >= 1024 : true);
+    if (frame.rsv1 !== expected) {
+      out.push(
+        `${frame.case}: ${plain}-byte answer had rsv1=${frame.rsv1}, expected ${expected} under ${JSON.stringify(answer)}`,
+      );
+    }
+  }
 
   if (separatorBreaks.length > 0) {
     out.push(
