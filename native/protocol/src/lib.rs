@@ -6,14 +6,16 @@
 //! `RpcSerialization.ts:126-132` (decode), the message literals in `RpcClient.ts:374-386` and
 //! `RpcServer.ts:660-726`, and the `RpcMessage` union at `RpcMessage.ts:438-472`.
 //!
-//! Only the *envelope* lives here. The nine members are group-independent, so nothing in this crate
-//! knows what an rpc is, what its payload schema expects, or which connection a message belongs to;
-//! those are the layers above, and keeping them out is what makes the byte order testable without a
-//! runtime. There is deliberately no socket in this crate either: reading and writing frames is a
-//! pure transform over `&str`, which is what lets the golden replay 125 recorded frames in a test.
+//! Two layers live here: the **envelope** (`envelope`, `frame`, `json`, `coerce`) and the **switch**
+//! a connection runs over it (`session`). Both are group-independent in the sense that matters:
+//! neither knows what an rpc is, what its payload schema expects, or which socket it came from. The
+//! schemas belong to `native/contracts` and the socket belongs above this crate, and keeping them
+//! out is what makes the byte order and the routing testable without a runtime — `session` takes a
+//! `&str` and returns the messages to write, which is why the golden replays a whole connection,
+//! scenario by scenario, inside a test.
 //!
 //! Three things the port cannot get from a schema and had to measure, each of them a claim the
-//! golden in `tests/envelope_golden.rs` recomputes rather than restates:
+//! goldens in `tests/` recompute rather than restate:
 //!
 //! - **Key order is the construction site's, not the schema's.** A `Request` writes
 //!   `_tag,id,tag,payload,traceId,spanId,sampled,headers`; `RequestEncodedSchema` lists `headers`
@@ -31,7 +33,9 @@ pub mod coerce;
 pub mod envelope;
 pub mod frame;
 pub mod json;
+pub mod session;
 
 pub use envelope::{Cause, Defect, Exit, Headers, Id, Message, Request, Trace};
 pub use frame::{Envelope, Frame, invalid_request_id, unknown_request_tag};
 pub use json::{Syntax, parse, stringify};
+pub use session::{Group, Handler, Outcome, Payload, Reply, Session};

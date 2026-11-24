@@ -220,6 +220,59 @@ fn recorded_frames_re_encode_byte_for_byte() {
     assert_eq!(without_an_encoder, vec!["Nonsense".to_owned()]);
 }
 
+/// The **other** encoder. [`Message::encode`] prints the `exit` hole it was handed, so axis 1 never
+/// runs [`Exit::to_value`] — and `to_value` is the path a Rust handler's answer actually takes,
+/// because a server builds an `Exit` rather than copying a frame it received. Rebuilding each
+/// recorded answer from its structured form and re-encoding it is what pins `Schema.Void`, the
+/// cause array and the `_tag`-first order against bytes instead of against a unit test that
+/// mirrors them.
+#[test]
+fn a_built_answer_is_the_answer_the_shipped_server_wrote() {
+    let Some(golden) = Artifact::load() else {
+        eprintln!("skipping protocol golden: set LMCS_PROTOCOL_GOLDEN");
+        return;
+    };
+    let mut built = 0;
+    let mut not_an_exit = 0;
+    for frame in golden
+        .frames
+        .iter()
+        .filter(|frame| frame.direction == "s2c")
+    {
+        let Envelope::Message(message) = only_envelope(&frame.frame) else {
+            panic!("{} is one frame", frame.frame);
+        };
+        let Some(exit) = message.exit() else {
+            not_an_exit += 1;
+            continue;
+        };
+        let Message::Exit { request_id, .. } = message.clone() else {
+            unreachable!("exit() only answers for an Exit envelope");
+        };
+        let rebuilt = Message::Exit {
+            request_id,
+            exit: exit.to_value(),
+        };
+        assert_eq!(rebuilt.encode(), frame.frame, "rebuilt from {exit:?}");
+        built += 1;
+    }
+    // 59 frames came from the server; 37 of them are an `Exit` and the other 22 are `Chunk`, `Pong`
+    // and the broadcast `Defect`s, which the same loop skips and counts.
+    assert_eq!(
+        built, 37,
+        "every recorded answer rebuilt from its structured form"
+    );
+    assert_eq!(
+        not_an_exit, 22,
+        "the rest are Chunks, Pongs and broadcast Defects"
+    );
+    assert_eq!(
+        built + not_an_exit,
+        golden.count("s2c"),
+        "and the loop saw every frame the server sent"
+    );
+}
+
 /// The headline measurement: an rpc that returns nothing and an rpc that returns the empty object
 /// differ by one word on the wire, and a port that renders `Schema.Void` as `{}` breaks the client's
 /// `decodeSuccess` without anything else noticing.
