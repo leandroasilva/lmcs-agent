@@ -22,17 +22,26 @@
 //! The rest is the stream. One deflate stream lives per direction for the whole connection unless
 //! takeover was refused for that direction, in which case it is reset after each message. The four-byte
 //! `\x00\x00\xff\xff` sync marker is **stripped from the last frame the sender writes and added to the last
-//! frame the receiver reads**, which is the whole of the permessage-deflate framing rule.
+//! frame the receiver reads**, which is the whole of the permessage-deflate framing rule. A peer that
+//! finishes its stream per message instead has no marker to strip, so the four bytes the receiver appends
+//! stay unread: that leftover is the receiver's own and not a fault, and the stream is over rather than
+//! paused, so the next message starts a new one.
 //!
-//! Byte-for-byte agreement with Node's zlib is *not* claimed and cannot be: this crate's flate2 uses the
-//! `rust_backend`, whose deflate output differs from zlib's at the same level. A client only requires that
-//! an RSV1 body inflate to the right text, so the golden compares inflated text and the RSV1 decision, and
-//! `tests/transport_golden.rs` says so where it checks those frames.
+//! Two limits worth naming, both of them the backend's rather than the protocol's. The deflate comes from
+//! `flate2`'s `zlib-rs` backend, which takes `window_bits` seriously (miniz_oxide ignores it), but its
+//! `Compress`/`Decompress` constructors assert `9..=15` while `permessage-deflate` allows `8` — so an
+//! `*_max_window_bits=8` offer is honored as 9, a 512-byte window where the peer asked for 256. That only
+//! costs anything to a client that both offers 8 and cannot inflate 9, which no shipped client does: browsers
+//! never send `server_max_window_bits` at all.
+//!
+//! Byte-for-byte agreement with Node's zlib output is *not* claimed. What `ws` requires of us, and what the
+//! golden checks, is that an RSV1 body inflates to the right text and that the RSV1 *decision* matches.
 
 use flate2::Compression;
 use flate2::Decompress;
 use flate2::FlushCompress;
 use flate2::FlushDecompress;
+use flate2::Status;
 
 /// `ws`'s `TRAILER` (`permessage-deflate.js:10`): the sync marker a receiver appends and a sender drops.
 pub const TRAILER: [u8; 4] = [0x00, 0x00, 0xff, 0xff];
@@ -55,7 +64,7 @@ pub enum Refusal {
     /// `Invalid value for parameter "…_max_window_bits"`, for a non-integer or a value outside 8..=15.
     WindowBits(&'static str),
     /// A `*_no_context_takeover` written as `flag=1` rather than bare.
-    ParameterizedFlag(&'static str),
+    ParameterizedFlag(String),
     /// `server_max_window_bits` with no value at all: `+true` is 1, which fails the same range check.
     BareServerWindowBits,
 }
@@ -152,10 +161,13 @@ pub fn negotiate(header: &str) -> Result<Option<Negotiated>, Refusal> {
 
 /// Split the header into offers of parameters, in order, keeping duplicates visible so `validate` can see
 /// them. Commas separate offers, semicolons separate parameters, and both are allowed to be quoted strings.
-fn offers(header: &str) -> Vec<(String, Vec<Param>)> {
+fn offers(header: &str) -> Vec<(String, Vec<Param<'_>>)> {
     let mut out = Vec::new();
     for offer in split_top(header, ',') {
-        let mut pieces = offer.split(';').map(str::trim).filter(|piece| !piece.is_empty());
+        let mut pieces = offer
+            .split(';')
+            .map(str::trim)
+            .filter(|piece| !piece.is_empty());
         let Some(name) = pieces.next() else { continue };
         let mut params: Vec<Param> = Vec::new();
         for piece in pieces {
@@ -164,7 +176,10 @@ fn offers(header: &str) -> Vec<(String, Vec<Param>)> {
             if key.is_empty() {
                 continue;
             }
-            let value = bits.next().map(|value| unquote(value.trim())).unwrap_or(None);
+            let value = bits
+                .next()
+                .map(|value| unquote(value.trim()))
+                .unwrap_or(None);
             params.push((key, value));
         }
         out.push((name.to_ascii_lowercase(), params));
@@ -196,6 +211,19 @@ fn unquote(value: &str) -> Option<&str> {
     (!trimmed.is_empty()).then_some(trimmed)
 }
 
+/// The window `flate2` will build a stream with. `permessage-deflate` allows 8, the constructors do not, and
+/// the difference is only ratio: see the module's note on `*_max_window_bits=8`.
+#[must_use]
+pub const fn window(bits: u8) -> u8 {
+    if bits < 9 {
+        9
+    } else if bits > 15 {
+        15
+    } else {
+        bits
+    }
+}
+
 /// The 8..=15 check zlib's window bits argument gets, spelled as a number. Out-of-range values never reach
 /// here: `validate` refuses them.
 fn number(value: &str) -> u8 {
@@ -212,7 +240,13 @@ fn validate(params: &[Param]) -> Result<(), Refusal> {
         seen.push(key);
         match *key {
             "client_max_window_bits" | "server_max_window_bits" => {
-                let bits = *key;
+                // Spelled as literals rather than as `*key` so the refusal can hold a `'static` name
+                // instead of a slice of the header the client sent.
+                let bits = if *key == "client_max_window_bits" {
+                    "client_max_window_bits"
+                } else {
+                    "server_max_window_bits"
+                };
                 let Some(value) = value else {
                     // `client_max_window_bits` alone is the browser's offer and is legal; a bare
                     // `server_max_window_bits` is `+true`, i.e. 1, which fails the range.
@@ -227,7 +261,7 @@ fn validate(params: &[Param]) -> Result<(), Refusal> {
             }
             "client_no_context_takeover" | "server_no_context_takeover" => {
                 if value.is_some() {
-                    return Err(Refusal::ParameterizedFlag(*key));
+                    return Err(Refusal::ParameterizedFlag((*key).to_owned()));
                 }
             }
             other => return Err(Refusal::UnknownParameter(other.to_owned())),
@@ -257,15 +291,20 @@ impl Outbound {
             deflate: flate2::Compress::new_with_window_bits(
                 Compression::default(),
                 false,
-                u8::from(agreed.server_max_window_bits),
+                window(agreed.server_max_window_bits),
             ),
             reset_each: agreed.server_no_context_takeover,
         }
     }
 
-    /// Deflate one message and return the bytes to put in an RSV1 frame: the stream up to and including the
-    /// sync flush, minus its trailing marker (`_compress`'s `data.length - 4` when `fin`).
-    pub fn compress(&mut self, text: &[u8]) -> Vec<u8> {
+    /// Deflate a message, or one fragment of a message, and return the bytes to put in an RSV1 frame: the
+    /// stream up to and including the sync flush.
+    ///
+    /// `fin` decides whether the four-byte sync marker survives. `_compress` drops it **only on the last
+    /// frame** (`if (fin) data = data.subarray(0, data.length - 4)`), because on an intermediate fragment the
+    /// marker is stream content the peer's inflater needs. A sender that always dropped it would produce
+    /// fragments the peer cannot inflate, which is what this parameter exists to prevent.
+    pub fn compress(&mut self, text: &[u8], fin: bool) -> Vec<u8> {
         let mut out = Vec::with_capacity(text.len() / 2 + 32);
         // `Sync` flush pushes the whole input through and leaves the stream open for the next message.
         let mut consumed = 0;
@@ -275,11 +314,9 @@ impl Outbound {
             let start = out.len();
             out.resize(start + (text.len() - consumed) + 32, 0);
             let writable = out.len() - start;
-            let _ = self.deflate.compress(
-                &text[consumed..],
-                &mut out[start..],
-                FlushCompress::Sync,
-            );
+            let _ =
+                self.deflate
+                    .compress(&text[consumed..], &mut out[start..], FlushCompress::Sync);
             let made = usize::try_from(self.deflate.total_out() - before_out).unwrap_or(usize::MAX);
             let read = usize::try_from(self.deflate.total_in() - before_in).unwrap_or(usize::MAX);
             out.truncate(start + made.min(writable));
@@ -288,7 +325,7 @@ impl Outbound {
                 break;
             }
         }
-        if out.ends_with(&TRAILER) {
+        if fin && out.ends_with(&TRAILER) {
             out.truncate(out.len() - TRAILER.len());
         }
         if self.reset_each {
@@ -308,7 +345,7 @@ impl Inbound {
     #[must_use]
     pub fn new(agreed: &Negotiated) -> Self {
         Self {
-            inflate: Decompress::new_with_window_bits(false, u8::from(agreed.client_max_window_bits)),
+            inflate: Decompress::new_with_window_bits(false, window(agreed.client_max_window_bits)),
             reset_each: agreed.client_no_context_takeover,
         }
     }
@@ -316,7 +353,9 @@ impl Inbound {
     /// Inflate a compressed frame body. `fin` says whether this was the message's last fragment, which is
     /// when the sync marker is appended (`_decompress`: `if (fin) this._inflate.write(TRAILER)`).
     ///
-    /// `Err(())` is `Fault::NotDeflated`'s material: an RSV1 body that will not inflate is a 1007.
+    /// `Err(())` is `Fault::NotDeflated`'s material: an RSV1 body that will not inflate is a 1007, and
+    /// there is nothing about the failure the caller acts on differently.
+    #[allow(clippy::result_unit_err)]
     pub fn inflate(&mut self, body: &[u8], fin: bool) -> Result<Vec<u8>, ()> {
         let mut out = Vec::with_capacity(body.len() * 2 + 32);
         let mut input = body.to_vec();
@@ -324,6 +363,7 @@ impl Inbound {
             input.extend_from_slice(&TRAILER);
         }
         let mut consumed = 0;
+        let mut ended;
         loop {
             let before_out = self.inflate.total_out();
             let before_in = self.inflate.total_in();
@@ -331,18 +371,27 @@ impl Inbound {
             out.resize(start + (input.len() - consumed) * 4 + 256, 0);
             let room = &mut out[start..];
             let writable = room.len();
-            self.inflate
+            let status = self
+                .inflate
                 .decompress(&input[consumed..], room, FlushDecompress::Sync)
                 .map_err(|_| {})?;
             let made = usize::try_from(self.inflate.total_out() - before_out).unwrap_or(usize::MAX);
             let read = usize::try_from(self.inflate.total_in() - before_in).unwrap_or(usize::MAX);
             out.truncate(start + made.min(writable));
             consumed += read;
-            if consumed >= input.len() {
+            ended = matches!(status, Status::StreamEnd);
+            // A peer that closes its deflate stream per message — which is what `zlib.deflateRawSync`
+            // and every non-browser client of the oracle does — leaves the marker we appended unread,
+            // because nothing can be inflated past a finished stream. Staying in the loop on that input
+            // is a hang, and the four bytes are ours rather than the peer's, so they are not a fault.
+            if ended || consumed >= input.len() || (read == 0 && made == 0) {
                 break;
             }
         }
-        if self.reset_each && fin {
+        // A finished stream cannot be resumed, so the next message starts a new one whether or not
+        // takeover was agreed; `reset_each` is the same reset for the takeover case, where the peer's
+        // stream stays open instead.
+        if ended || (self.reset_each && fin) {
             self.inflate.reset(false);
         }
         Ok(out)
@@ -359,7 +408,10 @@ mod tests {
         let cases = [
             ("", None),
             (EXTENSION, Some(EXTENSION)),
-            ("permessage-deflate; client_max_window_bits", Some(EXTENSION)),
+            (
+                "permessage-deflate; client_max_window_bits",
+                Some(EXTENSION),
+            ),
             (
                 "permessage-deflate; client_max_window_bits=10",
                 Some("permessage-deflate; client_max_window_bits=10"),
@@ -380,7 +432,10 @@ mod tests {
                 "permessage-deflate; server_no_context_takeover, foo",
                 Some("permessage-deflate; server_no_context_takeover"),
             ),
-            ("permessage-deflate; client_max_window_bits, foo", Some(EXTENSION)),
+            (
+                "permessage-deflate; client_max_window_bits, foo",
+                Some(EXTENSION),
+            ),
             ("foo; bar=1", None),
         ];
         for (offer, answer) in cases {
@@ -401,9 +456,7 @@ mod tests {
             Err(Refusal::UnknownParameter("foo".to_owned()))
         );
         assert_eq!(
-            negotiate(
-                "permessage-deflate; client_no_context_takeover; client_no_context_takeover"
-            ),
+            negotiate("permessage-deflate; client_no_context_takeover; client_no_context_takeover"),
             Err(Refusal::RepeatedParameter(
                 "client_no_context_takeover".to_owned()
             ))
@@ -429,14 +482,44 @@ mod tests {
         );
         // Which is the rule that makes every answer compressed, at any size.
         assert!(agreed.compresses(63));
-        assert!(!Negotiated {
-            answer: String::new(),
-            server_no_context_takeover: true,
-            client_no_context_takeover: false,
-            server_max_window_bits: 15,
-            client_max_window_bits: 15,
+        assert!(
+            !Negotiated {
+                answer: String::new(),
+                server_no_context_takeover: true,
+                client_no_context_takeover: false,
+                server_max_window_bits: 15,
+                client_max_window_bits: 15,
+            }
+            .compresses(975)
+        );
+    }
+
+    /// A peer that deflates each message to its end (`zlib.deflateRawSync`, which is what every non-`ws`
+    /// client of the oracle does) leaves no sync marker for the sender to strip, so the four bytes the
+    /// receiver appends can never be read: a finished stream swallows nothing. Insisting on consuming them
+    /// is a hang, and treating the leftover as a fault would refuse a valid message.
+    #[test]
+    fn a_finished_inbound_stream_inflates_and_starts_over() {
+        let agreed = negotiate(EXTENSION).unwrap().unwrap();
+        let mut back = Inbound::new(&agreed);
+        for text in [b"{\"first\":1}".as_slice(), b"{\"second\":2}".as_slice()] {
+            let mut deflate = flate2::Compress::new(Compression::default(), false);
+            let mut body = vec![0; text.len() * 2 + 64];
+            deflate
+                .compress(text, &mut body, FlushCompress::Finish)
+                .expect("a raw deflate stream of this size fits the room given");
+            body.truncate(usize::try_from(deflate.total_out()).unwrap());
+            assert!(
+                !body.ends_with(&TRAILER),
+                "so the frame's body is not a sync-flushed one",
+            );
+            assert_eq!(
+                back.inflate(&body, true)
+                    .expect("a finished stream inflates"),
+                *text,
+                "and the next message of the same connection starts a new stream",
+            );
         }
-        .compresses(975));
     }
 
     /// Round-tripping is the claim the golden's `inflated` field makes in the other direction: a body this
@@ -453,8 +536,8 @@ mod tests {
             server_max_window_bits: 15,
             client_max_window_bits: 15,
         });
-        let first = out.compress(b"{\"_tag\":\"Exit\"}");
-        let second = out.compress(b"{\"_tag\":\"Chunk\",\"values\":[1,2,3]}");
+        let first = out.compress(b"{\"_tag\":\"Exit\"}", true);
+        let second = out.compress(b"{\"_tag\":\"Chunk\",\"values\":[1,2,3]}", true);
         assert!(!first.ends_with(&TRAILER) && !second.ends_with(&TRAILER));
         assert_eq!(back.inflate(&first, true).unwrap(), b"{\"_tag\":\"Exit\"}");
         assert_eq!(
@@ -482,8 +565,8 @@ mod tests {
             server_max_window_bits: 15,
             client_max_window_bits: 15,
         });
-        let first = out.compress(b"aaaa");
-        let second = out.compress(b"aaaa");
+        let first = out.compress(b"aaaa", true);
+        let second = out.compress(b"aaaa", true);
         assert_eq!(back.inflate(&first, true).unwrap(), b"aaaa");
         assert_eq!(back.inflate(&second, true).unwrap(), b"aaaa");
     }

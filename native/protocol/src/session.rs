@@ -32,6 +32,7 @@ use std::collections::BTreeMap;
 
 use crate::envelope::{Cause, Defect, Exit, Id, Message};
 use crate::frame::{Envelope, Frame, invalid_request_id, unknown_request_tag};
+use crate::headers::Pair;
 use crate::json::Syntax;
 
 /// The payload hole of a request, as the rpc's own decoder sees it: `None` is a frame with no
@@ -58,9 +59,14 @@ pub enum Outcome {
 }
 
 /// The handler registered for one tag. A real server's handler decodes the payload and runs effects;
-/// this loop only needs the answer it produces, so a handler is a function from the payload hole to
-/// an [`Outcome`] and nothing else.
-pub type Handler = Box<dyn Fn(&Payload) -> Outcome>;
+/// this loop only needs the answer it produces, so a handler is a function from the payload hole and
+/// the headers the transport handed it to an [`Outcome`] and nothing else.
+///
+/// The second argument is the `options.headers` of `RpcServer.ts`'s request, already through both
+/// steps [`crate::headers`] describes — the upgrade request's pairs prepended, then folded into a
+/// record. A handler that never reads a header ignores it; one that echoes them is answering from the
+/// socket rather than from the frame, which is what `headers.*` measured.
+pub type Handler = Box<dyn Fn(&Payload, &[Pair]) -> Outcome>;
 
 /// The group lookup, `group.requests.get(request.tag)` (`RpcServer.ts:779`). A tag that is not here
 /// is answered per request with `Unknown request tag: <tag>`, which is what makes an unknown tag a
@@ -77,19 +83,23 @@ impl Group {
     }
 
     #[must_use]
-    pub fn on(mut self, tag: &str, handler: impl Fn(&Payload) -> Outcome + 'static) -> Self {
+    pub fn on(
+        mut self,
+        tag: &str,
+        handler: impl Fn(&Payload, &[Pair]) -> Outcome + 'static,
+    ) -> Self {
         self.handlers.insert(tag.to_owned(), Box::new(handler));
         self
     }
 
     #[must_use]
     pub fn returns(self, tag: &str, value: Value) -> Self {
-        self.on(tag, move |_| Outcome::Success(value.clone()))
+        self.on(tag, move |_, _| Outcome::Success(value.clone()))
     }
 
     #[must_use]
     pub fn streams(self, tag: &str, batches: Vec<Vec<Value>>) -> Self {
-        self.on(tag, move |_| Outcome::Stream(batches.clone()))
+        self.on(tag, move |_, _| Outcome::Stream(batches.clone()))
     }
 
     fn lookup(&self, tag: &str) -> Option<&Handler> {
@@ -105,9 +115,7 @@ pub enum Reply {
     Frames(Vec<Message>),
     /// The connection ends, **after** `written` goes out. `ws` writes that as a zero-body close frame
     /// (`8800`), which is why the browser recorded code `1005` and `wasClean: true`.
-    Close {
-        written: Vec<Message>,
-    },
+    Close { written: Vec<Message> },
 }
 
 impl Reply {
@@ -129,6 +137,11 @@ impl Reply {
 /// One connection: the group it serves and the streams waiting on an `Ack`.
 pub struct Session {
     group: Group,
+    /// The upgrade request's headers, which this connection prepends to every `Request` frame before
+    /// its handler runs (`RpcServer.ts:1554`). Empty is not a placeholder: it is what a session driven
+    /// straight from text frames — `tests/session_golden.rs`, and the HTTP rpc path, where the request
+    /// has no socket of its own — hands a handler.
+    socket: Vec<Pair>,
     /// Keyed by the id as the client wrote it, because `requestId` echoes the id's **type** and two
     /// clients can number the same request differently (`7` and `"7"` are not the same key).
     pending: BTreeMap<String, Pending>,
@@ -152,6 +165,18 @@ impl Session {
     pub fn new(group: Group) -> Self {
         Self {
             group,
+            socket: Vec::new(),
+            pending: BTreeMap::new(),
+        }
+    }
+
+    /// The same loop over a connection that finished a handshake, which is the only difference a
+    /// handler can see: the pairs [`crate::http::Request::handler_headers`] read out of the upgrade.
+    #[must_use]
+    pub fn upgraded(group: Group, socket: Vec<Pair>) -> Self {
+        Self {
+            group,
+            socket,
             pending: BTreeMap::new(),
         }
     }
@@ -205,9 +230,9 @@ impl Session {
     /// group. The order is the order of the answers, so a request with a bad id *and* no headers
     /// closes instead of refusing.
     fn request(&mut self, request: &crate::envelope::Request, out: &mut Vec<Message>) -> bool {
-        if request.headers.is_none() {
+        let Some(frame_headers) = request.headers.as_ref() else {
             return true;
-        }
+        };
         if !request.id.is_valid() {
             out.push(text_defect(&invalid_request_id(&request.id)));
             return false;
@@ -217,7 +242,8 @@ impl Session {
             out.push(exit(&request.id, Outcome::Died(unknown_request_tag(&key))));
             return false;
         };
-        self.answer(&request.id, handler(&request.payload), out);
+        let seen = crate::headers::seen_by_handler(&self.socket, frame_headers);
+        self.answer(&request.id, handler(&request.payload, &seen), out);
         false
     }
 
@@ -355,7 +381,7 @@ impl From<&Syntax> for Defect {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     fn group() -> Group {
@@ -363,12 +389,12 @@ mod tests {
             .returns("voidSuccess", Value::Null)
             .returns("emptyInEmptyOut", Value::Object(serde_json::Map::new()))
             .returns("scalarSuccess", Value::String("plain string".to_owned()))
-            .on("typedFail", |_| {
+            .on("typedFail", |_, _| {
                 Outcome::Typed(
                     serde_json::from_str(r#"{"_tag":"ProtocolGoldenError","why":"no"}"#).unwrap(),
                 )
             })
-            .on("noError", |_| Outcome::Broadcast("boom".to_owned()))
+            .on("noError", |_, _| Outcome::Broadcast("boom".to_owned()))
             .streams("batchedStream", vec![vec![row(1), row(2), row(3)]])
             .streams("splitStream", vec![vec![row(1)], vec![row(2)]])
     }
@@ -398,6 +424,39 @@ mod tests {
 
     fn frames(reply: Reply) -> Vec<String> {
         frames_of(reply.frames().to_vec())
+    }
+
+    /// The headers a handler was handed, echoed back as the success value. The loop itself never reads
+    /// a name, so the echo is the only way to see the list it built — and it passes a list value
+    /// through rather than joining it, which is the `Symbol.iterator` branch of `fromInput`.
+    pub(crate) fn echo(_: &Payload, seen: &[Pair]) -> Outcome {
+        let pairs: Vec<Value> = seen
+            .iter()
+            .map(|(name, value)| {
+                Value::Array(vec![
+                    Value::String(name.clone()),
+                    match value {
+                        crate::headers::Value::Text(text) => Value::String(text.clone()),
+                        crate::headers::Value::Many(values) => Value::Array(
+                            values
+                                .iter()
+                                .map(|text| Value::String(text.clone()))
+                                .collect(),
+                        ),
+                    },
+                ])
+            })
+            .collect();
+        let mut out = serde_json::Map::new();
+        out.insert("pairs".to_owned(), Value::Array(pairs));
+        Outcome::Success(Value::Object(out))
+    }
+
+    fn socket_pair(name: &str, value: &str) -> Pair {
+        (
+            name.to_owned(),
+            crate::headers::Value::Text(value.to_owned()),
+        )
     }
 
     fn frames_of(messages: Vec<Message>) -> Vec<String> {
@@ -434,7 +493,7 @@ mod tests {
             vec![r#"{"_tag":"Defect","defect":"boom"}"#]
         );
         // A die the schema layer produced does answer the request, and carries no requestId.
-        let mut schema = Session::new(Group::new().on("nested", |_| {
+        let mut schema = Session::new(Group::new().on("nested", |_, _| {
             Outcome::Died("Expected string\n  at [\"name\"]".to_owned())
         }));
         assert_eq!(
@@ -503,9 +562,7 @@ mod tests {
         assert!(reply.closes());
         assert_eq!(
             frames(reply),
-            vec![
-                r#"{"_tag":"Exit","requestId":9223,"exit":{"_tag":"Success","value":null}}"#
-            ]
+            vec![r#"{"_tag":"Exit","requestId":9223,"exit":{"_tag":"Success","value":null}}"#]
         );
         // The same `null` first is the same close with nothing to flush.
         let mut session = Session::new(group());
@@ -632,6 +689,51 @@ mod tests {
         assert_eq!(
             frames_of(session.end(&number(7))),
             vec![r#"{"_tag":"Exit","requestId":7,"exit":{"_tag":"Success","value":null}}"#]
+        );
+    }
+
+    /// `headers.*` on the wire, claimed about the loop alone so it runs without the recorded artifact:
+    /// the upgrade request's pairs are **prepended**, a name both lists carry keeps the socket's slot
+    /// and the frame's value, and a second request reads the same socket list rather than an
+    /// accumulated one.
+    #[test]
+    fn a_handler_is_handed_the_upgrade_headers_with_the_frames_own_after_them() {
+        let mut session = Session::upgraded(
+            Group::new().on("seenHeaders", echo),
+            vec![
+                socket_pair("host", "127.0.0.1"),
+                socket_pair("x-probe", "upgrade"),
+                (
+                    "set-cookie".to_owned(),
+                    crate::headers::Value::Many(vec!["a=1".to_owned(), "b=2".to_owned()]),
+                ),
+            ],
+        );
+        assert_eq!(
+            frames(session.receive(&request(
+                r#""id":9500,"tag":"seenHeaders","payload":{},"headers":[["x-probe","frame"],["tail","2"]]"#
+            ))),
+            vec![
+                r#"{"_tag":"Exit","requestId":9500,"exit":{"_tag":"Success","value":{"pairs":[["host","127.0.0.1"],["x-probe","frame"],["set-cookie",["a=1","b=2"]],["tail","2"]]}}}"#
+            ]
+        );
+        // The same socket, read again with nothing on the frame: the pair the frame overwrote is back
+        // to the upgrade's own value, which is what `headers.twice` measured.
+        assert_eq!(
+            frames(session.receive(&request(
+                r#""id":9501,"tag":"seenHeaders","payload":{},"headers":[]"#
+            ))),
+            vec![
+                r#"{"_tag":"Exit","requestId":9501,"exit":{"_tag":"Success","value":{"pairs":[["host","127.0.0.1"],["x-probe","upgrade"],["set-cookie",["a=1","b=2"]]]}}}"#
+            ]
+        );
+        // A connection that never handshook has nothing to prepend.
+        let mut plain = Session::new(Group::new().on("seenHeaders", echo));
+        assert_eq!(
+            frames(plain.receive(&call("9502", "seenHeaders"))),
+            vec![
+                r#"{"_tag":"Exit","requestId":9502,"exit":{"_tag":"Success","value":{"pairs":[]}}}"#
+            ]
         );
     }
 }

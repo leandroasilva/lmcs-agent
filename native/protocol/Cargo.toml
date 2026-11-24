@@ -14,7 +14,24 @@ serde_json = { version = "1.0.154", features = ["float_roundtrip", "preserve_ord
 # `Sec-WebSocket-Accept`, raw-deflate for `permessage-deflate`.
 sha1_smol = "1.0.1"
 base64 = "0.22.1"
-flate2 = { version = "1.1.11", default-features = false, features = ["rust_backend"] }
+# `zlib-rs` and not the default `rust_backend` because miniz_oxide ignores `window_bits` in both
+# directions (`flate2::ffi::miniz_oxide::make` takes `_window_bits`), so a `server_max_window_bits`
+# the client offered would be echoed and then broken. zlib-rs is pure Rust, so Linux and macOS build
+# the same way.
+flate2 = { version = "1.1.11", default-features = false, features = ["zlib-rs"] }
+# `wsTicket` is an HMAC-SHA256 over the claim text (`auth/utils.ts:92-94`), so the digest the transport
+# already needs is also the one the credential needs. There is no `hmac` crate in the offline registry,
+# which is why `auth::hmac_sha256` is written out over this rather than imported.
+sha2 = "0.10.9"
+
+[dev-dependencies]
+# The transport golden replays a capture whose large answers are recorded as a digest rather than as
+# bytes, because 2 MiB of `"aaaa…"` in a golden is a file nobody reads. Reproducing that digest is the
+# only way to compare them, and it is sha256, which is what `upgrade-golden.ts` hashes with.
+# Large **inputs** are stored deflated and base64'd so the artifact stays readable; these two decode
+# them. Both are already dependencies of the crate, so this adds nothing to the shipped build.
+flate2 = { version = "1.1.11", default-features = false, features = ["zlib-rs"] }
+base64 = "0.22.1"
 
 [profile.release]
 codegen-units = 1

@@ -6,12 +6,13 @@
 //! `RpcSerialization.ts:126-132` (decode), the message literals in `RpcClient.ts:374-386` and
 //! `RpcServer.ts:660-726`, and the `RpcMessage` union at `RpcMessage.ts:438-472`.
 //!
-//! Two layers live here: the **envelope** (`envelope`, `frame`, `json`, `coerce`) and the **switch**
-//! a connection runs over it (`session`). Both are group-independent in the sense that matters:
-//! neither knows what an rpc is, what its payload schema expects, or which socket it came from. The
-//! schemas belong to `native/contracts` and the socket belongs above this crate, and keeping them
-//! out is what makes the byte order and the routing testable without a runtime — `session` takes a
-//! `&str` and returns the messages to write, which is why the golden replays a whole connection,
+//! Two halves live here: the **envelope** (`envelope`, `frame`, `json`, `coerce`) and the
+//! **connection** (`session`, `websocket`, `deflate`, `http`, `transport`, `auth`, `scopes`). Both are
+//! group-independent in the sense that matters: neither knows what an rpc is, what its payload schema
+//! expects, or which socket it came from. The schemas belong to `native/contracts` and the socket
+//! belongs above this crate, and keeping them out is what makes the byte order and the routing
+//! testable without a runtime — `session` takes a `&str` and returns the messages to write, and
+//! `transport` takes bytes and returns bytes, which is why the goldens replay whole connections,
 //! scenario by scenario, inside a test.
 //!
 //! Three things the port cannot get from a schema and had to measure, each of them a claim the
@@ -26,16 +27,45 @@
 //!   code *touches* is what fails, so the failure strings are `String(value)` renderings of
 //!   whatever the client sent — including the empty string a `[]` id becomes.
 //!
-//! *Evidence:* `apps/server/scripts/protocol-golden.ts`, run twice and compared with `cmp`. The
-//! recorded text is the specification; this crate is expected to reproduce it from the bytes alone.
+//! The transport half adds a fourth: **a teardown and a fault are different endings.** The protocol's
+//! own `8800` leaves TCP open; a close the client sent, and every framing fault, FINs. No reading of
+//! the RFC produces that, so `http`/`websocket`/`deflate`/`transport` are pinned by
+//! `apps/server/scripts/upgrade-golden.ts` instead.
+//!
+//! The credential half adds a fifth, and it is the one an attacker reaches: **there are two base64url
+//! decoders in this path and they disagree** (`auth`), and a refusal's text is decided by which of two
+//! error unions a branch belongs to (`scopes`). Both are pinned by
+//! `apps/server/scripts/auth-golden.ts`.
+//!
+//! *Evidence:* `apps/server/scripts/protocol-golden.ts`, `apps/server/scripts/upgrade-golden.ts` and
+//! `apps/server/scripts/auth-golden.ts`, each run twice and compared with `cmp`. The recorded text is
+//! the specification; this crate is expected to reproduce it from the bytes alone.
 
+pub mod auth;
 pub mod coerce;
+pub mod deflate;
 pub mod envelope;
 pub mod frame;
+pub mod headers;
+pub mod http;
 pub mod json;
+pub mod scopes;
 pub mod session;
+pub mod transport;
+pub mod websocket;
 
+pub use auth::{
+    Claims, Denial, PayloadError, Stored, StoredSession, Verified, authenticate_upgrade, mint,
+    sign_payload, verify,
+};
+pub use deflate::{Negotiated, negotiate};
 pub use envelope::{Cause, Defect, Exit, Headers, Id, Message, Request, Trace};
 pub use frame::{Envelope, Frame, invalid_request_id, unknown_request_tag};
+pub use http::{Denied, accept, query_param, refuse, routed, upgrade};
 pub use json::{Syntax, parse, stringify};
+pub use scopes::{
+    RPC_REQUIRED_SCOPES, UndeclaredScope, authorization_error, grants, required_scope,
+    required_scope_for_device_list,
+};
 pub use session::{Group, Handler, Outcome, Payload, Reply, Session};
+pub use transport::{Connection, Output};

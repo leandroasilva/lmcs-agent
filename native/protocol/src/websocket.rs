@@ -45,6 +45,11 @@ pub enum Violation {
     CloseHalfCode,
     /// A client frame with the mask bit clear (`client.closeNoMask`, `client.unmasked`).
     Unmasked,
+    /// A continuation with no message open, or a second data frame while one is incomplete. Both are
+    /// `ws`'s "Invalid opcode" and "cannot overlap data frames" respectively, and only a state machine
+    /// can see them, so [`crate::transport`] raises them.
+    ContinuationWithoutFrame,
+    OverlappingData,
     /// A 64-bit length above 2^53-1, which `ws` cannot represent and so refuses rather than allocate.
     BeyondSafeInteger,
 }
@@ -60,7 +65,9 @@ impl Violation {
             | Self::ControlFragmented
             | Self::ControlTooLong
             | Self::CloseHalfCode
-            | Self::Unmasked => 1002,
+            | Self::Unmasked
+            | Self::ContinuationWithoutFrame
+            | Self::OverlappingData => 1002,
         }
     }
 }
@@ -118,9 +125,9 @@ pub enum Read {
 /// Read a head, applying the checks `ws` performs in the order it performs them.
 ///
 /// Sequencing rules that need connection state — a continuation with no message open, a second data frame
-/// while one is incomplete — live in [`crate::transport`], which reports the same 1002 for them. The order
-/// matters only where two codes could apply to one frame; every head fault shares 1002, so the ordering
-/// here is `ws`'s for the reason strings' sake rather than the wire's.
+/// while one is incomplete — are detected in [`crate::transport`], which raises the last two variants here
+/// for the same 1002. The order matters only where two codes could apply to one frame; every head fault
+/// shares 1002, so the ordering here is `ws`'s for the reason strings' sake rather than the wire's.
 #[must_use]
 pub fn read_head(bytes: &[u8], negotiating: bool) -> Read {
     if bytes.len() < 2 {
@@ -212,7 +219,7 @@ pub fn unmask(payload: &mut [u8], mask: [u8; 4]) {
 fn length_bytes(len: u64) -> Vec<u8> {
     match len {
         0..=125 => vec![u8::try_from(len).expect("a 7-bit length fits")],
-        126..=u64::from(u16::MAX) => {
+        126..=65_535 => {
             let mut out = vec![126];
             out.extend(u16::try_from(len).expect("16 bits").to_be_bytes());
             out
@@ -230,7 +237,9 @@ fn length_bytes(len: u64) -> Vec<u8> {
 pub fn encode(opcode: u8, payload: &[u8], compressed: bool) -> Vec<u8> {
     let mut out = Vec::with_capacity(payload.len() + 10);
     out.push(if compressed { 0xc0 } else { 0x80 } | opcode);
-    out.extend(length_bytes(u64::try_from(payload.len()).expect("a Rust usize fits")));
+    out.extend(length_bytes(
+        u64::try_from(payload.len()).expect("a Rust usize fits"),
+    ));
     out.extend_from_slice(payload);
     out
 }
@@ -261,15 +270,15 @@ pub const fn is_acceptable_close(code: u16) -> bool {
 #[must_use]
 pub fn close(code: Option<u16>, reason: &[u8]) -> Vec<u8> {
     let Some(code) = code else {
-        return encode(CLOSE, &[]);
+        return encode(CLOSE, &[], false);
     };
     if !is_acceptable_close(code) {
-        return encode(CLOSE, &1002u16.to_be_bytes());
+        return encode(CLOSE, &1002u16.to_be_bytes(), false);
     }
     let mut payload = Vec::with_capacity(2 + reason.len());
     payload.extend(code.to_be_bytes());
     payload.extend_from_slice(reason);
-    encode(CLOSE, &payload)
+    encode(CLOSE, &payload, false)
 }
 
 /// A fault's answer on the wire: two bytes of code and no reason.
@@ -279,7 +288,7 @@ pub fn close(code: Option<u16>, reason: &[u8]) -> Vec<u8> {
 /// payload.
 #[must_use]
 pub fn refuse(fault: Fault) -> Vec<u8> {
-    encode(CLOSE, &fault.code().to_be_bytes())
+    encode(CLOSE, &fault.code().to_be_bytes(), false)
 }
 
 #[cfg(test)]
@@ -328,8 +337,7 @@ mod tests {
         };
         assert_eq!(head.len, 3);
         assert_eq!(consumed, 14);
-        let mut payload = vec![0, 0, 0];
-        payload.copy_from_slice(&frame[consumed..]);
+        let mut payload = frame[consumed..consumed + 3].to_vec();
         unmask(&mut payload, head.mask);
         assert_eq!(payload, [1, 2, 3]);
     }

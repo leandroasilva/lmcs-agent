@@ -152,12 +152,12 @@ fn group() -> Group {
         .returns("voidSuccess", Value::Null)
         // `Rpc.make` without a `payload` is `Schema.Void`, which is what makes `payload:null` the
         // correct wire value and an absent key a decoder failure.
-        .on("scalarSuccess", |payload| match payload {
+        .on("scalarSuccess", |payload, _| match payload {
             Some(Value::Null) => Outcome::Success(Value::String("plain string".to_owned())),
             _ => Outcome::Died(DECODER.to_owned()),
         })
-        .on("nested", nested)
-        .on("typedFail", |_| {
+        .on("nested", |payload, _| nested(payload))
+        .on("typedFail", |_, _| {
             Outcome::Typed(
                 serde_json::from_str(r#"{"_tag":"ProtocolGoldenError","why":"no"}"#)
                     .expect("the recorded error hole"),
@@ -165,7 +165,7 @@ fn group() -> Group {
         })
         // `Effect.die` on an rpc with no declared error never reaches the request: the connection
         // hears it, which is why this is a `Broadcast` and not a `Died`.
-        .on("noError", |_| Outcome::Broadcast("boom".to_owned()))
+        .on("noError", |_, _| Outcome::Broadcast("boom".to_owned()))
         .streams("batchedStream", vec![vec![row(1), row(2), row(3)]])
         .streams("splitStream", vec![vec![row(1)], vec![row(2)]])
         .returns("idle", Value::Object(Map::new()))

@@ -21,9 +21,11 @@
 //   - the upgrade request is written here with the RFC 6455 example key (whose accept value is a
 //     constant, so the artifact asserts `base64(sha1(key + GUID))` without computing anything) and a
 //     fixed client mask key, so even the bytes this file *sends* are reproducible;
-//   - every frame is recorded with its raw header bytes, FIN, RSV1, opcode, mask bit, the length field
-//     it used, and the payload as text when small, as a digest when large, and for a compressed frame
-//     as both what crossed and what it inflates to;
+//   - every frame is recorded with its raw header bytes, FIN, RSV1, opcode, mask bit, and the length
+//     field it used. What the port **receives** is kept losslessly (as text, as hex when it is not text,
+//     deflated when large, or as compressed bytes) because a golden a port cannot feed back in measures
+//     nothing; what the server **answers** is kept as text while short and as a digest when it is not,
+//     since those bytes are the measurement rather than an input;
 //   - a close is recorded as a frame carrying its code and reason, plus an event saying whether the
 //     peer then sent FIN, because `close(1005)` and `FIN with nothing` are different servers.
 //
@@ -160,9 +162,32 @@ const OPCODES: Record<number, string> = {
 
 const DEFINED = "permessage-deflate; client_max_window_bits";
 
+/**
+ * The header pairs every scenario's upgrade writes, in the order the client writes them and as
+ * `IncomingMessage.headers` lowercases them. A case that adds a header adds it after these, which is
+ * the claim the `headers.*` scenarios assert: what a handler is handed starts here.
+ */
+const BASE_PAIRS: Array<[string, string]> = [
+  ["host", "127.0.0.1"],
+  ["upgrade", "websocket"],
+  ["connection", "Upgrade"],
+  ["sec-websocket-key", "dGhlIHNhbXBsZSBub25jZQ=="],
+  ["sec-websocket-version", "13"],
+];
+
+/** What `seenHeaders` answers given the pairs a handler was handed. */
+const pairsOf = (...extra: Array<[string, string]>) => ({ pairs: [...BASE_PAIRS, ...extra] });
+
 /** What the server writes for `plain`, at the given id: the exact bytes, to be compared with them. */
 const exitOf = (id: number, value: unknown) =>
   `{"_tag":"Exit","requestId":${id},"exit":{"_tag":"Success","value":${JSON.stringify(value)}}}`;
+/**
+ * A request answered `Failure`/`Die` because the rpc's own success schema could not encode what the
+ * handler returned. `Headers.ts` keeps a `set-cookie` list unjoined, so a handler that echoes pairs
+ * hands the schema a list and the schema says exactly this (`headers.setCookie`).
+ */
+const dieOf = (id: number, path: string) =>
+  `{"_tag":"Exit","requestId":${id},"exit":{"_tag":"Failure","cause":[{"_tag":"Die","defect":${JSON.stringify(`Expected string\n  at ${path}`)}}]}}`;
 const sha = (data: Buffer | string) =>
   crypto
     .createHash("sha256")
@@ -310,7 +335,9 @@ type RecordedFrame = {
   // `| undefined` throughout: this file writes what a measurement found, so "no close code" and "no
   // payload recorded" are both real states rather than a missing key to be distinguished from a present one.
   readonly payload?: string | undefined;
+  readonly payloadHex?: string | undefined;
   readonly payloadSha?: string | undefined;
+  readonly payloadZlib?: string | undefined;
   readonly wireHex?: string | undefined;
   readonly inflatedBytes?: number | undefined;
   readonly inflatedSha?: string | undefined;
@@ -328,6 +355,11 @@ type RecordedEvent = {
   readonly headers?: Array<[string, string]> | undefined;
   readonly body?: string | undefined;
   readonly detail?: string | undefined;
+  /**
+   * The upgrade request as it was written, so a port replays **this** handshake rather than one it
+   * reconstructed from the scenario's name. Only the two handshake events carry it.
+   */
+  readonly request?: string | undefined;
 };
 
 const frames: Array<RecordedFrame> = [];
@@ -382,7 +414,9 @@ const describeFrame = (input: FrameInput): RecordedFrame => {
     const inflated = input.inflated ?? {};
     const record = {
       ...base,
-      wireHex: shown.length <= RAW_LIMIT ? shown.toString("hex") : undefined,
+      // A sent frame stays replayable whatever its size; an answer is shown as bytes only while a
+      // human can read them.
+      wireHex: direction === "c2s" || shown.length <= RAW_LIMIT ? shown.toString("hex") : undefined,
       inflateError: inflated.error,
     };
     if (inflated.bytes === undefined) return record;
@@ -394,7 +428,22 @@ const describeFrame = (input: FrameInput): RecordedFrame => {
       ...(plain.length <= INLINE_LIMIT ? { inflated: plain.toString("utf8") } : {}),
     };
   }
-  if (shown.length > INLINE_LIMIT) return { ...base, payloadSha: sha(shown) };
+  if (shown.length > INLINE_LIMIT) {
+    // An **input** has to survive being big: the length-field boundaries and the compression threshold
+    // are exactly the cases whose request is 4 KB or 100 KB, and a Rust port cannot rebuild one from a
+    // digest. So the payload is kept losslessly, deflated. Answers are still reduced to a digest,
+    // because there the bytes on the wire are the measurement rather than something to feed back in.
+    return {
+      ...base,
+      payloadSha: sha(shown),
+      ...(direction === "c2s" ? { payloadZlib: zlib.deflateSync(shown).toString("base64") } : {}),
+    };
+  }
+  if (direction === "c2s" && !Buffer.from(shown.toString("utf8"), "utf8").equals(shown)) {
+    // Payloads are shown as text because that is what a frame carries, except for the ones that are not
+    // text: `toString("utf8")` would replace the exact bytes the server is being measured rejecting.
+    return { ...base, payloadHex: shown.toString("hex") };
+  }
   return { ...base, payload: shown.toString("utf8") };
 };
 
@@ -591,8 +640,14 @@ const spelledNames = () => {
   return [...names].sort();
 };
 
-const requestFrame = (id: number, tag: string, payload?: unknown) =>
-  `{"_tag":"Request","id":${id},"tag":"${tag}","payload":${JSON.stringify(payload ?? {})},"headers":[]}`;
+const requestFrame = (
+  id: number,
+  tag: string,
+  payload?: unknown,
+  headers?: Array<readonly [string, string]>,
+) =>
+  `{"_tag":"Request","id":${id},"tag":"${tag}","payload":${JSON.stringify(payload ?? {})},` +
+  `"headers":${JSON.stringify(headers ?? [])}}`;
 
 const closeBytes = (code?: number, reason?: string) => {
   if (code === undefined) return encodeFrame(8, Buffer.alloc(0));
@@ -615,6 +670,12 @@ type Expect = {
   /** Exact text expected for a given frame index, uncompressed or after inflation. */
   readonly answer?: string;
   readonly answerSha?: string;
+  /**
+   * Exact text for every answer frame, by index. `answer` can only ever speak of one, which is fine
+   * while every case answers once — the header cases are the ones that ask a question of **two**
+   * requests on one socket, and "the injection accumulated" is a claim only a second answer can make.
+   */
+  readonly answers?: Array<string>;
   /**
    * Exact on-wire payload length of the single answer frame. Used only where the length **is** the
    * claim, i.e. the length-field boundaries, since a case that answers 127 bytes does not pin what
@@ -696,9 +757,10 @@ const exchange = (scenario: Scenario, port: number) =>
           ),
           body: body.toString("utf8").slice(0, 2048),
           detail: head.complete ? undefined : "head never ended before the deadline",
+          request: wire,
         });
       } else {
-        events.push({ case: name, event: "upgrade", statusLine, headers });
+        events.push({ case: name, event: "upgrade", statusLine, headers, request: wire });
         for (const frame of scenario.send ?? []) {
           if (frame.settleBeforeMs !== undefined) {
             // Writing the next frame only once the wire has gone quiet is what a real client does: it
@@ -1032,7 +1094,19 @@ const SCENARIOS: Array<Scenario> = [
     name: "headers.injected",
     upgradeExtra: deflateOffer(["X-Probe: one", "Cookie: lmcs_probe=value"]),
     send: [{ label: "seen", bytes: encodeFrame(1, utf8(requestFrame(9010, "seenHeaders"))) }],
-    expect: { upgraded: true, c2s: 1, s2c: 1 },
+    expect: {
+      upgraded: true,
+      c2s: 1,
+      s2c: 1,
+      answer: exitOf(
+        9010,
+        pairsOf(
+          ["sec-websocket-extensions", DEFINED],
+          ["x-probe", "one"],
+          ["cookie", "lmcs_probe=value"],
+        ),
+      ),
+    },
   },
   {
     name: "headers.repeated",
@@ -1041,7 +1115,74 @@ const SCENARIOS: Array<Scenario> = [
     // pair, comma-joined, not two.
     upgradeExtra: ["X-Probe: one", "X-Probe: two"],
     send: [{ label: "seen", bytes: encodeFrame(1, utf8(requestFrame(9011, "seenHeaders"))) }],
-    expect: { upgraded: true, c2s: 1, s2c: 1 },
+    expect: {
+      upgraded: true,
+      c2s: 1,
+      s2c: 1,
+      answer: exitOf(9011, pairsOf(["x-probe", "one, two"])),
+    },
+  },
+  {
+    name: "headers.ordered",
+    // The frame carries its own `x-probe`. `RpcServer.ts:1554` is `headers.concat(message.headers)`,
+    // so the upgrade's pair comes **first** and the duplicate survives as a second entry rather than
+    // overriding anything — a port that appends, or that deduplicates by name, answers a different
+    // list.
+    upgradeExtra: ["X-Probe: upgrade"],
+    send: [
+      {
+        label: "seen",
+        bytes: encodeFrame(
+          1,
+          utf8(
+            requestFrame(9012, "seenHeaders", undefined, [
+              ["x-probe", "frame"],
+              ["tail", "2"],
+            ]),
+          ),
+        ),
+      },
+    ],
+    expect: {
+      upgraded: true,
+      c2s: 1,
+      s2c: 1,
+      // The upgrade's `x-probe` is gone and its **slot** is taken by the frame's value: the record
+      // keeps the position of the first write and the value of the last.
+      answer: exitOf(9012, pairsOf(["x-probe", "frame"], ["tail", "2"])),
+    },
+  },
+  {
+    name: "headers.setCookie",
+    // `IncomingMessage.headers` keeps `set-cookie` as an **array**, so what reaches the concat is a
+    // pair whose value is not a string. Whether that answers, answers oddly, or takes the connection
+    // down is the whole reason this case exists.
+    upgradeExtra: ["Set-Cookie: a=1", "Set-Cookie: b=2"],
+    send: [{ label: "seen", bytes: encodeFrame(1, utf8(requestFrame(9013, "seenHeaders"))) }],
+    // The defect is the success schema's, and the index is the position `set-cookie` held: the pair
+    // list reached the handler with a **list** in it, and the connection survived to prove the failure
+    // belongs to one request.
+    expect: { upgraded: true, c2s: 1, s2c: 1, answer: dieOf(9013, '["value"]["pairs"][5][1]') },
+  },
+  {
+    name: "headers.twice",
+    // Two requests, one socket. The injection creates a new array per message, so the second handler
+    // sees the same list the first did; a port that writes the injected pairs back into stored state
+    // answers this one with them **twice**.
+    upgradeExtra: ["X-Probe: one"],
+    send: [
+      { label: "first", bytes: encodeFrame(1, utf8(requestFrame(9014, "seenHeaders"))) },
+      { label: "second", bytes: encodeFrame(1, utf8(requestFrame(9015, "seenHeaders"))) },
+    ],
+    expect: {
+      upgraded: true,
+      c2s: 2,
+      s2c: 2,
+      answers: [
+        exitOf(9014, pairsOf(["x-probe", "one"])),
+        exitOf(9015, pairsOf(["x-probe", "one"])),
+      ],
+    },
   },
 
   // --- framing of the answers -------------------------------------------
@@ -1850,6 +1991,17 @@ const check = (): Array<string> => {
         `${scenario.name}: ${answers.length} answer frames, expected ${scenario.expect.s2c}`,
       );
     }
+    if (scenario.expect.answers !== undefined) {
+      // Ordered, per-frame claim for the cases that answer more than once.
+      scenario.expect.answers.forEach((want, index) => {
+        const got = answers[index]?.payload ?? answers[index]?.inflated;
+        if (got !== want) {
+          out.push(
+            `${scenario.name}: answer #${index} was ${JSON.stringify(got)?.slice(0, 200)}, expected ${want.slice(0, 200)}`,
+          );
+        }
+      });
+    }
     if (answers.length === 1) {
       // One answer frame is a claim about content as well as count: either the plain payload or what the
       // compressed payload inflates to has to be exactly what the protocol layer wrote.
@@ -1924,6 +2076,23 @@ const check = (): Array<string> => {
     )
     .map((f) => f.case);
   if (unreadable.length > 0) out.push(`text answer(s) with no recorded content: ${unreadable}`);
+
+  // The mirror-image claim: **inputs** must be more than readable, they must be rebuildable byte for
+  // byte, or the transport golden has nothing to feed its connection. `headerHex` carries the mask key,
+  // so one of these three fields is the whole payload.
+  const unreplayable = frames
+    .filter((f) => f.direction === "c2s")
+    .filter(
+      (f) =>
+        f.payload === undefined &&
+        f.payloadHex === undefined &&
+        f.payloadZlib === undefined &&
+        f.wireHex === undefined &&
+        f.closeHex === undefined,
+    )
+    .map((f) => [f.case, f.payloadBytes]);
+  if (unreplayable.length > 0)
+    out.push(`sent frame(s) no port can rebuild: ${JSON.stringify(unreplayable)}`);
 
   // ---------------------------------------------------------------- compression
   //
