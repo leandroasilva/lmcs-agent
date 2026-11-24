@@ -51,6 +51,7 @@ import * as NodeHttp from "node:http";
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as crypto from "node:crypto";
+import { writeSync } from "node:fs";
 import * as net from "node:net";
 import * as zlib from "node:zlib";
 
@@ -169,6 +170,10 @@ const sha = (data: Buffer | string) =>
     .digest("hex");
 const utf8 = (value: string) => Buffer.from(value, "utf8");
 const repeat = (char: string, length: number) => char.repeat(length);
+// `process.exit()` is called once the run is over, which truncates anything still queued on a piped
+// stdout: the artifact would sometimes come out empty and sometimes whole. A synchronous write does not
+// race the exit.
+const emit = (json: string) => writeSync(1, `${json}\n`);
 
 // Payloads above this are recorded as a digest: 2 MiB of `"aaaa…"` in a golden is a file nobody can
 // read, and the claim about a big payload is its length encoding and its bytes, which the digest plus
@@ -550,12 +555,6 @@ type Expect = {
   readonly s2c: number;
   /** Close frames the server wrote, as `<code>` or `no-code`. */
   readonly closes?: Array<string>;
-  /**
-   * What the peer had done to TCP by the time this probe destroyed its side, e.g. `still open` or
-   * `FIN from peer`. A close frame that ends the WebSocket and a close frame that ends the connection
-   * are different servers, and only this says which.
-   */
-  readonly peer?: string;
   /** Exact text expected for a given frame index, uncompressed or after inflation. */
   readonly answer?: string;
   readonly answerSha?: string;
@@ -585,7 +584,7 @@ type Scenario = {
 };
 
 /** What each case measured, so record mode can print the table this file then asserts on. */
-const measured = new Map<string, Expect & { peerBeforeDestroy: string; tails: number }>();
+const measured = new Map<string, Expect & { peer: string; tails: number }>();
 
 const exchange = (scenario: Scenario, port: number) =>
   Effect.gen(function* () {
@@ -890,9 +889,10 @@ const SCENARIOS: Array<Scenario> = [
   {
     name: "frame.streamDeflated",
     upgradeExtra: deflateOffer(),
-    // The ack is written immediately, before chunk one has arrived: whether the server latches it is
-    // `protocol-golden.ts`'s measurement; here the question is how the two chunks are framed and
-    // whether the second references the first's deflate context.
+    // The Ack written immediately, before chunk one has arrived. Both chunks come back and then the
+    // stream goes silent: **the terminal `Exit` is itself gated behind acknowledging the last chunk**,
+    // so an Ack-owning client that stopped early is what a Rust server has to reproduce, not a bug.
+    // Whether the second chunk references the first's deflate context is the framing question here.
     send: [
       {
         label: "call",
@@ -902,7 +902,7 @@ const SCENARIOS: Array<Scenario> = [
     ],
     settleMs: 900,
     deadlineMs: 7000,
-    expect: { upgraded: true, c2s: 2, s2c: 3 },
+    expect: { upgraded: true, c2s: 2, s2c: 2 },
   },
   {
     name: "frame.streamStaged",
@@ -1180,7 +1180,12 @@ const SCENARIOS: Array<Scenario> = [
     // TCP goes away after it, is what `Reply::Close` cannot express but a Rust socket has to.
     send: [
       { label: "null", bytes: encodeFrame(1, utf8("null")) },
-      { label: "close", bytes: closeBytes(1000, "after"), settleBeforeMs: 400 },
+      {
+        label: "close",
+        bytes: closeBytes(1000, "after"),
+        settleBeforeMs: 400,
+        observe: true,
+      },
     ],
     settleMs: 700,
     expect: { upgraded: true, c2s: 2, s2c: 1, closes: ["no-code"] },
@@ -1256,6 +1261,46 @@ const SCENARIOS: Array<Scenario> = [
   },
 ];
 
+/**
+ * What happened to TCP after the server wrote a close frame, for **every** scenario that got one.
+ *
+ * This is the whole reason the file exists. The server-initiated teardown — the zero-body `8800` the
+ * protocol layer writes when an input cannot be a message — is the only close after which the socket
+ * stays open: `ws` waits for the peer to finish the handshake, which is why the browser saw `1005` and
+ * why a Rust server that hung up after `8800` would look, to every real client, like a dropped
+ * connection. Every close that *completes* a peer-initiated exchange is followed by a FIN — including
+ * the echo of a peer's own codeless close, which is a different server from the one that initiates it.
+ *
+ * `open` and `fin` are read from the probe's own socket after its last read, i.e. as of the moment this
+ * file gave up on the connection. Rejections are not listed: their FIN races that window.
+ */
+const tcpAfterClose: Record<string, "open" | "fin"> = {
+  // --- the server writes `8800` because the protocol layer told it to ----------
+  "teardown.null": "open",
+  "teardown.batchWithNull": "open",
+  "teardown.noHeaders": "open",
+  "teardown.thenCanary": "open",
+  "teardown.stagedThenCanary": "open",
+  "teardown.deflatedNull": "open",
+  "batch.twoThenNull": "open",
+  // ...and the peer's close ends it, which is the half the browser hides.
+  "teardown.thenClientClose": "fin",
+
+  // --- transport errors, and the peer's own close -----------------------------
+  "client.continuationFirst": "fin",
+  "client.unmasked": "fin",
+  "client.rsv1Unoffered": "fin",
+  "client.rsv1OfferedButRaw": "fin",
+  "client.unknownOpcode": "fin",
+  "client.controlTooLong": "fin",
+  "client.closeReserved": "fin",
+  "client.closeBadReason": "fin",
+  "client.closeNoMask": "fin",
+  "client.closeNormal": "fin",
+  "client.requestThenClose": "fin",
+  "client.zeroLengthClose": "fin",
+};
+
 // ---------------------------------------------------------------------------
 // Claims
 // ---------------------------------------------------------------------------
@@ -1264,134 +1309,206 @@ const recordTable = () => {
   const rows = [...measured].map(
     ([name, value]) =>
       `${name.padEnd(32)} upgraded=${String(value.upgraded).padEnd(5)} c2s=${value.c2s} s2c=${value.s2c}` +
-      ` closes=${JSON.stringify(value.closes)} tails=${value.tails} peer=${value.peerBeforeDestroy}`,
+      ` closes=${JSON.stringify(value.closes)} tails=${value.tails} peer=${value.peer}`,
   );
   process.stderr.write(`${rows.join("\n")}\n`);
 };
 
-const check = Effect.sync(() => {
+/**
+ * The exact header list of every refusal, in the order the bytes carry them.
+ *
+ * Two different writers produce them, and a Rust server that merges them is a different byte stream:
+ *
+ *   - `ws` answers its own protocol refusals **straight onto the socket**, so there is no `date`, the
+ *     connection is already closing and the body has a byte-exact `content-length`;
+ *   - a request the *router* never accepts (no `upgrade` header, wrong method, wrong path) goes through
+ *     Node's response pipeline, which stamps `date`, keeps the connection alive and switches the body to
+ *     a chunked encoding — so its body is literally `0\r\n\r\n`, an empty chunked response.
+ */
+const refusalHeaders: Record<string, Array<string>> = {
+  "handshake.missingKey": ["connection", "content-type", "content-length"],
+  "handshake.version7": ["connection", "content-type", "content-length", "sec-websocket-version"],
+  "handshake.noUpgradeHeader": ["date", "connection", "keep-alive", "transfer-encoding"],
+  // The 404s omit the `keep-alive: timeout=5` the 400 carries, which is Node's own decision about a
+  // response whose body it wrote before the handler ran. Pinned because it is byte-stable across runs,
+  // not because the port has to reproduce it: no client reads that header.
+  "handshake.postMethod": ["date", "connection", "transfer-encoding"],
+  "handshake.otherPath": ["date", "connection", "transfer-encoding"],
+};
+
+/**
+ * Claims about what was measured.
+ *
+ * These are **collected, not thrown**. The first version of this file threw from inside an `Effect.sync`
+ * at the end of a scoped run; the defect never reached `runPromise`'s rejection handler, so a broken
+ * assertion exited `0` and printed nothing. An oracle that reports success while failing is worse than no
+ * oracle, so the list is returned and the exit code is derived from its length.
+ */
+const check = (): Array<string> => {
+  const out: Array<string> = [];
   const upgrades = events.filter((e) => e.event === "upgrade");
-  const accepts = upgrades.flatMap((e) =>
-    (e.headers ?? []).filter(([name]) => name === "sec-websocket-accept").map(([, value]) => value),
-  );
-  if (accepts.length !== upgrades.length) {
-    throw new Error(
-      `${upgrades.length - accepts.length} of ${upgrades.length} upgrades answered without Sec-WebSocket-Accept`,
-    );
-  }
-  for (const accept of accepts) {
-    if (accept !== EXPECTED_ACCEPT) {
-      throw new Error(
-        `Sec-WebSocket-Accept was ${accept}, expected ${EXPECTED_ACCEPT} for the RFC 6455 example key`,
-      );
-    }
-  }
 
-  // The `101` is written by the transport straight onto the socket, so it carries no `date`. Every
-  // rejection that goes through the Node response pipeline does. Nothing in the port may rely on the
-  // upgrade response having framework headers.
-  for (const event of [...upgrades, ...events.filter((e) => e.event === "response")]) {
-    const hasDate = (event.headers ?? []).some(([name]) => name === "date");
-    if (hasDate !== (event.event === "response")) {
-      throw new Error(
-        `${event.case}: ${event.event} carried date=${hasDate}, which splits the two write paths`,
-      );
-    }
-  }
-
-  // `permessage-deflate` appears in the response exactly where it was offered, which is a claim about
-  // the negotiation rather than about the frames that followed.
   for (const event of upgrades) {
-    const extensions = (event.headers ?? []).filter(
-      ([name]) => name === "sec-websocket-extensions",
-    );
+    const names = (event.headers ?? []).map(([name]) => name);
+    // Three headers, always in this order, and the `101` is written by the transport rather than by a
+    // response pipeline: it has no `date`, no `server`, nothing a framework would add.
+    if (names.slice(0, 3).join(",") !== "upgrade,connection,sec-websocket-accept") {
+      out.push(`${event.case}: the upgrade answered ${JSON.stringify(names)}`);
+    }
+    if (names.some((name) => name === "date")) {
+      out.push(`${event.case}: the upgrade carried date, which the direct socket write never does`);
+    }
+    for (const extra of names.slice(3)) {
+      if (extra !== "sec-websocket-extensions" && extra !== "sec-websocket-protocol") {
+        out.push(`${event.case}: the upgrade carried an unexpected ${extra}`);
+      }
+    }
+    for (const [name, value] of event.headers ?? []) {
+      if (name === "sec-websocket-accept" && value !== EXPECTED_ACCEPT) {
+        out.push(
+          `${event.case}: Sec-WebSocket-Accept was ${value}, expected ${EXPECTED_ACCEPT} for the RFC 6455 example key`,
+        );
+      }
+      // A negotiated offer must come back naming the extension: `permessage-deflate; foo=bar` echoed
+      // with unknown parameters would mean the server accepted parameters it cannot implement.
+      if (
+        name === "sec-websocket-extensions" &&
+        value.split(";")[0]?.trim() !== "permessage-deflate"
+      ) {
+        out.push(`${event.case}: negotiated ${JSON.stringify(value)} is not permessage-deflate`);
+      }
+    }
+    // `permessage-deflate` appears exactly where it was offered, which is a claim about the negotiation
+    // rather than about the frames that followed.
     const offered = (SCENARIOS.find((s) => s.name === event.case)?.upgradeExtra ?? []).some(
       (line) => line.startsWith("Sec-WebSocket-Extensions:"),
     );
-    if (offered !== (extensions.length === 1)) {
-      throw new Error(
-        `${event.case}: offered=${offered} but the response carried ${JSON.stringify(extensions)}`,
+    const hasExtension = names.includes("sec-websocket-extensions");
+    if (offered !== hasExtension) {
+      out.push(`${event.case}: offered=${offered} but the response carried ${hasExtension}`);
+    }
+  }
+
+  for (const event of events.filter((e) => e.event === "response")) {
+    const expected = refusalHeaders[event.case];
+    const names = (event.headers ?? []).map(([name]) => name);
+    if (expected === undefined) {
+      out.push(`${event.case}: refused with ${JSON.stringify(names)}, which is not listed`);
+      continue;
+    }
+    if (names.join(",") !== expected.join(",")) {
+      out.push(
+        `${event.case}: headers were ${JSON.stringify(names)}, expected ${JSON.stringify(expected)}`,
       );
     }
-    // A negotiated offer must come back naming the extension: `permessage-deflate; foo=bar` echoed
-    // with unknown parameters would mean the server accepted parameters it cannot implement.
-    if (offered && extensions[0]?.[1].split(";")[0]?.trim() !== "permessage-deflate") {
-      throw new Error(
-        `${event.case}: negotiated ${JSON.stringify(extensions[0]?.[1])} is not permessage-deflate`,
+    // The two writers also differ in their body: `content-length` carries text, chunked carries nothing.
+    const chunked = names.includes("transfer-encoding");
+    if (
+      (event.body ?? "") === "" ||
+      (chunked ? event.body !== "0\r\n\r\n" : event.body === "0\r\n\r\n")
+    ) {
+      out.push(
+        `${event.case}: body ${JSON.stringify(event.body)} does not match its ${chunked ? "chunked" : "length-carrying"} writer`,
       );
     }
   }
 
   for (const scenario of SCENARIOS) {
     const got = measured.get(scenario.name);
-    if (got === undefined) throw new Error(`${scenario.name}: never measured`);
+    if (got === undefined) {
+      out.push(`${scenario.name}: never measured`);
+      continue;
+    }
     if (got.upgraded !== scenario.expect.upgraded) {
-      throw new Error(
-        `${scenario.name}: upgraded=${got.upgraded}, expected ${scenario.expect.upgraded}`,
-      );
+      out.push(`${scenario.name}: upgraded=${got.upgraded}, expected ${scenario.expect.upgraded}`);
     }
     if (got.closes.join(",") !== (scenario.expect.closes ?? []).join(",")) {
-      throw new Error(
+      out.push(
         `${scenario.name}: closes were ${JSON.stringify(got.closes)}, expected ${JSON.stringify(scenario.expect.closes ?? [])}`,
       );
     }
-    const out = frames.filter((f) => f.case === scenario.name && f.direction === "s2c");
-    if (out.length !== scenario.expect.s2c) {
-      throw new Error(
-        `${scenario.name}: ${out.length} answer frames, expected ${scenario.expect.s2c}`,
+    if (got.tails !== 0) {
+      out.push(
+        `${scenario.name}: ${got.tails} unparsed tail(s), so the framing here is not fully read`,
       );
     }
-    if (out.length === 1) {
-      // One answer frame is a claim about content as well as count: either the plain payload or what
-      // the compressed payload inflates to has to be exactly what the protocol layer wrote.
-      const plain = out[0]!.payload ?? out[0]!.inflated;
-      const digest = out[0]!.payloadSha ?? out[0]!.inflatedSha;
+    const listed = tcpAfterClose[scenario.name];
+    if (got.closes.length > 0 !== (listed !== undefined)) {
+      // The table is exhaustive on purpose: a case that writes a close belongs in it, and a case that
+      // writes none must not appear, or the rule it encodes silently stops covering anything.
+      out.push(
+        `${scenario.name}: closes ${JSON.stringify(got.closes)} against a TCP entry of ${JSON.stringify(listed ?? null)}`,
+      );
+    } else if (listed !== undefined) {
+      const open = got.peer === "still open";
+      if (open !== (listed === "open")) {
+        out.push(`${scenario.name}: the peer said ${got.peer}, the table says ${listed}`);
+      }
+    } else if (got.upgraded && got.peer !== "still open") {
+      // Nothing else in the whole exchange ends a connection. A server that hangs up after an answer, a
+      // pong or a rejected frame would be caught here rather than by a client reconnecting in a loop.
+      out.push(`${scenario.name}: ${got.peer} on a connection no close frame was written for`);
+    }
+    const answers = frames.filter((f) => f.case === scenario.name && f.direction === "s2c");
+    if (answers.length !== scenario.expect.s2c) {
+      out.push(
+        `${scenario.name}: ${answers.length} answer frames, expected ${scenario.expect.s2c}`,
+      );
+    }
+    if (answers.length === 1) {
+      // One answer frame is a claim about content as well as count: either the plain payload or what the
+      // compressed payload inflates to has to be exactly what the protocol layer wrote.
+      const plain = answers[0]!.payload ?? answers[0]!.inflated;
+      const digest = answers[0]!.payloadSha ?? answers[0]!.inflatedSha;
       if (scenario.expect.answer !== undefined && plain !== scenario.expect.answer) {
-        throw new Error(
+        out.push(
           `${scenario.name}: answer was ${JSON.stringify(plain)?.slice(0, 160)}, expected ${JSON.stringify(scenario.expect.answer).slice(0, 160)}`,
         );
       }
       if (scenario.expect.answerSha !== undefined && digest !== scenario.expect.answerSha) {
-        throw new Error(
+        out.push(
           `${scenario.name}: answer sha ${digest} is not the ${scenario.expect.answerSha} the rpc's own success schema produces`,
         );
       }
     }
   }
 
-  // Answers are text or control, never masked, never fragmented and never binary: a Rust server that
-  // sent a binary frame would contradict `protocol-golden.ts`, which recorded every frame as text.
+  // Answers are text or control, never masked, never fragmented and never binary: a Rust server that sent
+  // a binary frame would contradict `protocol-golden.ts`, which recorded every frame as text.
   const badOut = frames
     .filter((f) => f.direction === "s2c")
     .filter((f) => f.masked || (f.opcode !== 1 && f.opcode !== 8 && f.opcode !== 10))
     .map((f) => `${f.case}: opcode ${f.opcodeName} masked=${f.masked}`);
-  if (badOut.length > 0)
-    throw new Error(`server wrote unexpected frames: ${JSON.stringify(badOut)}`);
+  if (badOut.length > 0) out.push(`server wrote unexpected frames: ${JSON.stringify(badOut)}`);
   if (frames.some((f) => f.direction === "s2c" && !f.fin)) {
-    throw new Error("the server fragmented an answer, which nothing in the port assumed");
+    out.push("the server fragmented an answer, which nothing in the port assumed");
   }
-  // A compressed answer that does not inflate is a bug in *this file*, not the server: the artifact
-  // would otherwise carry a `payloadBytes` no reader can use.
+  // A compressed answer that does not inflate is a bug in *this file*, not the server: the artifact would
+  // otherwise carry a `payloadBytes` no reader can use.
   const broken = frames.filter(
     (f) => f.direction === "s2c" && f.rsv1 && f.inflateError !== undefined,
   );
   if (broken.length > 0) {
-    throw new Error(
+    out.push(
       `compressed answer(s) that do not inflate: ${JSON.stringify(broken.map((f) => [f.case, f.inflateError]))}`,
     );
   }
-  // Every answer frame the port has to reproduce must therefore be readable: either it is
-  // uncompressed text, or it inflated.
+  // Every answer frame the port has to reproduce must therefore be readable: either it is uncompressed
+  // text, or it inflated.
   const unreadable = frames
     .filter((f) => f.direction === "s2c" && f.opcode === 1)
     .filter(
       (f) => f.payload === undefined && f.payloadSha === undefined && f.inflatedSha === undefined,
     )
     .map((f) => f.case);
-  if (unreadable.length > 0)
-    throw new Error(`text answer(s) with no recorded content: ${unreadable}`);
+  if (unreadable.length > 0) out.push(`text answer(s) with no recorded content: ${unreadable}`);
 
-  const summary = {
+  return out;
+};
+
+const summarize = () => {
+  const upgrades = events.filter((e) => e.event === "upgrade");
+  return {
     methods: (Group as unknown as { requests: Map<string, unknown> }).requests.size,
     scenarios: SCENARIOS.length,
     frames: frames.length,
@@ -1408,12 +1525,11 @@ const check = Effect.sync(() => {
     closeCodes: frames
       .filter((f) => f.direction === "s2c" && f.opcode === 8)
       .map((f) => `${f.case}=${f.closeCode === undefined ? "no-code" : String(f.closeCode)}`),
+    tcp: Object.entries(tcpAfterClose).map(([name, value]) => `${name}=${value}`),
     serialization: "RpcSerialization.layerJson",
     websocket: { perMessageDeflate: true },
   };
-  process.stderr.write(`${JSON.stringify(summary)}\n`);
-  process.stdout.write(`${JSON.stringify({ summary, frames, events }, undefined, 2)}\n`);
-});
+};
 
 const run = Effect.gen(function* () {
   const server = yield* HttpServer.HttpServer;
@@ -1425,18 +1541,25 @@ const run = Effect.gen(function* () {
   for (const scenario of SCENARIOS) {
     yield* exchange(scenario, port);
   }
+  const summary = summarize();
   if (process.env.LMCS_UPGRADE_GOLDEN_RECORD) {
     recordTable();
-    process.stdout.write(
-      `${JSON.stringify({ frames, events, measured: [...measured] }, undefined, 2)}\n`,
-    );
+    emit(JSON.stringify({ summary, frames, events, measured: [...measured] }, undefined, 2));
     return;
   }
-  yield* check;
+  const violations = check();
+  emit(JSON.stringify({ summary, frames, events }, undefined, 2));
+  for (const violation of violations) process.stderr.write(`violation: ${violation}\n`);
+  if (violations.length > 0) {
+    recordTable();
+    process.exitCode = 1;
+  }
 }).pipe(Effect.scoped, Effect.provide(appLayer));
 
+// The artifact is written with `writeSync`, so exiting here cannot truncate it; `process.exitCode` keeps
+// the violations' exit code.
 Effect.runPromise(run).then(
-  () => process.exit(0),
+  () => process.exit(process.exitCode),
   (cause) => {
     process.stderr.write(`upgrade-golden failed: ${cause}\n`);
     if (process.env.LMCS_UPGRADE_GOLDEN_RECORD || process.env.LMCS_UPGRADE_GOLDEN_DEBUG) {

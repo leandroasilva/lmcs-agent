@@ -100,8 +100,27 @@ pub enum Reply {
     /// The frames the server writes, in order. Empty is a real answer: `[]`, an `Eof`, and an `Ack`
     /// or `Interrupt` for an id nothing is waiting on all write nothing and keep the connection.
     Frames(Vec<Message>),
-    /// Nothing is written and the connection ends (`1005`, `wasClean: true`).
-    Close,
+    /// The connection ends, **after** `written` goes out. `ws` writes that as a zero-body close frame
+    /// (`8800`), which is why the browser recorded code `1005` and `wasClean: true`.
+    Close {
+        written: Vec<Message>,
+    },
+}
+
+impl Reply {
+    /// Every frame this reply has the server write, close or not. A batch that reaches a teardown still
+    /// flushes what its earlier elements produced (`c.batchTwoThenNull`).
+    #[must_use]
+    pub fn frames(&self) -> &[Message] {
+        match self {
+            Self::Frames(messages) | Self::Close { written: messages } => messages,
+        }
+    }
+
+    #[must_use]
+    pub fn closes(&self) -> bool {
+        matches!(self, Self::Close { .. })
+    }
 }
 
 /// One connection: the group it serves and the streams waiting on an `Ack`.
@@ -144,7 +163,7 @@ impl Session {
             Frame::Batch(items) => {
                 for item in items {
                     if self.route(&item, &mut out) {
-                        return Reply::Close;
+                        return Reply::Close { written: out };
                     }
                 }
             }
@@ -152,11 +171,11 @@ impl Session {
         Reply::Frames(out)
     }
 
-    /// Routes one envelope of a batch. The `bool` is [`Reply::Close`]: a batch that reaches a
-    /// teardown stops there, which is what the shipped server does — the throw happens inside the
-    /// transport, so whatever the rest of the batch would have written is never written. Whether the
-    /// frames already produced in that same batch go out is **not** in the capture (no recorded
-    /// batch mixes a request with a `null`), so the loop drops them and the golden says so.
+    /// Routes one envelope of a batch. The `bool` is [`Reply::Close`]: the batch stops there, because
+    /// the throw happens in the transport's own loop and the rest of the batch is never read. What the
+    /// earlier elements already produced **does** go out first — `c.batchTwoThenNull` wrote the
+    /// request's `Exit` and then the `8800`, which is only possible if the frames are flushed rather
+    /// than dropped.
     fn route(&mut self, envelope: &Envelope, out: &mut Vec<Message>) -> bool {
         let message = match envelope {
             Envelope::Teardown => return true,
@@ -376,10 +395,7 @@ mod tests {
     }
 
     fn frames(reply: Reply) -> Vec<String> {
-        match reply {
-            Reply::Close => panic!("expected frames, got a closed connection"),
-            Reply::Frames(messages) => frames_of(messages),
-        }
+        frames_of(reply.frames().to_vec())
     }
 
     fn frames_of(messages: Vec<Message>) -> Vec<String> {
