@@ -3,16 +3,24 @@
 //! Two different writers produced the eight non-`101` responses the capture holds, and merging them is the
 //! mistake this module exists to prevent:
 //!
-//! - **The router** answers a request `ws` never sees. `POST /ws` and `GET /nope` are both `404 Not Found`
-//!   (nothing matched) and a `GET /ws` with no `Upgrade` header is a `400`, each of them written through
-//!   Node's response pipeline: it stamps `Date`, sends `Connection: keep-alive`, and switches the body to
-//!   chunked, so the bytes after the headers are literally `0\r\n\r\n`. The `400` carries
-//!   `Keep-Alive: timeout=5`; the `404`s do not.
+//! - **The response pipeline** answers a request that reached the route and never became a socket:
+//!   `upgrade-golden.ts` wrote the `GET /ws` with no `Upgrade` as `400 Bad Request` with `Date`,
+//!   `Connection: keep-alive`, `Keep-Alive: timeout=5` and a chunked empty body. `seam-golden.ts` then
+//!   measured *when* those bytes appear: the route's auth step, its origin read and its connection record
+//!   had **already run**, so the session row says the client connected even though no socket ever existed
+//!   (see [`crate::transport::Seam::NotUpgrade`]). A port that answered this request before auth, because
+//!   "it is only a routing question", loses a database write the shipped server performs.
+//! - **The router** answers a request the route never sees: `POST /ws` and `GET /nope` are both
+//!   `404 Not Found`, stamped `Date`, chunked, and without the `Keep-Alive` the `400` carries. Nothing is
+//!   recorded for these — `seam-golden.ts`'s `seam.postWs` row still has a null `last_connected_at`, which
+//!   is what proves method/path matching runs ahead of auth.
 //! - **`ws`** writes its own protocol refusals **straight onto the socket**: no `Date`, the connection
 //!   already closing, and a byte-exact `Content-Length` counting the sentence —
 //!   `HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Type: text/html\r\nContent-Length: <n>\r\n`
 //!   `[Sec-WebSocket-Version: 13, 8\r\n]\r\n<sentence>` (`abortHandshake`, `websocket-server.js:505-530`).
-//!   A port that reworded a sentence without rewriting its length writes a corrupt response.
+//!   A port that reworded a sentence without rewriting its length writes a corrupt response. And the
+//!   bracket the route opened does not close: the mark ran, the release never does, so the row is left
+//!   counting a connection that was refused.
 //!
 //! Every header name is **title case** on the wire, from both writers: Node does not lowercase the names
 //! `ws` hands it. And the `101` carries exactly `Upgrade`, `Connection`, `Sec-WebSocket-Accept`, then
@@ -177,13 +185,15 @@ impl Denied {
     }
 }
 
-/// A request the router answers without ever consulting the websocket layer.
+/// A request the websocket layer never turned into a socket.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Routed {
-    /// `GET` on the websocket route with no `Upgrade: websocket`. The only one of these answers that carries
-    /// a `Keep-Alive`.
+    /// `GET` on the websocket route with no `Upgrade: websocket`. The route ran before this was written,
+    /// which is the claim [`crate::transport::Seam::NotUpgrade`] carries; this module only knows the
+    /// bytes. The only one of these answers that carries a `Keep-Alive`.
     NotUpgrade,
-    /// Nothing matched the method or the path: `POST /ws`, `GET /nope`.
+    /// Nothing matched the method or the path: `POST /ws`, `GET /nope`. The route never ran, so nothing
+    /// was recorded for it.
     NoRoute,
 }
 
@@ -226,6 +236,37 @@ pub fn upgrade(key: &str, protocol: Option<&str>, extensions: Option<&str>) -> V
     out.into_bytes()
 }
 
+/// The surfaces `ClientSurface` names (`baseSchemas.ts:158`), which is the whole whitelist
+/// `readClientConnectionOrigin` accepts. Anything else is dropped rather than normalised, so a client
+/// announcing `tv` is recorded as announcing nothing.
+pub const CLIENT_SURFACES: [&str; 4] = ["web", "desktop", "mobile", "cli"];
+
+/// `MAX_CLIENT_APP_VERSION_LENGTH` (`ws.ts:419`), counted in UTF-16 code units because JavaScript
+/// measured it in JavaScript.
+pub const MAX_CLIENT_APP_VERSION_LENGTH: usize = 64;
+
+/// What the upgrade URL said about the client, as `recordClientConnection` kept it.
+///
+/// Both fields are optional because the shipped struct is (`OrchestrationClientOrigin`), and the route is
+/// *lenient by design*: `ws.ts:421-423` says a malformed value degrades to `{}` rather than failing the
+/// connection, so attribution can never be a reason a client is refused. `seam-golden.ts` reads this back
+/// out of the database rather than out of the function, since the row is the only place all three rules
+/// (whitelist, trim, cap) are visible at once.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct Origin {
+    pub surface: Option<&'static str>,
+    pub app_version: Option<String>,
+}
+
+impl Origin {
+    /// `SessionStore.ts:605`'s guard: with nothing kept there is no `UPDATE` at all, which is why
+    /// `seam.originBogus` left the earlier row alone rather than nulling it.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.surface.is_none() && self.app_version.is_none()
+    }
+}
+
 /// The handful of request fields the upgrade decision reads, plus every header line it saw.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Request<'a> {
@@ -252,6 +293,29 @@ impl<'a> Request<'a> {
     #[must_use]
     pub fn handler_headers(&self) -> Vec<crate::headers::Pair> {
         crate::headers::from_lines(self.lines.iter().copied())
+    }
+
+    /// `readClientConnectionOrigin` (`ws.ts:424-440`), field for field.
+    ///
+    /// Two asymmetries are the whole function and neither is guessable: the surface is matched **raw**, so
+    /// `?clientSurface=%20web` is not a surface, while the version is trimmed first, so
+    /// `?clientAppVersion=%20%20` is absent rather than blank. And the version cap is a length test, not a
+    /// truncation — a 65-character version is *dropped*, which is what `seam.originTooLong` and
+    /// `seam.originExactlyMax` put on either side of 64.
+    #[must_use]
+    pub fn client_origin(&self) -> Origin {
+        let surface = query_param(self.target, "clientSurface")
+            .and_then(|value| CLIENT_SURFACES.into_iter().find(|known| *known == value));
+        // `?.trim() ?? ""`, then two conditions on the trimmed text.
+        let app_version = query_param(self.target, "clientAppVersion")
+            .map(|value| crate::auth::js_trim(&value).to_owned())
+            .filter(|value| {
+                !value.is_empty() && value.encode_utf16().count() <= MAX_CLIENT_APP_VERSION_LENGTH
+            });
+        Origin {
+            surface,
+            app_version,
+        }
     }
 
     /// Whether the router hands the request to the websocket layer at all, which needs a `GET` and an

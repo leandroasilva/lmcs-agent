@@ -648,7 +648,10 @@ fn header(headers: &Value, wanted: &str) -> String {
 /// (`SessionStore.ts:882-951` reads `scopes: row.value.scopes`), so every success below has to prove the
 /// same thing: what the connection may do came from the store, not from the bytes the client sent.
 fn credentialed() -> Vec<String> {
-    vec!["orchestration:read".to_owned(), "orchestration:operate".to_owned()]
+    vec![
+        "orchestration:read".to_owned(),
+        "orchestration:operate".to_owned(),
+    ]
 }
 
 /// `SessionStore.ts:882-951` is nine denials and one success, and they are two wire shapes apart at

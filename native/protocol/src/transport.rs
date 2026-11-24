@@ -23,6 +23,10 @@
 //! are inflated as they arrive and outbound answers are deflated through one context unless takeover
 //! was refused — see [`crate::deflate`]. Which answers get RSV1 set is the negotiated rule
 //! ([`Negotiated::compresses`]), applied per message.
+//!
+//! Above the socket sits [`authenticated`], the seam: the ticket, the handshake and this module's
+//! connection, in the order the shipped route runs them. Everything below that function is what a
+//! connection does once it exists.
 
 use crate::deflate::{Inbound, Negotiated, Outbound};
 use crate::envelope::Id;
@@ -116,6 +120,21 @@ impl Connection {
         agreed: Option<Negotiated>,
     ) -> Self {
         Self::new(Session::upgraded(group, request.handler_headers()), agreed)
+    }
+
+    /// The same connection with the ticket's scopes in front of its dispatch, which is what the shipped
+    /// route serves: see [`authenticated`] for why the gate cannot be added later.
+    #[must_use]
+    pub fn gated(
+        request: &crate::http::Request<'_>,
+        group: crate::session::Group,
+        gate: crate::session::Gate,
+        agreed: Option<Negotiated>,
+    ) -> Self {
+        Self::new(
+            Session::gated(group, request.handler_headers(), gate),
+            agreed,
+        )
     }
 
     /// `agreed` is what [`crate::deflate::negotiate`] produced for this connection's upgrade, i.e. the
@@ -321,6 +340,166 @@ impl Connection {
             return websocket::encode(TEXT, &body, true);
         }
         websocket::encode(TEXT, &bytes, false)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The seam: the ticket, then the handshake, then the gate
+// ---------------------------------------------------------------------------
+
+/// What the upgrade route decided about one request, in the order it decides it.
+///
+/// The name is the point: this is where [`crate::auth`], [`crate::http`] and [`crate::session`] stop
+/// being three separately measured pieces and become the one server a client meets. Three of its
+/// orderings are measurements rather than choices, all of them from `seam-golden.ts`:
+///
+/// - **Auth runs before the framing checks.** A bad ticket *and* a bad `Sec-WebSocket-Key` answers 401,
+///   not the 400 `ws` would have written (`seam.badTicketBadKey`). Composing
+///   [`crate::http::Request::refusal`] in front of [`crate::auth`] — the obvious way to write this —
+///   answers the wrong status for the wrong reason.
+/// - **A refused ticket writes nothing.** No origin read, no `recordClientConnection`, no mark: the row
+///   still has a null `last_connected_at` for all eight refusals, including the one whose payload was
+///   unreadable (`seam.badSignature`).
+/// - **The route runs before the answer that only *looks* like a routing answer.** A `GET /ws` with a
+///   valid ticket and no `Upgrade` header gets the platform's chunked 400 *after* the row was recorded
+///   and marked, and — unlike [`Seam::Refused`] — that mark is released (`seam.notUpgradeAuthorized`).
+///
+/// The caller's side effects are part of the shape, and they go in this order: write the row's
+/// attribution from `origin`, mark `session_id` connected, write `head`. On [`Seam::Connected`] only,
+/// release the mark when the socket is gone.
+///
+/// No `Debug`: a connection holds deflate contexts and a half-assembled message, none of which a test
+/// wants printed. Matching on the variant, or on its `head` bytes, is how the goldens read these.
+pub enum Seam {
+    /// The `101` and a connection whose dispatch is already gated by the ticket's row. The gate cannot
+    /// be bolted on later: `ws.ts:3811` builds the rpc layer *around* the authenticated session, so a
+    /// connection without one answers methods the credential never covered.
+    Connected {
+        session_id: String,
+        origin: crate::http::Origin,
+        head: Vec<u8>,
+        connection: Connection,
+    },
+    /// The ticket was refused, or absent, and nothing else in the route ran.
+    Denied {
+        denied: crate::http::Denied,
+        head: Vec<u8>,
+    },
+    /// `ws` refused the framing after the route had already accepted the credential. `markConnected` ran
+    /// and `markDisconnected` never will, because the handler's use is abandoned rather than returned
+    /// from, so the shipped server leaves the row counting a connection that was never made
+    /// (`seam.badKeyAuthorized`, `seam.badExtensionsAuthorized`). A port that tidied that up would be
+    /// writing a different database than the one clients meet today.
+    Refused {
+        session_id: String,
+        origin: crate::http::Origin,
+        refusal: crate::http::Refusal,
+        head: Vec<u8>,
+    },
+    /// The credential is good and the request is not a socket. See the bullet above for why this is not
+    /// [`Seam::Denied`]'s neighbour, and `ws`'s answer.
+    NotUpgrade {
+        session_id: String,
+        origin: crate::http::Origin,
+        head: Vec<u8>,
+    },
+    /// The method is not the route's. Answered before auth, because nothing matched: the row is untouched
+    /// (`seam.postWs`), which is the one ordering claim here that a *port over-eagerly authenticating*
+    /// would get wrong.
+    NoRoute { head: Vec<u8> },
+}
+
+/// Run the route's order over one request head.
+///
+/// `lookup` is `authSessions.getById` and `now` is the clock in integer milliseconds, both for the
+/// reasons [`crate::auth::verify`] gives. `date` and `trace_id` are the caller's because Node stamps the
+/// wall clock and opens no span before the route's auth step (`"unavailable"` is the measured value), and
+/// the golden compares every other byte of the head.
+///
+/// Two boundaries this function does not cross. **Path matching** is the router's, so only the method is
+/// examined here — that half is what `seam.postWs` measured. And **header/cookie credentials** belong to
+/// the HTTP auth slice: `Upgrade::NoTicket` means the *ticket* said nothing, while the shipped server
+/// then tries `Authorization` and the session cookie and answers `missing_credential` only when those are
+/// absent too. Every `/ws` client sends a ticket, so the port refuses without them; a caller serving a
+/// bearer credential over `/ws` has to grow that step here rather than assume this answered it.
+#[must_use]
+#[allow(clippy::too_many_arguments)]
+pub fn authenticated(
+    request: &crate::http::Request<'_>,
+    group: crate::session::Group,
+    now: i64,
+    secret: &[u8],
+    dev_session_id: Option<&str>,
+    lookup: impl FnMut(&str) -> crate::auth::Stored,
+    date: &str,
+    trace_id: &str,
+) -> Seam {
+    if request.method != "GET" {
+        return Seam::NoRoute {
+            head: crate::http::routed(date, crate::http::Routed::NoRoute),
+        };
+    }
+    // The refusal's own head is written by the response pipeline, which keeps the connection alive — the
+    // `Keep-Alive` the upgrade refusals lack, per `auth-golden.ts`.
+    let denied = |denied: crate::http::Denied| Seam::Denied {
+        head: denied.write(date, trace_id, !request.is_upgrade()),
+        denied,
+    };
+    let verified = match crate::auth::authenticate_upgrade(
+        request.target,
+        now,
+        secret,
+        dev_session_id,
+        lookup,
+    ) {
+        crate::auth::Upgrade::Accepted(verified) => verified,
+        crate::auth::Upgrade::Denied(denial) => return denied(denial.denied()),
+        crate::auth::Upgrade::NoTicket => {
+            return denied(crate::http::Denied::credential("missing_credential", None));
+        }
+    };
+    let session_id = verified.session_id.clone();
+    let origin = request.client_origin();
+    if !request.is_upgrade() {
+        return Seam::NotUpgrade {
+            session_id,
+            origin,
+            head: crate::http::routed(date, crate::http::Routed::NotUpgrade),
+        };
+    }
+    if let Some(refusal) = request.refusal() {
+        return Seam::Refused {
+            session_id,
+            origin,
+            refusal,
+            head: crate::http::refuse(refusal),
+        };
+    }
+    // The extension offer is the fourth check and the only one with a body: `negotiate` both refuses and
+    // produces the answer string the `101` echoes.
+    let agreed = match crate::deflate::negotiate(request.extensions.unwrap_or_default()) {
+        Err(_) => {
+            let refusal = crate::http::Refusal::Extensions;
+            return Seam::Refused {
+                session_id,
+                origin,
+                refusal,
+                head: crate::http::refuse(refusal),
+            };
+        }
+        Ok(agreed) => agreed,
+    };
+    let head = crate::http::upgrade(
+        request.key.unwrap_or_default(),
+        request.protocol,
+        agreed.as_ref().map(|agreed| agreed.answer.as_str()),
+    );
+    let connection = Connection::gated(request, group, verified.gate(), agreed);
+    Seam::Connected {
+        session_id,
+        origin,
+        head,
+        connection,
     }
 }
 
@@ -688,5 +867,301 @@ mod tests {
                 r#"{"_tag":"Exit","requestId":20,"exit":{"_tag":"Success","value":null}}"#,
             )
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // The seam
+    // -----------------------------------------------------------------------
+
+    /// `seam-golden.ts`'s `SECRET`, generated rather than spelled so the arithmetic is visible: the same
+    /// bytes are what the artifact's recorded tickets are signed with.
+    const fn secret() -> [u8; 32] {
+        let mut out = [0u8; 32];
+        let mut index = 0;
+        while index < 32 {
+            out[index] = ((index * 13 + 7) & 0xff) as u8;
+            index += 1;
+        }
+        out
+    }
+
+    /// The clock every case is measured against.
+    const NOW: i64 = 1_700_000_000_000;
+
+    const UPGRADE: &str = concat!(
+        "Upgrade: websocket\r\n",
+        "Connection: Upgrade\r\n",
+        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n",
+        "Sec-WebSocket-Version: 13\r\n",
+    );
+
+    /// The group the oracle served: three methods, two of them in the shipped scope table.
+    fn gated_group() -> crate::session::Group {
+        crate::session::Group::new()
+            .returns("server.getSettings", serde_json::json!({"ok": "read"}))
+            .returns(
+                "server.updateSettings",
+                serde_json::json!({"ok": "operate"}),
+            )
+            .returns("canary", serde_json::json!({"alive": true}))
+    }
+
+    /// A row the ticket can name.
+    fn stored(scopes: &[&str]) -> crate::auth::Stored {
+        crate::auth::Stored::Found(crate::auth::StoredSession {
+            session_id: "seam_read".to_owned(),
+            expires_at: NOW + 600_000,
+            revoked: false,
+            scopes: scopes.iter().map(|scope| (*scope).to_owned()).collect(),
+        })
+    }
+
+    /// One request head, run through the seam with the artifact's clock, secret and no dev session.
+    fn seam(head: &str, stored: crate::auth::Stored) -> Seam {
+        let request = crate::http::Request::parse(head);
+        authenticated(
+            &request,
+            gated_group(),
+            NOW,
+            &secret(),
+            None,
+            |_| stored.clone(),
+            "Tue, 14 Nov 2023 22:13:20 GMT",
+            "unavailable",
+        )
+    }
+
+    /// A well-formed ticket for `seam_read`, which is the id the recorded heads carry.
+    fn ticket() -> String {
+        crate::auth::mint("seam_read", NOW as f64, (NOW + 300_000) as f64, &secret())
+    }
+
+    fn head(target: &str, lines: &str) -> String {
+        format!("GET {target} HTTP/1.1\r\nHost: 127.0.0.1\r\n{lines}\r\n")
+    }
+
+    /// `seam.badTicketBadKey`: the status the *route* earns, not the one `ws` would have written.
+    #[test]
+    fn the_ticket_is_refused_before_the_framing_is_checked() {
+        let broken = format!("{}.{}", ticket(), "x");
+        let seam = seam(
+            &head(
+                &format!("/ws?wsTicket={broken}"),
+                concat!(
+                    "Upgrade: websocket\r\n",
+                    "Connection: Upgrade\r\n",
+                    "Sec-WebSocket-Key: not-a-real-key\r\n",
+                    "Sec-WebSocket-Version: 13\r\n",
+                ),
+            ),
+            stored(&["orchestration:read"]),
+        );
+        let Seam::Denied { head, .. } = seam else {
+            panic!("a bad ticket is a refusal, whatever else is wrong: {seam:?}");
+        };
+        let text = String::from_utf8(head).unwrap();
+        assert!(text.starts_with("HTTP/1.1 401 Unauthorized"), "{text}");
+        assert!(text.contains("invalid_credential"), "{text}");
+        assert!(!text.contains("Sec-WebSocket-Key"), "{text}");
+    }
+
+    /// The writer differs with the request: an upgrade's 401 is written over a socket that is already
+    /// going away, a plain one keeps the connection alive.
+    #[test]
+    fn a_refusal_keeps_alive_only_when_no_socket_was_asked_for() {
+        let denied = |lines: &str| {
+            let seam = seam(
+                &head("/ws?wsTicket=not.a.token", lines),
+                stored(&["orchestration:read"]),
+            );
+            let Seam::Denied { head, .. } = seam else {
+                panic!("an unreadable token is a refusal");
+            };
+            String::from_utf8(head).unwrap()
+        };
+        let upgrade = denied(UPGRADE);
+        assert!(upgrade.contains("Connection: keep-alive"), "{upgrade}");
+        assert!(
+            !upgrade.contains("Keep-Alive"),
+            "a websocket refusal does not advertise a connection it is dropping: {upgrade}"
+        );
+        let plain = denied("Connection: keep-alive\r\n");
+        assert!(plain.contains("Keep-Alive: timeout=5"), "{plain}");
+    }
+
+    /// `seam.noTicket`: no ticket at all is a different reason, and still the route's own 401.
+    #[test]
+    fn an_absent_ticket_is_a_different_reason_than_a_bad_one() {
+        let Seam::Denied { denied, .. } =
+            seam(&head("/ws", UPGRADE), stored(&["orchestration:read"]))
+        else {
+            panic!("a request with no credential is refused");
+        };
+        assert_eq!(
+            denied.body("unavailable").contains("missing_credential"),
+            true
+        );
+    }
+
+    /// `seam.postWs`: the method is answered before the ticket is read, so nothing runs at all.
+    #[test]
+    fn a_post_never_authenticates() {
+        let looked = std::cell::Cell::new(0u32);
+        let request = crate::http::Request::parse(
+            "POST /ws?wsTicket=anything HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+        );
+        let seam = authenticated(
+            &request,
+            gated_group(),
+            NOW,
+            &secret(),
+            None,
+            |_| {
+                looked.set(looked.get() + 1);
+                stored(&["orchestration:read"])
+            },
+            "Tue, 14 Nov 2023 22:13:20 GMT",
+            "unavailable",
+        );
+        let Seam::NoRoute { head } = seam else {
+            panic!("the router answers a method it does not have");
+        };
+        assert_eq!(looked.get(), 0, "a 404 read no row");
+        let text = String::from_utf8(head).unwrap();
+        assert!(text.starts_with("HTTP/1.1 404 Not Found"), "{text}");
+        assert!(text.contains("Transfer-Encoding: chunked"), "{text}");
+    }
+
+    /// `seam.notUpgradeAuthorized`: the answer looks like a routing answer and is not one. The row was
+    /// already recorded, which is why the variant carries both the id and the origin.
+    #[test]
+    fn a_valid_ticket_on_a_plain_get_still_runs_the_route() {
+        let target = format!("/ws?wsTicket={}&clientSurface=web", ticket());
+        let seam = seam(
+            &head(&target, "Connection: keep-alive\r\n"),
+            stored(&["orchestration:read"]),
+        );
+        let Seam::NotUpgrade {
+            session_id,
+            origin,
+            head,
+        } = seam
+        else {
+            panic!("a good ticket makes this the route's problem, not the router's: {seam:?}");
+        };
+        assert_eq!(session_id, "seam_read");
+        assert_eq!(origin.surface, Some("web"));
+        let text = String::from_utf8(head).unwrap();
+        assert!(text.starts_with("HTTP/1.1 400 Bad Request"), "{text}");
+        assert!(text.contains("Keep-Alive: timeout=5"), "{text}");
+    }
+
+    /// `seam.badKeyAuthorized`: `ws`'s own 400 — no date, closing, and a length that counts its sentence.
+    #[test]
+    fn ws_answers_for_the_framing_after_the_ticket_passed() {
+        let target = format!("/ws?wsTicket={}&clientSurface=desktop", ticket());
+        let seam = seam(
+            &head(
+                &target,
+                concat!(
+                    "Upgrade: websocket\r\n",
+                    "Connection: Upgrade\r\n",
+                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n",
+                ),
+            ),
+            stored(&["orchestration:read"]),
+        );
+        let Seam::Refused {
+            refusal,
+            origin,
+            head,
+            ..
+        } = seam
+        else {
+            panic!("a missing version is `ws`'s answer, not the route's: {seam:?}");
+        };
+        assert_eq!(refusal, crate::http::Refusal::Version);
+        assert_eq!(origin.surface, Some("desktop"));
+        let text = String::from_utf8(head).unwrap();
+        assert!(text.starts_with("HTTP/1.1 400 Bad Request"), "{text}");
+        assert!(!text.contains("Date"), "{text}");
+        assert!(text.contains("Connection: close"), "{text}");
+    }
+
+    /// The negotiated extension is echoed by the `101` and is what makes the answer come back with RSV1,
+    /// so a seam that dropped the negotiation would write a plain frame on a deflated connection.
+    #[test]
+    fn a_connected_seam_deflates_answers() {
+        let (head, mut connection) = connected(&["orchestration:read"], true);
+        assert!(
+            String::from_utf8(head.clone())
+                .unwrap()
+                .contains("Sec-WebSocket-Extensions: permessage-deflate"),
+            "the 101 answers the offer it accepted"
+        );
+        let written = connection
+            .push(&client(
+                TEXT,
+                request(1, "server.getSettings").as_bytes(),
+                true,
+            ))
+            .bytes();
+        assert_eq!(written[0], 0xc1, "fin, RSV1, text");
+    }
+
+    /// `seam.readRow` against `seam.operateRow`: two byte-identical requests, and the answer differs
+    /// because the **row** differs. This is the seam's whole point — the gate a connection runs is built
+    /// from the session the ticket named, and never from the ticket.
+    #[test]
+    fn the_gate_is_the_rows_scopes_not_the_tickets() {
+        let refused = answered(&["orchestration:read"], "server.updateSettings");
+        assert!(
+            refused.contains("EnvironmentAuthorizationError"),
+            "{refused}"
+        );
+        assert!(refused.contains("orchestration:operate"), "{refused}");
+        let granted = answered(
+            &["orchestration:read", "orchestration:operate"],
+            "server.updateSettings",
+        );
+        assert!(granted.contains(r#""ok":"operate""#), "{granted}");
+    }
+
+    /// The `Sec-WebSocket-Extensions` offer both routes the handshake and names the streams, so the two
+    /// places agree by construction.
+    const OFFER: &str = concat!(UPGRADE, "Sec-WebSocket-Extensions: permessage-deflate\r\n");
+
+    /// One accepted upgrade, with whatever the offer produced wired in.
+    fn connected(scopes: &[&str], deflate: bool) -> (Vec<u8>, Connection) {
+        let lines = if deflate { OFFER } else { UPGRADE };
+        let request =
+            crate::http::Request::parse(&head(&format!("/ws?wsTicket={}", ticket()), lines));
+        let agreed = crate::deflate::negotiate(request.extensions.unwrap_or_default())
+            .unwrap()
+            .filter(|_| deflate);
+        let gate = crate::auth::verify(&ticket(), NOW, &secret(), None, |_| stored(scopes))
+            .expect("the ticket is well formed");
+        let connection = Connection::gated(&request, gated_group(), gate.gate(), agreed.clone());
+        (
+            crate::http::upgrade(
+                request.key.unwrap_or_default(),
+                None,
+                agreed.as_ref().map(|agreed| agreed.answer.as_str()),
+            ),
+            connection,
+        )
+    }
+
+    /// What one gated connection answered to `tag`, inflated back to text.
+    fn answered(scopes: &[&str], tag: &str) -> String {
+        let (_, mut connection) = connected(scopes, true);
+        let written = connection
+            .push(&client(TEXT, request(1, tag).as_bytes(), true))
+            .bytes();
+        let agreed = crate::deflate::negotiate("permessage-deflate")
+            .unwrap()
+            .unwrap();
+        let mut back = crate::deflate::Inbound::new(&agreed);
+        String::from_utf8(back.inflate(&written[2..], true).unwrap()).unwrap()
     }
 }

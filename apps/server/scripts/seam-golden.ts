@@ -84,6 +84,13 @@ import { requiredScopeForRpcMethod } from "../src/auth/RpcAuthorization.ts";
 import * as AuthSessions from "../src/persistence/AuthSessions.ts";
 import { SqlitePersistenceMemory } from "../src/persistence/Layers/Sqlite.ts";
 
+// The artifact is this file's stdout, and the database it mounts logs on startup (the migration list)
+// through Effect's default console. Moving that console to stderr keeps the JSON parseable without
+// filtering, and no measurement of this file depends on stdout.
+console.log = (...args: Array<unknown>) => {
+  console.error(...args);
+};
+
 // ---------------------------------------------------------------------------
 // Constants the artifact depends on
 // ---------------------------------------------------------------------------
@@ -270,7 +277,14 @@ const rootLayer = HttpRouter.serve(routeLayer, {
   ),
   Layer.provide(ServerConfig.layerTest(process.cwd(), { prefix: "lmcs-seam-golden-" })),
   Layer.provideMerge(
-    NodeHttpServer.layer(() => NodeHttp.createServer(), { host: "127.0.0.1", port: 0 }),
+    // `server.ts:234-250` verbatim in the one option the seam needs: without `perMessageDeflate` the
+    // server closes an RSV1 frame as a protocol error, and `seam.deflateRow` would measure a different
+    // server than the one that ships.
+    NodeHttpServer.layer(() => NodeHttp.createServer(), {
+      host: "127.0.0.1",
+      port: 0,
+      websocket: { perMessageDeflate: true },
+    }),
   ),
   Layer.provideMerge(NodeServices.layer),
   Layer.provideMerge(TestClock.layer()),
@@ -433,7 +447,7 @@ type RecordedFrame = {
 
 type RecordedEvent = {
   readonly case: string;
-  readonly event: "request" | "response" | "peer" | "row";
+  readonly event: "request" | "response" | "peer" | "row" | "write";
   readonly request?: string;
   readonly statusLine?: string;
   readonly headers?: Array<[string, string]>;
@@ -629,8 +643,19 @@ const connect = async (port: number): Promise<Probe> => {
     socket,
     r,
     write: (data: Buffer) =>
-      new Promise<void>((resolve, reject) =>
-        socket.write(data, (error) => (error ? reject(error) : resolve())),
+      new Promise<void>((resolve) =>
+        // A write to a socket the server already ended is a measurement, not a crash: the case is
+        // recorded and the following read shows what came back (nothing).
+        socket.write(data, (error) => {
+          if (error) {
+            events.push({
+              case: current,
+              event: "write",
+              detail: `${error.code ?? error.message} after ${data.length} bytes`,
+            });
+          }
+          resolve();
+        }),
       ),
   };
 };
@@ -680,6 +705,11 @@ const SESSIONS = {
   operate: "seam_operate",
   none: "seam_none",
   revoke: "seam_revoke",
+  deflate: "seam_deflate",
+  // One row for each case whose *columns* are the measurement, so no earlier case can be what a later
+  // one reads.
+  notUpgrade: "seam_nou",
+  wsRefused: "seam_ws",
   origin: "seam_origin",
   toolong: "seam_toolong",
   stale: "seam_stale",
@@ -709,7 +739,9 @@ type Scenario = {
 
 /** The origin cases need no exchange: the answer is in the row, and the socket only has to close. */
 const closeOnly: NonNullable<Scenario["after"]> = async (probe) => {
-  await probe.write(closeBytes(1000, "bye"));
+  const bytes = closeBytes(1000, "bye");
+  recordFrame(current, "c2s", bytes, "close");
+  await probe.write(bytes);
   await drain(probe, "");
 };
 
@@ -794,7 +826,7 @@ const scenarios: Array<Scenario> = [
   },
   {
     name: "seam.notUpgradeAuthorized",
-    session: SESSIONS.read,
+    session: SESSIONS.notUpgrade,
     scopes: ["orchestration:read"],
     target: (ticket) => `/ws?wsTicket=${ticket}&clientSurface=web`,
     lines: [
@@ -805,7 +837,7 @@ const scenarios: Array<Scenario> = [
   },
   {
     name: "seam.badKeyAuthorized",
-    session: SESSIONS.read,
+    session: SESSIONS.wsRefused,
     scopes: ["orchestration:read"],
     target: (ticket) => `/ws?wsTicket=${ticket}`,
     lines: [
@@ -817,7 +849,7 @@ const scenarios: Array<Scenario> = [
   },
   {
     name: "seam.badExtensionsAuthorized",
-    session: SESSIONS.read,
+    session: SESSIONS.wsRefused,
     scopes: ["orchestration:read"],
     target: (ticket) => `/ws?wsTicket=${ticket}`,
     lines: withHeaders([["Sec-WebSocket-Extensions", "permessage-deflate; unknown_param"]]),
@@ -863,7 +895,7 @@ const scenarios: Array<Scenario> = [
   },
   {
     name: "seam.deflateRow",
-    session: SESSIONS.read,
+    session: SESSIONS.deflate,
     scopes: ["orchestration:read"],
     target: (ticket) => `/ws?wsTicket=${ticket}`,
     lines: withHeaders([
@@ -1043,6 +1075,26 @@ const readRow = (sessionId: string) =>
     };
   });
 
+/**
+ * The row once the route has released it.
+ *
+ * `markDisconnected` runs when the response's scope closes, i.e. some ticks after the FIN this client
+ * observed, so reading immediately races the server — and a value that moves between two runs would make
+ * the artifact a lie. The wait is bounded, so a release that never happens stays a measurement
+ * (`connected: true`) rather than a hang.
+ */
+const readSettledRow = async (
+  sessionId: string,
+  run: <A>(effect: Effect.Effect<A>) => Promise<A>,
+) => {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const row = await run(readRow(sessionId));
+    if (!row.connected) return row;
+    await new Promise<void>((done) => setTimeout(done, 10));
+  }
+  return run(readRow(sessionId));
+};
+
 const mint = (sessionId: string, ttl?: number) =>
   SessionStore.SessionStore.pipe(
     Effect.flatMap((sessions) =>
@@ -1114,7 +1166,7 @@ const runCase = async (scenario: Scenario, port: number) => {
     events.push({
       case: scenario.name,
       event: "row",
-      row: (await runEffect(readRow(scenario.session))) as never,
+      row: (await readSettledRow(scenario.session, runEffect)) as never,
     });
   }
 };
@@ -1182,6 +1234,7 @@ const main = async () => {
       }
       if (event.event === "peer") lines.push(`  ${event.case} ${event.detail}`);
       if (event.event === "row") lines.push(`  ${event.case} row ${JSON.stringify(event.row)}`);
+      if (event.event === "write") lines.push(`  ${event.case} ${event.detail}`);
     }
     for (const frame of frames) {
       lines.push(
@@ -1228,6 +1281,20 @@ const check = (): Array<string> => {
     if (!(event?.tailText ?? "").includes('"reason":"invalid_credential"')) {
       failures.push(`${name}: 401 without invalid_credential: ${event?.tailText}`);
     }
+    if (
+      !event?.headers.some(
+        ([header, value]) =>
+          header.toLowerCase() === "content-type" && value === "application/json",
+      )
+    ) {
+      failures.push(`${name}: the refusal was not answered as JSON`);
+    }
+    // Auth runs before the record, so the row never learns the connection was attempted. A row that is
+    // gone entirely is the same claim from the other side.
+    const record = rowOf(name);
+    if (record?.missing !== true && record?.lastConnectedAt !== null) {
+      failures.push(`${name}: a refused ticket still recorded a connection`);
+    }
   }
   // No ticket at all is the missing-credential shape, re-confirmed through the route rather than by
   // calling the failure helper the way `auth-golden.ts` does.
@@ -1244,14 +1311,33 @@ const check = (): Array<string> => {
   if (rowOf("seam.postWs")?.lastConnectedAt !== null) {
     failures.push(`seam.postWs: the router answered, yet the row says it connected`);
   }
-  // After a valid ticket, `ws` gets its turn, and the two writers of a 400 differ in their headers.
+  // A valid ticket buys the rest of the route even when the request is not an upgrade: the 400 comes
+  // from the response pipeline refusing to answer a websocket request, chunked and with a Date, and it
+  // is written after `recordClientConnectionOrigin` and `markConnected` have already run.
   const notUpgrade = responseOf("seam.notUpgradeAuthorized");
   if (notUpgrade?.statusLine !== "HTTP/1.1 400 Bad Request") {
     failures.push(`seam.notUpgradeAuthorized: expected 400, got ${notUpgrade?.statusLine}`);
   }
   if (!notUpgrade?.headers.some(([name]) => name.toLowerCase() === "transfer-encoding")) {
-    failures.push(`seam.notUpgradeAuthorized: the router's 400 is not chunked`);
+    failures.push(`seam.notUpgradeAuthorized: the platform's 400 is not chunked`);
   }
+  {
+    const record = rowOf("seam.notUpgradeAuthorized");
+    if (record?.lastConnectedAt === null) {
+      failures.push(`seam.notUpgradeAuthorized: the 400 was written before the row was recorded`);
+    }
+    if (record?.surface !== "web") {
+      failures.push(
+        `seam.notUpgradeAuthorized: the origin was not read (${JSON.stringify(record)})`,
+      );
+    }
+    if (record?.connected !== false) {
+      failures.push(`seam.notUpgradeAuthorized: the response pipeline never released the row`);
+    }
+  }
+  // The other 400 is `ws`'s own: no Date, a close it cannot negotiate away, and a body of exactly the
+  // sentence. It lands after the bracket started, and the release never happens because the handler's
+  // use never returns to it.
   const badKey = responseOf("seam.badKeyAuthorized");
   if (badKey?.headers.some(([name]) => name.toLowerCase() === "date")) {
     failures.push(`seam.badKeyAuthorized: a ws refusal arrived through the response pipeline`);
@@ -1260,11 +1346,32 @@ const check = (): Array<string> => {
     failures.push(`seam.badKeyAuthorized: expected the key sentence, got ${badKey?.tailText}`);
   }
   if (
-    !(responseOf("seam.badExtensionsAuthorized")?.tailText ?? "").includes(
-      "Sec-WebSocket-Extensions",
+    !badKey?.headers.some(
+      ([name, value]) => name.toLowerCase() === "content-length" && value === "43",
     )
   ) {
+    failures.push(
+      `seam.badKeyAuthorized: expected the 43-byte sentence, got ${JSON.stringify(badKey?.headers)}`,
+    );
+  }
+  const badExtensions = responseOf("seam.badExtensionsAuthorized");
+  if (
+    !badExtensions?.headers.some(
+      ([name, value]) => name.toLowerCase() === "content-length" && value === "55",
+    )
+  ) {
+    failures.push(`seam.badExtensionsAuthorized: expected the 55-byte sentence`);
+  }
+  if (!(badExtensions?.tailText ?? "").includes("Sec-WebSocket-Extensions")) {
     failures.push(`seam.badExtensionsAuthorized: expected the extension sentence`);
+  }
+  for (const name of ["seam.badKeyAuthorized", "seam.badExtensionsAuthorized"]) {
+    const record = rowOf(name);
+    if (record?.lastConnectedAt === null || record?.connected !== true) {
+      failures.push(
+        `${name}: a refused handshake did not hold the row connected (${JSON.stringify(record)})`,
+      );
+    }
   }
   // The row's scopes decide the answer for byte-identical requests.
   if (!(answerOf("seam.readRow", 2)?.payload ?? "").includes("EnvironmentAuthorizationError")) {
@@ -1334,12 +1441,14 @@ const check = (): Array<string> => {
       `seam.originExactlyMax: the 64-character boundary moved (${exactly?.appVersion})`,
     );
   }
-  // The route brackets the connection, including for a handshake `ws` then refused.
+  // The route brackets a negotiated connection, and closing it releases the row. The refused
+  // handshakes above are the same bracket with the release missing.
   for (const name of [
-    "seam.badKeyAuthorized",
     "seam.readRow",
     "seam.operateRow",
+    "seam.noScopeRow",
     "seam.deflateRow",
+    "seam.revokedMidFlight",
   ]) {
     const record = rowOf(name);
     if (record?.lastConnectedAt === null || record?.connected !== false) {
@@ -1350,3 +1459,7 @@ const check = (): Array<string> => {
 };
 
 await main();
+// The artifact is written with `writeSync`, so exiting here cannot truncate it, and `process.exitCode`
+// keeps a violation's failure. `runtime.dispose()` is not used: it waits for the server to drain, and a
+// handshake the library refused leaves a socket it never closes, so the run would hang on its own exit.
+process.exit(process.exitCode);
