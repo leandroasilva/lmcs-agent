@@ -236,9 +236,11 @@ fn every_recorded_refusal_is_the_ports_own_bytes() {
         for (index, ask) in case.asks.iter().enumerate() {
             let (frame, tag) = retarget(ask);
             if tag == "canary" {
-                // The oracle's one ungated rpc, which the port has no table row to consult. What it proved —
-                // that the connection outlived the answer before it — is the `answered` column, compared once
-                // per case against [`Session::deafened`] rather than request by request.
+                // This file's oracle served one ungated rpc, which the port has no table row to consult — and
+                // which the shipped server has no way to serve, since `ws.ts` runs every handler's effect
+                // through `observeRpcEffect` (the seam golden measured that in `seam-golden.ts`). What it
+                // proved — that the connection outlived the answer before it — is the `answered` column,
+                // compared once per case against [`Session::deafened`] rather than request by request.
                 continue;
             }
             let reply = session.receive(&frame);

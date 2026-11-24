@@ -133,8 +133,9 @@ fn replay(case: &Case, now: i64, secret: &[u8], rows: &mut Rows) -> Written {
     out
 }
 
-/// The group `seam-golden.ts` served: the three methods whose answers the capture carries, with the real
-/// scope table in front of them, which is what `ws.ts:605-618` does.
+/// The group `seam-golden.ts` served: the three methods whose answers the capture carries, each one
+/// authorized the way `ws.ts` authorizes it — inside the handler, off the table in
+/// [`lmcs_protocol::scopes`] — which is why all three tags are declared ones.
 fn group() -> Group {
     Group::new()
         .returns("server.getSettings", serde_json::json!({"ok": "read"}))
@@ -142,7 +143,7 @@ fn group() -> Group {
             "server.updateSettings",
             serde_json::json!({"ok": "operate"}),
         )
-        .returns("canary", serde_json::json!({"alive": true}))
+        .returns("server.getConfig", serde_json::json!({"alive": true}))
 }
 
 /// `authSessions.getById`, from the `seed` event the generator wrote before the handshake — which is the
@@ -262,10 +263,7 @@ fn client_bytes(frame: &Value) -> Vec<u8> {
         "{}: a client frame the capture says was unmasked",
         text(frame, "case"),
     );
-    let mut body = match recorded_body(frame) {
-        Some(body) => body,
-        None => Vec::new(),
-    };
+    let mut body = recorded_body(frame).unwrap_or_default();
     let (_, key) = out.split_at(out.len() - 4);
     for (index, byte) in body.iter_mut().enumerate() {
         *byte ^= key[index % 4];

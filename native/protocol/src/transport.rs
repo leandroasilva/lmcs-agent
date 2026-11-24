@@ -371,11 +371,15 @@ pub enum Seam {
     /// The `101` and a connection whose dispatch is already gated by the ticket's row. The gate cannot
     /// be bolted on later: `ws.ts:3811` builds the rpc layer *around* the authenticated session, so a
     /// connection without one answers methods the credential never covered.
+    ///
+    /// Boxed because the seam is one answer per request and most requests are refused: only this arm
+    /// carries the deflate contexts, the half-assembled message and the gated session, and the other four
+    /// should not be sized by them.
     Connected {
         session_id: String,
         origin: crate::http::Origin,
         head: Vec<u8>,
-        connection: Connection,
+        connection: Box<Connection>,
     },
     /// The ticket was refused, or absent, and nothing else in the route ran.
     Denied {
@@ -546,7 +550,7 @@ pub fn authenticated(
         session_id,
         origin,
         head,
-        connection,
+        connection: Box::new(connection),
     }
 }
 
@@ -950,7 +954,7 @@ mod tests {
                 "server.updateSettings",
                 serde_json::json!({"ok": "operate"}),
             )
-            .returns("canary", serde_json::json!({"alive": true}))
+            .returns("server.getConfig", serde_json::json!({"alive": true}))
     }
 
     /// A row the ticket can name.
@@ -1052,10 +1056,7 @@ mod tests {
         else {
             panic!("a request with no credential is refused");
         };
-        assert_eq!(
-            denied.body("unavailable").contains("missing_credential"),
-            true
-        );
+        assert!(denied.body("unavailable").contains("missing_credential"));
     }
 
     /// `seam.postWs`: the method is answered before the ticket is read, so nothing runs at all.
@@ -1215,7 +1216,7 @@ mod tests {
         else {
             panic!("this offer and ticket are acceptable: {seam:?}");
         };
-        (head, connection)
+        (head, *connection)
     }
 
     /// What one gated connection answered to `tag`, inflated back to text.

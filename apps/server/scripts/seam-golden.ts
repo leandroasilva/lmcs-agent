@@ -129,7 +129,10 @@ const authorizeEffect = <A, E, R>(
 /** `ws.ts:424-440` verbatim in shape, including the whitelist, the trim and the length cap. */
 const readClientConnectionOrigin = (
   request: HttpServerRequest.HttpServerRequest,
-): { readonly surface?: string; readonly appVersion?: string } => {
+): {
+  readonly surface?: typeof ClientSurface.Type;
+  readonly appVersion?: string;
+} => {
   const url = HttpServerRequest.toURL(request);
   if (Option.isNone(url)) return {};
   const surface = url.value.searchParams.get("clientSurface");
@@ -438,7 +441,7 @@ type RecordedFrame = {
   readonly case: string;
   readonly direction: "c2s" | "s2c";
   /** The rpc this probe meant, kept only for a request the scenario wrote by hand. */
-  readonly label?: string;
+  readonly label?: string | undefined;
   readonly fin: boolean;
   readonly rsv1: boolean;
   readonly opcode: number;
@@ -450,11 +453,11 @@ type RecordedFrame = {
   readonly payload?: string;
   readonly payloadHex?: string;
   readonly wireHex?: string;
-  readonly closeCode?: number;
-  readonly closeReason?: string;
-  readonly inflated?: string;
-  readonly inflatedBytes?: number;
-  readonly inflateError?: string;
+  readonly closeCode?: number | undefined;
+  readonly closeReason?: string | undefined;
+  readonly inflated?: string | undefined;
+  readonly inflatedBytes?: number | undefined;
+  readonly inflateError?: string | undefined;
 };
 
 type RecordedEvent = {
@@ -465,8 +468,8 @@ type RecordedEvent = {
   readonly headers?: Array<[string, string]>;
   readonly canonical?: boolean;
   /** Everything the socket said after the head, before it went quiet: body, chunk framing, or nothing. */
-  readonly tailHex?: string;
-  readonly tailText?: string;
+  readonly tailHex?: string | undefined;
+  readonly tailText?: string | undefined;
   readonly detail?: string;
   readonly row?: Record<string, unknown>;
   readonly seed?: Record<string, unknown>;
@@ -542,7 +545,7 @@ const recordFrame = (
 const parseHead = (head: string) => {
   const lines = head.split("\r\n").filter((line) => line !== "");
   const fields = lines.slice(1);
-  const headers = fields.map<Array<[string, string]>>((line) => {
+  const headers = fields.map<[string, string]>((line) => {
     const cut = line.indexOf(":");
     const name = line.slice(0, cut);
     const value = line.slice(cut + 1).trim();
@@ -593,7 +596,7 @@ const reader = (socket: net.Socket) => {
     return total !== undefined && buffer.length >= total ? total : undefined;
   };
   const readFrame = async (waitMs = 400) => {
-    const ok = await waitFor(completeFrame, waitMs);
+    const ok = await waitFor(() => completeFrame() !== undefined, waitMs);
     const total = ok ? completeFrame() : undefined;
     return total === undefined ? undefined : take(total);
   };
@@ -664,7 +667,7 @@ const connect = async (port: number): Promise<Probe> => {
             events.push({
               case: current,
               event: "write",
-              detail: `${error.code ?? error.message} after ${data.length} bytes`,
+              detail: `${(error as NodeJS.ErrnoException).code ?? error.message} after ${data.length} bytes`,
             });
           }
           resolve();
@@ -746,7 +749,7 @@ type Scenario = {
   readonly revokeBefore?: boolean;
   readonly after?: (
     probe: Probe,
-    run: <A>(effect: Effect.Effect<A>) => Promise<A>,
+    run: <A, E, R>(effect: Effect.Effect<A, E, R>) => Promise<A>,
   ) => Promise<void>;
 };
 
@@ -1112,7 +1115,7 @@ const readRow = (sessionId: string) =>
  */
 const readSettledRow = async (
   sessionId: string,
-  run: <A>(effect: Effect.Effect<A>) => Promise<A>,
+  run: <A, E, R>(effect: Effect.Effect<A, E, R>) => Promise<A>,
 ) => {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const row = await run(readRow(sessionId));
@@ -1145,7 +1148,7 @@ const revoke = (sessionId: string) =>
 const seeded = new Set<string>();
 
 const runCase = async (scenario: Scenario, port: number) => {
-  const runEffect = <A>(effect: Effect.Effect<A>): Promise<A> =>
+  const runEffect = <A, E, R>(effect: Effect.Effect<A, E, R>): Promise<A> =>
     runtime.runPromise(effect as Effect.Effect<A, never, never>);
   current = scenario.name;
 
@@ -1235,7 +1238,7 @@ const rowOf = (name: string): Record<string, unknown> | undefined =>
   events.find((event) => event.event === "row" && event.case === name)?.row;
 
 const main = async () => {
-  const port = await runtime.runPromise(startup as never);
+  const port = (await runtime.runPromise(startup as never)) as number;
   const only = process.env.SEAM_ONLY;
   for (const scenario of scenarios) {
     if (only !== undefined && scenario.name !== only) continue;
@@ -1330,7 +1333,7 @@ const check = (): Array<string> => {
       failures.push(`${name}: 401 without invalid_credential: ${event?.tailText}`);
     }
     if (
-      !event?.headers.some(
+      !(event?.headers ?? []).some(
         ([header, value]) =>
           header.toLowerCase() === "content-type" && value === "application/json",
       )
@@ -1366,7 +1369,7 @@ const check = (): Array<string> => {
   if (notUpgrade?.statusLine !== "HTTP/1.1 400 Bad Request") {
     failures.push(`seam.notUpgradeAuthorized: expected 400, got ${notUpgrade?.statusLine}`);
   }
-  if (!notUpgrade?.headers.some(([name]) => name.toLowerCase() === "transfer-encoding")) {
+  if (!(notUpgrade?.headers ?? []).some(([name]) => name.toLowerCase() === "transfer-encoding")) {
     failures.push(`seam.notUpgradeAuthorized: the platform's 400 is not chunked`);
   }
   {
@@ -1387,14 +1390,14 @@ const check = (): Array<string> => {
   // sentence. It lands after the bracket started, and the release never happens because the handler's
   // use never returns to it.
   const badKey = responseOf("seam.badKeyAuthorized");
-  if (badKey?.headers.some(([name]) => name.toLowerCase() === "date")) {
+  if ((badKey?.headers ?? []).some(([name]) => name.toLowerCase() === "date")) {
     failures.push(`seam.badKeyAuthorized: a ws refusal arrived through the response pipeline`);
   }
   if (!(badKey?.tailText ?? "").includes("Missing or invalid Sec-WebSocket-Key header")) {
     failures.push(`seam.badKeyAuthorized: expected the key sentence, got ${badKey?.tailText}`);
   }
   if (
-    !badKey?.headers.some(
+    !(badKey?.headers ?? []).some(
       ([name, value]) => name.toLowerCase() === "content-length" && value === "43",
     )
   ) {
@@ -1404,7 +1407,7 @@ const check = (): Array<string> => {
   }
   const badExtensions = responseOf("seam.badExtensionsAuthorized");
   if (
-    !badExtensions?.headers.some(
+    !(badExtensions?.headers ?? []).some(
       ([name, value]) => name.toLowerCase() === "content-length" && value === "55",
     )
   ) {
@@ -1434,8 +1437,13 @@ const check = (): Array<string> => {
   if (!(answerOf("seam.readRow", 3)?.payload ?? "").includes('"alive":true')) {
     failures.push(`seam.readRow: the connection did not outlive the refusal`);
   }
-  if (!(answerOf("seam.noScopeRow", 2)?.payload ?? "").includes('"alive":true')) {
-    failures.push(`seam.noScopeRow: a scopeless session cannot run an ungated method`);
+  // A scopeless row is refused on every method the table declares, and the *second* refusal is the point:
+  // the connection is still answering. There is no ungated endpoint to fall back to — `ws.ts` runs every
+  // handler's effect through `observeRpcEffect`, which is where the scope lookup lives.
+  if (!(answerOf("seam.noScopeRow", 2)?.payload ?? "").includes("EnvironmentAuthorizationError")) {
+    failures.push(
+      `seam.noScopeRow: the request after a refusal was not answered as a typed failure`,
+    );
   }
   if (!(answerOf("seam.noScopeRow", 1)?.payload ?? "").includes("orchestration:read")) {
     failures.push(`seam.noScopeRow: the refusal did not name the scope`);
