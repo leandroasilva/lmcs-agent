@@ -145,6 +145,69 @@ pub struct Session {
     /// Keyed by the id as the client wrote it, because `requestId` echoes the id's **type** and two
     /// clients can number the same request differently (`7` and `"7"` are not the same key).
     pending: BTreeMap<String, Pending>,
+    /// The scope gate `ws.ts:605-618` puts in front of every handler. `None` is the loop this crate's
+    /// other goldens replayed — a server with no table in front of it, which is not what `ws.ts` is but is
+    /// what a measurement of the envelope needs.
+    gate: Option<Gate>,
+    /// Set by the throw the table cannot answer. `scope-golden.ts` measured the consequence: the broadcast
+    /// `Defect` went out, the socket stayed open, and the request that followed it was never answered.
+    deaf: bool,
+}
+
+/// The gate as a connection holds it: what the credential covers, plus the one method whose scope is a
+/// function of its payload rather than of its tag.
+pub struct Gate {
+    scopes: Vec<String>,
+}
+
+impl Gate {
+    /// `scopes` is `EnvironmentAuth.AuthenticatedSession.scopes`, i.e. what the ticket's row carried, in
+    /// the row's order. The order is irrelevant to the decision ([`crate::scopes::grants`] scans) and is
+    /// kept because the credential is what a log line has to name.
+    #[must_use]
+    pub fn new(scopes: Vec<String>) -> Self {
+        Self { scopes }
+    }
+
+    /// The decision for one request. `device.list` is spelled here because it is the only tag whose
+    /// required scope is read out of the payload (`ws.ts:3513-3529`) — a server that registered that rule
+    /// per handler would be able to forget it, and the shipped one cannot.
+    #[must_use]
+    pub fn decide(&self, tag: &str, payload: &Payload) -> crate::scopes::Decision {
+        if tag == DEVICE_LIST {
+            return crate::scopes::authorize_device_list(
+                &self.scopes,
+                inspect_only(payload),
+                text(payload, "retryHostId"),
+                text(payload, "updateTool"),
+            );
+        }
+        crate::scopes::authorize(&self.scopes, tag)
+    }
+}
+
+const DEVICE_LIST: &str = "device.list";
+
+/// `input.inspectOnly`, read the way its declaration lets it arrive: `RpcAuthorization.ts:190`'s test is
+/// JavaScript truthiness, but the rpc declares `Schema.optional(Schema.Boolean)`, so `null` and a missing
+/// member are the only falsy values the shipped gate can see and `true` is the only truthy one. A client
+/// that wrote `inspectOnly: 7` fails that schema before `ws.ts:3513` runs, which is why nothing wider is
+/// modelled here: the wider the read, the more the port would be deciding what an unreachable input means.
+fn inspect_only(payload: &Payload) -> bool {
+    matches!(
+        payload.as_ref().and_then(|value| value.get("inspectOnly")),
+        Some(Value::Bool(true))
+    )
+}
+
+/// A member read as the string its schema declares, i.e. only a JSON string is one. `retryHostId: ""` **is**
+/// a string, and the emptiness rule belongs to [`crate::scopes::required_scope_for_device_list`], which is
+/// where the shipped truthiness lives.
+fn text<'a>(payload: &'a Payload, key: &str) -> Option<&'a str> {
+    payload
+        .as_ref()
+        .and_then(|value| value.get(key))
+        .and_then(Value::as_str)
 }
 
 struct Pending {
@@ -167,6 +230,8 @@ impl Session {
             group,
             socket: Vec::new(),
             pending: BTreeMap::new(),
+            gate: None,
+            deaf: false,
         }
     }
 
@@ -178,11 +243,29 @@ impl Session {
             group,
             socket,
             pending: BTreeMap::new(),
+            gate: None,
+            deaf: false,
+        }
+    }
+
+    /// The same connection with the scope gate in front of it, which is what `ws.ts` serves: the ticket
+    /// decided the session, the session's scopes decide whether a handler runs at all.
+    #[must_use]
+    pub fn gated(group: Group, socket: Vec<Pair>, gate: Gate) -> Self {
+        Self {
+            gate: Some(gate),
+            ..Self::upgraded(group, socket)
         }
     }
 
     /// One WebSocket text frame in, the server's answer out.
     pub fn receive(&mut self, text: &str) -> Reply {
+        if self.deaf {
+            // Measured, not inferred: `scope-golden.ts` wrote a granted request after a method the table
+            // does not cover and got nothing back, on a socket that had not closed. The shipped server is
+            // in the same bind — its dispatch loop died with the throw — so the port stays silent too.
+            return Reply::Frames(Vec::new());
+        }
         let mut out = Vec::new();
         match Frame::decode(text) {
             Frame::Refused(syntax) => {
@@ -197,6 +280,15 @@ impl Session {
             }
         }
         Reply::Frames(out)
+    }
+
+    /// Has the connection met the throw it cannot answer past? `scope-golden.ts` measured the answer to
+    /// that question rather than assuming it: it wrote a granted request after each refusal and counted
+    /// the replies, so survival is a column of the artifact (`counts[*].answered`) and a replay can
+    /// compare against it instead of restating which branches are fatal.
+    #[must_use]
+    pub const fn deafened(&self) -> bool {
+        self.deaf
     }
 
     /// Routes one envelope of a batch. The `bool` is [`Reply::Close`]: the batch stops there, because
@@ -243,6 +335,38 @@ impl Session {
             return false;
         };
         let seen = crate::headers::seen_by_handler(&self.socket, frame_headers);
+        // The gate runs *after* the lookup, because it runs inside the handler: `ws.ts` wraps the effect
+        // the handler builds, so an unregistered tag is answered with `Unknown request tag` whatever the
+        // scopes are, and a registered one whose scope is missing never reaches the handler at all.
+        let decision = self
+            .gate
+            .as_ref()
+            .map(|gate| gate.decide(&key, &request.payload));
+        match decision {
+            Some(crate::scopes::Decision::Refused { required }) => {
+                self.answer(
+                    &request.id,
+                    Outcome::Typed(crate::scopes::authorization_error_value(required)),
+                    out,
+                );
+                return false;
+            }
+            Some(crate::scopes::Decision::Undeclared(undeclared)) => {
+                // Measured as `deleteBranch.undeclaredInTable`: the frame is the connection-level
+                // `Defect`, with no `requestId` — the throw happened while the handler was still being
+                // built, so there was no effect left to fail — and the socket stays open. The defect is
+                // **error-shaped** (`{"name":"Error","message":…}`) rather than the bare string an
+                // unknown `_tag` writes, because `RpcAuthorization.ts:180` threw an `Error` object.
+                self.deaf = true;
+                out.push(defect(Defect::Error {
+                    name: "Error".to_owned(),
+                    message: undeclared.message(),
+                    cause: None,
+                }));
+                return false;
+            }
+            Some(crate::scopes::Decision::Granted) | None => {}
+        }
         self.answer(&request.id, handler(&request.payload, &seen), out);
         false
     }
@@ -735,5 +859,200 @@ pub(crate) mod tests {
                 r#"{"_tag":"Exit","requestId":9502,"exit":{"_tag":"Success","value":{"pairs":[]}}}"#
             ]
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // The scope gate
+    // -----------------------------------------------------------------------
+
+    /// Tag names are the real methods, so every assertion below goes through the real table row.
+    fn gated_group() -> Group {
+        Group::new()
+            .returns("device.detail", Value::String("detail".to_owned()))
+            .returns("device.open", Value::String("opened".to_owned()))
+            .returns("device.list", Value::String("listed".to_owned()))
+            // The one handler the shipped `WsRpcGroup` registers and `RPC_REQUIRED_SCOPES` omits.
+            .returns("vcs.deleteBranch", Value::Null)
+            .streams("subscribeDeviceState", vec![vec![row(1)]])
+    }
+
+    fn gate(scopes: &[&str]) -> Gate {
+        Gate::new(scopes.iter().map(|scope| (*scope).to_owned()).collect())
+    }
+
+    fn served(scopes: &[&str]) -> Session {
+        Session::gated(gated_group(), Vec::new(), gate(scopes))
+    }
+
+    fn ask(id: &str, tag: &str, payload: &str) -> String {
+        request(&format!(
+            r#""id":{id},"tag":"{tag}","payload":{payload},"headers":[]"#
+        ))
+    }
+
+    /// The refusal, as the wire writes it: the request's own `Exit`, and the error with its three keys.
+    /// Written as bytes with the two variables held apart rather than as a `format!`, because the claim
+    /// of this file is the exact text and Rust's brace doubling is not worth reading around.
+    fn refused(id: &str, required: &str) -> String {
+        r#"{"_tag":"Exit","requestId":@ID@,"exit":{"_tag":"Failure","cause":[{"_tag":"Fail","error":{"_tag":"EnvironmentAuthorizationError","message":"The authenticated token is missing required scope: @REQ@.","requiredScope":"@REQ@"}}]}}"#
+            .replace("@ID@", id)
+            .replace("@REQ@", required)
+    }
+
+    #[test]
+    fn a_refusal_answers_the_request_and_leaves_the_connection_able() {
+        let mut session = served(&["orchestration:read"]);
+        assert_eq!(
+            frames(session.receive(&call("71", "device.open"))),
+            vec![refused("71", "orchestration:operate")],
+            "read does not imply operate",
+        );
+        // `probe.deniedThenCanary` measured exactly this: the refusal is an answer, so the next request
+        // is served. The connection only stops answering after the *throw*.
+        assert_eq!(
+            frames(session.receive(&call("72", "device.detail"))),
+            vec![r#"{"_tag":"Exit","requestId":72,"exit":{"_tag":"Success","value":"detail"}}"#]
+        );
+    }
+
+    #[test]
+    fn an_empty_credential_refuses_without_running_the_handler() {
+        let mut session = served(&[]);
+        assert_eq!(
+            frames(session.receive(&call("73", "device.list"))),
+            vec![refused("73", "orchestration:read")],
+        );
+    }
+
+    /// `deleteBranch.undeclaredInTable` and `deleteBranch.thenCanary`, which together are the reason this
+    /// branch is a broadcast rather than a refusal: a scope list that covers everything still throws,
+    /// because there is nothing to compare against, and the throw leaves the connection open and deaf.
+    #[test]
+    fn a_method_the_table_omits_is_answered_outside_the_request_and_then_silence() {
+        let mut session = served(&["orchestration:read", "orchestration:operate", "access:read"]);
+        assert_eq!(
+            frames(session.receive(&call("74", "vcs.deleteBranch"))),
+            vec![
+                r#"{"_tag":"Defect","defect":{"name":"Error","message":"RPC method vcs.deleteBranch has no declared authorization scope."}}"#
+            ],
+            "no requestId: the throw happened while the handler was being built",
+        );
+        assert!(
+            !session.receive(&call("75", "device.detail")).closes(),
+            "the socket is not closed, which is what made the client report it open",
+        );
+        silence(&mut session, &call("76", "device.detail"));
+        silence(&mut session, r#"{"_tag":"Ping"}"#);
+    }
+
+    /// The order the shipped dispatch puts them in: the group lookup first, since a tag with no handler
+    /// never reaches `requiredScopeForRpcMethod`, and the gate before the handler.
+    #[test]
+    fn the_group_answers_before_the_gate_is_consulted() {
+        let mut session = served(&[]);
+        assert_eq!(
+            frames(session.receive(&call("77", "no.such.tag"))),
+            vec![
+                r#"{"_tag":"Exit","requestId":77,"exit":{"_tag":"Failure","cause":[{"_tag":"Die","defect":"Unknown request tag: no.such.tag"}]}}"#
+            ],
+        );
+        // Asking twice is what separates this from the throw: an unregistered tag answers every time,
+        // because the request still has an id to answer to.
+        assert_eq!(
+            frames(session.receive(&call("78", "no.such.tag"))),
+            vec![
+                r#"{"_tag":"Exit","requestId":78,"exit":{"_tag":"Failure","cause":[{"_tag":"Die","defect":"Unknown request tag: no.such.tag"}]}}"#
+            ],
+        );
+        // …and the connection is not deaf, which is the difference between this and the throw above.
+        assert_eq!(
+            frames(session.receive(&call("79", "device.detail"))),
+            vec![refused("79", "orchestration:read")],
+        );
+    }
+
+    /// `list.inspectOnly`: the one branch that reaches a handler without passing the gate. The empty
+    /// credential is the point — a session with no scopes at all runs it.
+    #[test]
+    fn device_list_inspects_with_no_credential_and_operates_with_one() {
+        let mut session = served(&[]);
+        assert_eq!(
+            frames(session.receive(&ask("80", "device.list", r#"{"inspectOnly":true}"#))),
+            vec![r#"{"_tag":"Exit","requestId":80,"exit":{"_tag":"Success","value":"listed"}}"#],
+        );
+        // `list.inspectOnlyWithUpdateTool`: the same inspection, asked to update a tool, is an operation.
+        let mut session = served(&["orchestration:read"]);
+        assert_eq!(
+            frames(session.receive(&ask(
+                "81",
+                "device.list",
+                r#"{"inspectOnly":true,"updateTool":"codex"}"#
+            ))),
+            vec![refused("81", "orchestration:operate")],
+        );
+        // `list.emptyStringsAreAbsent`: `input.retryHostId || input.updateTool` is truthiness, so an
+        // empty string is the field being absent and the read scope is enough.
+        assert_eq!(
+            frames(session.receive(&ask(
+                "82",
+                "device.list",
+                r#"{"retryHostId":"","updateTool":""}"#
+            ))),
+            vec![r#"{"_tag":"Exit","requestId":82,"exit":{"_tag":"Success","value":"listed"}}"#],
+        );
+        // `updateTool: ""` does not take the `inspectOnly` shortcut away, either.
+        assert_eq!(
+            frames(session.receive(&ask(
+                "83",
+                "device.list",
+                r#"{"inspectOnly":true,"updateTool":""}"#
+            ))),
+            vec![r#"{"_tag":"Exit","requestId":83,"exit":{"_tag":"Success","value":"listed"}}"#],
+        );
+        // `list.inspectOnlyOutranksRetry`: the short-circuit reads the two flags, so an inspection that also
+        // names a host is still an inspection and never reaches the scope the retry alone would need.
+        let mut inspecting = served(&[]);
+        assert_eq!(
+            frames(inspecting.receive(&ask(
+                "91",
+                "device.list",
+                r#"{"inspectOnly":true,"retryHostId":"host-1"}"#
+            ))),
+            vec![r#"{"_tag":"Exit","requestId":91,"exit":{"_tag":"Success","value":"listed"}}"#],
+        );
+        // …and `inspectOnly: false` is the branch not being taken, so the empty credential that let the
+        // first request through refuses this one.
+        let mut empty = served(&[]);
+        assert_eq!(
+            frames(empty.receive(&ask("90", "device.list", r#"{"inspectOnly":false}"#))),
+            vec![refused("90", "orchestration:read")],
+        );
+    }
+
+    /// The gate reads the request's **tag**, which is what `ws.ts:3542`'s `device.detail` does with its
+    /// own name. The golden reached the lookup through this rpc's `method` payload instead, so a probe
+    /// case whose payload names an operate method is granted here and refused there — the port follows
+    /// the server, and this test is the difference written down rather than discovered later.
+    #[test]
+    fn the_gate_reads_the_tag_rather_than_the_payload() {
+        let mut session = served(&["orchestration:read"]);
+        assert_eq!(
+            frames(session.receive(&ask("84", "device.detail", r#"{"method":"device.open"}"#))),
+            vec![r#"{"_tag":"Exit","requestId":84,"exit":{"_tag":"Success","value":"detail"}}"#],
+        );
+    }
+
+    /// A refusal of a subscription is the same `Fail` the effect path writes (`streamAuthError.denied`),
+    /// because the exit schema is what carries the error and it carries it for every method the table
+    /// covers. So the gate's answer does not depend on the channel, and no stream is started.
+    #[test]
+    fn a_refused_subscription_is_refused_like_an_effect() {
+        let mut session = served(&[]);
+        assert_eq!(
+            frames(session.receive(&call("85", "subscribeDeviceState"))),
+            vec![refused("85", "orchestration:read")],
+        );
+        // Nothing is pending, so the ack a client might still send is silence rather than a chunk.
+        silence(&mut session, r#"{"_tag":"Ack","requestId":85}"#);
     }
 }
