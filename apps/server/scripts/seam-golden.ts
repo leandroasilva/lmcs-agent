@@ -143,7 +143,7 @@ const readClientConnectionOrigin = (
 };
 
 // ---------------------------------------------------------------------------
-// The group: two gated methods whose names carry their real scopes, one free canary
+// The group: three methods, each gated the way `ws.ts` gates it
 // ---------------------------------------------------------------------------
 
 const GetSettingsRpc = Rpc.make(WS_METHODS.serverGetSettings, {
@@ -156,13 +156,20 @@ const UpdateSettingsRpc = Rpc.make(WS_METHODS.serverUpdateSettings, {
   success: Schema.Struct({ ok: Schema.String }),
   error: EnvironmentAuthorizationError,
 });
-/** Answers whatever the connection's scopes are, so a case can say the refusal was survived. */
-const CanaryRpc = Rpc.make("canary", {
+/**
+ * The survivor probe: a third method, sent after a refusal, whose answer says the connection is still
+ * answering. Its tag is a **declared** one (`server.getConfig`, `orchestration:read`) because that is the
+ * only kind the shipped server has — every handler in `WsRpcGroup` runs its effect through
+ * `observeRpcEffect`, which is where `requiredScopeForRpcMethod` is called. A method with no scope
+ * declaration is not a public endpoint: it is the `vcs.deleteBranch` throw `scope-golden.ts` measured.
+ */
+const SurvivorRpc = Rpc.make(WS_METHODS.serverGetConfig, {
   payload: Schema.Struct({}),
   success: Schema.Struct({ alive: Schema.Boolean }),
+  error: EnvironmentAuthorizationError,
 });
 
-const Group = RpcGroup.make(GetSettingsRpc, UpdateSettingsRpc, CanaryRpc);
+const Group = RpcGroup.make(GetSettingsRpc, UpdateSettingsRpc, SurvivorRpc);
 
 /**
  * The handler layer for **one** connection.
@@ -187,7 +194,12 @@ const handlersLayerFor = (scopes: ReadonlyArray<string>) =>
           requiredScopeForRpcMethod(WS_METHODS.serverUpdateSettings),
           Effect.succeed({ ok: "operate" }),
         ),
-      canary: () => Effect.succeed({ alive: true }),
+      [WS_METHODS.serverGetConfig]: () =>
+        authorizeEffect(
+          scopes,
+          requiredScopeForRpcMethod(WS_METHODS.serverGetConfig),
+          Effect.succeed({ alive: true }),
+        ),
     }) as never,
   );
 
@@ -447,7 +459,7 @@ type RecordedFrame = {
 
 type RecordedEvent = {
   readonly case: string;
-  readonly event: "request" | "response" | "peer" | "row" | "write";
+  readonly event: "request" | "response" | "peer" | "row" | "write" | "seed";
   readonly request?: string;
   readonly statusLine?: string;
   readonly headers?: Array<[string, string]>;
@@ -457,6 +469,7 @@ type RecordedEvent = {
   readonly tailText?: string;
   readonly detail?: string;
   readonly row?: Record<string, unknown>;
+  readonly seed?: Record<string, unknown>;
 };
 
 const frames: Array<RecordedFrame> = [];
@@ -737,12 +750,31 @@ type Scenario = {
   ) => Promise<void>;
 };
 
+/**
+ * The client's close, written *and* recorded.
+ *
+ * Every `101` case ends this way, and the close the server echoes back is the last frame the capture
+ * holds; a replay that had to invent the request would be inventing the answer with it.
+ */
+const close = async (probe: Probe, name: string) => {
+  const bytes = closeBytes(1000, "bye");
+  recordFrame(name, "c2s", bytes, "close");
+  await probe.write(bytes);
+  await drain(probe, name);
+};
+
 /** The origin cases need no exchange: the answer is in the row, and the socket only has to close. */
 const closeOnly: NonNullable<Scenario["after"]> = async (probe) => {
+  await close(probe, current);
+};
+
+/** The same close on a deflated socket: the frame itself is plain, but the answers after it have to be
+ * read through the connection's deflate stream. */
+const closeDeflated = async (probe: Probe, name: string) => {
   const bytes = closeBytes(1000, "bye");
-  recordFrame(current, "c2s", bytes, "close");
+  recordFrame(name, "c2s", bytes, "close");
   await probe.write(bytes);
-  await drain(probe, "");
+  await drainDeflated(probe, name);
 };
 
 const scenarios: Array<Scenario> = [
@@ -863,9 +895,8 @@ const scenarios: Array<Scenario> = [
     after: async (probe, _run) => {
       await exchange(probe, "seam.readRow", 1, WS_METHODS.serverGetSettings);
       await exchange(probe, "seam.readRow", 2, WS_METHODS.serverUpdateSettings);
-      await exchange(probe, "seam.readRow", 3, "canary");
-      await probe.write(closeBytes(1000, "bye"));
-      await drain(probe, "seam.readRow");
+      await exchange(probe, "seam.readRow", 3, WS_METHODS.serverGetConfig);
+      await close(probe, "seam.readRow");
     },
   },
   {
@@ -877,8 +908,7 @@ const scenarios: Array<Scenario> = [
       // Byte-identical to `seam.readRow`'s second request, and a different answer: the gate came from
       // the row, not from the ticket or the request.
       await exchange(probe, "seam.operateRow", 2, WS_METHODS.serverUpdateSettings);
-      await probe.write(closeBytes(1000, "bye"));
-      await drain(probe, "seam.operateRow");
+      await close(probe, "seam.operateRow");
     },
   },
   {
@@ -888,9 +918,8 @@ const scenarios: Array<Scenario> = [
     target: (ticket) => `/ws?wsTicket=${ticket}`,
     after: async (probe) => {
       await exchange(probe, "seam.noScopeRow", 1, WS_METHODS.serverGetSettings);
-      await exchange(probe, "seam.noScopeRow", 2, "canary");
-      await probe.write(closeBytes(1000, "bye"));
-      await drain(probe, "seam.noScopeRow");
+      await exchange(probe, "seam.noScopeRow", 2, WS_METHODS.serverGetConfig);
+      await close(probe, "seam.noScopeRow");
     },
   },
   {
@@ -904,9 +933,8 @@ const scenarios: Array<Scenario> = [
     after: async (probe) => {
       await exchangeDeflated(probe, "seam.deflateRow", 1, WS_METHODS.serverGetSettings);
       await exchangeDeflated(probe, "seam.deflateRow", 2, WS_METHODS.serverUpdateSettings);
-      await exchangeDeflated(probe, "seam.deflateRow", 3, "canary");
-      await probe.write(closeBytes(1000, "bye"));
-      await drainDeflated(probe, "seam.deflateRow");
+      await exchangeDeflated(probe, "seam.deflateRow", 3, WS_METHODS.serverGetConfig);
+      await closeDeflated(probe, "seam.deflateRow");
     },
   },
   {
@@ -920,9 +948,8 @@ const scenarios: Array<Scenario> = [
       // the *next* connect rather than about this one.
       await run(revoke(SESSIONS.revoke));
       await exchange(probe, "seam.revokedMidFlight", 2, WS_METHODS.serverGetSettings);
-      await exchange(probe, "seam.revokedMidFlight", 3, "canary");
-      await probe.write(closeBytes(1000, "bye"));
-      await drain(probe, "seam.revokedMidFlight");
+      await exchange(probe, "seam.revokedMidFlight", 3, WS_METHODS.serverGetConfig);
+      await close(probe, "seam.revokedMidFlight");
     },
   },
   // --- what the route recorded about the client -----------------------------
@@ -1135,6 +1162,21 @@ const runCase = async (scenario: Scenario, port: number) => {
   if (scenario.revokeBefore && scenario.session !== undefined) {
     await runEffect(revoke(scenario.session));
   }
+  // The row as the **auth step** met it, which is not the row at the end of the case: `revokedMidFlight`
+  // revokes after the handshake, and the origin cases rewrite the same columns three times. A replay in
+  // another language starts here rather than guessing.
+  events.push({
+    case: scenario.name,
+    event: "seed",
+    seed: {
+      session: scenario.session ?? null,
+      scopes: [...(scenario.scopes ?? [])],
+      expiresAt: scenario.expiresAt ?? NOW + 600_000,
+      revoked: scenario.revokeBefore === true,
+      // `seam.missingRow` mints a real token for a row that was never created.
+      created: scenario.session !== undefined && scenario.scopes !== undefined,
+    },
+  });
 
   let token = "";
   if (scenario.session !== undefined && scenario.ticket !== "none") {
@@ -1217,6 +1259,12 @@ const main = async () => {
         .map((event) => `${event.case}=${event.statusLine?.split(" ")[1]}`),
       rsv1Used: frames.filter((frame) => frame.direction === "s2c" && frame.rsv1).length,
       now: new Date(NOW).toISOString(),
+      // The replay needs the signing secret to re-check the recorded tickets' signatures, and the clock in
+      // the unit the port reads it in. Both are constants of this file, so recording them leaks nothing.
+      nowMs: NOW,
+      secret: [...SECRET].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+      // No reusable dev session runs here, which is what makes `seam.devPrefix` a refusal.
+      devSessionId: null,
     },
     frames,
     events,
@@ -1415,7 +1463,7 @@ const check = (): Array<string> => {
     failures.push(`seam.deflateRow: the refusal was not deflated`);
   }
   if (answerOf("seam.deflateRow", 3)?.rsv1 !== true) {
-    failures.push(`seam.deflateRow: the canary was not deflated`);
+    failures.push(`seam.deflateRow: the survivor probe was not deflated`);
   }
   // `readClientConnectionOrigin`, measured through what the database kept.
   const web = rowOf("seam.originWeb");

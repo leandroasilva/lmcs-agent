@@ -367,9 +367,6 @@ impl Connection {
 /// The caller's side effects are part of the shape, and they go in this order: write the row's
 /// attribution from `origin`, mark `session_id` connected, write `head`. On [`Seam::Connected`] only,
 /// release the mark when the socket is gone.
-///
-/// No `Debug`: a connection holds deflate contexts and a half-assembled message, none of which a test
-/// wants printed. Matching on the variant, or on its `head` bytes, is how the goldens read these.
 pub enum Seam {
     /// The `101` and a connection whose dispatch is already gated by the ticket's row. The gate cannot
     /// be bolted on later: `ws.ts:3811` builds the rpc layer *around* the authenticated session, so a
@@ -396,8 +393,9 @@ pub enum Seam {
         refusal: crate::http::Refusal,
         head: Vec<u8>,
     },
-    /// The credential is good and the request is not a socket. See the bullet above for why this is not
-    /// [`Seam::Denied`]'s neighbour, and `ws`'s answer.
+    /// The credential is good and the request is not a socket, so the route ran and the response pipeline
+    /// answered. Not [`crate::http::Refusal`]'s neighbour: those bytes come from `ws`, which never saw
+    /// this request.
     NotUpgrade {
         session_id: String,
         origin: crate::http::Origin,
@@ -407,6 +405,55 @@ pub enum Seam {
     /// (`seam.postWs`), which is the one ordering claim here that a *port over-eagerly authenticating*
     /// would get wrong.
     NoRoute { head: Vec<u8> },
+}
+
+/// Prints what the seam decided, which is the head and the row it named. A [`Connection`] is left out
+/// because it holds deflate contexts and a half-assembled message, none of which a failing test wants
+/// printed; its identity is the head above it.
+impl std::fmt::Debug for Seam {
+    fn fmt(&self, out: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut printed = out.debug_struct("Seam");
+        match self {
+            Self::Connected {
+                session_id,
+                origin,
+                head,
+                ..
+            } => printed
+                .field("variant", &"Connected")
+                .field("session_id", session_id)
+                .field("origin", origin)
+                .field("head", &String::from_utf8_lossy(head)),
+            Self::Denied { denied, head } => printed
+                .field("variant", &"Denied")
+                .field("denied", denied)
+                .field("head", &String::from_utf8_lossy(head)),
+            Self::Refused {
+                session_id,
+                origin,
+                refusal,
+                head,
+            } => printed
+                .field("variant", &"Refused")
+                .field("session_id", session_id)
+                .field("origin", origin)
+                .field("refusal", refusal)
+                .field("head", &String::from_utf8_lossy(head)),
+            Self::NotUpgrade {
+                session_id,
+                origin,
+                head,
+            } => printed
+                .field("variant", &"NotUpgrade")
+                .field("session_id", session_id)
+                .field("origin", origin)
+                .field("head", &String::from_utf8_lossy(head)),
+            Self::NoRoute { head } => printed
+                .field("variant", &"NoRoute")
+                .field("head", &String::from_utf8_lossy(head)),
+        };
+        printed.finish()
+    }
 }
 
 /// Run the route's order over one request head.
@@ -943,7 +990,15 @@ mod tests {
     /// `seam.badTicketBadKey`: the status the *route* earns, not the one `ws` would have written.
     #[test]
     fn the_ticket_is_refused_before_the_framing_is_checked() {
-        let broken = format!("{}.{}", ticket(), "x");
+        // One character of the signature flipped, which is what the oracle did. Appending a third part
+        // would **not** refuse the token: `verifyWebSocketToken` splits on `.` and reads only the first
+        // two pieces, so `payload.sig.junk` authenticates.
+        let broken = {
+            let token = ticket();
+            let last = token.len() - 1;
+            let tail = &token[last..];
+            format!("{}{}", &token[..last], if tail == "A" { "B" } else { "A" })
+        };
         let seam = seam(
             &head(
                 &format!("/ws?wsTicket={broken}"),
@@ -1129,27 +1184,38 @@ mod tests {
 
     /// The `Sec-WebSocket-Extensions` offer both routes the handshake and names the streams, so the two
     /// places agree by construction.
-    const OFFER: &str = concat!(UPGRADE, "Sec-WebSocket-Extensions: permessage-deflate\r\n");
+    const OFFER: &str = concat!(
+        "Upgrade: websocket\r\n",
+        "Connection: Upgrade\r\n",
+        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n",
+        "Sec-WebSocket-Version: 13\r\n",
+        "Sec-WebSocket-Extensions: permessage-deflate\r\n",
+    );
 
-    /// One accepted upgrade, with whatever the offer produced wired in.
+    /// One upgrade the **seam** accepted, so the gate, the streams and the `101` all come from the route's
+    /// order rather than from a test assembling them.
     fn connected(scopes: &[&str], deflate: bool) -> (Vec<u8>, Connection) {
+        let target = format!("/ws?wsTicket={}", ticket());
         let lines = if deflate { OFFER } else { UPGRADE };
-        let request =
-            crate::http::Request::parse(&head(&format!("/ws?wsTicket={}", ticket()), lines));
-        let agreed = crate::deflate::negotiate(request.extensions.unwrap_or_default())
-            .unwrap()
-            .filter(|_| deflate);
-        let gate = crate::auth::verify(&ticket(), NOW, &secret(), None, |_| stored(scopes))
-            .expect("the ticket is well formed");
-        let connection = Connection::gated(&request, gated_group(), gate.gate(), agreed.clone());
-        (
-            crate::http::upgrade(
-                request.key.unwrap_or_default(),
-                None,
-                agreed.as_ref().map(|agreed| agreed.answer.as_str()),
-            ),
-            connection,
-        )
+        let head = head(&target, lines);
+        let request = crate::http::Request::parse(&head);
+        let seam = authenticated(
+            &request,
+            gated_group(),
+            NOW,
+            &secret(),
+            None,
+            |_| stored(scopes),
+            "Tue, 14 Nov 2023 22:13:20 GMT",
+            "unavailable",
+        );
+        let Seam::Connected {
+            head, connection, ..
+        } = seam
+        else {
+            panic!("this offer and ticket are acceptable: {seam:?}");
+        };
+        (head, connection)
     }
 
     /// What one gated connection answered to `tag`, inflated back to text.
@@ -1158,10 +1224,19 @@ mod tests {
         let written = connection
             .push(&client(TEXT, request(1, tag).as_bytes(), true))
             .bytes();
+        // The refusal's 256-byte body puts a 16-bit length in the head, so the body starts where the
+        // length field says. `websocket::read_head` cannot be used to look at our own output: it is the
+        // reader for a *peer's* frames and insists on the mask bit.
         let agreed = crate::deflate::negotiate("permessage-deflate")
             .unwrap()
             .unwrap();
         let mut back = crate::deflate::Inbound::new(&agreed);
-        String::from_utf8(back.inflate(&written[2..], true).unwrap()).unwrap()
+        String::from_utf8(back.inflate(body_of(&written), true).unwrap()).unwrap()
+    }
+
+    /// The body of one server frame, by the length field its second byte names.
+    fn body_of(frame: &[u8]) -> &[u8] {
+        let len = frame[1] & 0x7f;
+        &frame[if len == 126 { 4 } else { 2 }..]
     }
 }
