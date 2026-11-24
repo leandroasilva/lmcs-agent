@@ -1,0 +1,23 @@
+[package]
+name = "lmcs-terminal-window"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+# Milestone A: a gpui window that runs a real shell. The engine is the shipped
+# `ghostty-vt.wasm` (decision #30) and the child process is the ported PTY session, so this
+# crate holds no terminal semantics of its own — only gpui painting and the key encoding.
+[dependencies]
+lmcs-ghostty-vt = { path = "../ghostty-vt" }
+lmcs-pty = { path = "../pty" }
+gpui = { package = "gpui-pre", version = "=0.3.11" }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.11", features = ["font-kit"] }
+futures = "0.3"
+
+# Xcode 27 moved the Metal compiler into a separately downloaded component, which this host does
+# not have, and gpui's default build compiles `shaders.metal` with it at build time.
+# `runtime_shaders` is gpui's own switch for that: the source ships inside the binary and the
+# device compiles it once at startup. Without it there is no macOS build of gpui at all.
+[target.'cfg(target_os = "macos")'.dependencies]
+gpui-pre-macos = { version = "=0.3.11", features = ["runtime_shaders"] }

@@ -26,7 +26,6 @@ pub const GHOSTTY_WASM: &[u8] =
 pub const BUILD_INFO_VERSION_STRING: i32 = 5;
 pub const BUILD_INFO_VERSION_BUILD: i32 = 10;
 
-#[must_use]
 pub fn load_embedded() -> Result<Runtime, GhosttyError> {
     Runtime::load(GHOSTTY_WASM)
 }
@@ -71,6 +70,35 @@ mod tests {
             version.contains(pinned),
             "version string {version} does not carry the pin {pinned}"
         );
+    }
+
+    /// `GhosttyRow` and `GhosttyCell` are `uint64_t` (`ghostty/vt/screen.h:40,51`) on a 32-bit
+    /// module, so their getters take an `i64` where every other handle in the render path is an
+    /// `i32`. Reading those as pointers asks the engine for a different row and fails the call.
+    #[test]
+    fn row_and_cell_handles_are_sixty_four_bits() {
+        let module =
+            wasmtime::Module::new(&wasmtime::Engine::default(), GHOSTTY_WASM).expect("parse wasm");
+        for name in ["ghostty_row_get", "ghostty_cell_get"] {
+            let export = module
+                .exports()
+                .find(|export| export.name() == name)
+                .expect(name);
+            let extern_type = export.ty();
+            let signature = extern_type
+                .func()
+                .expect("the row and cell getters are functions");
+            assert_eq!(
+                // `ValType` is not `PartialEq`, so the module's own spelling is the comparison.
+                signature
+                    .params()
+                    .map(|param| param.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                "i64, i32, i32",
+                "{name} changed shape"
+            );
+        }
     }
 
     #[test]

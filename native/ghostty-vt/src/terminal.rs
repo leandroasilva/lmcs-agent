@@ -9,6 +9,7 @@
 //! deviation, not an oversight.
 
 use crate::runtime::{GHOSTTY_SUCCESS, GhosttyError, Runtime};
+use wasmtime::Val;
 
 /// `MAX_SCROLLBACK_ROWS` (`core.ts:12`).
 const MAX_SCROLLBACK_ROWS: i64 = 10_000;
@@ -493,14 +494,8 @@ impl GhosttyTerminal {
                 &[iterator, row_data::RAW, self.scratch],
             )?,
         )?;
-        // The host reads a pointer-sized slot; in wasm32 the high half is always zero.
-        let raw_row = i32::try_from(u64::from_le_bytes(
-            self.runtime
-                .read(self.scratch, 8)?
-                .try_into()
-                .expect("8 bytes"),
-        ) as u32)
-        .unwrap_or(0);
+        // `GhosttyRow` is a `uint64_t` handle, not a wasm32 pointer: the tag half is part of it.
+        let raw_row = self.runtime.read_handle(self.scratch)?;
         let is_wrap_continuation =
             self.get_raw_row_bool(raw_row, row_data::IS_WRAP_CONTINUATION)?;
         let wraps_to_next = self.get_raw_row_bool(raw_row, row_data::WRAPS_TO_NEXT)?;
@@ -563,19 +558,17 @@ impl GhosttyTerminal {
                         &[cells_iterator, cell_data::RAW, self.scratch],
                     )?,
                 )?;
-                let raw_cell = i32::try_from(u64::from_le_bytes(
-                    self.runtime
-                        .read(self.scratch, 8)?
-                        .try_into()
-                        .expect("8 bytes"),
-                ) as u32)
-                .unwrap_or(0);
+                let raw_cell = self.runtime.read_handle(self.scratch)?;
                 self.runtime.write(self.scratch + 8, &0u32.to_le_bytes())?;
                 Self::assert_success(
                     "ghostty_cell_get(wide)",
-                    self.runtime.call(
+                    self.runtime.call_vals(
                         "ghostty_cell_get",
-                        &[raw_cell, cell_data::WIDE, self.scratch + 8],
+                        &[
+                            Val::I64(raw_cell as i64),
+                            Val::I32(cell_data::WIDE),
+                            Val::I32(self.scratch + 8),
+                        ],
                     )?,
                 )?;
                 wide = i64::from(u32::from_le_bytes(
@@ -657,12 +650,16 @@ impl GhosttyTerminal {
         Ok(self.runtime.read_field(self.style, "GhosttyStyle", field)? as i32)
     }
 
-    fn get_raw_row_bool(&mut self, raw_row: i32, data: i32) -> Result<bool, GhosttyError> {
+    fn get_raw_row_bool(&mut self, raw_row: u64, data: i32) -> Result<bool, GhosttyError> {
         self.runtime.write(self.scratch + 8, &[0])?;
-        Ok(self
-            .runtime
-            .call("ghostty_row_get", &[raw_row, data, self.scratch + 8])?
-            == GHOSTTY_SUCCESS
+        Ok(self.runtime.call_vals(
+            "ghostty_row_get",
+            &[
+                Val::I64(raw_row as i64),
+                Val::I32(data),
+                Val::I32(self.scratch + 8),
+            ],
+        )? == GHOSTTY_SUCCESS
             && self.runtime.read(self.scratch + 8, 1)?[0] != 0)
     }
 

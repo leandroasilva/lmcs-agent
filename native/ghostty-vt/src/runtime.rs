@@ -186,6 +186,15 @@ impl Runtime {
     /// Every exported scalar entry point. The module is wasm32, so anything it takes or returns
     /// as a pointer or a `size_t` fits `i32`.
     pub fn call(&mut self, name: &str, args: &[i32]) -> Result<i32, GhosttyError> {
+        let params: Vec<Val> = args.iter().map(|value| Val::I32(*value)).collect();
+        self.call_vals(name, &params)
+    }
+
+    /// The same, for the few entry points that are not all-i32. `GhosttyRow` and `GhosttyCell`
+    /// are `uint64_t` handles (`ghostty/vt/screen.h:40,51`) even on wasm32, so `ghostty_row_get`
+    /// and `ghostty_cell_get` declare `(i64, i32, i32)`; truncating those handles to the low word
+    /// asks the engine for a different row.
+    pub fn call_vals(&mut self, name: &str, params: &[Val]) -> Result<i32, GhosttyError> {
         let function = self
             .instance
             .get_func(&mut self.store, name)
@@ -193,17 +202,16 @@ impl Runtime {
                 GhosttyError::message(format!("libghostty-vt export is unavailable: {name}"))
             })?;
         let signature = function.ty(&self.store);
-        if signature.params().len() != args.len() {
+        if signature.params().len() != params.len() {
             return Err(GhosttyError::message(format!(
                 "{name} takes {} arguments, called with {}",
                 signature.params().len(),
-                args.len()
+                params.len()
             )));
         }
-        let params: Vec<Val> = args.iter().map(|value| Val::I32(*value)).collect();
         let mut results = vec![Val::I32(0); signature.results().len()];
         function
-            .call(&mut self.store, &params, &mut results)
+            .call(&mut self.store, params, &mut results)
             .map_err(|error| {
                 let expected = signature
                     .params()
@@ -217,8 +225,13 @@ impl Runtime {
                     .join(", ");
                 GhosttyError::message(format!(
                     "{name}({}) -> {error}; the module declares ({expected}) -> ({returns})",
-                    args.iter()
-                        .map(i32::to_string)
+                    params
+                        .iter()
+                        .map(|value| match value {
+                            Val::I32(value) => value.to_string(),
+                            Val::I64(value) => value.to_string(),
+                            other => format!("{other:?}"),
+                        })
                         .collect::<Vec<_>>()
                         .join(", "),
                 ))
@@ -273,6 +286,14 @@ impl Runtime {
 
     pub fn read_pointer(&self, slot: i32) -> Result<i32, GhosttyError> {
         Ok(u32::from_le_bytes(self.read(slot, 4)?.try_into().expect("4 bytes")) as i32)
+    }
+
+    /// A `GhosttyRow`/`GhosttyCell` handle slot. These are 64-bit on a 32-bit module, so reading
+    /// them as a pointer would drop the half the engine tags with.
+    pub fn read_handle(&self, slot: i32) -> Result<u64, GhosttyError> {
+        Ok(u64::from_le_bytes(
+            self.read(slot, 8)?.try_into().expect("8 bytes"),
+        ))
     }
 
     pub fn read(&self, pointer: i32, length: usize) -> Result<Vec<u8>, GhosttyError> {
