@@ -10,6 +10,11 @@ publish = false
 # parser is not; `preserve_order` because the envelope's claim is about **bytes**, and a sorted
 # map cannot reproduce a client's key order or hold a payload's keys as they arrived.
 serde_json = { version = "1.0.154", features = ["float_roundtrip", "preserve_order"] }
+# The transport's three cheap primitives, each measured by `upgrade-golden.ts`: SHA-1 and base64 for
+# `Sec-WebSocket-Accept`, raw-deflate for `permessage-deflate`.
+sha1_smol = "1.0.1"
+base64 = "0.22.1"
+flate2 = { version = "1.1.11", default-features = false, features = ["rust_backend"] }
 
 [profile.release]
 codegen-units = 1

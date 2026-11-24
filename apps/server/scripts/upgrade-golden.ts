@@ -187,12 +187,18 @@ const RAW_LIMIT = 256;
 const encodeFrame = (
   opcode: number,
   payload: Buffer,
-  options?: { readonly fin?: boolean; readonly rsv1?: boolean; readonly masked?: boolean },
+  options?: {
+    readonly fin?: boolean;
+    readonly rsv1?: boolean;
+    readonly rsv2?: boolean;
+    readonly masked?: boolean;
+  },
 ): Buffer => {
   const fin = options?.fin ?? true;
   const rsv1 = options?.rsv1 ?? false;
+  const rsv2 = options?.rsv2 ?? false;
   const masked = options?.masked ?? true;
-  const first = (fin ? 0x80 : 0) | (rsv1 ? 0x40 : 0) | opcode;
+  const first = (fin ? 0x80 : 0) | (rsv1 ? 0x40 : 0) | (rsv2 ? 0x20 : 0) | opcode;
   const maskBit = masked ? 0x80 : 0;
   let header: Buffer;
   if (payload.length < 126) {
@@ -283,16 +289,16 @@ type FrameInput = {
   readonly case: string;
   readonly direction: "c2s" | "s2c";
   /** What this probe meant the frame as, so an ordered record is readable without decoding it. */
-  readonly label?: string;
+  readonly label?: string | undefined;
   readonly bytes: Buffer;
   /** What an RSV1 payload inflated to, from the connection's own deflate context. */
-  readonly inflated?: { readonly bytes?: Buffer; readonly error?: string };
+  readonly inflated?: { readonly bytes?: Buffer | undefined; readonly error?: string | undefined };
 };
 
 type RecordedFrame = {
   readonly case: string;
   readonly direction: "c2s" | "s2c";
-  readonly label?: string;
+  readonly label?: string | undefined;
   readonly fin: boolean;
   readonly rsv1: boolean;
   readonly opcode: number;
@@ -301,25 +307,27 @@ type RecordedFrame = {
   readonly headerHex: string;
   readonly lengthField: "7bit" | "16bit" | "64bit";
   readonly payloadBytes: number;
-  readonly payload?: string;
-  readonly payloadSha?: string;
-  readonly wireHex?: string;
-  readonly inflatedBytes?: number;
-  readonly inflatedSha?: string;
-  readonly inflated?: string;
-  readonly inflateError?: string;
-  readonly closeCode?: number;
-  readonly closeReason?: string;
-  readonly closeHex?: string;
+  // `| undefined` throughout: this file writes what a measurement found, so "no close code" and "no
+  // payload recorded" are both real states rather than a missing key to be distinguished from a present one.
+  readonly payload?: string | undefined;
+  readonly payloadSha?: string | undefined;
+  readonly wireHex?: string | undefined;
+  readonly inflatedBytes?: number | undefined;
+  readonly inflatedSha?: string | undefined;
+  readonly inflated?: string | undefined;
+  readonly inflateError?: string | undefined;
+  readonly closeCode?: number | undefined;
+  readonly closeReason?: string | undefined;
+  readonly closeHex?: string | undefined;
 };
 
 type RecordedEvent = {
   readonly case: string;
   readonly event: "upgrade" | "response" | "peer" | "probe" | "tail" | "write" | "observe";
-  readonly statusLine?: string;
-  readonly headers?: Array<[string, string]>;
-  readonly body?: string;
-  readonly detail?: string;
+  readonly statusLine?: string | undefined;
+  readonly headers?: Array<[string, string]> | undefined;
+  readonly body?: string | undefined;
+  readonly detail?: string | undefined;
 };
 
 const frames: Array<RecordedFrame> = [];
@@ -485,6 +493,11 @@ const reader = (socket: net.Socket) => {
       }
       return out;
     },
+    /**
+     * Wait for the peer to finish with the socket. A server that keeps the connection open after its
+     * own close frame simply never answers, which is the answer the teardown cases record.
+     */
+    waitForEnd: async (ms: number) => waitFor(() => ended, ms),
   };
 };
 
@@ -527,11 +540,55 @@ const upgradeRequest = (extra: Array<string>) =>
 
 const parseHead = (head: string) => {
   const lines = head.split("\r\n").filter((line) => line !== "");
-  const headers: Array<[string, string]> = lines.slice(1).map((line) => {
+  // Names keep the case the server wrote them in. A client looks a header up case-insensitively, so
+  // this is not a claim about interoperability — it is the byte list a Rust server has to write.
+  const fields = lines.slice(1);
+  const headers: Array<[string, string]> = fields.map((line) => {
     const at = line.indexOf(":");
-    return [line.slice(0, at).toLowerCase(), line.slice(at + 1).trim()];
+    return [line.slice(0, at), line.slice(at + 1).trim()];
   });
-  return { statusLine: lines[0] ?? "", headers };
+  // The artifact keeps names and values, so the separator between them has to be claimed here or it is
+  // simply lost: `Name: value` with one space, which is what both writers emit.
+  const canonical = fields.every((line) => /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+: \S/.test(line));
+  return { statusLine: lines[0] ?? "", headers, canonical };
+};
+
+/** Headers whose name/value separator was not `": "`, which the artifact cannot show. */
+const separatorBreaks: Array<string> = [];
+
+/** A header list as the claims below read it: names folded, values as sent. */
+const folded = (headers: Array<[string, string]> | undefined) =>
+  (headers ?? []).map(([name, value]) => [name.toLowerCase(), value] as [string, string]);
+
+/**
+ * How each header name is actually spelled on the wire, which the folded claims above deliberately
+ * ignore. A client looks a header up case-insensitively, so none of this is an interoperability claim;
+ * it is the byte list a Rust server has to write to be indistinguishable, which is what the transport
+ * goldens replay.
+ *
+ * Both writers happen to title-case, but by different means: `ws` builds its `101` and its own refusals
+ * from string literals, while Node's response pipeline title-cases the headers it stamps itself.
+ */
+const spellings: Record<string, string> = {
+  connection: "Connection",
+  "content-length": "Content-Length",
+  "content-type": "Content-Type",
+  date: "Date",
+  "keep-alive": "Keep-Alive",
+  "sec-websocket-accept": "Sec-WebSocket-Accept",
+  "sec-websocket-extensions": "Sec-WebSocket-Extensions",
+  "sec-websocket-protocol": "Sec-WebSocket-Protocol",
+  "sec-websocket-version": "Sec-WebSocket-Version",
+  "transfer-encoding": "Transfer-Encoding",
+  upgrade: "Upgrade",
+};
+
+/** Every header name as written, across every handshake this file performed. */
+const spelledNames = () => {
+  const names = new Set<string>();
+  for (const event of events)
+    for (const [name] of event.headers ?? []) if (name !== undefined) names.add(name);
+  return [...names].sort();
 };
 
 const requestFrame = (id: number, tag: string, payload?: unknown) =>
@@ -583,8 +640,21 @@ type Scenario = {
   readonly expect: Expect;
 };
 
-/** What each case measured, so record mode can print the table this file then asserts on. */
-const measured = new Map<string, Expect & { peer: string; tails: number }>();
+/**
+ * What each case measured, so record mode can print the table this file then asserts on.
+ *
+ * `closes` is required here although `Expect` leaves it optional: every case that ever got no close
+ * frame was measured as an empty list, and an assertion that has to handle "never looked" would be a
+ * claim about this file rather than about the server.
+ */
+const measured = new Map<
+  string,
+  Omit<Expect, "closes"> & {
+    readonly closes: Array<string>;
+    readonly peer: string;
+    readonly tails: number;
+  }
+>();
 
 const exchange = (scenario: Scenario, port: number) =>
   Effect.gen(function* () {
@@ -595,7 +665,8 @@ const exchange = (scenario: Scenario, port: number) =>
       await probe.write(utf8(wire));
 
       const head = await probe.r.readHead(scenario.deadlineMs ?? 3000);
-      const { statusLine, headers } = parseHead(head.text);
+      const { statusLine, headers, canonical } = parseHead(head.text);
+      if (!canonical) separatorBreaks.push(name);
       const upgraded = statusLine.startsWith("HTTP/1.1 101");
       // Both directions in one list, in the order they crossed, so a replay can see that an `Ack`
       // followed the `Chunk` that owed it rather than the request that started the stream.
@@ -611,9 +682,11 @@ const exchange = (scenario: Scenario, port: number) =>
           statusLine,
           // `date` is the one header that moves between runs: Node stamps it on anything written
           // through the response pipeline. The `101` has no date at all, because `ws` writes it
-          // straight to the socket, and that difference is itself a claim.
+          // straight to the socket, and that difference is itself a claim. Masked by folded name,
+          // since the case the writer chose is a separate claim (`headerCase` below).
           headers: headers.map(
-            ([key, value]) => [key, key === "date" ? "__DATE__" : value] as [string, string],
+            ([key, value]) =>
+              [key, key.toLowerCase() === "date" ? "__DATE__" : value] as [string, string],
           ),
           body: body.toString("utf8").slice(0, 2048),
           detail: head.complete ? undefined : "head never ended before the deadline",
@@ -661,6 +734,16 @@ const exchange = (scenario: Scenario, port: number) =>
 
       // Recorded **before** this file destroys the socket, so the detail says what the peer did and
       // not what the probe did.
+      //
+      // `readFrames` returns as soon as it has read a close frame, which is the moment the peer's FIN
+      // is most likely still in flight, so the TCP question is asked after a window rather than at the
+      // instant the frame was read. Without this the same server measured "FIN" and "still open" for one
+      // case on alternate runs, which is a bug in this file rather than a fact about `ws`.
+      if (
+        crossed.some((entry) => entry.direction === "s2c" && ((entry.bytes[0] ?? 0) & 0x0f) === 8)
+      ) {
+        await probe.r.waitForEnd(scenario.settleMs ?? 300);
+      }
       const peer = probe.r.endDetail;
       if (probe.r.pending > 0) {
         events.push({
@@ -817,6 +900,79 @@ const SCENARIOS: Array<Scenario> = [
       { label: "two", bytes: encodeFrame(1, utf8(requestFrame(9004, "plain"))) },
     ],
     expect: { upgraded: true, c2s: 2, s2c: 2 },
+  },
+
+  // --- what the negotiation answers, parameter by parameter -------------
+  //
+  // A browser sends one exact offer, so these are not hypotheticals the shipped client will never
+  // write: they are the difference between "the Rust port echoes the offer" and "the Rust port answers
+  // what `ws` answers", which is only testable by offering things `ws` has opinions about.
+  {
+    name: "offer.serverMaxWindowBits",
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=10"],
+    send: [{ label: "plain", bytes: encodeFrame(1, utf8(requestFrame(9040, "plain"))) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1 },
+  },
+  {
+    name: "offer.clientNoContextTakeover",
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; client_no_context_takeover"],
+    send: [{ label: "plain", bytes: encodeFrame(1, utf8(requestFrame(9041, "plain"))) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1 },
+  },
+  {
+    name: "offer.unknownParam",
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; foo=bar"],
+    send: [{ label: "plain", bytes: encodeFrame(1, utf8(requestFrame(9042, "plain"))) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1 },
+  },
+  {
+    name: "offer.everyParam",
+    // The maximal offer, which is what a client that has read the RFC rather than the browser sends.
+    upgradeExtra: [
+      "Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover; client_no_context_takeover; server_max_window_bits=10; client_max_window_bits=10",
+    ],
+    send: [{ label: "plain", bytes: encodeFrame(1, utf8(requestFrame(9043, "plain"))) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1 },
+  },
+  {
+    name: "offer.twoExtensions",
+    // Two extension offers, one of them not permessage-deflate: which one the answer names is a
+    // decision the port has to make explicitly.
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits, foo"],
+    expect: { upgraded: true, c2s: 0, s2c: 0 },
+  },
+  {
+    name: "offer.otherOnly",
+    // An extension the server has never heard of is not an upgrade refusal, and nothing is answered
+    // about it in the response.
+    upgradeExtra: ["Sec-WebSocket-Extensions: foo; bar=1"],
+    expect: { upgraded: true, c2s: 0, s2c: 0 },
+  },
+  {
+    name: "offer.bigNoTakeover",
+    // The half of the threshold rule the `plain` cases cannot reach: a refusal of takeover suppresses
+    // *small* answers, but an answer over 1024 bytes still has to be compressed.
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover"],
+    send: [
+      {
+        label: "big",
+        bytes: encodeFrame(1, utf8(requestFrame(9044, "size", { s: repeat("a", 4000) }))),
+      },
+    ],
+    expect: { upgraded: true, c2s: 1, s2c: 1 },
+  },
+  {
+    name: "offer.smallNoTakeover",
+    // The same request under the threshold, so the two together say the rule is a size comparison and
+    // not merely "no takeover means no compression".
+    upgradeExtra: ["Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover"],
+    send: [
+      {
+        label: "small",
+        bytes: encodeFrame(1, utf8(requestFrame(9045, "size", { s: repeat("a", 900) }))),
+      },
+    ],
+    expect: { upgraded: true, c2s: 1, s2c: 1 },
   },
 
   // --- the headers the transport injects ---------------------------------
@@ -1051,6 +1207,38 @@ const SCENARIOS: Array<Scenario> = [
     // A control frame over 125 bytes is a protocol error even though the payload is valid JSON.
     send: [{ label: "ping", bytes: encodeFrame(9, utf8(repeat("x", 126))) }],
     expect: { upgraded: true, c2s: 1, s2c: 1, closes: ["1002"] },
+  },
+  {
+    name: "client.controlFragmented",
+    // A control frame that claims more is coming. RFC 6455 forbids it and so does the transport, which
+    // says so before it reads the payload.
+    send: [{ label: "ping", bytes: encodeFrame(9, utf8("x"), { fin: false }) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1, closes: ["1002"] },
+  },
+  {
+    name: "client.rsv2Set",
+    // Only RSV1 means anything here, so an unassigned bit is the same protocol error RSV1 is when it
+    // was not offered.
+    send: [
+      {
+        label: "rsv2",
+        bytes: encodeFrame(1, utf8(requestFrame(9211, "plain")), { rsv2: true }),
+      },
+    ],
+    expect: { upgraded: true, c2s: 1, s2c: 1, closes: ["1002"] },
+  },
+  {
+    name: "client.closeOneByte",
+    // A close body of one byte can hold neither a code nor a reason.
+    send: [{ label: "close", bytes: encodeFrame(8, Buffer.from([0x03])) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1, closes: ["1002"] },
+  },
+  {
+    name: "client.invalidUtf8Text",
+    // Whether the bytes decode at all is checked before the handler is consulted, so this is answered
+    // by the transport rather than by the protocol layer's `Defect`.
+    send: [{ label: "text", bytes: encodeFrame(1, Buffer.from([0x7b, 0xff, 0x7d])) }],
+    expect: { upgraded: true, c2s: 1, s2c: 1, closes: ["1007"] },
   },
   {
     name: "client.rpcPing",
@@ -1293,6 +1481,10 @@ const tcpAfterClose: Record<string, "open" | "fin"> = {
   "client.rsv1OfferedButRaw": "fin",
   "client.unknownOpcode": "fin",
   "client.controlTooLong": "fin",
+  "client.controlFragmented": "fin",
+  "client.rsv2Set": "fin",
+  "client.closeOneByte": "fin",
+  "client.invalidUtf8Text": "fin",
   "client.closeReserved": "fin",
   "client.closeBadReason": "fin",
   "client.closeNoMask": "fin",
@@ -1328,6 +1520,7 @@ const recordTable = () => {
 const refusalHeaders: Record<string, Array<string>> = {
   "handshake.missingKey": ["connection", "content-type", "content-length"],
   "handshake.version7": ["connection", "content-type", "content-length", "sec-websocket-version"],
+  "offer.unknownParam": ["connection", "content-type", "content-length"],
   "handshake.noUpgradeHeader": ["date", "connection", "keep-alive", "transfer-encoding"],
   // The 404s omit the `keep-alive: timeout=5` the 400 carries, which is Node's own decision about a
   // response whose body it wrote before the handler ran. Pinned because it is byte-stable across runs,
@@ -1348,14 +1541,27 @@ const check = (): Array<string> => {
   const out: Array<string> = [];
   const upgrades = events.filter((e) => e.event === "upgrade");
 
+  /** Names as written, since the artifact replay compares bytes and the case is part of them. */
+  const spelled = (event: RecordedEvent) => {
+    for (const [name] of event.headers ?? []) {
+      const expected = spellings[name.toLowerCase()];
+      if (expected === undefined) {
+        out.push(`${event.case}: wrote an unlisted header name ${JSON.stringify(name)}`);
+      } else if (name !== expected) {
+        out.push(`${event.case}: wrote ${JSON.stringify(name)}, not ${JSON.stringify(expected)}`);
+      }
+    }
+  };
+
   for (const event of upgrades) {
-    const names = (event.headers ?? []).map(([name]) => name);
+    spelled(event);
+    const names = folded(event.headers).map(([name]) => name);
     // Three headers, always in this order, and the `101` is written by the transport rather than by a
     // response pipeline: it has no `date`, no `server`, nothing a framework would add.
     if (names.slice(0, 3).join(",") !== "upgrade,connection,sec-websocket-accept") {
       out.push(`${event.case}: the upgrade answered ${JSON.stringify(names)}`);
     }
-    if (names.some((name) => name === "date")) {
+    if (names.includes("date")) {
       out.push(`${event.case}: the upgrade carried date, which the direct socket write never does`);
     }
     for (const extra of names.slice(3)) {
@@ -1363,7 +1569,7 @@ const check = (): Array<string> => {
         out.push(`${event.case}: the upgrade carried an unexpected ${extra}`);
       }
     }
-    for (const [name, value] of event.headers ?? []) {
+    for (const [name, value] of folded(event.headers)) {
       if (name === "sec-websocket-accept" && value !== EXPECTED_ACCEPT) {
         out.push(
           `${event.case}: Sec-WebSocket-Accept was ${value}, expected ${EXPECTED_ACCEPT} for the RFC 6455 example key`,
@@ -1391,7 +1597,8 @@ const check = (): Array<string> => {
 
   for (const event of events.filter((e) => e.event === "response")) {
     const expected = refusalHeaders[event.case];
-    const names = (event.headers ?? []).map(([name]) => name);
+    spelled(event);
+    const names = folded(event.headers).map(([name]) => name);
     if (expected === undefined) {
       out.push(`${event.case}: refused with ${JSON.stringify(names)}, which is not listed`);
       continue;
@@ -1503,6 +1710,12 @@ const check = (): Array<string> => {
     .map((f) => f.case);
   if (unreadable.length > 0) out.push(`text answer(s) with no recorded content: ${unreadable}`);
 
+  if (separatorBreaks.length > 0) {
+    out.push(
+      `handshake(s) whose headers were not written as \`Name: value\`: ${JSON.stringify(separatorBreaks)}`,
+    );
+  }
+
   return out;
 };
 
@@ -1526,6 +1739,7 @@ const summarize = () => {
       .filter((f) => f.direction === "s2c" && f.opcode === 8)
       .map((f) => `${f.case}=${f.closeCode === undefined ? "no-code" : String(f.closeCode)}`),
     tcp: Object.entries(tcpAfterClose).map(([name, value]) => `${name}=${value}`),
+    headerNames: spelledNames(),
     serialization: "RpcSerialization.layerJson",
     websocket: { perMessageDeflate: true },
   };

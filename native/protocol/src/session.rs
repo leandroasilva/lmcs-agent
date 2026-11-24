@@ -14,9 +14,12 @@
 //!   `a.handlerDieNoErrorSchema` and every refusal the switch makes take the second, and
 //!   `b.broadcastWithInFlight` shows the broadcast does **not** interrupt the requests already in
 //!   flight — they answer normally afterwards.
-//! - **Three inputs end the connection with nothing written**: a `null` document (the only JSON value
-//!   whose `._tag` read throws), and a `Request` whose `headers` the transport cannot read. Both are
-//!   [`Reply::Close`], and the golden recorded code `1005`, `wasClean: true` for each.
+//! - **Three inputs end the connection**: a `null` document (the only JSON value whose `._tag` read
+//!   throws), and a `Request` whose `headers` the transport cannot read. Both are [`Reply::Close`], and
+//!   the wire says what that costs: the server writes a **zero-body close frame** (`8800`), which is why
+//!   a browser reports code `1005` and `wasClean: true`, and then leaves TCP open until the peer's own
+//!   close arrives (`upgrade-golden.ts`, `teardown.*`). Frames a batch produced before the teardown are
+//!   written ahead of it.
 //! - **A stream is not one answer.** `stream: true` writes a `Chunk` per batch and waits for the
 //!   client's `Ack` before the next, so the ack is part of the loop's state rather than an optional
 //!   acknowledgement. The terminal `Void` exit belongs to whoever ran the handler ([`Session::end`]),
@@ -173,9 +176,8 @@ impl Session {
 
     /// Routes one envelope of a batch. The `bool` is [`Reply::Close`]: the batch stops there, because
     /// the throw happens in the transport's own loop and the rest of the batch is never read. What the
-    /// earlier elements already produced **does** go out first — `c.batchTwoThenNull` wrote the
-    /// request's `Exit` and then the `8800`, which is only possible if the frames are flushed rather
-    /// than dropped.
+    /// earlier elements already produced **does** go out first — `batch.twoThenNull` on the wire wrote
+    /// the request's `Exit` and then the `8800`, which is only possible if the frames are flushed.
     fn route(&mut self, envelope: &Envelope, out: &mut Vec<Message>) -> bool {
         let message = match envelope {
             Envelope::Teardown => return true,
@@ -478,14 +480,40 @@ mod tests {
 
     #[test]
     fn three_inputs_close_the_connection_with_nothing_written() {
+        let closed = || Reply::Close {
+            written: Vec::new(),
+        };
         let mut session = Session::new(group());
-        assert_eq!(session.receive("null"), Reply::Close);
-        assert_eq!(session.receive("[null]"), Reply::Close);
+        assert_eq!(session.receive("null"), closed());
+        assert_eq!(session.receive("[null]"), closed());
         assert_eq!(
             session.receive(&request(
                 r#""id":9012,"tag":"voidSuccess","payload":{},"zzz":0"#
             )),
-            Reply::Close
+            closed()
+        );
+    }
+
+    #[test]
+    fn a_teardown_in_the_middle_of_a_batch_flushes_what_came_before_it() {
+        // `batch.twoThenNull` on the wire: the request's `Exit`, then the zero-body close. Dropping the
+        // frames the batch already produced was the loop's own bug, not the server's behavior.
+        let mut session = Session::new(group());
+        let reply = session.receive(&format!("[{},null]", call("9223", "voidSuccess")));
+        assert!(reply.closes());
+        assert_eq!(
+            frames(reply),
+            vec![
+                r#"{"_tag":"Exit","requestId":9223,"exit":{"_tag":"Success","value":null}}"#
+            ]
+        );
+        // The same `null` first is the same close with nothing to flush.
+        let mut session = Session::new(group());
+        assert_eq!(
+            session.receive(&format!("[null,{}]", call("9224", "voidSuccess"))),
+            Reply::Close {
+                written: Vec::new(),
+            }
         );
     }
 

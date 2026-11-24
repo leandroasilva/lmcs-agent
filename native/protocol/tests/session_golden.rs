@@ -37,7 +37,7 @@ use std::env;
 use std::fs;
 
 use lmcs_protocol::envelope::{Id, Message};
-use lmcs_protocol::session::{Group, Outcome, Payload, Reply, Session};
+use lmcs_protocol::session::{Group, Outcome, Payload, Session};
 use serde_json::{Map, Value};
 
 /// What the stub group writes where the shipped server writes `SchemaIssue.defaultFormatter` text.
@@ -234,13 +234,11 @@ fn replay(golden: &Artifact) -> Run {
                         !closed.contains(case),
                         "{case}: the capture sent a frame after the connection ended"
                     );
-                    match session.receive(&step.frame) {
-                        Reply::Frames(messages) => {
-                            written.extend(messages.iter().map(Message::encode))
-                        }
-                        Reply::Close => {
-                            closed.insert(case.clone());
-                        }
+                    let reply = session.receive(&step.frame);
+                    // A close carries the frames the batch produced before it, so both arms write.
+                    written.extend(reply.frames().iter().map(Message::encode));
+                    if reply.closes() {
+                        closed.insert(case.clone());
                     }
                 }
                 "s2c" => {
