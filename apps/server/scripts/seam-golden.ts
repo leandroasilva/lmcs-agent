@@ -37,8 +37,9 @@
 // `LMCS_SEAM_GOLDEN_RECORD=1` prints what each case measured instead of checking it, which is how every
 // number below was obtained: they are measurements, not guesses.
 //
-// Run twice and compare with `cmp`: the clock is fixed, and the mask key, the upgrade key and the signing
-// secret are constants, so any byte that moves is a claim this file does not pin.
+// Run twice and compare with `cmp`: the clock is fixed, and the mask key, the upgrade key, the signing
+// secret and the state directory (which the session cookie name hashes) are constants, so any byte that
+// moves is a claim this file does not pin.
 
 import * as Cause from "effect/Cause";
 import * as DateTime from "effect/DateTime";
@@ -49,6 +50,7 @@ import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as TestClock from "effect/testing/TestClock";
+import * as NodeCrypto from "node:crypto";
 import * as NodeHttp from "node:http";
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -290,7 +292,12 @@ const rootLayer = HttpRouter.serve(routeLayer, {
       getEnvironmentId: Effect.succeed(EnvironmentId.make("seam-golden")),
     }),
   ),
-  Layer.provide(ServerConfig.layerTest(process.cwd(), { prefix: "lmcs-seam-golden-" })),
+  // The state directory is an input to the session cookie name (`resolveSessionCookieName` hashes the
+  // instance key), so a temp directory per run would make every recorded `Cookie:` header move. The
+  // database is in memory anyway; this path only has to be the same twice.
+  Layer.provide(
+    ServerConfig.layerTest(process.cwd(), `${process.env.HOME}/.cache/lmcs-port-traces/seam-state`),
+  ),
   Layer.provideMerge(
     // `server.ts:234-250` verbatim in the one option the seam needs: without `perMessageDeflate` the
     // server closes an RSV1 frame as a protocol error, and `seam.deflateRow` would measure a different
@@ -732,6 +739,16 @@ const SESSIONS = {
   revokedBefore: "seam_revoked",
   dev: "dev-auth-seam",
   missing: "seam_missing",
+  // The credential cases (`seam.cookie*`, `seam.bearer*`, `seam.bound*`) need rows whose *only* purpose
+  // is to be the row a cookie names, so none of them reuses a ticket case's row: `recordClientConnection`
+  // writes the surface columns, and a shared row would make an earlier case a precondition of a later one.
+  cookieRead: "seam_c_read",
+  cookieOperate: "seam_c_operate",
+  cookieWide: "seam_c_wide",
+  cookieDev: "dev-auth-seam-session",
+  cookieMissing: "seam_c_missing",
+  cookieExpired: "seam_c_expired",
+  cookieRevoked: "seam_c_revoked",
 } as const;
 
 type Scenario = {
@@ -740,17 +757,96 @@ type Scenario = {
   readonly session?: string;
   readonly scopes?: ReadonlyArray<string>;
   readonly expiresAt?: number;
-  readonly target: (ticket: string) => string;
+  readonly target: (ticket: string, tokens: Record<string, string>) => string;
   readonly lines?: Array<readonly [string, string]>;
   readonly method?: string;
   /** `issued` is the honest token, `broken` one signature bit flipped, `none` no ticket at all. */
   readonly ticket?: "issued" | "broken" | "none";
   readonly ttl?: number;
   readonly revokeBefore?: boolean;
+  /**
+   * The HTTP credential this case presents instead of (or alongside) a ticket: extra rows to seed,
+   * session tokens to mint, and the headers that carry them.
+   *
+   * `names` is read from the running server because the cookie name is not a constant —
+   * `resolveSessionCookieName` (`auth/utils.ts:25-54`) mixes in the port and a hash of the state
+   * directory, so a case that typed `t3_session` would be measuring a name the server never asked for.
+   */
+  readonly cred?: {
+    readonly rows?: ReadonlyArray<
+      readonly [string, ReadonlyArray<string>] | readonly [string, ReadonlyArray<string>, number]
+    >;
+    readonly tokens?: Record<string, SessionToken>;
+    readonly headers: (
+      tokens: Record<string, string>,
+      names: CookieNames,
+    ) => ReadonlyArray<readonly [string, string]>;
+  };
   readonly after?: (
     probe: Probe,
     run: <A, E, R>(effect: Effect.Effect<A, E, R>) => Promise<A>,
   ) => Promise<void>;
+};
+
+/** What `SessionStore` hands the route to look a cookie up by. */
+type CookieNames = {
+  readonly cookie: string;
+  readonly legacy: string | null;
+};
+
+/**
+ * A session token, minted here rather than issued.
+ *
+ * `SessionStore.issue` mints only for a session id it generated itself (`:651-655`, a uuid), so the only
+ * way to name the claims the route reads — a `jkt` with no key behind it, scopes the row does not have, a
+ * `kind` of `websocket` in a cookie — is to sign them the way the store does: HMAC-SHA256 over the
+ * base64url payload with the same secret, base64url again, joined with a dot (`auth/utils.ts:92-94`). The
+ * key order mirrors `SessionClaims` (`SessionStore.ts:660-670`) so a minted token is not distinguishable
+ * from an issued one except by the claims this file chose.
+ */
+type SessionToken = {
+  readonly sid: string;
+  readonly scopes?: ReadonlyArray<string>;
+  readonly kind?: string;
+  readonly method?: string;
+  readonly iat?: number;
+  readonly exp?: number;
+  readonly jkt?: string;
+  /**
+   * `head` and `tail` corrupt one character of the signature, `strip` removes it and the dot.
+   *
+   * They are two cases because they are two branches: a 32-byte digest is 43 base64url characters, so the
+   * last one carries two bits no byte holds, and `timingSafeEqualBase64Url` compares the *decoded* buffers
+   * (`auth/utils.ts:96-103`) — corrupting the tail therefore authenticates.
+   */
+  readonly signature?: "head" | "tail" | "strip";
+  /** Written verbatim instead of minted: a token this file cannot produce, such as a websocket ticket. */
+  readonly raw?: string;
+};
+
+const mintSessionToken = (token: SessionToken): string => {
+  if (token.raw !== undefined) return token.raw;
+  const claims = {
+    v: 1,
+    kind: token.kind ?? "session",
+    sid: token.sid,
+    sub: "seam-golden",
+    scopes: [...(token.scopes ?? [])],
+    method: token.method ?? "browser-session-cookie",
+    ...(token.jkt === undefined ? {} : { jkt: token.jkt }),
+    iat: token.iat ?? NOW,
+    exp: token.exp ?? NOW + 600_000,
+  };
+  const payload = Buffer.from(JSON.stringify(claims), "utf8").toString("base64url");
+  let signature = NodeCrypto.createHmac("sha256", Buffer.from(SECRET))
+    .update(payload)
+    .digest("base64url");
+  if (token.signature === "tail") {
+    signature = `${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`;
+  } else if (token.signature === "head") {
+    signature = `${signature.startsWith("A") ? "B" : "A"}${signature.slice(1)}`;
+  }
+  return token.signature === "strip" ? payload : `${payload}.${signature}`;
 };
 
 /**
@@ -991,6 +1087,504 @@ const scenarios: Array<Scenario> = [
     target: (ticket) => `/ws?wsTicket=${ticket}&clientAppVersion=${"9".repeat(64)}`,
     after: closeOnly,
   },
+  // --- the credential the route reads when there is no ticket ----------------
+  // `EnvironmentAuth.ts:1094`: no ticket falls through to `authenticateRequest`, and that order
+  // (`selectRequestCredential`, `:572-598`) is the whole web surface — `packages/client` connects to
+  // `/ws` with no headers and no ticket at all, so a port that stops at the ticket cannot serve it.
+  {
+    name: "seam.cookieRead",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.cookieRead", 1, WS_METHODS.serverGetSettings);
+      await exchange(probe, "seam.cookieRead", 2, WS_METHODS.serverUpdateSettings);
+      await exchange(probe, "seam.cookieRead", 3, WS_METHODS.serverGetConfig);
+      await close(probe, "seam.cookieRead");
+    },
+  },
+  {
+    // The cookie is checked before the `authorization` header, so the row it names wins the gate.
+    name: "seam.cookieBeatsBearer",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      rows: [[SESSIONS.cookieOperate, ["orchestration:read", "orchestration:operate"]]],
+      tokens: {
+        c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] },
+        o: {
+          sid: SESSIONS.cookieOperate,
+          scopes: ["orchestration:read", "orchestration:operate"],
+        },
+      },
+      headers: (tok, names) => [
+        ["Cookie", `${names.cookie}=${tok.c}`],
+        ["Authorization", `Bearer ${tok.o}`],
+      ],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.cookieBeatsBearer", 2, WS_METHODS.serverUpdateSettings);
+      await close(probe, "seam.cookieBeatsBearer");
+    },
+  },
+  {
+    name: "seam.bearerOnly",
+    session: SESSIONS.cookieOperate,
+    scopes: ["orchestration:read", "orchestration:operate"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        o: { sid: SESSIONS.cookieOperate, scopes: ["orchestration:read", "orchestration:operate"] },
+      },
+      headers: (tok) => [["Authorization", `Bearer ${tok.o}`]],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.bearerOnly", 2, WS_METHODS.serverUpdateSettings);
+      await close(probe, "seam.bearerOnly");
+    },
+  },
+  {
+    // `parseBearerToken` slices a fixed prefix and trims, so padding the token is harmless.
+    name: "seam.bearerPadded",
+    session: SESSIONS.cookieOperate,
+    scopes: ["orchestration:read", "orchestration:operate"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        o: { sid: SESSIONS.cookieOperate, scopes: ["orchestration:read", "orchestration:operate"] },
+      },
+      headers: (tok) => [["Authorization", `Bearer   ${tok.o}  `]],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.bearerPadded", 2, WS_METHODS.serverUpdateSettings);
+      await close(probe, "seam.bearerPadded");
+    },
+  },
+  {
+    // The prefix comparison is `startsWith("Bearer ")`, so a lowercase scheme names no credential at all —
+    // and the header's presence is measured separately by `seam.basicAuthorization`.
+    name: "seam.bearerLowercase",
+    session: SESSIONS.cookieOperate,
+    scopes: ["orchestration:read", "orchestration:operate"],
+    target: () => "/ws",
+    cred: {
+      tokens: { o: { sid: SESSIONS.cookieOperate, scopes: ["orchestration:read"] } },
+      headers: (tok) => [["Authorization", `bearer ${tok.o}`]],
+    },
+  },
+  {
+    name: "seam.basicAuthorization",
+    session: SESSIONS.cookieOperate,
+    scopes: ["orchestration:read", "orchestration:operate"],
+    target: () => "/ws",
+    cred: {
+      tokens: { o: { sid: SESSIONS.cookieOperate, scopes: ["orchestration:read"] } },
+      headers: (tok) => [["Authorization", `Basic ${tok.o}`]],
+    },
+  },
+  {
+    // A scheme with nothing after it parses to no token (`:560`, `:569`), so the request is missing a
+    // credential rather than carrying a bad one.
+    name: "seam.bearerEmptyScheme",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: () => [["Authorization", "Bearer"]],
+    },
+  },
+  {
+    name: "seam.dpopEmptyScheme",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: () => [["Authorization", "DPoP "]],
+    },
+  },
+  {
+    // Node folds repeated headers into one comma-joined value before `parseHeader` ever sees them, so a
+    // second `Cookie` line corrupts the first's token rather than adding a candidate.
+    name: "seam.duplicateCookieHeaders",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [
+        ["Cookie", `${names.cookie}=${tok.c}`],
+        ["Cookie", "seam_other=x"],
+      ],
+    },
+    after: closeOnly,
+  },
+  {
+    // An empty cookie *is* a cookie: `selectRequestCredential` returns `{token: ""}` because it tests
+    // `!== undefined`, and `authenticateRequest` then fails on `!credential?.token` without ever
+    // looking at the bearer token beside it.
+    name: "seam.emptyCookieBeatsBearer",
+    session: SESSIONS.cookieOperate,
+    scopes: ["orchestration:read", "orchestration:operate"],
+    target: () => "/ws",
+    cred: {
+      tokens: { o: { sid: SESSIONS.cookieOperate, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [
+        ["Cookie", `${names.cookie}=;`],
+        ["Authorization", `Bearer ${tok.o}`],
+      ],
+    },
+  },
+  {
+    // `Cookies.parseHeader` keeps the first of a repeated name (`Effect`'s `Object.hasOwn` guard).
+    name: "seam.duplicateCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=junk; ${names.cookie}=${tok.c}`]],
+    },
+  },
+  {
+    // A quoted cookie value has its quotes removed before use.
+    name: "seam.quotedCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}="${tok.c}"`]],
+    },
+    after: closeOnly,
+  },
+  {
+    // `%` anywhere in the value makes the parser `decodeURIComponent` it, which is how the `.` between
+    // payload and signature survives a cookie round trip.
+    name: "seam.percentCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c.replace(".", "%2E")}`]],
+    },
+    after: closeOnly,
+  },
+  {
+    // The legacy name (`t3_session`, no suffix) is only consulted when the server is a remote web
+    // deployment, so a bare `t3_session` cookie here names no credential at all.
+    name: "seam.legacyCookieIgnored",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok) => [["Cookie", `t3_session=${tok.c}`]],
+    },
+  },
+  {
+    name: "seam.wrongPortCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok) => [["Cookie", `t3_session_1_deadbeefcafe=${tok.c}`]],
+    },
+  },
+  {
+    // `websocketTicket.trim().length > 0` (`:1080`), so a ticket that is only whitespace is no ticket.
+    name: "seam.blankTicketFallsBackToCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws?wsTicket=%20%20",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: closeOnly,
+  },
+  {
+    name: "seam.emptyTicketFallsBackToCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws?wsTicket=",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: closeOnly,
+  },
+  {
+    // A real ticket wins without consulting the cookie: the gate is the ticket's row, and the cookie
+    // names a row with strictly fewer scopes, so the answer distinguishes the two.
+    name: "seam.ticketBeatsCookie",
+    session: SESSIONS.cookieOperate,
+    scopes: ["orchestration:read", "orchestration:operate"],
+    target: (ticket) => `/ws?wsTicket=${ticket}`,
+    cred: {
+      rows: [[SESSIONS.cookieRead, ["orchestration:read"]]],
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.ticketBeatsCookie", 2, WS_METHODS.serverUpdateSettings);
+      await close(probe, "seam.ticketBeatsCookie");
+    },
+  },
+  {
+    // The two token kinds are not interchangeable: a session token in `wsTicket` fails the
+    // `kind: "websocket"` literal.
+    name: "seam.sessionTokenAsTicket",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: (unused, tok) => `/ws?wsTicket=${tok.s}`,
+    cred: {
+      tokens: { s: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: () => [],
+    },
+  },
+  {
+    // ...and the same holds the other way, which is the case a client hits when it replays a ticket it
+    // was handed as a cookie.
+    name: "seam.ticketAsCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        t: { sid: SESSIONS.cookieRead, kind: "websocket", scopes: ["orchestration:read"] },
+      },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.t}`]],
+    },
+  },
+  // --- the DPoP guards that need no key -------------------------------------
+  {
+    // A token carrying `jkt` is only accepted in an `Authorization: DPoP ` header that repeats it
+    // verbatim (`:659-667`); as a bearer token it is refused before any proof is looked at.
+    name: "seam.boundBearer",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        b: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], jkt: "thumbprint-seam" },
+      },
+      headers: (tok) => [["Authorization", `Bearer ${tok.b}`]],
+    },
+  },
+  {
+    name: "seam.boundCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        b: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], jkt: "thumbprint-seam" },
+      },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.b}`]],
+    },
+  },
+  {
+    // The mirror guard: `DPoP ` authorization with a token that is not proof-bound.
+    name: "seam.unboundDpopHeader",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"] } },
+      headers: (tok) => [["Authorization", `DPoP ${tok.c}`]],
+    },
+  },
+  {
+    // Past both guards the route verifies the proof, which lives in its own `DPoP` header
+    // (`auth/dpop.ts:59`): absent is `missing_proof`, garbage is `malformed_proof`, and both map to the
+    // same `invalid_proof` reason on the wire.
+    name: "seam.boundDpopNoProof",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        b: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], jkt: "thumbprint-seam" },
+      },
+      headers: (tok) => [["Authorization", `DPoP ${tok.b}`]],
+    },
+  },
+  {
+    name: "seam.boundDpopMalformedProof",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        b: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], jkt: "thumbprint-seam" },
+      },
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", "not-a-compact-jwt"],
+      ],
+    },
+  },
+  // --- where the gate's scopes actually come from ---------------------------
+  {
+    // `verify` returns `claims.scopes` (`SessionStore.ts:840`), not the row's, so a token narrower than
+    // its row gates the connection to the token.
+    name: "seam.claimsNarrowerThanRow",
+    session: SESSIONS.cookieWide,
+    scopes: ["orchestration:read", "orchestration:operate"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieWide, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.claimsNarrowerThanRow", 2, WS_METHODS.serverUpdateSettings);
+      await close(probe, "seam.claimsNarrowerThanRow");
+    },
+  },
+  {
+    // ...and wider: the row's `scopes` column never widens a connection, but it does not narrow one
+    // either, which a port that read the row would get backwards in the other direction.
+    name: "seam.claimsWiderThanRow",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        c: {
+          sid: SESSIONS.cookieRead,
+          scopes: ["orchestration:read", "orchestration:operate"],
+        },
+      },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.claimsWiderThanRow", 2, WS_METHODS.serverUpdateSettings);
+      await close(probe, "seam.claimsWiderThanRow");
+    },
+  },
+  {
+    // The dev-prefix refusal belongs to the ticket path alone: `verifyWebSocketToken` rejects a
+    // `dev-auth-` session id that is not the configured dev session, and `verify` has no such check.
+    name: "seam.devPrefixSessionCookie",
+    session: SESSIONS.cookieDev,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieDev, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: closeOnly,
+  },
+  {
+    name: "seam.expiredCookieToken",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], exp: NOW - 1 },
+      },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+  },
+  {
+    // The asymmetry between the two verifiers: `verifyWebSocketToken` refuses a row whose own expiry has
+    // passed (`:928-934`), `verify` never looks at `row.expiresAt` — only at `revokedAt`.
+    name: "seam.expiredRowCookie",
+    session: SESSIONS.cookieExpired,
+    scopes: ["orchestration:read"],
+    expiresAt: NOW,
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieExpired, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: closeOnly,
+  },
+  {
+    name: "seam.revokedCookie",
+    session: SESSIONS.cookieRevoked,
+    scopes: ["orchestration:read"],
+    revokeBefore: true,
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieRevoked, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+  },
+  {
+    name: "seam.missingRowCookie",
+    session: SESSIONS.cookieMissing,
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: SESSIONS.cookieMissing, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+  },
+  {
+    // The first character of the signature is a full six bits, so corrupting it changes the compared
+    // bytes and the token is refused.
+    name: "seam.corruptedSignatureCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], signature: "head" },
+      },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+  },
+  {
+    // ...and the last one does not, because a 32-byte digest leaves that character with two spare bits:
+    // the same signature, written differently, still authenticates.
+    name: "seam.tailBitSignatureCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], signature: "tail" },
+      },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+    after: closeOnly,
+  },
+  {
+    // `token.split(".")` leaves no signature, so this is the malformed branch rather than the
+    // cryptographic one.
+    name: "seam.strippedSignatureCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: {
+        c: { sid: SESSIONS.cookieRead, scopes: ["orchestration:read"], signature: "strip" },
+      },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+  },
+  // A session id is `TrimmedNonEmptyString` (`baseSchemas.ts:129-131`), so a padded one is refused with
+  // the rest of the payload rather than reaching the row lookup.
+  {
+    name: "seam.sidWhitespaceCookie",
+    session: SESSIONS.cookieRead,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: { c: { sid: ` ${SESSIONS.cookieRead} `, scopes: ["orchestration:read"] } },
+      headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1147,6 +1741,17 @@ const revoke = (sessionId: string) =>
 /** Which session rows the oracle has already inserted, so a repeat connect sees the stored row. */
 const seeded = new Set<string>();
 
+/** The cookie names, read once from the running server — see `CookieNames`. */
+let cookieNames: CookieNames = { cookie: "unresolved", legacy: null };
+
+const readCookieNames = Effect.gen(function* () {
+  const sessions = yield* SessionStore.SessionStore;
+  return {
+    cookie: sessions.cookieName,
+    legacy: sessions.legacyCookieName ?? null,
+  } satisfies CookieNames;
+});
+
 const runCase = async (scenario: Scenario, port: number) => {
   const runEffect = <A, E, R>(effect: Effect.Effect<A, E, R>): Promise<A> =>
     runtime.runPromise(effect as Effect.Effect<A, never, never>);
@@ -1161,6 +1766,12 @@ const runCase = async (scenario: Scenario, port: number) => {
       );
       seeded.add(scenario.session);
     }
+  }
+  const extraRows = scenario.cred?.rows ?? [];
+  for (const [sessionId, scopes, expiresAt] of extraRows) {
+    if (seeded.has(sessionId)) continue;
+    await runEffect(createRow(sessionId, scopes, expiresAt ?? NOW + 600_000));
+    seeded.add(sessionId);
   }
   if (scenario.revokeBefore && scenario.session !== undefined) {
     await runEffect(revoke(scenario.session));
@@ -1178,6 +1789,12 @@ const runCase = async (scenario: Scenario, port: number) => {
       revoked: scenario.revokeBefore === true,
       // `seam.missingRow` mints a real token for a row that was never created.
       created: scenario.session !== undefined && scenario.scopes !== undefined,
+      // The other rows the credential cases seeded, so a replay answers a cookie that names one of them.
+      rows: extraRows.map(([sessionId, scopes, expiresAt]) => [
+        sessionId,
+        [...scopes],
+        expiresAt ?? NOW + 600_000,
+      ]),
     },
   });
 
@@ -1191,11 +1808,19 @@ const runCase = async (scenario: Scenario, port: number) => {
       token = `${token.slice(0, last)}${token[last] === "A" ? "B" : "A"}`;
     }
   }
+  const tokens: Record<string, string> = {};
+  for (const [name, spec] of Object.entries(scenario.cred?.tokens ?? {})) {
+    tokens[name] = mintSessionToken(spec);
+  }
+  const lines =
+    scenario.cred === undefined
+      ? scenario.lines
+      : [...(scenario.lines ?? UPGRADE_HEADERS), ...scenario.cred.headers(tokens, cookieNames)];
   const probe = await handshake(
     scenario.name,
-    scenario.target(token),
+    scenario.target(token, tokens),
     port,
-    scenario.lines ?? UPGRADE_HEADERS,
+    lines ?? UPGRADE_HEADERS,
     scenario.method,
   );
   if (probe !== undefined) {
@@ -1239,6 +1864,7 @@ const rowOf = (name: string): Record<string, unknown> | undefined =>
 
 const main = async () => {
   const port = (await runtime.runPromise(startup as never)) as number;
+  cookieNames = await runtime.runPromise(readCookieNames as never);
   const only = process.env.SEAM_ONLY;
   for (const scenario of scenarios) {
     if (only !== undefined && scenario.name !== only) continue;
@@ -1266,8 +1892,14 @@ const main = async () => {
       // the unit the port reads it in. Both are constants of this file, so recording them leaks nothing.
       nowMs: NOW,
       secret: [...SECRET].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
-      // No reusable dev session runs here, which is what makes `seam.devPrefix` a refusal.
+      // No reusable dev session runs here, which is what makes `seam.devPrefix` a refusal. It also means
+      // no case exercises the `dev-cookie` fallback (`EnvironmentAuth.ts:648-653`), which needs a
+      // configured `devAuthToken` — that gap is recorded rather than papered over.
       devSessionId: null,
+      // The name the server actually asks cookies for: `resolveSessionCookieName` mixes the port and a
+      // hash of the state directory into it, so a replay cannot derive it and must be told.
+      sessionCookieName: cookieNames.cookie,
+      legacyCookieName: cookieNames.legacy,
     },
     frames,
     events,
@@ -1510,6 +2142,139 @@ const check = (): Array<string> => {
     if (record?.lastConnectedAt === null || record?.connected !== false) {
       failures.push(`${name}: the row did not record, or did not release, the connection`);
     }
+  }
+  // ---------------------------------------------------------------------------
+  // The credential a request carries when it carries no ticket
+  // ---------------------------------------------------------------------------
+
+  /** The two shapes a refusal comes in, both asserted from the record rather than from the code. */
+  const refusedMissing = [
+    "seam.bearerLowercase",
+    "seam.basicAuthorization",
+    "seam.emptyCookieBeatsBearer",
+    "seam.legacyCookieIgnored",
+    "seam.wrongPortCookie",
+    "seam.bearerEmptyScheme",
+    "seam.dpopEmptyScheme",
+  ];
+  const refusedInvalid = [
+    "seam.duplicateCookie",
+    "seam.sessionTokenAsTicket",
+    "seam.ticketAsCookie",
+    "seam.expiredCookieToken",
+    "seam.revokedCookie",
+    "seam.missingRowCookie",
+    "seam.corruptedSignatureCookie",
+    "seam.strippedSignatureCookie",
+  ];
+  const refusedProof = [
+    "seam.boundBearer",
+    "seam.boundCookie",
+    "seam.unboundDpopHeader",
+    "seam.boundDpopNoProof",
+    "seam.boundDpopMalformedProof",
+  ];
+  const accepted = [
+    "seam.cookieRead",
+    "seam.cookieBeatsBearer",
+    "seam.bearerOnly",
+    "seam.bearerPadded",
+    "seam.quotedCookie",
+    "seam.percentCookie",
+    "seam.blankTicketFallsBackToCookie",
+    "seam.emptyTicketFallsBackToCookie",
+    "seam.ticketBeatsCookie",
+    "seam.claimsNarrowerThanRow",
+    "seam.claimsWiderThanRow",
+    "seam.devPrefixSessionCookie",
+    "seam.expiredRowCookie",
+    "seam.sidWhitespaceCookie",
+    "seam.duplicateCookieHeaders",
+    "seam.tailBitSignatureCookie",
+  ];
+  for (const name of refusedMissing) {
+    const event = responseOf(name);
+    if (event?.statusLine !== "HTTP/1.1 401 Unauthorized") {
+      failures.push(`${name}: expected 401, got ${event?.statusLine ?? "nothing"}`);
+    }
+    if (!(event?.tailText ?? "").includes('"reason":"missing_credential"')) {
+      failures.push(`${name}: expected missing_credential, got ${event?.tailText}`);
+    }
+  }
+  for (const name of refusedInvalid) {
+    const event = responseOf(name);
+    if (event?.statusLine !== "HTTP/1.1 401 Unauthorized") {
+      failures.push(`${name}: expected 401, got ${event?.statusLine ?? "nothing"}`);
+    }
+    if (
+      !(event?.tailText ?? "").includes('"reason":"invalid_credential"') ||
+      (event?.tailText ?? "").includes("dpopFailureReason")
+    ) {
+      failures.push(`${name}: expected a plain invalid_credential, got ${event?.tailText}`);
+    }
+  }
+  // A DPoP refusal is the same 401 plus one field, which is the only place the seam's answer differs
+  // between the two credential paths — and the reason the 150-byte body is its own case group.
+  for (const name of refusedProof) {
+    const event = responseOf(name);
+    if (!(event?.tailText ?? "").includes('"dpopFailureReason":"invalid_proof"')) {
+      failures.push(`${name}: expected invalid_proof, got ${event?.tailText}`);
+    }
+    if (
+      !(event?.headers ?? []).some(
+        ([header, value]) => header.toLowerCase() === "content-length" && value === "150",
+      )
+    ) {
+      failures.push(`${name}: the DPoP field did not grow the body to 150 bytes`);
+    }
+  }
+  for (const name of accepted) {
+    if (responseOf(name)?.statusLine !== "HTTP/1.1 101 Switching Protocols") {
+      failures.push(`${name}: expected 101, got ${responseOf(name)?.statusLine ?? "nothing"}`);
+    }
+  }
+  // The order `selectRequestCredential` reads (`EnvironmentAuth.ts:572-598`), each step proven by the
+  // scopes the connection ended up with rather than by the status code.
+  const cookieWon = answerOf("seam.cookieBeatsBearer", 2)?.payload ?? "";
+  if (!cookieWon.includes("EnvironmentAuthorizationError")) {
+    failures.push(`seam.cookieBeatsBearer: the bearer token outran the cookie`);
+  }
+  if (!(answerOf("seam.bearerOnly", 2)?.payload ?? "").includes('"ok":"operate"')) {
+    failures.push(`seam.bearerOnly: an authorization header alone did not authenticate`);
+  }
+  if (!(answerOf("seam.bearerPadded", 2)?.payload ?? "").includes('"ok":"operate"')) {
+    failures.push(`seam.bearerPadded: padding the token changed the answer`);
+  }
+  if (!(answerOf("seam.ticketBeatsCookie", 2)?.payload ?? "").includes('"ok":"operate"')) {
+    failures.push(`seam.ticketBeatsCookie: the cookie outran the ticket`);
+  }
+  if (
+    (rowOf("seam.bearerOnly")?.lastConnectedAt as number | null | undefined) !== 1_700_000_000_000
+  ) {
+    failures.push(`seam.bearerOnly: the bearer session's own row was never connected`);
+  }
+  // The gate is built from the token's `scopes`, not from the row's, in both directions.
+  const narrower = answerOf("seam.claimsNarrowerThanRow", 2)?.payload ?? "";
+  if (!narrower.includes("EnvironmentAuthorizationError")) {
+    failures.push(`seam.claimsNarrowerThanRow: the row's wider scope list gated the connection`);
+  }
+  if (!(answerOf("seam.claimsWiderThanRow", 2)?.payload ?? "").includes('"ok":"operate"')) {
+    failures.push(`seam.claimsWiderThanRow: the row's narrower scope list gated the connection`);
+  }
+  // A fresh row that was refused never learned about the attempt, from either side of the union.
+  if (rowOf("seam.revokedCookie")?.lastConnectedAt !== null) {
+    failures.push(`seam.revokedCookie: a refused cookie still recorded a connection`);
+  }
+  if (rowOf("seam.missingRowCookie")?.missing !== true) {
+    failures.push(`seam.missingRowCookie: the row the token named exists`);
+  }
+  // The name is the server's, and this configuration has no legacy fallback to consult: the two cases
+  // that present a bare `t3_session` are refused as though no cookie had been sent.
+  if (cookieNames.legacy !== null) {
+    failures.push(`legacy cookie name is consulted here: ${cookieNames.legacy}`);
+  }
+  if (!/^t3_session_\d+_[0-9a-f]{12}$/.test(cookieNames.cookie)) {
+    failures.push(`session cookie name is not the derived one: ${cookieNames.cookie}`);
   }
   return failures;
 };
