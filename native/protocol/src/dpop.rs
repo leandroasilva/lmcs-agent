@@ -473,11 +473,14 @@ fn point_double(point: &Point, p: &BigInt) -> Point {
     }
     let xx = rem(&(x * x), p);
     let yy = rem(&(y * y), p);
-    let yyyy = rem(&(yy * yy), p);
+    let yyyy = rem(&(&yy * &yy), p);
     let zz = rem(&(z * z), p);
-    let z4 = rem(&(zz * zz), p);
+    let z4 = rem(&(&zz * &zz), p);
     let sum = rem(&(x + yy), p);
-    let s = rem(&(&count(2) * &rem(&(rem(&(sum * sum), p) - &xx - &yyyy), p)), p);
+    let s = rem(
+        &(&count(2) * &rem(&(rem(&(&sum * &sum), p) - &xx - &yyyy), p)),
+        p,
+    );
     let m = rem(&(&count(3) * &rem(&(&xx - &z4), p)), p);
     let x3 = rem(&(rem(&(m.clone() * &m), p) - &count(2) * &s), p);
     let y3 = rem(&(rem(&(m * (&s - &x3)), p) - &count(8) * &yyyy), p);
@@ -523,7 +526,10 @@ fn point_add(left: &Point, right: &Point, p: &BigInt) -> Point {
     );
     // Z3 = ((Z1+Z2)² - Z1Z1 - Z2Z2) · H
     let z_sum = rem(&(z1 + z2), p);
-    let z3 = rem(&(&rem(&(z_sum.clone() * z_sum), p) - &z1_sq - &z2_sq) * &h, p);
+    let z3 = rem(
+        &((&rem(&(z_sum.clone() * z_sum), p) - &z1_sq - &z2_sq) * &h),
+        p,
+    );
     Some((x3, y3, z3))
 }
 
@@ -571,18 +577,23 @@ pub fn p256_verify(public_key: &[u8; 65], hash: &[u8; 32], signature: &[u8]) -> 
     let Some((r, s)) = compact_signature(signature) else {
         return false;
     };
-    let point = affine_point(public_key);
-    if point.is_none() {
+    let Some((qx, qy, _)) = affine_point(public_key) else {
         return false;
-    }
+    };
     let p = prime();
     let n = order();
     let e = rem(&be(hash), &n);
     let s_inverse = mod_inverse(&s, &n);
     let u1 = rem(&(&e * &s_inverse), &n);
     let u2 = rem(&(&r * &s_inverse), &n);
+    // `BASE.multiplyAndAddUnsafe(P, u1, u2)`: the verification point is `u1·G + u2·Q`, and dropping
+    // either half makes every signature verify.
     let (gx, gy) = generator();
-    let summed = point_add(&point_multiply(&u1, &(gx, gy), &p), &point, &p);
+    let summed = point_add(
+        &point_multiply(&u1, &(gx, gy), &p),
+        &point_multiply(&u2, &(qx, qy), &p),
+        &p,
+    );
     let Some((x, _, z)) = summed else {
         return false;
     };
@@ -590,7 +601,7 @@ pub fn p256_verify(public_key: &[u8; 65], hash: &[u8; 32], signature: &[u8]) -> 
         return false;
     }
     let z_inverse = mod_inverse(&z, &p);
-    let x = rem(&(&x * &rem(&(z_inverse * z_inverse), &p)), &p);
+    let x = rem(&(&x * &rem(&(&z_inverse * &z_inverse), &p)), &p);
     rem(&x, &n) == r
 }
 
@@ -687,7 +698,7 @@ mod tests {
         let mut signature = hex_bytes(
             "64ececa44126f77b72f11ac32a477d2d22e374d7a105525714cf644cf12aba951624d5358136bf07213ba71f83f136192547a49ffed042442188c615687abf35",
         );
-        let low = BigInt::from_slice(&signature[32..]);
+        let low = be(&signature[32..]);
         let high = order() - low;
         let bytes = high.to_bytes_be().1;
         signature[64 - bytes.len()..64].copy_from_slice(&bytes);

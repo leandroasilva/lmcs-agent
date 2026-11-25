@@ -1435,8 +1435,10 @@ pub fn authenticate_request(
     let session = verify_session(token, now, secret, lookup).map_err(RequestDenial::from)?;
     // `if (session.proofKeyThumbprint)`, and that is JavaScript *truthiness*: a token whose `jkt` is the
     // empty string is unbound, so it lands on the branch below and a DPoP header beside it is refused.
-    if let Some(thumbprint) =
-        session.proof_key_thumbprint.filter(|thumbprint| !thumbprint.is_empty())
+    if let Some(thumbprint) = session
+        .proof_key_thumbprint
+        .as_deref()
+        .filter(|thumbprint| !thumbprint.is_empty())
     {
         // `:659-667`: a bound token has to arrive as the DPoP credential *and* be that exact string, since
         // the proof is checked against it.
@@ -1716,6 +1718,25 @@ mod tests {
         })
     }
 
+    /// The request `verifyRequestDpopProof` reads, for the cases where no `DPoP` header was sent at all.
+    /// `url` is `Some` because every recorded seam case targets `/ws` on an origin Node can resolve, and
+    /// a `None` here is the one refusal that carries no `dpopFailureReason`.
+    fn proof(method: &str, url: Option<&str>, header: Option<&str>) -> ProofRequest {
+        ProofRequest {
+            header: header.map(str::to_owned),
+            method: method.to_owned(),
+            url: url.map(str::to_owned),
+        }
+    }
+
+    /// The `toURL` result for the recorded `GET /ws`.
+    const WS: &str = "http://127.0.0.1/ws";
+
+    /// A store that always lets the proof spend itself, for the guards that are not about replay.
+    fn spends(_: &str, _: &[u8]) -> Replay {
+        Replay::Stored
+    }
+
     /// The claims text and the token `seam-golden.ts` minted for `seam.cookieRead`, which pins the field
     /// order (the signature covers the text) and the `jkt`-absent spelling against the shipped encoder.
     #[test]
@@ -1991,9 +2012,10 @@ mod tests {
         );
     }
 
-    /// The four shapes `authenticateRequest` answers with a 401, and the one the port refuses rather than
-    /// verifies. `seam.boundDpopNoProof` and `seam.boundDpopMalformedProof` are the same refusal here,
-    /// because no proof can be checked without an asymmetric verifier.
+    /// The shapes `authenticateRequest` answers with a 401. Every proof-shaped refusal is now a real
+    /// `dpop` code mapped through `mapDpopFailureReason`, so `seam.boundBearer` and
+    /// `seam.boundDpopNoProof` answer `invalid_proof` because the *proof is missing*, not because the port
+    /// could not check one.
     #[test]
     fn the_request_credential_guards_the_proof_binding() {
         let names = CredentialNames {
@@ -2011,11 +2033,13 @@ mod tests {
                 &crate::http::Cookies::default(),
                 Some(&format!("Bearer {bound}")),
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
                 |_| found("seam_c_read", &["orchestration:read"]),
+                spends,
             ),
-            Err(RequestDenial::InvalidProof),
+            Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof)),
             "`seam.boundBearer`"
         );
         assert_eq!(
@@ -2023,11 +2047,13 @@ mod tests {
                 &crate::http::Cookies::parse(&format!("{}={bound}", names.session)),
                 None,
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
                 |_| found("seam_c_read", &["orchestration:read"]),
+                spends,
             ),
-            Err(RequestDenial::InvalidProof),
+            Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof)),
             "`seam.boundCookie`"
         );
         assert_eq!(
@@ -2035,11 +2061,13 @@ mod tests {
                 &crate::http::Cookies::default(),
                 Some(&format!("DPoP {unbound}")),
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
                 |_| found("seam_c_read", &["orchestration:read"]),
+                spends,
             ),
-            Err(RequestDenial::InvalidProof),
+            Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof)),
             "`seam.unboundDpopHeader`: the mirror guard"
         );
         assert_eq!(
@@ -2047,13 +2075,19 @@ mod tests {
                 &crate::http::Cookies::default(),
                 Some(&format!("DPoP {bound}")),
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
                 |_| found("seam_c_read", &["orchestration:read"]),
+                spends,
             ),
-            Err(RequestDenial::ProofUnverified),
+            Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof)),
+            "the token is bound and no proof was sent: `missing_proof`, which the wire spells `invalid_proof`"
         );
-        for denial in [RequestDenial::InvalidProof, RequestDenial::ProofUnverified] {
+        for denial in [
+            RequestDenial::InvalidProof,
+            RequestDenial::Proof(crate::dpop::Reason::InvalidProof),
+        ] {
             let denied = denial.denied();
             // 150 bytes, which is what the five recorded proof refusals count, against 114 without the
             // field: the reason is on the wire and not only in a log.
@@ -2075,9 +2109,11 @@ mod tests {
                 &crate::http::Cookies::parse(&format!("{}={unbound}", names.session)),
                 None,
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
                 |_| Stored::Failed,
+                spends,
             ),
             Err(RequestDenial::Store),
             "a store that will not answer is the one refusal that reaches a 500"
@@ -2087,9 +2123,11 @@ mod tests {
                 &crate::http::Cookies::parse(&format!("{}={}", names.session, "junk")),
                 Some(&format!("Bearer {unbound}")),
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
                 |_| found("seam_c_read", &["orchestration:read"]),
+                spends,
             ),
             Err(RequestDenial::InvalidCredential),
             "`seam.duplicateCookie`-shaped: the cookie wins, and a bad one is not a missing one"
@@ -2099,11 +2137,86 @@ mod tests {
                 &crate::http::Cookies::default(),
                 None,
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
                 |_| found("seam_c_read", &["orchestration:read"]),
+                spends,
             ),
             Err(RequestDenial::MissingCredential),
+        );
+    }
+
+    /// `toURL` failing precedes every proof guard, so the refusal is the 114-byte one with no
+    /// `dpopFailureReason` — the shape `seam.dpopEmptyScheme` reaches for a different reason.
+    #[test]
+    fn an_unresolvable_url_refuses_before_the_proof_is_read() {
+        let names = CredentialNames {
+            session: "t3_session_0_7a98a041feae",
+            ..Default::default()
+        };
+        let bound = {
+            let mut claims = claims("seam_c_read", &["orchestration:read"]);
+            claims.jkt = Some("thumbprint-seam".to_owned());
+            claims.mint(&secret())
+        };
+        let denial = authenticate_request(
+            &crate::http::Cookies::default(),
+            Some(&format!("DPoP {bound}")),
+            &names,
+            &proof("GET", None, Some("not.a.proof")),
+            AT,
+            &secret(),
+            |_| found("seam_c_read", &["orchestration:read"]),
+            spends,
+        )
+        .unwrap_err();
+        assert_eq!(denial, RequestDenial::InvalidCredential);
+        assert_eq!(denial.denied().body("unavailable").len(), 114);
+    }
+
+    /// A replayed proof is the one `dpopFailureReason` that no `Code` produces: it comes from the store,
+    /// and `mapDpopReplayStoreError` keeps it a 401 rather than the 500 every other store failure is.
+    #[test]
+    fn a_spent_proof_is_refused_by_the_store() {
+        let names = CredentialNames {
+            session: "t3_session_0_7a98a041feae",
+            ..Default::default()
+        };
+        let (token, thumbprint) = bound_session(&names);
+        let proof_text = mint_proof(&token, "GET", WS, &thumbprint, AT / 1000);
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::default(),
+                Some(&format!("DPoP {token}")),
+                &names,
+                &proof("GET", Some(WS), Some(&proof_text)),
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+                |_, _| Replay::Replayed,
+            ),
+            Err(RequestDenial::Proof(crate::dpop::Reason::Replay)),
+        );
+        assert_eq!(
+            RequestDenial::Proof(crate::dpop::Reason::Replay)
+                .denied()
+                .body("unavailable"),
+            r#"{"_tag":"EnvironmentAuthInvalidError","code":"auth_invalid","reason":"invalid_credential","dpopFailureReason":"replay","traceId":"unavailable"}"#
+        );
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::default(),
+                Some(&format!("DPoP {token}")),
+                &names,
+                &proof("GET", Some(WS), Some(&proof_text)),
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+                |_, _| Replay::Failed,
+            ),
+            Err(RequestDenial::Store),
+            "an already-exists collision is a 401 but a broken store is still a 500"
         );
     }
 
