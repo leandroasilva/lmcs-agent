@@ -1445,7 +1445,7 @@ pub fn authenticate_request(
         if dpop_token != Some(token) {
             return Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof));
         }
-        verify_request_proof(proof, &thumbprint, token, now, record)?;
+        verify_request_proof(proof, thumbprint, token, now, record)?;
         return Ok(session.verified());
     }
     if dpop_token.is_some() {

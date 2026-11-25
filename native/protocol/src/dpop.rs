@@ -134,10 +134,7 @@ pub struct Proof {
 /// One guard's worth of decoding: base64url that is not base64url **throws**, which the shipped `try`
 /// turns into [`Code::InvalidProof`], while a document that decodes and fails its schema is an
 /// `Option::None` and so [`Code::MalformedProof`].
-fn segment<T>(
-    text: &str,
-    decode: impl FnOnce(&str) -> Option<T>,
-) -> Result<Option<T>, Code> {
+fn segment<T>(text: &str, decode: impl FnOnce(&str) -> Option<T>) -> Result<Option<T>, Code> {
     let Ok(utf8) = decode_base64url_utf8(text) else {
         return Err(Code::InvalidProof);
     };
@@ -150,7 +147,6 @@ fn segment<T>(
 /// # Panics
 ///
 /// Never: everything that throws in the shipped code is a returned `Code` here.
-#[must_use]
 pub fn verify(input: &Input<'_>) -> Result<Proof, Code> {
     let Some(proof) = input.proof.map(js_trim).filter(|proof| !proof.is_empty()) else {
         return Err(Code::MissingProof);
@@ -186,10 +182,9 @@ pub fn verify(input: &Input<'_>) -> Result<Proof, Code> {
     if normalize_htu(input.url).as_deref() != Some(claims.htu.as_str()) {
         return Err(Code::UrlMismatch);
     }
-    if input
-        .expected_access_token
-        .is_some_and(|token| !token.is_empty() && claims.ath.as_deref() != Some(access_token_hash(token).as_str()))
-    {
+    if input.expected_access_token.is_some_and(|token| {
+        !token.is_empty() && claims.ath.as_deref() != Some(access_token_hash(token).as_str())
+    }) {
         return Err(Code::AccessTokenHashMismatch);
     }
     let Ok(signature) = decode_base64url(parts[2]) else {
@@ -308,7 +303,7 @@ struct Claims {
 /// the sorted order is `crv`, `kty`, `x`, `y` and nothing else in the JWK can move the digest.
 fn jwk_thumbprint(jwk: &Jwk) -> String {
     let input = format!(
-        "{{{}:{},{},{},{}:{},{},{}}}",
+        "{{{}:{},{}:{},{}:{},{}:{}}}",
         crate::json::quote("crv"),
         crate::json::quote(&jwk.crv),
         crate::json::quote("kty"),
@@ -399,7 +394,11 @@ pub fn format_iso_millis(millis: i64) -> String {
 /// division below runs on a non-negative operand, so Rust's truncation is the floor the algorithm wants.
 fn civil_from_days(days: i64) -> (i64, i64, i64) {
     let shifted = days + 719_468;
-    let era = if shifted >= 0 { shifted } else { shifted - 146_096 } / 146_097;
+    let era = if shifted >= 0 {
+        shifted
+    } else {
+        shifted - 146_096
+    } / 146_097;
     let day_of_era = shifted - era * 146_097; // [0, 146096]
     let year_of_century =
         (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365; // [0, 399]
@@ -530,7 +529,10 @@ fn point_add(left: &Point, right: &Point, p: &BigInt) -> Point {
     // `4·J`, not `J`: with `rr = 2·(S2 − S1)` and `Z3 = 2·Z1·Z2·H` the affine division by `Z3²` is
     // exact only when the `H³` term carries the same quarter the slope does. Measured against
     // `k · G` from Node's ECDH, which the sum without it fails at `3·G`.
-    let x3 = rem(&(rem(&(rr.clone() * &rr), p) - &count(4) * &j - &count(8) * &v), p);
+    let x3 = rem(
+        &(rem(&(rr.clone() * &rr), p) - &count(4) * &j - &count(8) * &v),
+        p,
+    );
     let y3 = rem(
         &(rem(&(rr * (&count(4) * &v - &x3)), p) - &count(8) * &(&s1 * &j)),
         p,
@@ -560,20 +562,21 @@ fn point_multiply(scalar: &BigInt, base: &(BigInt, BigInt), p: &BigInt) -> Point
     acc
 }
 
-/// `publicKeyBytesFromJwk`: the two coordinates written into a zeroed 65-byte array, so a short
-/// coordinate is **left**-aligned and its value multiplied by the leftover power of 256. Anything
-/// longer than 32 bytes is the `RangeError` the shipped `try` turns into [`Code::InvalidProof`], and
-/// `seam.dpopShortX` only reaches it because the row's `jkt` was bound to that shorter key.
+/// `publicKeyBytesFromJwk`: **both** coordinates have to decode to exactly thirty-two bytes, or the
+/// function throws and the shipped `try` answers [`Code::InvalidProof`] before the curve is consulted.
+/// The check is `!== 32` and not `> 32`, which is what makes `seam.dpopShortX` a refusal of the *key*
+/// rather than a signature that failed over a zero-padded point — a difference this seam cannot see,
+/// because both spellings reach the same 150-byte `invalid_proof`.
 fn public_key_bytes(jwk: &Jwk) -> Option<[u8; 65]> {
     let x = decode_base64url(&jwk.x).ok()?;
     let y = decode_base64url(&jwk.y).ok()?;
-    if x.len() > 32 || y.len() > 32 {
+    if x.len() != 32 || y.len() != 32 {
         return None;
     }
     let mut bytes = [0u8; 65];
     bytes[0] = 0x04;
-    bytes[1..1 + x.len()].copy_from_slice(&x);
-    bytes[33..33 + y.len()].copy_from_slice(&y);
+    bytes[1..33].copy_from_slice(&x);
+    bytes[33..].copy_from_slice(&y);
     Some(bytes)
 }
 
@@ -761,7 +764,10 @@ mod tests {
             !p256_verify(&public, &hash, &flipped),
             "the same r with a different s is a different point"
         );
-        assert!(!p256_verify(&public, &hash, &[0u8; 64]), "zero r and zero s");
+        assert!(
+            !p256_verify(&public, &hash, &[0u8; 64]),
+            "zero r and zero s"
+        );
     }
 
     /// `nist.ts` fixes `lowS: false` for P-256 and `verify` is called without overriding it, so the
@@ -791,9 +797,18 @@ mod tests {
         let p = prime();
         let g = generator();
         for (scalar, expected) in [
-            ("2", "7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978"),
-            ("3", "5ecbe4d1a6330a44c8f7ef951d4bf165e6c6b721efada985fb41661bc6e7fd6c"),
-            ("7", "8e533b6fa0bf7b4625bb30667c01fb607ef9f8b8a80fef5b300628703187b2a3"),
+            (
+                "2",
+                "7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978",
+            ),
+            (
+                "3",
+                "5ecbe4d1a6330a44c8f7ef951d4bf165e6c6b721efada985fb41661bc6e7fd6c",
+            ),
+            (
+                "7",
+                "8e533b6fa0bf7b4625bb30667c01fb607ef9f8b8a80fef5b300628703187b2a3",
+            ),
             (
                 "5d7790b2f96102cac2e32b879b7896d3ca1dddb79fb01c6f074ce9fa69a1dd34",
                 "b9974abd781a87e3b68577d276fb0a03d3ca39623be9764107f0c22321d3cc6c",
@@ -819,7 +834,8 @@ mod tests {
                 "4784dd1c5b3b5e2383017b64edb4fad043d16fe2ebe4bf6a57e0363417248313",
             ),
         ] {
-            let point = point_multiply(&big(scalar), &g, &p).expect("a real multiple of the generator");
+            let point =
+                point_multiply(&big(scalar), &g, &p).expect("a real multiple of the generator");
             let (px, _, z) = point;
             let inverse = mod_inverse(&z, &p);
             let affine = rem(&(&px * &rem(&(&inverse * &inverse), &p)), &p);
@@ -842,9 +858,60 @@ mod tests {
         bytes
     }
 
+    /// `publicKeyBytesFromJwk` checks `!== 32`, not `> 32`: a coordinate that decodes **short** is not a
+    /// public key either, and the proof never reaches the curve. A 42-character `x` is thirty-one bytes,
+    /// which is the shape a real P-256 coordinate has about once every 256 keys — the case the shipped
+    /// code refuses and a zero-padding port would silently accept.
+    #[test]
+    fn a_coordinate_is_a_key_only_at_thirty_two_bytes() {
+        let key = |x: &[u8], y: &[u8]| Jwk {
+            kty: "EC".to_owned(),
+            crv: "P-256".to_owned(),
+            x: encode_base64url(x),
+            y: encode_base64url(y),
+        };
+        let bytes = public_key_bytes(&key(&[0x11; 32], &[0x22; 32])).expect("a real key");
+        assert_eq!(bytes[0], 0x04);
+        assert_eq!(&bytes[1..33], &[0x11; 32][..]);
+        assert_eq!(&bytes[33..], &[0x22; 32][..]);
+        assert_eq!(
+            public_key_bytes(&key(&[0x11; 31], &[0x22; 32])),
+            None,
+            "a thirty-one-byte x is not a coordinate",
+        );
+        assert_eq!(
+            public_key_bytes(&key(&[0x11; 32], &[0x22; 33])),
+            None,
+            "a thirty-three-byte y is not a coordinate either",
+        );
+    }
+
+    /// `parts.length !== 3`, so a fourth segment is as malformed as a missing one — and a lower-bound
+    /// check would read the signature out of `parts[2]` and ignore whatever followed it.
+    #[test]
+    fn a_compact_jwt_has_exactly_three_segments() {
+        for proof in ["a.b", "a.b.c.d", "a.b.c.d.e", "a.b.", ".b.c", "a..c"] {
+            assert_eq!(
+                verify(&Input {
+                    proof: Some(proof),
+                    method: "GET",
+                    url: "http://127.0.0.1/ws",
+                    now_epoch_seconds: 1_700_000_000,
+                    expected_thumbprint: None,
+                    expected_access_token: None,
+                }),
+                Err(Code::MalformedProof),
+                "{proof}"
+            );
+        }
+    }
+
     #[test]
     fn the_iso_and_the_days_agree_with_the_measured_clock() {
-        assert_eq!(format_iso_millis(1_700_000_000_000), "2023-11-14T22:13:20.000Z");
+        assert_eq!(
+            format_iso_millis(1_700_000_000_000),
+            "2023-11-14T22:13:20.000Z"
+        );
         assert_eq!(format_iso_millis(0), "1970-01-01T00:00:00.000Z");
         assert_eq!(
             format_iso_millis(1_704_067_199_999),

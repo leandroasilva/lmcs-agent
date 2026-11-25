@@ -50,8 +50,8 @@
 
 pub mod auth;
 pub mod coerce;
-pub mod dpop;
 pub mod deflate;
+pub mod dpop;
 pub mod envelope;
 pub mod frame;
 pub mod headers;

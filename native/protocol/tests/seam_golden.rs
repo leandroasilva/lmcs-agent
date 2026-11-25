@@ -75,7 +75,6 @@ struct Case {
 struct Spent {
     name: String,
     value: String,
-    bytes: u64,
 }
 
 /// What the port wrote into the replay store while answering, which is also the table the next case
@@ -93,7 +92,7 @@ impl Secrets {
         if self.kept.contains_key(name) {
             return Replay::Replayed;
         }
-        let text = String::from_utf8(value).expect("the store's value is the recorded text");
+        let text = String::from_utf8_lossy(value).into_owned();
         spent.push((name.to_owned(), text.clone()));
         self.kept.insert(name.to_owned(), text);
         Replay::Stored
@@ -304,13 +303,12 @@ fn artifact() -> Option<(Value, Vec<Case>)> {
             "seed" => case.seed = event["seed"].clone(),
             "row" => case.row = Some(event["row"].clone()),
             "peer" => case.peer = Some(text(event, "detail")),
-            "secret" => case.secret = Some(Spent {
-                name: text(event, "detail"),
-                value: text(event, "value"),
-                bytes: event["bytes"]
-                    .as_u64()
-                    .expect("a recorded replay row counts its own bytes"),
-            }),
+            "secret" => {
+                case.secret = Some(Spent {
+                    name: text(event, "detail"),
+                    value: text(event, "value"),
+                })
+            }
             // `write` records an `EPIPE` on a socket the server had already ended, which is TCP's news and
             // not the route's.
             "write" => {}
@@ -349,6 +347,7 @@ fn entry<'a>(
         row: None,
         peer: None,
         frames: Vec::new(),
+        secret: None,
     })
 }
 
@@ -525,6 +524,51 @@ fn compare_row(case: &Case, rows: &Rows) -> bool {
     true
 }
 
+/// The replay row a case left behind, compared on the name the proof spent itself under and on the text
+/// written beside it — the two halves no byte of the handshake carries.
+///
+/// A case that recorded a row while the port created none is the replay (`seam.dpopReplayedJti`): the name
+/// was already in the table, which is only true if the case before it spent the same bytes under the same
+/// name. Returning whether the capture recorded anything keeps the count honest without making a refusal
+/// that correctly wrote nothing look like an untested case.
+fn compare_secret(case: &Case, written: &Written, secrets: &Secrets) -> bool {
+    let Some(recorded) = &case.secret else {
+        assert!(
+            written.spent.is_empty(),
+            "{}: a proof the route refused spent itself under {:?}",
+            case.name,
+            written.spent.first().map(|(name, _)| name),
+        );
+        return false;
+    };
+    match written.spent.as_slice() {
+        [] => assert_eq!(
+            secrets.kept.get(&recorded.name).map(String::as_str),
+            Some(recorded.value.as_str()),
+            "{}: a replay the store did not already hold",
+            case.name,
+        ),
+        [(name, value)] => {
+            assert_eq!(
+                name, &recorded.name,
+                "{}: the proof spent itself under a different name",
+                case.name,
+            );
+            assert_eq!(
+                value, &recorded.value,
+                "{}: the replay row reads differently",
+                case.name,
+            );
+        }
+        many => panic!(
+            "{}: the port wrote {} replay rows where the capture read one",
+            case.name,
+            many.len(),
+        ),
+    }
+    true
+}
+
 /// One s2c frame the port wrote, against the frame the capture recorded.
 fn compare_frame(
     case: &Case,
@@ -673,13 +717,15 @@ fn the_capture_is_the_ports_own_bytes_and_columns() {
     let names = CookieNames::read(&document);
     let summary = string_list(&document, "upgraded");
     let mut rows = Rows::default();
+    let mut secrets = Secrets::default();
     let mut heads = 0;
     let mut rows_compared = 0;
+    let mut spends_compared = 0;
     let mut frames_compared = 0;
     let mut deflated = 0;
     let mut connections = 0;
     for case in &cases {
-        let written = replay(case, now, &secret, &names.names(), &mut rows);
+        let written = replay(case, now, &secret, &names.names(), &mut rows, &mut secrets);
         assert_eq!(
             written.head,
             case.head,
@@ -689,6 +735,7 @@ fn the_capture_is_the_ports_own_bytes_and_columns() {
             String::from_utf8_lossy(&case.head),
         );
         heads += 1;
+        spends_compared += usize::from(compare_secret(case, &written, &secrets));
         // The `101` cases are the ones with a conversation, and the list the generator wrote is the one
         // this file has to agree with — a case the port refused and the route accepted shows up here.
         let upgraded = summary.iter().any(|name| name == &case.name);
@@ -789,8 +836,16 @@ fn the_capture_is_the_ports_own_bytes_and_columns() {
             .count(),
         "not every recorded row was compared",
     );
+    assert_eq!(
+        spends_compared,
+        array(&document, "events")
+            .iter()
+            .filter(|event| event["event"] == "secret")
+            .count(),
+        "not every recorded replay row was compared",
+    );
     eprintln!(
-        "seam_golden: {heads} heads, {frames_compared} answers ({deflated} deflated), {rows_compared} rows"
+        "seam_golden: {heads} heads, {frames_compared} answers ({deflated} deflated), {rows_compared} rows, {spends_compared} replay rows"
     );
 }
 

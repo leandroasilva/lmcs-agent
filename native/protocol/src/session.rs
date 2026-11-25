@@ -6,7 +6,7 @@
 //! both the input a scenario sent and the frames the shipped server wrote, so the loop can be
 //! checked against the server itself rather than against a description of it.
 //!
-//! Three shapes the port has to hold apart, each of them measured rather than inferred:
+//! Four shapes the port has to hold apart, each of them measured rather than inferred:
 //!
 //! - **Two carriers for one string.** A defect that belongs to a request answers as
 //!   `Exit`/`Failure`/`Die` with a `requestId`; a defect that belongs to the *connection* answers as
@@ -68,12 +68,45 @@ pub enum Outcome {
 /// socket rather than from the frame, which is what `headers.*` measured.
 pub type Handler = Box<dyn Fn(&Payload, &[Pair]) -> Outcome>;
 
-/// The group lookup, `group.requests.get(request.tag)` (`RpcServer.ts:779`). A tag that is not here
-/// is answered per request with `Unknown request tag: <tag>`, which is what makes an unknown tag a
-/// *request* failure while an unknown `_tag` is a *connection* one.
+/// What the rpc's **declaration** says its answer looks like, which is the question
+/// `group.requests.get(tag)` answers before any handler runs. `native/contracts` holds the census
+/// (`STREAMED_METHODS`, `VOID_SUCCESS_METHODS`) and whoever builds a [`Group`] reads it there; this
+/// crate stays schema-free by having the shape handed to it.
+///
+/// Three members, because the wire has three answers and not two. `Value` and `Void` differ only in
+/// whether the handler's return survives (`void.*`), and `Stream` differs from both in that its values
+/// go out as `Chunk`s and its terminal exit is `Void` whatever the element schema says (`stream.*`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Decl {
+    /// A success schema that is not `Schema.Void` and not the `Stream` marker: the handler's value is
+    /// the wire's value.
+    Value,
+    /// `Schema.Void`, spelled or defaulted. The handler's value is **overwritten** with `null`, not
+    /// refused: `void.explicitReturnsValue` and `void.defaultReturnsValue` both returned an object and
+    /// both wrote `{"_tag":"Success","value":null}`.
+    Void,
+    /// `stream: true`: one `Chunk` per batch and a `Void` exit at the end.
+    Stream,
+}
+
+/// One tag of the group as the dispatch sees it: what the declaration says, and whether anybody
+/// implemented it. The two are independent because the server's own state makes them independent —
+/// `RpcGroup.toHandlers` maps over **every** registered tag and stores `handlers[tag]`, so a group
+/// built from a partially migrated server has entries with nothing behind them.
+struct Member {
+    decl: Decl,
+    handler: Option<Handler>,
+}
+
+/// The group lookup, `group.requests.get(request.tag)` (`RpcServer.ts:779`). A tag that is not here is
+/// answered per request with `Unknown request tag: <tag>`, which is what makes an unknown tag a
+/// *request* failure. A tag that is here with no handler is answered with a connection-level `Defect`
+/// and no `requestId` at all, which is the third case and the one a migrating server lives in:
+/// `RpcServer.ts` calls `entry.handler(...)` without checking it is a function, so the throw happens
+/// where the transport's own `sendDefect` can catch it (`lookup.unimplemented`).
 #[derive(Default)]
 pub struct Group {
-    handlers: BTreeMap<String, Handler>,
+    members: BTreeMap<String, Member>,
 }
 
 impl Group {
@@ -82,28 +115,71 @@ impl Group {
         Self::default()
     }
 
+    /// Register `tag` with its declaration and the handler that answers it.
+    #[must_use]
+    pub fn with(
+        mut self,
+        tag: &str,
+        decl: Decl,
+        handler: impl Fn(&Payload, &[Pair]) -> Outcome + 'static,
+    ) -> Self {
+        self.members.insert(
+            tag.to_owned(),
+            Member {
+                decl,
+                handler: Some(Box::new(handler)),
+            },
+        );
+        self
+    }
+
+    /// A declared tag **nobody implemented**, which the dispatch answers with a `Defect` rather than
+    /// with an `Exit` — the difference between "this server has never heard of the method" and "this
+    /// server has heard of it and cannot run it".
+    #[must_use]
+    pub fn declared(mut self, tag: &str, decl: Decl) -> Self {
+        self.members.insert(
+            tag.to_owned(),
+            Member {
+                decl,
+                handler: None,
+            },
+        );
+        self
+    }
+
+    /// The declaration behind the most common builder: a method with a value to return.
     #[must_use]
     pub fn on(
-        mut self,
+        self,
         tag: &str,
         handler: impl Fn(&Payload, &[Pair]) -> Outcome + 'static,
     ) -> Self {
-        self.handlers.insert(tag.to_owned(), Box::new(handler));
-        self
+        self.with(tag, Decl::Value, handler)
     }
 
     #[must_use]
     pub fn returns(self, tag: &str, value: Value) -> Self {
-        self.on(tag, move |_, _| Outcome::Success(value.clone()))
+        self.with(tag, Decl::Value, move |_, _| Outcome::Success(value.clone()))
+    }
+
+    /// A `Schema.Void` method that returns `value` from its handler. The value is what makes
+    /// `void.explicitReturnsValue` worth having: the wire writes `null` whatever was handed over, so a
+    /// builder that skipped the declaration would put the object on the wire.
+    #[must_use]
+    pub fn returns_void(self, tag: &str, value: Value) -> Self {
+        self.with(tag, Decl::Void, move |_, _| Outcome::Success(value.clone()))
     }
 
     #[must_use]
     pub fn streams(self, tag: &str, batches: Vec<Vec<Value>>) -> Self {
-        self.on(tag, move |_, _| Outcome::Stream(batches.clone()))
+        self.with(tag, Decl::Stream, move |_, _| {
+            Outcome::Stream(batches.clone())
+        })
     }
 
-    fn lookup(&self, tag: &str) -> Option<&Handler> {
-        self.handlers.get(tag)
+    fn lookup(&self, tag: &str) -> Option<&Member> {
+        self.members.get(tag)
     }
 }
 
@@ -218,10 +294,24 @@ struct Pending {
     index: usize,
 }
 
-/// `2^53-1`, the fiber id the shipped server writes for an interrupted stream
-/// (`a.streamInterrupted`). Effect spells an unknown fiber with its own `FiberId.none`, and the
-/// number is the largest safe integer JavaScript can hold.
+/// `2^53-1`, the fiber id the shipped server writes for a stream a client interrupted while its producer
+/// was still running (`a.streamInterrupted`). Effect spells an unknown fiber with its own `FiberId.none`,
+/// and the number is the largest safe integer JavaScript can hold.
+///
+/// The other interrupt this crate writes is `fiber_id: Some(Value::Null)`, in
+/// [`Session::answer`]'s stream-on-a-unary-tag branch: there `FiberId.none` is the *value*, and
+/// `Cause.Interrupt`'s codec crosses it as `null` rather than as its ordinal. Which of the two a client
+/// sees is decided by whether a real fiber was alive, and `group-golden.ts` measured both.
 const FIBER_NONE: i64 = 9_007_199_254_740_991;
+
+/// `RpcServer.ts` calls `entry.handler` without asking whether the group was given one, so the tag is
+/// registered, the entry exists, and JavaScript throws where the transport's `sendDefect` can see it.
+/// The text is the shipped `TypeError`'s, not a ported one: `entry` and `handler` are its variable names.
+const MISSING_HANDLER: &str = "entry.handler is not a function";
+
+/// A `stream: true` tag whose handler returned a value: the exit codec reads `._tag` off it to tell
+/// `Success` from `Failure`, and on a number that read is of `undefined`.
+const STREAM_SHAPE_DEFECT: &str = "Cannot read properties of undefined (reading '_tag')";
 
 impl Session {
     #[must_use]
@@ -321,6 +411,17 @@ impl Session {
     /// `RpcServer.ts:766-780`: the transport reads `headers` first, then `typeof id`, then the
     /// group. The order is the order of the answers, so a request with a bad id *and* no headers
     /// closes instead of refusing.
+    ///
+    /// The group's answer has three cases, and the third is the one a port that registers only what it
+    /// has implemented will get wrong: a tag that is **declared** but has no handler is not an unknown
+    /// tag, and `entry.handler is not a function` is a `TypeError` the transport catches as a broadcast
+    /// `Defect` rather than an `Unknown request tag` die inside the request (`lookup.unimplemented`,
+    /// `lookup.unimplementedTwice`, `lookup.unimplementedStream`).
+    ///
+    /// The scope gate therefore runs *after* both lookups, because it runs *inside* the handler:
+    /// `ws.ts:620-641` wraps the effect each handler builds, so an unregistered tag answers `Unknown
+    /// request tag` whatever the scopes are, a tag nobody implemented throws before its scope is ever
+    /// read, and only a registered one whose scope is missing is refused.
     fn request(&mut self, request: &crate::envelope::Request, out: &mut Vec<Message>) -> bool {
         let Some(frame_headers) = request.headers.as_ref() else {
             return true;
@@ -330,14 +431,19 @@ impl Session {
             return false;
         }
         let key = request.group_key();
-        let Some(handler) = self.group.lookup(&key) else {
+        let Some(member) = self.group.lookup(&key) else {
             out.push(exit(&request.id, Outcome::Died(unknown_request_tag(&key))));
             return false;
         };
+        let Some(handler) = member.handler.as_ref() else {
+            out.push(defect(Defect::Error {
+                name: "TypeError".to_owned(),
+                message: MISSING_HANDLER.to_owned(),
+                cause: None,
+            }));
+            return false;
+        };
         let seen = crate::headers::seen_by_handler(&self.socket, frame_headers);
-        // The gate runs *after* the lookup, because it runs inside the handler: `ws.ts` wraps the effect
-        // the handler builds, so an unregistered tag is answered with `Unknown request tag` whatever the
-        // scopes are, and a registered one whose scope is missing never reaches the handler at all.
         let decision = self
             .gate
             .as_ref()
@@ -346,6 +452,7 @@ impl Session {
             Some(crate::scopes::Decision::Refused { required }) => {
                 self.answer(
                     &request.id,
+                    member.decl,
                     Outcome::Typed(crate::scopes::authorization_error_value(required)),
                     out,
                 );
@@ -367,30 +474,64 @@ impl Session {
             }
             Some(crate::scopes::Decision::Granted) | None => {}
         }
-        self.answer(&request.id, handler(&request.payload, &seen), out);
+        let decl = member.decl;
+        let outcome = handler(&request.payload, &seen);
+        self.answer(&request.id, decl, outcome, out);
         false
     }
 
-    /// Write one handler's outcome, or start the stream it produced.
-    fn answer(&mut self, request_id: &Id, outcome: Outcome, out: &mut Vec<Message>) {
-        match outcome {
-            Outcome::Success(value) => out.push(exit(request_id, Outcome::Success(value))),
-            Outcome::Typed(error) => out.push(exit(request_id, Outcome::Typed(error))),
-            Outcome::Died(defect) => out.push(exit(request_id, Outcome::Died(defect))),
-            Outcome::Broadcast(defect) => out.push(text_defect(&defect)),
-            Outcome::Stream(batches) => {
-                if batches.is_empty() {
-                    out.push(exit(request_id, Outcome::Success(Value::Null)));
-                    return;
+    /// Write one handler's outcome, or start the stream it produced, **through the declaration**: the
+    /// exit is encoded against `Rpc.exitSchema(rpc)`, so a `Schema.Void` success discards the value the
+    /// handler handed over and the two shape mismatches throw while the codec looks for a member the
+    /// other kind of answer has.
+    fn answer(&mut self, request_id: &Id, decl: Decl, outcome: Outcome, out: &mut Vec<Message>) {
+        match (decl, outcome) {
+            // A `stream: true` tag whose handler returned an Effect: the encoder reads `._tag` off a
+            // number, gets its `undefined`, and the `TypeError` lands on the connection — `Defect`, no
+            // `requestId`, socket alive (`stream.effectHandler`).
+            (Decl::Stream, Outcome::Success(_)) => out.push(defect(Defect::Error {
+                name: "TypeError".to_owned(),
+                message: STREAM_SHAPE_DEFECT.to_owned(),
+                cause: None,
+            })),
+            // The other direction, which is what a server that forgot to mark a method produces: the
+            // value is a stream the exit schema cannot encode, the encode fails, and the failure Effect
+            // reports is an **internal interrupt** of a fiber that does not exist — so the cause carries
+            // `"fiberId":null` rather than the ordinal a client's `Interrupt` writes (`shape.streamOnUnary`,
+            // `shape.streamOnVoid`).
+            (Decl::Value | Decl::Void, Outcome::Stream(_)) => out.push(Message::Exit {
+                request_id: request_id.clone(),
+                exit: Exit::Failure {
+                    cause: vec![Cause::Interrupt {
+                        fiber_id: Some(Value::Null),
+                    }],
                 }
-                let pending = Pending {
-                    request_id: request_id.clone(),
-                    batches,
-                    index: 1,
-                };
-                out.push(chunk(&pending.request_id, &pending.batches[0]));
-                self.pending.insert(key(request_id), pending);
+                .to_value(),
+            }),
+            // `Schema.Void` overwrites: measured on both spellings of it, with a handler that returned
+            // nothing and with one that returned an object (`void.*`).
+            (Decl::Void, Outcome::Success(_)) => {
+                out.push(exit(request_id, Outcome::Success(Value::Null)));
             }
+            (_, outcome) => match outcome {
+                Outcome::Success(value) => out.push(exit(request_id, Outcome::Success(value))),
+                Outcome::Typed(error) => out.push(exit(request_id, Outcome::Typed(error))),
+                Outcome::Died(defect) => out.push(exit(request_id, Outcome::Died(defect))),
+                Outcome::Broadcast(defect) => out.push(text_defect(&defect)),
+                Outcome::Stream(batches) => {
+                    if batches.is_empty() {
+                        out.push(exit(request_id, Outcome::Success(Value::Null)));
+                        return;
+                    }
+                    let pending = Pending {
+                        request_id: request_id.clone(),
+                        batches,
+                        index: 1,
+                    };
+                    out.push(chunk(&pending.request_id, &pending.batches[0]));
+                    self.pending.insert(key(request_id), pending);
+                }
+            },
         }
     }
 
