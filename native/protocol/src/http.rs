@@ -812,9 +812,10 @@ mod tests {
             "an encoded surrogate is a `URIError`, which the same fallback covers"
         );
         assert_eq!(
-            Cookies::parse("a=b+c").get("a"),
-            Some("b+c"),
-            "unlike a query string, a cookie value does not read `+` as a space"
+            Cookies::parse("a=b+c%2E").get("a"),
+            Some("b+c."),
+            "unlike a query string, a cookie value does not read `+` as a space — and the decode only runs \
+             because the `%` is there at all"
         );
     }
 

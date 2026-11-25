@@ -1573,8 +1573,9 @@ const scenarios: Array<Scenario> = [
       headers: (tok, names) => [["Cookie", `${names.cookie}=${tok.c}`]],
     },
   },
-  // A session id is `TrimmedNonEmptyString` (`baseSchemas.ts:129-131`), so a padded one is refused with
-  // the rest of the payload rather than reaching the row lookup.
+  // A session id is `TrimmedNonEmptyString` (`baseSchemas.ts:129-131`), so a padded one is not a refusal:
+  // the payload decodes, and the row lookup runs on the *trimmed* id, which is the seeded row. The
+  // whitespace is invisible on the wire — the connection is made and the cookie's scopes gate it.
   {
     name: "seam.sidWhitespaceCookie",
     session: SESSIONS.cookieRead,

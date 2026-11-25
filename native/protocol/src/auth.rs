@@ -1888,6 +1888,21 @@ mod tests {
             None,
             "`seam.bearerEmptyScheme`: a scheme with no token is no credential"
         );
+        // `seam.dpopEmptyScheme` sent the prefix *with* its space, which is the only spelling that can
+        // reach `slice(prefix).trim()` and come back empty: the real function returns `undefined` there,
+        // so the legacy cookie and the dev cookie are still tried. Nothing on this configuration's wire can
+        // show the difference — both names are `None` — so the boundary itself is what is pinned.
+        assert_eq!(
+            select_request_credential(&crate::http::Cookies::default(), Some("DPoP "), &names),
+            None,
+            "`seam.dpopEmptyScheme`: a bare scheme with a trailing space names an empty token, which is no \
+             credential at all"
+        );
+        assert_eq!(
+            select_request_credential(&crate::http::Cookies::default(), Some("Bearer   "), &names),
+            None,
+            "and the trim is not a fallback: spaces are not a token"
+        );
         let empty = crate::http::Cookies::parse("t3_session_0_7a98a041feae=;");
         assert_eq!(
             select_request_credential(&empty, Some("Bearer bearer-token"), &names),

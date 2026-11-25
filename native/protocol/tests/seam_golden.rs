@@ -6,11 +6,11 @@
 //! `upgrade-golden.ts` framed a socket with no auth in front of it, `auth-golden.ts` measured every refusal
 //! but never reached a connection, `scope-golden.ts` gated a session whose scopes it handed in, and
 //! `session_golden.rs` replays an ungated loop. This file replays the joins —
-//! [`lmcs_protocol::transport::authenticated`] — against the twenty-three cases `seam-golden.ts` drove over
+//! [`lmcs_protocol::transport::authenticated`] — against the fifty-nine cases `seam-golden.ts` drove over
 //! a real socket against the shipped route's order, with the real `EnvironmentAuth`, the real
 //! `SessionStore`, and a real in-memory database it reads back after every case.
 //!
-//! Three claims the artifact decides and this file refuses to restate as prose:
+//! Four claims the artifact decides and this file refuses to restate as prose:
 //!
 //! - **The head is the route's, and so is the row it left.** Each case is compared twice: on the bytes the
 //!   client read and on the columns the database holds afterwards, which is the only way to see that
@@ -19,6 +19,11 @@
 //!   have answered 400 and the route answers 401, byte for byte including the 114-byte body.
 //! - **The row is the only source of scopes.** `seam.readRow` and `seam.operateRow` send byte-identical
 //!   second requests and get different answers, because their rows differ.
+//! - **A request with no ticket is not an unauthenticated request.** The twenty-three new cases put the
+//!   credential in a cookie, in `Authorization`, or in both, and the route's *order* is the whole content:
+//!   `seam.cookieBeatsBearer` and `seam.ticketBeatsCookie` each seed a second row so picking the other
+//!   credential is a different session id, and `seam.boundBearer` answers 401 with a 150-byte body where
+//!   `seam.corruptedSignatureCookie` answers with a 114-byte one.
 //!
 //! The date is the one header this file does not compare, for the reason `auth_golden.rs` gives: Node stamps
 //! the wall clock, and the capture wrote `__DATE__` where it found one.
@@ -27,7 +32,7 @@ use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 
-use lmcs_protocol::auth::{Stored, StoredSession};
+use lmcs_protocol::auth::{CredentialNames, Stored, StoredSession};
 use lmcs_protocol::deflate::{self, Inbound};
 use lmcs_protocol::http::Request;
 use lmcs_protocol::session::Group;
@@ -60,6 +65,9 @@ struct Written {
     frames: Vec<Vec<u8>>,
     /// Whether the last thing the port wrote was followed by FIN.
     hang_up: bool,
+    /// The row the port authenticated, which is not in any byte the client read: the `101` names nothing,
+    /// and this is how the cookie-versus-Bearer precedence is compared rather than assumed.
+    session: Option<String>,
 }
 
 /// The port's answer to one recorded request head, with the recorded frames pushed through it.
@@ -67,7 +75,13 @@ struct Written {
 /// The row is written here too, because the route's side effects are part of what the capture measured: a
 /// port that marked a refused handshake, or released one `ws` abandoned, would replay the bytes and fail
 /// the column.
-fn replay(case: &Case, now: i64, secret: &[u8], rows: &mut Rows) -> Written {
+fn replay(
+    case: &Case,
+    now: i64,
+    secret: &[u8],
+    names: &CredentialNames,
+    rows: &mut Rows,
+) -> Written {
     let request = Request::parse(&case.request);
     let seed = case.seed.clone();
     let seam = transport::authenticated(
@@ -76,6 +90,7 @@ fn replay(case: &Case, now: i64, secret: &[u8], rows: &mut Rows) -> Written {
         now,
         secret,
         None,
+        names,
         |session_id| stored(&seed, session_id),
         DATE,
         TRACE_ID,
@@ -84,6 +99,7 @@ fn replay(case: &Case, now: i64, secret: &[u8], rows: &mut Rows) -> Written {
         head: Vec::new(),
         frames: Vec::new(),
         hang_up: false,
+        session: None,
     };
     match seam {
         Seam::Denied { head, .. } => out.head = head,
@@ -94,6 +110,7 @@ fn replay(case: &Case, now: i64, secret: &[u8], rows: &mut Rows) -> Written {
             head,
         } => {
             // The route ran, the response pipeline answered, and the bracket closed.
+            out.session = Some(session_id.clone());
             rows.record(&session_id, &origin);
             rows.mark(&session_id, now);
             rows.release(&session_id);
@@ -106,6 +123,7 @@ fn replay(case: &Case, now: i64, secret: &[u8], rows: &mut Rows) -> Written {
             ..
         } => {
             // The bracket the route opened and never closed.
+            out.session = Some(session_id.clone());
             rows.record(&session_id, &origin);
             rows.mark(&session_id, now);
             out.head = head;
@@ -116,6 +134,7 @@ fn replay(case: &Case, now: i64, secret: &[u8], rows: &mut Rows) -> Written {
             head,
             mut connection,
         } => {
+            out.session = Some(session_id.clone());
             rows.record(&session_id, &origin);
             rows.mark(&session_id, now);
             out.head = head;
@@ -149,21 +168,70 @@ fn group() -> Group {
 /// `authSessions.getById`, from the `seed` event the generator wrote before the handshake — which is the
 /// row **as auth met it**, not the row at the end of the case. `seam.revokedMidFlight` and the three
 /// `seam.origin*` reconnections are the cases that make the difference observable.
+///
+/// A case can seed a **second** row, and the two that do are the precedence cases: `seam.cookieBeatsBearer`
+/// and `seam.ticketBeatsCookie` each send two valid credentials naming two different rows, so a port that
+/// picked the other one still got a `101` and would replay green without these entries.
 fn stored(seed: &Value, session_id: &str) -> Stored {
-    if seed["created"].as_bool() != Some(true) || seed["session"].as_str() != Some(session_id) {
-        return Stored::Missing;
+    let found = |scopes: &Value, expires_at: &Value, revoked: bool| {
+        Stored::Found(StoredSession {
+            session_id: session_id.to_owned(),
+            expires_at: expires_at.as_i64().expect("a seeded expiry"),
+            revoked,
+            scopes: scopes
+                .as_array()
+                .expect("a seeded scope list")
+                .iter()
+                .map(|scope| scope.as_str().expect("a scope is a string").to_owned())
+                .collect(),
+        })
+    };
+    if seed["created"].as_bool() == Some(true) && seed["session"].as_str() == Some(session_id) {
+        return found(
+            &seed["scopes"],
+            &seed["expiresAt"],
+            seed["revoked"].as_bool().expect("a seeded revocation"),
+        );
     }
-    Stored::Found(StoredSession {
-        session_id: session_id.to_owned(),
-        expires_at: seed["expiresAt"].as_i64().expect("a seeded expiry"),
-        revoked: seed["revoked"].as_bool().expect("a seeded revocation"),
-        scopes: seed["scopes"]
+    for row in seed["rows"].as_array().into_iter().flatten() {
+        let row = row
             .as_array()
-            .expect("a seeded scope list")
-            .iter()
-            .map(|scope| scope.as_str().expect("a scope is a string").to_owned())
-            .collect(),
-    })
+            .expect("a seeded extra row is [id, scopes, expiry]");
+        if row.first().and_then(Value::as_str) == Some(session_id) {
+            return found(&row[1], &row[2], false);
+        }
+    }
+    Stored::Missing
+}
+
+/// The names `EnvironmentAuth` reads the credential out of, as the generator recorded them rather than as
+/// this file would re-derive them: they come from the server's own config (`auth/utils.ts:11-64`) and a
+/// port that guessed `t3_session` would fail every accepted case.
+///
+/// The dev cookie is absent because the capture ran with no dev session — `summary.devSessionId` is null,
+/// which is also what makes `SessionStore`'s dev fast-path unreachable and therefore unported.
+struct CookieNames {
+    session: String,
+    legacy: Option<String>,
+}
+
+impl CookieNames {
+    fn read(document: &Value) -> Self {
+        let recorded = |key: &str| document["summary"][key].as_str().map(str::to_owned);
+        Self {
+            session: recorded("sessionCookieName")
+                .expect("the summary records the session cookie name"),
+            legacy: recorded("legacyCookieName"),
+        }
+    }
+
+    fn names(&self) -> CredentialNames<'_> {
+        CredentialNames {
+            session: &self.session,
+            legacy: self.legacy.as_deref(),
+            dev: None,
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -547,6 +615,7 @@ fn the_capture_is_the_ports_own_bytes_and_columns() {
     };
     let secret = secret(&document);
     let now = document["summary"]["nowMs"].as_i64().expect("a clock");
+    let names = CookieNames::read(&document);
     let summary = string_list(&document, "upgraded");
     let mut rows = Rows::default();
     let mut heads = 0;
@@ -555,7 +624,7 @@ fn the_capture_is_the_ports_own_bytes_and_columns() {
     let mut deflated = 0;
     let mut connections = 0;
     for case in &cases {
-        let written = replay(case, now, &secret, &mut rows);
+        let written = replay(case, now, &secret, &names.names(), &mut rows);
         assert_eq!(
             written.head,
             case.head,
@@ -574,6 +643,17 @@ fn the_capture_is_the_ports_own_bytes_and_columns() {
             "{}: the port and the capture disagree about which requests became sockets",
             case.name,
         );
+        if upgraded {
+            // Which row the connection is *on* is invisible on the wire, and the credential order is exactly
+            // the thing that decides it: `seam.cookieBeatsBearer` and `seam.ticketBeatsCookie` both present
+            // two valid credentials naming two seeded rows.
+            assert_eq!(
+                written.session.as_deref(),
+                case.seed["session"].as_str(),
+                "{}: the port authenticated a different session than the case seeded",
+                case.name,
+            );
+        }
         if !upgraded {
             if let Some(peer) = &case.peer {
                 panic!(
