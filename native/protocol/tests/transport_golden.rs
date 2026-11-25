@@ -40,7 +40,7 @@ use lmcs_protocol::deflate::{self, Inbound, Negotiated};
 use lmcs_protocol::envelope::Id;
 use lmcs_protocol::headers;
 use lmcs_protocol::http::{self, Refusal, Request, Routed};
-use lmcs_protocol::session::{Group, Outcome, Payload, Session};
+use lmcs_protocol::session::{Decl, Group, Outcome, Payload, Session};
 use lmcs_protocol::transport::Connection;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -338,7 +338,9 @@ fn group() -> Group {
     Group::new()
         .returns("plain", Value::Object(serde_json::Map::new()))
         .on("size", |payload, _| Outcome::Success(payload_of(payload)))
-        .on("stream", |payload, _| {
+        // `Decl::Stream` rather than the handler's return shape: the recording's two `Chunk`s exist
+        // because the rpc was declared `stream: true`, which is what `group_golden` measures apart.
+        .with("stream", Decl::Stream, |payload, _| {
             Outcome::Stream(vec![
                 vec![serde_json::json!({"s": "first"})],
                 vec![payload_of(payload)],

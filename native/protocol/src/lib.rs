@@ -56,6 +56,7 @@ pub mod envelope;
 pub mod frame;
 pub mod headers;
 pub mod http;
+pub mod io;
 pub mod json;
 pub mod scopes;
 pub mod session;
@@ -71,6 +72,9 @@ pub use deflate::{Negotiated, negotiate};
 pub use envelope::{Cause, Defect, Exit, Headers, Id, Message, Request, Trace};
 pub use frame::{Envelope, Frame, invalid_request_id, unknown_request_tag};
 pub use http::{Cookies, Denied, accept, query_param, refuse, routed, upgrade};
+pub use io::{
+    DEFAULT_MAX_HEAD, Ending, Route, Server, Socket, Stub, head_finished, keeps_alive, serve,
+};
 pub use json::{Syntax, parse, stringify};
 pub use scopes::{
     RPC_REQUIRED_SCOPES, UndeclaredScope, authorization_error, grants, required_scope,

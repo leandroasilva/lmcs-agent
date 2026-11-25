@@ -26,6 +26,12 @@
 //!   not to the ack: `a.streamBatched` and `a.streamSplit` show the exit after the last ack, while
 //!   `a.streamInterrupted` shows the same three-value stream answering an `Interrupt` with
 //!   `Failure`/`Interrupt` and never writing the exit at all.
+//! - **The declaration decides an answer the handler did not produce.** A tag can be missing from the
+//!   group, present with no handler, or present with one whose shape is wrong for it, and those are three
+//!   different frames: `Exit`/`Die`, a broadcast `Defect`, and either a broadcast `Defect` or an
+//!   `Interrupt` cause with `"fiberId":null`. `Schema.Void` then overwrites whatever the handler returned
+//!   with `null`. [`Decl`] is the hole `native/contracts`' census fills, because this crate has no schema
+//!   engine to ask (`lookup.*`, `void.*`, `stream.effectHandler`, `shape.*` in `group-golden.ts`).
 
 use serde_json::{Number, Value};
 use std::collections::BTreeMap;
@@ -150,17 +156,15 @@ impl Group {
 
     /// The declaration behind the most common builder: a method with a value to return.
     #[must_use]
-    pub fn on(
-        self,
-        tag: &str,
-        handler: impl Fn(&Payload, &[Pair]) -> Outcome + 'static,
-    ) -> Self {
+    pub fn on(self, tag: &str, handler: impl Fn(&Payload, &[Pair]) -> Outcome + 'static) -> Self {
         self.with(tag, Decl::Value, handler)
     }
 
     #[must_use]
     pub fn returns(self, tag: &str, value: Value) -> Self {
-        self.with(tag, Decl::Value, move |_, _| Outcome::Success(value.clone()))
+        self.with(tag, Decl::Value, move |_, _| {
+            Outcome::Success(value.clone())
+        })
     }
 
     /// A `Schema.Void` method that returns `value` from its handler. The value is what makes
@@ -1195,5 +1199,171 @@ pub(crate) mod tests {
         );
         // Nothing is pending, so the ack a client might still send is silence rather than a chunk.
         silence(&mut session, r#"{"_tag":"Ack","requestId":85}"#);
+    }
+
+    fn json(text: &str) -> Value {
+        serde_json::from_str(text).expect("the test writes valid JSON")
+    }
+
+    /// The frame `lookup.unimplemented` recorded, verbatim.
+    const NO_HANDLER: &str = r#"{"_tag":"Defect","defect":{"name":"TypeError","message":"entry.handler is not a function"}}"#;
+
+    /// `lookup.unimplemented`, `lookup.unimplementedTwice`, `lookup.unimplementedStream`: a tag the group
+    /// registers and nobody implements is **not** an unknown tag. The answer is a connection-level
+    /// `Defect` with no `requestId`, the socket survives it, and it repeats per request rather than
+    /// latching the connection deaf the way the undeclared scope does.
+    #[test]
+    fn a_declared_tag_with_no_handler_defects_the_connection_instead_of_dying_the_request() {
+        let mut session = Session::new(
+            Group::new()
+                .declared("server.getSettings", Decl::Value)
+                .declared("subscribeDiscoveredLocalServers", Decl::Stream),
+        );
+        assert_eq!(
+            frames(session.receive(&call("3", "server.getSettings"))),
+            vec![NO_HANDLER]
+        );
+        // The canary the recording sent after it: `lookup.unimplemented` answered a `Ping`, so the loop
+        // is alive — unlike after the throw the table cannot answer.
+        assert_eq!(
+            frames(session.receive(r#"{"_tag":"Ping"}"#)),
+            vec!["{\"_tag\":\"Pong\"}"]
+        );
+        assert_eq!(
+            frames(session.receive(&call("4", "server.getSettings"))),
+            vec![NO_HANDLER],
+            "the throw is per request, so it does not latch"
+        );
+        assert_eq!(
+            frames(session.receive(&call("7", "subscribeDiscoveredLocalServers"))),
+            vec![NO_HANDLER],
+            "a declared stream with no handler takes the same frame as a declared effect"
+        );
+        assert!(!session.deafened());
+        // And a tag that is not in the group at all still takes the other road.
+        assert_eq!(
+            frames(session.receive(&call("1", "server.nope"))),
+            vec![
+                r#"{"_tag":"Exit","requestId":1,"exit":{"_tag":"Failure","cause":[{"_tag":"Die","defect":"Unknown request tag: server.nope"}]}}"#
+            ]
+        );
+    }
+
+    /// `void.explicitSuccess`/`void.defaultValue` and their value-returning twins: a `Schema.Void`
+    /// success is not "the handler returned nothing", it is the declaration **discarding** what it
+    /// returned. Without the [`Decl`] in the loop those four cases are two on the wire instead of four
+    /// frames that read alike.
+    #[test]
+    fn a_void_declaration_overwrites_the_value_the_handler_returned() {
+        let mut session = Session::new(
+            Group::new()
+                .returns_void("pullRequests.invalidate", json(r#"{"ok": 1}"#))
+                .returns_void("attachments.delete", json(r#"{"deleted": true}"#))
+                .returns("server.probe", json(r#"{"extra": 1, "unexpected": 1}"#)),
+        );
+        // The frames the recording wrote for the two `Schema.Void` spellings with a handler that
+        // returned nothing (`void.explicitSuccess`, `void.defaultValue`) are the same frames its
+        // value-returning twins wrote (`void.explicitReturnsValue`, `void.defaultReturnsValue`), which is
+        // the whole claim: the declaration decides, the handler does not.
+        for (id, tag) in [
+            ("20", "pullRequests.invalidate"),
+            ("21", "attachments.delete"),
+        ] {
+            assert_eq!(
+                frames(session.receive(&call(id, tag))),
+                vec![
+                    r#"{"_tag":"Exit","requestId":@ID@,"exit":{"_tag":"Success","value":null}}"#
+                        .replace("@ID@", id)
+                ],
+                "{tag} declares Schema.Void, so its handler's object never reaches the client"
+            );
+        }
+        // The sibling that proves the branch: `server.probe`'s success is `Schema.Struct({})`, which
+        // `group-golden.ts` measured as a passthrough, so its handler's keys survive in their own order —
+        // this is the frame the recording wrote for `empty.extraSuccess`, id and all.
+        assert_eq!(
+            frames(session.receive(&call("13", "server.probe"))),
+            vec![
+                r#"{"_tag":"Exit","requestId":13,"exit":{"_tag":"Success","value":{"extra":1,"unexpected":1}}}"#
+            ]
+        );
+    }
+
+    /// `stream.effectHandler`: the exit codec of a `stream: true` rpc reads `._tag` off the handler's
+    /// return to tell a stream from an effect. On a number that read is of `undefined`, and the
+    /// `TypeError` is the transport's to catch, so the frame carries no `requestId` and the socket lives.
+    #[test]
+    fn a_stream_declaration_answers_an_effect_handler_with_a_broadcast() {
+        let mut session = Session::new(Group::new().with(
+            "pullRequests.subscribeRefreshes",
+            Decl::Stream,
+            |_, _| Outcome::Success(json("1")),
+        ));
+        assert_eq!(
+            frames(session.receive(&call("33", "pullRequests.subscribeRefreshes"))),
+            vec![
+                r#"{"_tag":"Defect","defect":{"name":"TypeError","message":"Cannot read properties of undefined (reading '_tag')"}}"#
+            ]
+        );
+        assert_eq!(
+            frames(session.receive(r#"{"_tag":"Ping"}"#)),
+            vec!["{\"_tag\":\"Pong\"}"]
+        );
+        assert!(!session.deafened());
+    }
+
+    /// `shape.streamOnUnary` and `shape.streamOnVoid`: the other direction, and it is **not** a broadcast.
+    /// The request's own exit fails to encode, the encode failure interrupts the handler's fiber, and
+    /// `FiberId.none` crosses there as `null` rather than as the ordinal a client's `Interrupt` produces.
+    /// No `Chunk` goes out first, which is what the recorded counts say.
+    #[test]
+    fn a_unary_declaration_answers_a_stream_handler_with_an_interrupted_exit() {
+        let mut session = Session::new(
+            Group::new()
+                .with("server.probe", Decl::Value, |_, _| {
+                    Outcome::Stream(vec![vec![json("1")]])
+                })
+                .with("attachments.delete", Decl::Void, |_, _| {
+                    Outcome::Stream(vec![vec![json("1")]])
+                }),
+        );
+        for (id, tag) in [("42", "server.probe"), ("43", "attachments.delete")] {
+            assert_eq!(
+                frames(session.receive(&call(id, tag))),
+                vec![
+                    r#"{"_tag":"Exit","requestId":@ID@,"exit":{"_tag":"Failure","cause":[{"_tag":"Interrupt","fiberId":null}]}}"#
+                        .replace("@ID@", id)
+                ],
+                "{tag} does not declare stream: true"
+            );
+        }
+        assert!(!session.deafened());
+    }
+
+    /// The order of the two lookups against the gate. `ws.ts:620-641` wraps the effect each **handler**
+    /// builds, so the scope check is inside the handler and a tag with no handler throws before any scope
+    /// is read: `device.open` on an empty credential is the `TypeError`, not the refusal.
+    #[test]
+    fn the_missing_handler_throws_before_the_scope_gate() {
+        let mut session = Session::gated(
+            Group::new().declared("device.open", Decl::Value),
+            Vec::new(),
+            gate(&[]),
+        );
+        assert_eq!(
+            frames(session.receive(&call("71", "device.open"))),
+            vec![NO_HANDLER]
+        );
+        // The same group **with** a handler takes the gate's road instead, so which branch answers is the
+        // entry's handler and not the table.
+        let mut implemented = Session::gated(
+            Group::new().returns("device.open", json(r#""opened""#)),
+            Vec::new(),
+            gate(&[]),
+        );
+        assert_eq!(
+            frames(implemented.receive(&call("72", "device.open"))),
+            vec![refused("72", "orchestration:operate")],
+        );
     }
 }
