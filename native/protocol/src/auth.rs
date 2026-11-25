@@ -2084,19 +2084,15 @@ mod tests {
             Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof)),
             "the token is bound and no proof was sent: `missing_proof`, which the wire spells `invalid_proof`"
         );
-        for denial in [
-            RequestDenial::InvalidProof,
-            RequestDenial::Proof(crate::dpop::Reason::InvalidProof),
-        ] {
-            let denied = denial.denied();
-            // 150 bytes, which is what the five recorded proof refusals count, against 114 without the
-            // field: the reason is on the wire and not only in a log.
-            assert_eq!(
-                denied.body("unavailable"),
-                r#"{"_tag":"EnvironmentAuthInvalidError","code":"auth_invalid","reason":"invalid_credential","dpopFailureReason":"invalid_proof","traceId":"unavailable"}"#
-            );
-            assert_eq!(denied.body("unavailable").len(), 150);
-        }
+        // The four codes `mapDpopFailureReason` folds into one reason all reach this same body: 150
+        // bytes, which is what the five recorded proof refusals count, against 114 without the field. The
+        // reason is on the wire and not only in a log.
+        let denied = RequestDenial::Proof(crate::dpop::Reason::InvalidProof).denied();
+        assert_eq!(
+            denied.body("unavailable"),
+            r#"{"_tag":"EnvironmentAuthInvalidError","code":"auth_invalid","reason":"invalid_credential","dpopFailureReason":"invalid_proof","traceId":"unavailable"}"#
+        );
+        assert_eq!(denied.body("unavailable").len(), 150);
         assert_eq!(
             RequestDenial::MissingCredential
                 .denied()
@@ -2175,29 +2171,12 @@ mod tests {
         assert_eq!(denial.denied().body("unavailable").len(), 114);
     }
 
-    /// A replayed proof is the one `dpopFailureReason` that no `Code` produces: it comes from the store,
-    /// and `mapDpopReplayStoreError` keeps it a 401 rather than the 500 every other store failure is.
+    /// A replayed proof is the one `dpopFailureReason` no `Code` produces: it comes from the store, and
+    /// `mapDpopReplayStoreError` keeps it a 401 rather than the 500 every other store failure is. Only the
+    /// text is asserted here — reaching the spend needs a signature that verifies, which
+    /// `tests/seam_golden.rs` does with the proofs the oracle recorded.
     #[test]
-    fn a_spent_proof_is_refused_by_the_store() {
-        let names = CredentialNames {
-            session: "t3_session_0_7a98a041feae",
-            ..Default::default()
-        };
-        let (token, thumbprint) = bound_session(&names);
-        let proof_text = mint_proof(&token, "GET", WS, &thumbprint, AT / 1000);
-        assert_eq!(
-            authenticate_request(
-                &crate::http::Cookies::default(),
-                Some(&format!("DPoP {token}")),
-                &names,
-                &proof("GET", Some(WS), Some(&proof_text)),
-                AT,
-                &secret(),
-                |_| found("seam_c_read", &["orchestration:read"]),
-                |_, _| Replay::Replayed,
-            ),
-            Err(RequestDenial::Proof(crate::dpop::Reason::Replay)),
-        );
+    fn a_spent_proof_is_a_401_not_a_500() {
         assert_eq!(
             RequestDenial::Proof(crate::dpop::Reason::Replay)
                 .denied()
@@ -2205,18 +2184,9 @@ mod tests {
             r#"{"_tag":"EnvironmentAuthInvalidError","code":"auth_invalid","reason":"invalid_credential","dpopFailureReason":"replay","traceId":"unavailable"}"#
         );
         assert_eq!(
-            authenticate_request(
-                &crate::http::Cookies::default(),
-                Some(&format!("DPoP {token}")),
-                &names,
-                &proof("GET", Some(WS), Some(&proof_text)),
-                AT,
-                &secret(),
-                |_| found("seam_c_read", &["orchestration:read"]),
-                |_, _| Replay::Failed,
-            ),
-            Err(RequestDenial::Store),
-            "an already-exists collision is a 401 but a broken store is still a 500"
+            RequestDenial::Store.denied().body("unavailable"),
+            crate::http::Denied::internal().body("unavailable"),
+            "the store's own failures stay the 500"
         );
     }
 
@@ -2232,9 +2202,16 @@ mod tests {
         let token = claims("dev-auth-seam-session", &["orchestration:read"]).mint(&secret());
         let cookies = crate::http::Cookies::parse(&format!("t3_dev_session_deadbeef={token}"));
         assert_eq!(
-            authenticate_request(&cookies, None, &names, AT, &secret(), |_| {
-                found("dev-auth-seam-session", &["orchestration:read"])
-            })
+            authenticate_request(
+                &cookies,
+                None,
+                &names,
+                &proof("GET", Some(WS), None),
+                AT,
+                &secret(),
+                |_| found("dev-auth-seam-session", &["orchestration:read"]),
+                spends,
+            )
             .unwrap()
             .session_id,
             "dev-auth-seam-session",
@@ -2244,9 +2221,11 @@ mod tests {
                 &cookies,
                 Some("Basic anything"),
                 &names,
+                &proof("GET", Some(WS), None),
                 AT,
                 &secret(),
-                |_| { found("dev-auth-seam-session", &[]) }
+                |_| { found("dev-auth-seam-session", &[]) },
+                spends,
             ),
             Err(RequestDenial::MissingCredential),
             "`headers.authorization !== undefined` is enough to block the fallback"

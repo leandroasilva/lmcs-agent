@@ -1009,9 +1009,16 @@ mod tests {
             None,
             &credential_names(),
             |_| stored.clone(),
+            spends,
             "Tue, 14 Nov 2023 22:13:20 GMT",
             "unavailable",
         )
+    }
+
+    /// No recorded case reaches the replay store with a free name, so the seam tests only need the store
+    /// to say yes: `tests/seam_golden.rs` is where a proof actually spends itself.
+    fn spends(_: &str, _: &[u8]) -> crate::auth::Replay {
+        crate::auth::Replay::Stored
     }
 
     /// A well-formed ticket for `seam_read`, which is the id the recorded heads carry.
@@ -1109,6 +1116,7 @@ mod tests {
                 looked.set(looked.get() + 1);
                 stored(&["orchestration:read"])
             },
+            spends,
             "Tue, 14 Nov 2023 22:13:20 GMT",
             "unavailable",
         );
@@ -1241,6 +1249,7 @@ mod tests {
             None,
             &credential_names(),
             |_| stored(scopes),
+            spends,
             "Tue, 14 Nov 2023 22:13:20 GMT",
             "unavailable",
         );
