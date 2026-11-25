@@ -6,11 +6,11 @@
 //! `upgrade-golden.ts` framed a socket with no auth in front of it, `auth-golden.ts` measured every refusal
 //! but never reached a connection, `scope-golden.ts` gated a session whose scopes it handed in, and
 //! `session_golden.rs` replays an ungated loop. This file replays the joins —
-//! [`lmcs_protocol::transport::authenticated`] — against the fifty-nine cases `seam-golden.ts` drove over
-//! a real socket against the shipped route's order, with the real `EnvironmentAuth`, the real
+//! [`lmcs_protocol::transport::authenticated`] — against the ninety-four cases `seam-golden.ts` drove
+//! over a real socket against the shipped route's order, with the real `EnvironmentAuth`, the real
 //! `SessionStore`, and a real in-memory database it reads back after every case.
 //!
-//! Four claims the artifact decides and this file refuses to restate as prose:
+//! Five claims the artifact decides and this file refuses to restate as prose:
 //!
 //! - **The head is the route's, and so is the row it left.** Each case is compared twice: on the bytes the
 //!   client read and on the columns the database holds afterwards, which is the only way to see that
@@ -24,6 +24,14 @@
 //!   `seam.cookieBeatsBearer` and `seam.ticketBeatsCookie` each seed a second row so picking the other
 //!   credential is a different session id, and `seam.boundBearer` answers 401 with a 150-byte body where
 //!   `seam.corruptedSignatureCookie` answers with a 114-byte one.
+//! - **A bound token's proof is verified, and then spent.** The thirty-nine proof-shaped cases carry a
+//!   real `DPoP:` header over a key the token names, and the capture records the replay row *by name and by
+//!   text* — `dpop-proof-j4U-XWK6…` beside `thumbprint=…\njti=…\niat=…\nconsumedAt=…`. So the thumbprint,
+//!   the JWS, the window and the spend are all compared rather than assumed: nine of them reach a `101`,
+//!   `seam.dpopHighS` because noble leaves `lowS` off and `seam.dpopUrlSignedStripped` because only the
+//!   server's own URL is normalized; `seam.dpopReplayedJti` is a 401 over the *bytes* that earned the case
+//!   before it a `101`. A case with no recorded row is asserted to have created none, which is what makes
+//!   the nineteen 150-byte `invalid_proof` refusals more than a status code.
 //!
 //! The date is the one header this file does not compare, for the reason `auth_golden.rs` gives: Node stamps
 //! the wall clock, and the capture wrote `__DATE__` where it found one.
@@ -32,7 +40,7 @@ use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 
-use lmcs_protocol::auth::{CredentialNames, Stored, StoredSession};
+use lmcs_protocol::auth::{CredentialNames, Replay, Stored, StoredSession};
 use lmcs_protocol::deflate::{self, Inbound};
 use lmcs_protocol::http::Request;
 use lmcs_protocol::session::Group;
@@ -57,6 +65,39 @@ struct Case {
     /// `after close: fin` / `open`, which is TCP's ending rather than the frames'.
     peer: Option<String>,
     frames: Vec<Value>,
+    /// The replay row the store held after this case, as `ServerSecretStore` spelled it: the generator
+    /// reads the name back out of the database, so a port that spent the proof under a different name — or
+    /// that spent one it should have refused — cannot pass the head comparison and hide.
+    secret: Option<Spent>,
+}
+
+/// One `dpop-proof-…` row, both halves of it.
+struct Spent {
+    name: String,
+    value: String,
+    bytes: u64,
+}
+
+/// What the port wrote into the replay store while answering, which is also the table the next case
+/// inherits. Carried across cases on purpose: `seam.dpopReplayedJti` is only a replay because
+/// `seam.dpopValid` ran first.
+#[derive(Default)]
+struct Secrets {
+    kept: BTreeMap<String, String>,
+}
+
+impl Secrets {
+    /// `ServerSecretStore.create` with `SecretAlreadyExistsError`: the name is taken, and the route turns
+    /// that one collision into a 401 rather than a 500.
+    fn record(&mut self, name: &str, value: &[u8], spent: &mut Vec<(String, String)>) -> Replay {
+        if self.kept.contains_key(name) {
+            return Replay::Replayed;
+        }
+        let text = String::from_utf8(value).expect("the store's value is the recorded text");
+        spent.push((name.to_owned(), text.clone()));
+        self.kept.insert(name.to_owned(), text);
+        Replay::Stored
+    }
 }
 
 /// What the port made of one case, in the order a client would have read it.
@@ -68,6 +109,9 @@ struct Written {
     /// The row the port authenticated, which is not in any byte the client read: the `101` names nothing,
     /// and this is how the cookie-versus-Bearer precedence is compared rather than assumed.
     session: Option<String>,
+    /// The replay rows this case created. A refused proof must have created none and an accepted one the
+    /// row the generator read back, so the spend is compared instead of being inferred from the status.
+    spent: Vec<(String, String)>,
 }
 
 /// The port's answer to one recorded request head, with the recorded frames pushed through it.
@@ -81,9 +125,11 @@ fn replay(
     secret: &[u8],
     names: &CredentialNames,
     rows: &mut Rows,
+    secrets: &mut Secrets,
 ) -> Written {
     let request = Request::parse(&case.request);
     let seed = case.seed.clone();
+    let mut spent = Vec::new();
     let seam = transport::authenticated(
         &request,
         group(),
@@ -92,6 +138,7 @@ fn replay(
         None,
         names,
         |session_id| stored(&seed, session_id),
+        |name, value| secrets.record(name, value, &mut spent),
         DATE,
         TRACE_ID,
     );
@@ -100,6 +147,7 @@ fn replay(
         frames: Vec::new(),
         hang_up: false,
         session: None,
+        spent,
     };
     match seam {
         Seam::Denied { head, .. } => out.head = head,
@@ -256,6 +304,13 @@ fn artifact() -> Option<(Value, Vec<Case>)> {
             "seed" => case.seed = event["seed"].clone(),
             "row" => case.row = Some(event["row"].clone()),
             "peer" => case.peer = Some(text(event, "detail")),
+            "secret" => case.secret = Some(Spent {
+                name: text(event, "detail"),
+                value: text(event, "value"),
+                bytes: event["bytes"]
+                    .as_u64()
+                    .expect("a recorded replay row counts its own bytes"),
+            }),
             // `write` records an `EPIPE` on a socket the server had already ended, which is TCP's news and
             // not the route's.
             "write" => {}

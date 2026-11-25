@@ -395,18 +395,26 @@ pub fn format_iso_millis(millis: i64) -> String {
     format!("{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{millisecond:03}Z")
 }
 
-/// Howard Hinnant's `civil_from_days`, which is what a `Date`'s UTC fields are computed from.
+/// Howard Hinnant's `civil_from_days`, which is what a `Date`'s UTC fields are computed from. Every
+/// division below runs on a non-negative operand, so Rust's truncation is the floor the algorithm wants.
 fn civil_from_days(days: i64) -> (i64, i64, i64) {
     let shifted = days + 719_468;
     let era = if shifted >= 0 { shifted } else { shifted - 146_096 } / 146_097;
-    let day_of_era = shifted - era * 146_097;
+    let day_of_era = shifted - era * 146_097; // [0, 146096]
     let year_of_century =
-        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365; // [0, 399]
     let year = year_of_century + era * 400;
-    let day_of_year = day_of_era - (365 * year_of_century + year_of_century / 4 - year_of_century / 100);
-    let month = if day_of_year < 31 { 0 } else { (day_of_year - 31) * 12 / 367 };
-    let day = day_of_year - if month == 0 { 0 } else { 31 + (month * 367 - 362) / 12 } + 1;
-    (if month >= 2 { year + 1 } else { year }, month + 1, day)
+    let day_of_year =
+        day_of_era - (365 * year_of_century + year_of_century / 4 - year_of_century / 100); // [0, 365]
+    let shifted_month = (5 * day_of_year + 2) / 153; // [0, 11], March first
+    let day = day_of_year - (153 * shifted_month + 2) / 5 + 1;
+    let month = if shifted_month < 10 {
+        shifted_month + 3
+    } else {
+        shifted_month - 9
+    };
+    // January and February belong to the year the century-relative index is counting from.
+    (if month <= 2 { year + 1 } else { year }, month, day)
 }
 
 // ---------------------------------------------------------------------------
@@ -519,7 +527,10 @@ fn point_add(left: &Point, right: &Point, p: &BigInt) -> Point {
     let j = rem(&(h.clone() * &hh), p);
     let rr = &count(2) * &r;
     let v = rem(&(u1 * &hh), p);
-    let x3 = rem(&(rem(&(rr.clone() * &rr), p) - &j - &count(8) * &v), p);
+    // `4·J`, not `J`: with `rr = 2·(S2 − S1)` and `Z3 = 2·Z1·Z2·H` the affine division by `Z3²` is
+    // exact only when the `H³` term carries the same quarter the slope does. Measured against
+    // `k · G` from Node's ECDH, which the sum without it fails at `3·G`.
+    let x3 = rem(&(rem(&(rr.clone() * &rr), p) - &count(4) * &j - &count(8) * &v), p);
     let y3 = rem(
         &(rem(&(rr * (&count(4) * &v - &x3)), p) - &count(8) * &(&s1 * &j)),
         p,
@@ -649,60 +660,171 @@ fn affine_point(bytes: &[u8; 65]) -> Point {
 mod tests {
     use super::*;
 
-    /// RFC 6979 A.2.5, the P-256 / SHA-256 vector, which is the only way to test a hand-rolled
-    /// verifier against something other than the artifact it is meant to reproduce.
+    /// Six `(public key, sha256(message), compact signature)` triples produced by Node's own P-256 and
+    /// confirmed by `crypto.verify`, which is the only way to test a hand-rolled verifier against
+    /// something other than the artifact it is meant to reproduce. Recorded by
+    /// `~/.cache/lmcs-port-traces/ec-vectors.mjs`.
+    const VECTORS: [(&str, &str, &str, &str, &str); 6] = [
+        (
+            "4f683e77ea1c22df23ee38b220ddf804942d1bbf5e20b930b32e453be86209ec",
+            "622e627d9fee64a3afa99d8e99d00d52389499cd06ed45015058d4af539e3b05",
+            "8aab6a6a82cf229e5ae45a72dc909c902dae5fbd145153625eeefa5195d03b6f",
+            "636b10367ad18c122f38ac34f62be4cae1363d1477996a3f42f1ac6f5e2db1f9",
+            "60124dc0a6364973fbd6052a6b6e8a5ab5fb8c8a9e0b753dc28559174d909f20",
+        ),
+        (
+            "4f683e77ea1c22df23ee38b220ddf804942d1bbf5e20b930b32e453be86209ec",
+            "622e627d9fee64a3afa99d8e99d00d52389499cd06ed45015058d4af539e3b05",
+            "fed92306d2faa425c2f3400ea0524d1b7fe6db5f5f87f95dca6e55736067fcad",
+            "aae7f1e5403a4f7ca8cc46ae278d8aca8fc35c4aa112a0423d29b38619a83919",
+            "ef373981a555985d08c84de8ba35f84c44e9fd52deefe6b95f6bea0beec5ba00",
+        ),
+        (
+            "dfc129db5d47754b7095ffb513d66cd09ec9b36cce8e6acbf34d9359885e86cb",
+            "c748beed06458ec08b7b2da5de111dd5b7415c1ec6bf18a2d5812b42ef710b12",
+            "7f5a26819f2dd8be30a30e78d2c7cf52b12d00bfde085ab9eebd54a268735a34",
+            "dbed155bbbe33dcd081f8b1b1793a3afb38482af1fbd5c950f615aa4acc45d2d",
+            "5b3aa861b8abd2f498a22b799634b6c95a5aa2a8a9591144941a1e6f80e5832a",
+        ),
+        (
+            "dfc129db5d47754b7095ffb513d66cd09ec9b36cce8e6acbf34d9359885e86cb",
+            "c748beed06458ec08b7b2da5de111dd5b7415c1ec6bf18a2d5812b42ef710b12",
+            "fed92306d2faa425c2f3400ea0524d1b7fe6db5f5f87f95dca6e55736067fcad",
+            "577db6a8d20733e8d01994639cd4e03c90c0da00f4a23ba00cab844a12e0665f",
+            "6efd1bbbdf01e9688430156f653f2c66aeb987393b7b7265d6a2631c937bdd48",
+        ),
+        (
+            "e88f8ad44226ecddfc1fad3ee47cfdf765641b462e9f311258cc803bd77d651d",
+            "391fbaf244791379d1d149c9bae8b8878d7c5e8f783a069987100dc132b38f15",
+            "21d228f6ae6ab4c2ccb653194c356160f291268abcc16c30a62e7a4b455b263a",
+            "e4b7e4f3d281262d11b0c9989a2b35bfce7e784f7dae6ca871227284bb7262d1",
+            "813d24549f848ba3ab87392b7aa6bf2a13d65e1d0b90ffde5deec48517371441",
+        ),
+        (
+            "e88f8ad44226ecddfc1fad3ee47cfdf765641b462e9f311258cc803bd77d651d",
+            "391fbaf244791379d1d149c9bae8b8878d7c5e8f783a069987100dc132b38f15",
+            "fed92306d2faa425c2f3400ea0524d1b7fe6db5f5f87f95dca6e55736067fcad",
+            "cec87cb02a4d072c9f59e34108690c5a062e91332ddf05d1a2c57b3306197ba3",
+            "2bedd8deb9ab5cc9798d8a4a4fec479cdec55ed44913d8caab2fc2c964dd0c12",
+        ),
+    ];
+
+    fn vector(index: usize) -> ([u8; 65], [u8; 32], Vec<u8>) {
+        let (x, y, hash, r, s) = VECTORS[index];
+        let mut digest = [0u8; 32];
+        digest.copy_from_slice(&hex_bytes(hash));
+        (
+            point_bytes(x, y),
+            digest,
+            [hex_bytes(r), hex_bytes(s)].concat(),
+        )
+    }
+
     #[test]
-    fn verifies_a_known_answer() {
-        let public = point_bytes(
-            "60fed4ba255a9d31c961eb74c6356d68c049b80bf122b2822601fa5ce4ec3a32",
-            "786e0905c5d6e67323832ea63d553d6cd737b12f7240a80a5e2be84fd761c377",
-        );
-        let hash = sha256(b"sample");
-        let signature = hex_bytes(
-            "64ececa44126f77b72f11ac32a477d2d22e374d7a105525714cf644cf12aba951624d5358136bf07213ba71f83f136192547a49ffed042442188c615687abf35",
-        );
-        assert!(p256_verify(&public, &hash, &signature));
+    fn verifies_every_vector_the_other_implementation_signed() {
+        for index in 0..VECTORS.len() {
+            let (public, hash, signature) = vector(index);
+            assert!(
+                p256_verify(&public, &hash, &signature),
+                "vector {index}, signed and verified by Node"
+            );
+        }
     }
 
     #[test]
     fn refuses_what_the_curve_equation_refuses() {
-        let hash = sha256(b"sample");
-        let signature = hex_bytes(
-            "64ececa44126f77b72f11ac32a477d2d22e374d7a105525714cf644cf12aba951624d5358136bf07213ba71f83f136192547a49ffed042442188c615687abf35",
-        );
+        let (public, hash, signature) = vector(0);
         // A y that is not on the curve, and a signature over a different message.
-        let off_curve = point_bytes(
-            "60fed4ba255a9d31c961eb74c6356d68c049b80bf122b2822601fa5ce4ec3a32",
-            "786e0905c5d6e67323832ea63d553d6cd737b12f7240a80a5e2be84fd761c378",
-        );
+        let (_, _, mut other) = vector(1);
+        let off_curve = {
+            let (x, _, _, _, _) = VECTORS[0];
+            let mut y = hex_bytes(VECTORS[0].1);
+            let last = y.len() - 1;
+            y[last] ^= 1;
+            let mut bytes = [0u8; 65];
+            bytes[0] = 0x04;
+            bytes[1..33].copy_from_slice(&hex_bytes(x));
+            bytes[33..65].copy_from_slice(&y);
+            bytes
+        };
         assert!(!p256_verify(&off_curve, &hash, &signature));
-        let on_curve = point_bytes(
-            "60fed4ba255a9d31c961eb74c6356d68c049b80bf122b2822601fa5ce4ec3a32",
-            "786e0905c5d6e67323832ea63d553d6cd737b12f7240a80a5e2be84fd761c377",
+        assert!(!p256_verify(&public, &vector(2).1, &signature));
+        assert!(!p256_verify(&public, &hash, &signature[..63]));
+        assert!(!p256_verify(&public, &hash, &signature[1..]));
+        other[0] ^= 1;
+        assert!(!p256_verify(&public, &hash, &other));
+        let mut flipped = signature.clone();
+        for byte in &mut flipped {
+            *byte ^= 1;
+        }
+        assert!(
+            !p256_verify(&public, &hash, &flipped),
+            "the same r with a different s is a different point"
         );
-        assert!(!p256_verify(&on_curve, &sha256(b"sampla"), &signature));
-        assert!(!p256_verify(&on_curve, &hash, &signature[..63]));
-        assert!(!p256_verify(&on_curve, &hash, &signature[..64].iter().map(|b| b ^ 1).collect::<Vec<_>>()));
+        assert!(!p256_verify(&public, &hash, &[0u8; 64]), "zero r and zero s");
     }
 
     /// `nist.ts` fixes `lowS: false` for P-256 and `verify` is called without overriding it, so the
     /// other half of the `s` pair verifies as well. That is what `seam.dpopHighS` measured, and it is
-    /// the reason this file normalizes nothing.
+    /// the reason this file normalizes nothing. Node's own `crypto.verify` agrees, which is the only
+    /// outside evidence that the fold is `n - s` rather than `s` itself.
     #[test]
     fn a_high_s_is_not_rejected() {
-        let public = point_bytes(
-            "60fed4ba255a9d31c961eb74c6356d68c049b80bf122b2822601fa5ce4ec3a32",
-            "786e0905c5d6e67323832ea63d553d6cd737b12f7240a80a5e2be84fd761c377",
-        );
-        let hash = sha256(b"sample");
-        let mut signature = hex_bytes(
-            "64ececa44126f77b72f11ac32a477d2d22e374d7a105525714cf644cf12aba951624d5358136bf07213ba71f83f136192547a49ffed042442188c615687abf35",
-        );
-        let low = be(&signature[32..]);
-        let high = order() - low;
-        let bytes = high.to_bytes_be().1;
-        signature[64 - bytes.len()..64].copy_from_slice(&bytes);
-        assert!(p256_verify(&public, &hash, &signature));
+        for index in 0..VECTORS.len() {
+            let (public, hash, mut signature) = vector(index);
+            let low = be(&signature[32..]);
+            let high = order() - low;
+            let bytes = high.to_bytes_be().1;
+            signature[64 - bytes.len()..64].copy_from_slice(&bytes);
+            assert!(
+                p256_verify(&public, &hash, &signature),
+                "vector {index} with the negated s"
+            );
+        }
+    }
+
+    /// `k · G` for five scalars whose ECDH secret Node computed, which pins the projective walk itself
+    /// rather than the signature arithmetic wrapped around it. Recorded by
+    /// `~/.cache/lmcs-port-traces/ecdh-truth.mjs`.
+    #[test]
+    fn the_scalar_walk_lands_where_the_other_implementation_lands() {
+        let p = prime();
+        let g = generator();
+        for (scalar, expected) in [
+            ("2", "7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978"),
+            ("3", "5ecbe4d1a6330a44c8f7ef951d4bf165e6c6b721efada985fb41661bc6e7fd6c"),
+            ("7", "8e533b6fa0bf7b4625bb30667c01fb607ef9f8b8a80fef5b300628703187b2a3"),
+            (
+                "5d7790b2f96102cac2e32b879b7896d3ca1dddb79fb01c6f074ce9fa69a1dd34",
+                "b9974abd781a87e3b68577d276fb0a03d3ca39623be9764107f0c22321d3cc6c",
+            ),
+            (
+                "41cc084385064bf7a076171f51dd38f3a6997462d6d3107ad7a9dc644bf176d0",
+                "eb178d90b11426eed08a9c64f901b9971e9a007de446357085b92e8a864a8bbe",
+            ),
+            (
+                "ffd5c4ce07b47290e8594738bc1e91ce4fdb9a1a062b2129d7028c2110bb46a1",
+                "fc2a22fab326d186fbe586b3bc15c0693db5967b2eea2c1e80bc0af764f3ee0f",
+            ),
+            (
+                "484924bdcd163e894622c02da8e36a402ace1b8e02972d0bf71a5357228686e6",
+                "2eab2d01513c3be45576ab9c070bfc907c033436438277a132835ca0f7c83205",
+            ),
+            (
+                "05a40f7c6b7c883b7fd0e62c3eca73bcb2728cfe38271c6e430b2bb6d5157234",
+                "9fa6aa90175e9f3d06ed0d8ce846662bee019b9ce6de43d5a5513e2839a22b17",
+            ),
+            (
+                "0e6b230da57d49bc6f1cb4a551458748909cb7a9e9bc9873861534b4bf7a7bb3",
+                "4784dd1c5b3b5e2383017b64edb4fad043d16fe2ebe4bf6a57e0363417248313",
+            ),
+        ] {
+            let point = point_multiply(&big(scalar), &g, &p).expect("a real multiple of the generator");
+            let (px, _, z) = point;
+            let inverse = mod_inverse(&z, &p);
+            let affine = rem(&(&px * &rem(&(&inverse * &inverse), &p)), &p);
+            assert_eq!(format!("{affine:x}"), expected, "scalar {scalar}");
+        }
     }
 
     fn hex_bytes(hex: &str) -> Vec<u8> {
