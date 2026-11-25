@@ -468,11 +468,14 @@ impl std::fmt::Debug for Seam {
 /// the golden compares every other byte of the head.
 ///
 /// Two boundaries this function does not cross. **Path matching** is the router's, so only the method is
-/// examined here — that half is what `seam.postWs` measured. And **header/cookie credentials** belong to
-/// the HTTP auth slice: `Upgrade::NoTicket` means the *ticket* said nothing, while the shipped server
-/// then tries `Authorization` and the session cookie and answers `missing_credential` only when those are
-/// absent too. Every `/ws` client sends a ticket, so the port refuses without them; a caller serving a
-/// bearer credential over `/ws` has to grow that step here rather than assume this answered it.
+/// examined here — that half is what `seam.postWs` measured. And a **proof-bound token** is refused rather
+/// than verified, which is what [`crate::auth::RequestDenial::ProofUnverified`] explains.
+///
+/// `Upgrade::NoTicket` is not a refusal: the shipped server falls through to `authenticateRequest`, which
+/// reads the session cookie, then `Authorization: Bearer `, then `Authorization: DPoP `, and only answers
+/// `missing_credential` when none of them named a token (`seam.noTicket` beside `seam.cookieRead`). That is
+/// the plain web app's path, and `names` is the cookie set it reads — the server's own, which
+/// `seam-golden.ts` records rather than having this crate re-derive.
 #[must_use]
 #[allow(clippy::too_many_arguments)]
 pub fn authenticated(
@@ -481,7 +484,8 @@ pub fn authenticated(
     now: i64,
     secret: &[u8],
     dev_session_id: Option<&str>,
-    lookup: impl FnMut(&str) -> crate::auth::Stored,
+    names: &crate::auth::CredentialNames<'_>,
+    mut lookup: impl FnMut(&str) -> crate::auth::Stored,
     date: &str,
     trace_id: &str,
 ) -> Seam {
@@ -501,12 +505,22 @@ pub fn authenticated(
         now,
         secret,
         dev_session_id,
-        lookup,
+        &mut lookup,
     ) {
         crate::auth::Upgrade::Accepted(verified) => verified,
         crate::auth::Upgrade::Denied(denial) => return denied(denial.denied()),
         crate::auth::Upgrade::NoTicket => {
-            return denied(crate::http::Denied::credential("missing_credential", None));
+            match crate::auth::authenticate_request(
+                &request.cookies(),
+                request.authorization,
+                names,
+                now,
+                secret,
+                &mut lookup,
+            ) {
+                Ok(verified) => verified,
+                Err(denial) => return denied(denial.denied()),
+            }
         }
     };
     let session_id = verified.session_id.clone();
@@ -968,6 +982,15 @@ mod tests {
     }
 
     /// One request head, run through the seam with the artifact's clock, secret and no dev session.
+    /// The cookie names the recorded requests never send, so the fallthrough from a missing ticket has
+    /// nothing to read and the refusal stays `missing_credential`.
+    fn credential_names() -> crate::auth::CredentialNames<'static> {
+        crate::auth::CredentialNames {
+            session: "t3_session_test",
+            ..Default::default()
+        }
+    }
+
     fn seam(head: &str, stored: crate::auth::Stored) -> Seam {
         let request = crate::http::Request::parse(head);
         authenticated(
@@ -976,6 +999,7 @@ mod tests {
             NOW,
             &secret(),
             None,
+            &credential_names(),
             |_| stored.clone(),
             "Tue, 14 Nov 2023 22:13:20 GMT",
             "unavailable",
@@ -1072,6 +1096,7 @@ mod tests {
             NOW,
             &secret(),
             None,
+            &credential_names(),
             |_| {
                 looked.set(looked.get() + 1);
                 stored(&["orchestration:read"])
@@ -1206,6 +1231,7 @@ mod tests {
             NOW,
             &secret(),
             None,
+            &credential_names(),
             |_| stored(scopes),
             "Tue, 14 Nov 2023 22:13:20 GMT",
             "unavailable",

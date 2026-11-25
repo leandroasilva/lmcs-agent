@@ -236,6 +236,124 @@ pub fn upgrade(key: &str, protocol: Option<&str>, extensions: Option<&str>) -> V
     out.into_bytes()
 }
 
+/// What `request.cookies` is: `Cookies.parseHeader` (`unstable/http/Cookies.js:593-617`) over the
+/// `cookie` header, as a name-keyed list rather than a `Map`.
+///
+/// Four rules are the parser's and not RFC 6265's, and the seam measured three of them:
+/// - **The first pair of a repeated name wins** — the `Object.hasOwn` guard — so
+///   `seam.duplicateCookie`'s `name=junk; name=<token>` authenticates with *nothing* (`invalid_credential`
+///   from the signature) rather than with the token in second position.
+/// - **A quoted value loses one character at each end** (`substring(eqIdx + 1, terminatorPos - 1)`),
+///   which is why `seam.quotedCookie` is the same credential as the bare one. The subtraction is
+///   unconditional: a pair ending in the closing quote is what makes it land on the quote.
+/// - **A `%` anywhere sends** (`val.indexOf("%") === -1`), and `decodeURIComponent` *throws* on a lone
+///   `%`, a non-hex escape and an invalid byte sequence, in which case `tryDecodeURIComponent` hands back
+///   the text as it was. This is the reason `seam.percentCookie`'s `%2E` reaches the verifier as `.`.
+/// - **A pair with no `=` ends the parse** (`break`, not `continue`), and a pair whose `=` sits past the
+///   next `;` is skipped. Neither is measured here; both are how `"junk; name=tok"` still finds `name`.
+///
+/// Indices are counted in `char`s where JavaScript counts UTF-16 code units, so a non-BMP character in a
+/// cookie shifts them by one. No token can reach that: a session token is base64url and a dot.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct Cookies {
+    entries: Vec<(String, String)>,
+}
+
+impl Cookies {
+    #[must_use]
+    pub fn parse(header: &str) -> Self {
+        let characters: Vec<char> = header.chars().collect();
+        let length = characters.len();
+        let find = |needle: char, from: usize| {
+            let from = from.min(length);
+            characters[from..]
+                .iter()
+                .position(|c| *c == needle)
+                .map(|offset| from + offset)
+        };
+        let text = |range: std::ops::Range<usize>| -> String {
+            characters[range.start.min(length)..range.end.min(length)]
+                .iter()
+                .collect()
+        };
+        let mut entries = Vec::new();
+        let mut pos = 0;
+        let mut terminator = 0;
+        // `while (true) { if (terminatorPos === strLen) break; … }`, which is how a trailing `;` ends the
+        // walk one iteration before the empty pair after it would be read.
+        while terminator != length {
+            terminator = find(';', pos).unwrap_or(length);
+            let Some(equals) = find('=', pos) else {
+                break;
+            };
+            if equals > terminator {
+                pos = terminator + 1;
+                continue;
+            }
+            let name = crate::auth::js_trim(&text(pos..equals)).to_owned();
+            if !entries.iter().any(|(kept, _)| *kept == name) {
+                let value_start = equals + 1;
+                let value = if characters.get(value_start) == Some(&'"') {
+                    // `substring(start, end)` swaps its arguments when start is past end, so `name="` is
+                    // the quote itself rather than the empty string.
+                    let start = value_start + 1;
+                    let end = terminator.saturating_sub(1);
+                    let (low, high) = if start <= end {
+                        (start, end)
+                    } else {
+                        (end, start)
+                    };
+                    text(low..high)
+                } else {
+                    text(value_start..terminator)
+                };
+                let value = crate::auth::js_trim(&value);
+                let value = if value.contains('%') {
+                    decode_uri_component(value)
+                } else {
+                    value.to_owned()
+                };
+                entries.push((name, value));
+            }
+            pos = terminator + 1;
+        }
+        Self { entries }
+    }
+
+    #[must_use]
+    pub fn get(&self, name: &str) -> Option<&str> {
+        self.entries
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.as_str())
+    }
+}
+
+/// `decodeURIComponent`, as far as a cookie header needs it: percent bytes collected and then UTF-8
+/// decoded, with the original text returned whenever either step would throw. Unlike
+/// [`percent_decode`] this leaves `+` alone, because `decodeURIComponent("+")` is `"+"`.
+fn decode_uri_component(text: &str) -> String {
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] != b'%' {
+            out.push(bytes[index]);
+            index += 1;
+            continue;
+        }
+        let escape = |offset: usize| bytes.get(offset).copied().and_then(hex_value);
+        let (Some(high), Some(low)) = (escape(index + 1), escape(index + 2)) else {
+            return text.to_owned();
+        };
+        out.push(high << 4 | low);
+        index += 3;
+    }
+    // A surrogate encoded as three bytes (`%ED%A0%80`) is invalid UTF-8 here and a `URIError` in
+    // JavaScript, so the same refusal covers both.
+    String::from_utf8(out).unwrap_or_else(|_| text.to_owned())
+}
+
 /// The surfaces `ClientSurface` names (`baseSchemas.ts:158`), which is the whole whitelist
 /// `readClientConnectionOrigin` accepts. Anything else is dropped rather than normalised, so a client
 /// announcing `tv` is recorded as announcing nothing.
@@ -281,7 +399,12 @@ pub struct Request<'a> {
     pub version: Option<&'a str>,
     pub protocol: Option<&'a str>,
     pub extensions: Option<&'a str>,
-    /// `(name, value)` as written, in arrival order. The five fields above are what the upgrade
+    /// The `Authorization` header, which the upgrade reads only once the ticket has said nothing
+    /// ([`crate::auth::authenticate_request`]). Its *presence* matters as much as its value:
+    /// `hasAuthorization` (`EnvironmentAuth.ts:651`) is `headers.authorization !== undefined`, so an
+    /// empty one still blocks the dev-cookie fallback.
+    pub authorization: Option<&'a str>,
+    /// `(name, value)` as written, in arrival order. The fields above are what the upgrade
     /// decision needs; this is what an rpc on the resulting connection is allowed to read, which is
     /// why nothing here is lowercased or joined yet — [`Request::handler_headers`] does that once,
     /// the way Node's parser and `Headers.fromInput` do it.
@@ -289,6 +412,20 @@ pub struct Request<'a> {
 }
 
 impl<'a> Request<'a> {
+    /// `request.cookies`, i.e. `parseHeader(this.headers.cookie ?? "")` over the **first** `Cookie` line.
+    /// Node does not fold two of them into one value before this layer sees them, which is what
+    /// `seam.duplicateCookieHeaders` measured: the second line names no credential at all and the first
+    /// still authenticates.
+    #[must_use]
+    pub fn cookies(&self) -> Cookies {
+        Cookies::parse(
+            self.lines
+                .iter()
+                .find(|(name, _)| name.eq_ignore_ascii_case("cookie"))
+                .map_or("", |(_, value)| value),
+        )
+    }
+
     /// The socket's header list, in the shape [`crate::headers`] prepends to every `Request` frame.
     #[must_use]
     pub fn handler_headers(&self) -> Vec<crate::headers::Pair> {
@@ -330,7 +467,7 @@ impl<'a> Request<'a> {
     }
 
     /// Read the fields out of a request head. Every `name: value` line is kept, in order, so a
-    /// connection can later answer what an rpc on it may read; the five slots are the ones the
+    /// connection can later answer what an rpc on it may read; the six slots are the ones the
     /// upgrade decision looks at.
     #[must_use]
     pub fn parse(head: &'a str) -> Self {
@@ -356,6 +493,7 @@ impl<'a> Request<'a> {
                 "sec-websocket-version" => &mut out.version,
                 "sec-websocket-protocol" => &mut out.protocol,
                 "sec-websocket-extensions" => &mut out.extensions,
+                "authorization" => &mut out.authorization,
                 _ => continue,
             };
             // A header repeated in the head has already been comma-joined by Node before this layer sees
@@ -618,5 +756,134 @@ mod tests {
         assert!(is_token_list("t3, chat"));
         assert!(!is_token_list("t3,,"));
         assert!(!is_token_list("\"quoted\""));
+    }
+
+    /// The three measured cookie rules, and the two the seam could not reach but the vendored parser has.
+    #[test]
+    fn the_first_pair_of_a_repeated_name_wins() {
+        // `seam.duplicateCookie`: the junk in first position is the credential, so the token is never read.
+        let cookies = Cookies::parse("t3_session_test=junk; t3_session_test=good");
+        assert_eq!(cookies.get("t3_session_test"), Some("junk"));
+        // ...and the second name is still parsed, so only the repeated one is lost.
+        let cookies = Cookies::parse("a=1; b=2; a=3");
+        assert_eq!(cookies.get("b"), Some("2"));
+        assert_eq!(cookies.get("a"), Some("1"));
+    }
+
+    #[test]
+    fn a_quoted_value_loses_one_character_at_each_end() {
+        assert_eq!(
+            Cookies::parse("a=\"token\"; b=x").get("a"),
+            Some("token"),
+            "`seam.quotedCookie` authenticated, so the quotes cost nothing"
+        );
+        assert_eq!(
+            Cookies::parse("a=").get("a"),
+            Some(""),
+            "an empty value is present, which is what makes an empty session cookie a credential"
+        );
+        assert_eq!(
+            Cookies::parse("a=\"").get("a"),
+            Some("\""),
+            "`substring(start, end)` swaps its arguments, so the lone quote is what survives"
+        );
+    }
+
+    #[test]
+    fn a_percent_anywhere_sends_and_a_bad_escape_survives() {
+        assert_eq!(
+            Cookies::parse("a=%2E%2E").get("a"),
+            Some(".."),
+            "`seam.percentCookie`: the flag is `indexOf(\"%\")`, then the whole value is decoded"
+        );
+        assert_eq!(
+            Cookies::parse("a=100%").get("a"),
+            Some("100%"),
+            "`decodeURIComponent` throws and `tryDecodeURIComponent` hands the text back"
+        );
+        assert_eq!(
+            Cookies::parse("a=%zz").get("a"),
+            Some("%zz"),
+            "a non-hex escape is the same throw"
+        );
+        assert_eq!(
+            Cookies::parse("a=%ED%A0%80").get("a"),
+            Some("%ED%A0%80"),
+            "an encoded surrogate is a `URIError`, which the same fallback covers"
+        );
+        assert_eq!(
+            Cookies::parse("a=b+c").get("a"),
+            Some("b+c"),
+            "unlike a query string, a cookie value does not read `+` as a space"
+        );
+    }
+
+    #[test]
+    fn an_unseparated_pair_ends_the_parse_and_an_equals_after_a_semicolon_skips_one() {
+        assert_eq!(
+            Cookies::parse("junk").entries,
+            Vec::new(),
+            "no `=` left in the remainder is the `break`, so nothing after it is read either"
+        );
+        assert_eq!(
+            Cookies::parse("junk; a=1").get("a"),
+            Some("1"),
+            "...but a leading bare token only skips its own run, because `indexOf(\"=\")` searches past the \
+             `;` and the skip is the `eqIdx > terminatorPos` branch"
+        );
+        assert_eq!(
+            Cookies::parse("a=1; junk").get("a"),
+            Some("1"),
+            "a trailing one is never read, because the walk ends at the last `;`"
+        );
+        let cookies = Cookies::parse("a; b=2; c=3");
+        assert_eq!(
+            (cookies.get("a"), cookies.get("b"), cookies.get("c")),
+            (None, Some("2"), Some("3")),
+            "an `=` past the next `;` skips that pair rather than naming the whole run"
+        );
+    }
+
+    #[test]
+    fn names_and_values_are_trimmed_and_semicolons_are_not_part_of_a_value() {
+        let cookies = Cookies::parse("  a  =  b  ;c=d;");
+        assert_eq!(
+            cookies,
+            Cookies {
+                entries: vec![
+                    ("a".to_owned(), "b".to_owned()),
+                    ("c".to_owned(), "d".to_owned())
+                ],
+            },
+            "the trailing `;` ends the walk one iteration early rather than naming an empty pair"
+        );
+        assert_eq!(Cookies::parse(""), Cookies::default());
+        assert_eq!(
+            Cookies::parse("A=1").get("a"),
+            None,
+            "cookie names are compared as written, so the configured name has to match exactly"
+        );
+    }
+
+    /// `seam.duplicateCookieHeaders` got a 101, which is only possible if the two headers were *not*
+    /// comma-joined — a join would have corrupted the signature and read `invalid_credential`.
+    #[test]
+    fn the_credential_is_read_from_the_first_cookie_header() {
+        let request = Request::parse(
+            "GET /ws HTTP/1.1\r\nHost: 127.0.0.1\r\nCookie: s=junk\r\nCookie: s=good\r\n\r\n",
+        );
+        assert_eq!(request.cookies().get("s"), Some("junk"));
+        assert_eq!(
+            Request::parse("GET /ws HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n").cookies(),
+            Cookies::default(),
+            "no `Cookie` header is an empty list, not an absent credential of its own"
+        );
+        assert_eq!(
+            Request::parse("GET /ws HTTP/1.1\r\ncookie: s=good\r\n\r\n")
+                .cookies()
+                .get("s"),
+            Some("good"),
+            "the header *name* is matched case-insensitively, as Node hands it lowercased"
+        );
     }
 }

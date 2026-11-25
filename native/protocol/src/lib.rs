@@ -35,11 +35,16 @@
 //! The credential half adds a fifth, and it is the one an attacker reaches: **there are two base64url
 //! decoders in this path and they disagree** (`auth`), and a refusal's text is decided by which of two
 //! error unions a branch belongs to (`scopes`). Both are pinned by
-//! `apps/server/scripts/auth-golden.ts`.
+//! `apps/server/scripts/auth-golden.ts`. A sixth belongs to the seam and is the one a router-shaped port
+//! gets backwards: **a `/ws` request with no ticket is not an unauthenticated request** — the route falls
+//! through to the session cookie, `Bearer`, `DPoP` and the dev cookie, in that order
+//! ([`auth::authenticate_request`]), and it is the *credential* rather than the framing that decides
+//! whether a row records a connection. Pinned by `apps/server/scripts/seam-golden.ts`.
 //!
-//! *Evidence:* `apps/server/scripts/protocol-golden.ts`, `apps/server/scripts/upgrade-golden.ts` and
-//! `apps/server/scripts/auth-golden.ts`, each run twice and compared with `cmp`. The recorded text is
-//! the specification; this crate is expected to reproduce it from the bytes alone.
+//! *Evidence:* `apps/server/scripts/protocol-golden.ts`, `apps/server/scripts/upgrade-golden.ts`,
+//! `apps/server/scripts/auth-golden.ts` and `apps/server/scripts/seam-golden.ts`, each run twice and
+//! compared with `cmp`. The recorded text is the specification; this crate is expected to reproduce it
+//! from the bytes alone.
 
 pub mod auth;
 pub mod coerce;
@@ -55,13 +60,14 @@ pub mod transport;
 pub mod websocket;
 
 pub use auth::{
-    Claims, Denial, PayloadError, Stored, StoredSession, Verified, authenticate_upgrade, mint,
-    sign_payload, verify,
+    Claims, CredentialNames, Denial, PayloadError, RequestDenial, SessionDenial, Stored,
+    StoredSession, Verified, VerifiedSession, authenticate_request, authenticate_upgrade, mint,
+    select_request_credential, sign_payload, verify, verify_session,
 };
 pub use deflate::{Negotiated, negotiate};
 pub use envelope::{Cause, Defect, Exit, Headers, Id, Message, Request, Trace};
 pub use frame::{Envelope, Frame, invalid_request_id, unknown_request_tag};
-pub use http::{Denied, accept, query_param, refuse, routed, upgrade};
+pub use http::{Cookies, Denied, accept, query_param, refuse, routed, upgrade};
 pub use json::{Syntax, parse, stringify};
 pub use scopes::{
     RPC_REQUIRED_SCOPES, UndeclaredScope, authorization_error, grants, required_scope,

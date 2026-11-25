@@ -1,11 +1,13 @@
-//! The `wsTicket`: what a signed websocket claim is, byte for byte, and which branch refuses one.
+//! The upgrade's credential: what a signed claim is, byte for byte, and which branch refuses one.
 //!
 //! The upgrade carries its credential in a query parameter rather than a header, because a browser's
-//! `WebSocket` cannot set a header (`ws.ts:3804-3877` reads it, `EnvironmentAuth.ts:1075-1095` decides
-//! with it). Everything the decision touches is here, ported from
+//! `WebSocket` cannot set a header (`ws.ts:3804-3877` reads it, `EnvironmentAuth.ts:1076-1095` decides
+//! with it) — and when the parameter is absent it carries one in a header or a cookie instead, which is the
+//! path the plain web app takes. Everything either decision touches is here, ported from
 //! `apps/server/src/auth/utils.ts:82-103` (`base64UrlEncode`, `base64UrlDecodeUtf8`, `signPayload`,
-//! `timingSafeEqualBase64Url`), `SessionStore.ts:847-951` (`issueWebSocketToken`,
-//! `verifyWebSocketToken`) and the claim schema at `SessionStore.ts:438-448`.
+//! `timingSafeEqualBase64Url`), `SessionStore.ts:425-448` and `:649-951` (`issue`, `verify`,
+//! `issueWebSocketToken`, `verifyWebSocketToken`), and `EnvironmentAuth.ts:555-598` and `:638-689`
+//! (`parseBearerToken`, `parseDpopToken`, `selectRequestCredential`, `authenticateRequest`).
 //!
 //! Four things the port cannot get from a specification, each pinned by `tests/auth_golden.rs` against
 //! the text `apps/server/scripts/auth-golden.ts` measured:
@@ -477,7 +479,7 @@ enum Document {
     Bool(bool),
     Number(f64),
     String(String),
-    Array,
+    Array(Vec<Document>),
     Object(Vec<(String, Document)>),
 }
 
@@ -602,10 +604,11 @@ impl<'a> Reader<'a> {
 
     fn array(&mut self) -> Result<Document, PayloadError> {
         self.index += 1;
+        let mut items = Vec::new();
         self.skip_space();
         if self.peek() == Some(']') {
             self.index += 1;
-            return Ok(Document::Array);
+            return Ok(Document::Array(items));
         }
         let mut first = true;
         loop {
@@ -619,13 +622,15 @@ impl<'a> Reader<'a> {
                 self.index += 1;
             }
             self.skip_space();
-            self.value()?;
+            // The websocket claims never carry an array, so this reader used to discard what it parsed;
+            // `SessionClaims.scopes` (`SessionStore.ts:430`) is the field that needs the members.
+            items.push(self.value()?);
             self.skip_space();
             match self.peek() {
                 Some(',') => continue,
                 Some(']') => {
                     self.index += 1;
-                    return Ok(Document::Array);
+                    return Ok(Document::Array(items));
                 }
                 _ => return Err(PayloadError::Syntax),
             }
@@ -949,14 +954,443 @@ pub fn authenticate_upgrade(
     }
 }
 
-/// The three outcomes of `authenticateWebSocketUpgrade` that this crate owns. The fourth is
-/// `authenticateRequest`, which reads bearer and cookie credentials and belongs to the HTTP auth slice
-/// rather than to the ticket.
+/// The three outcomes of `authenticateWebSocketUpgrade` that this crate owns, and the fourth is no longer
+/// outside it: see [`Upgrade::NoTicket`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Upgrade {
     Accepted(Verified),
     Denied(Denial),
+    /// `wsTicket` said nothing, which is **not** a refusal: `authenticateWebSocketUpgrade`
+    /// (`EnvironmentAuth.ts:1076-1095`) falls through to `authenticateRequest`, i.e.
+    /// [`authenticate_request`]. That is how the plain web app connects — a same-origin session cookie and
+    /// no ticket at all — and `seam.cookieRead` beside `seam.noTicket` are the two halves of it.
     NoTicket,
+}
+
+// ---------------------------------------------------------------------------
+// The credential a request carries instead of a ticket
+// ---------------------------------------------------------------------------
+
+/// `SessionStore.ts:427`. A websocket ticket presented as a cookie fails here rather than at the
+/// signature, which is what `seam.ticketAsCookie` measured; the two token kinds are not interchangeable.
+pub const SESSION_CLAIMS_KIND: &str = "session";
+
+/// `SessionStore.ts:431`, i.e. `ServerAuthSessionMethod` (`auth.ts:74-79`).
+pub const SESSION_METHODS: [&str; 3] = [
+    "browser-session-cookie",
+    "bearer-access-token",
+    "dpop-access-token",
+];
+
+/// `AuthEnvironmentScope` (`auth.ts:87-96`), the whitelist `SessionClaims.scopes` is checked against. An
+/// unknown scope is a payload refusal, so a port that accepted any string would gate a connection on a
+/// scope the server itself cannot name.
+pub const ENVIRONMENT_SCOPES: [&str; 8] = [
+    "orchestration:read",
+    "orchestration:operate",
+    "terminal:operate",
+    "review:write",
+    "access:read",
+    "access:write",
+    "relay:read",
+    "relay:write",
+];
+
+/// `EnvironmentAuth.ts:515-516`. Both are compared with `startsWith`, so the scheme is case sensitive and
+/// `seam.bearerLowercase` names no credential at all; both are then sliced and `trim`med, so
+/// `seam.bearerPadded` is the same token.
+pub const BEARER_PREFIX: &str = "Bearer ";
+pub const DPOP_PREFIX: &str = "DPoP ";
+
+/// A decoded `SessionClaims` (`SessionStore.ts:425-435`), the payload a cookie or an `Authorization`
+/// header carries. Five fields more than [`Claims`] and three of them decide the connection: `scopes` is
+/// the gate, `jkt` is the DPoP guard, and `sid` is trimmed rather than refused
+/// (`seam.sidWhitespaceCookie` connected).
+#[derive(Clone, Debug, PartialEq)]
+pub struct SessionClaims {
+    pub sid: String,
+    pub sub: String,
+    pub scopes: Vec<String>,
+    pub method: String,
+    pub jkt: Option<String>,
+    pub iat: f64,
+    pub exp: f64,
+}
+
+impl SessionClaims {
+    /// `JSON.stringify` in the order `SessionStore.ts:660-670` builds the object, with `jkt` present only
+    /// when the issuer had a proof key (`...(input?.proofKeyThumbprint ? { jkt } : {})`). The signature
+    /// covers this text, so the field order is part of the token.
+    #[must_use]
+    pub fn json(&self) -> String {
+        let scopes: Vec<String> = self
+            .scopes
+            .iter()
+            .map(|scope| crate::json::quote(scope))
+            .collect();
+        let proof = self.jkt.as_ref().map_or(String::new(), |thumbprint| {
+            format!(",\"jkt\":{}", crate::json::quote(thumbprint))
+        });
+        format!(
+            "{{\"v\":{version},\"kind\":\"{kind}\",\"sid\":{sid},\"sub\":{sub},\"scopes\":[{list}],\"method\":{method}{proof},\"iat\":{iat},\"exp\":{exp}}}",
+            version = crate::json::float_text(CLAIMS_VERSION),
+            kind = SESSION_CLAIMS_KIND,
+            sid = crate::json::quote(&self.sid),
+            sub = crate::json::quote(&self.sub),
+            list = scopes.join(","),
+            method = crate::json::quote(&self.method),
+            iat = crate::json::float_text(self.iat),
+            exp = crate::json::float_text(self.exp),
+        )
+    }
+
+    /// `issue`'s expression — encode, sign, join (`SessionStore.ts:672-687`) — for claims the caller chose
+    /// rather than the store.
+    #[must_use]
+    pub fn mint(&self, secret: &[u8]) -> String {
+        let payload = encode_base64url(self.json().as_bytes());
+        format!(
+            "{payload}{}{}",
+            TOKEN_SEPARATOR,
+            sign_payload(&payload, secret)
+        )
+    }
+}
+
+/// `decodeSessionClaims` (`SessionStore.ts:447`), read through the same V8-semantics document as
+/// [`decode_claims`] because the same `1e999` reaches it.
+///
+/// The two whitelist refusals — a scope outside [`ENVIRONMENT_SCOPES`], a method outside
+/// [`SESSION_METHODS`] — keep the shape Effect's message has (`Expected …\n  at ["field"]`, which
+/// `auth-golden.ts` measured for the ticket's literals) while their *phrases* are the port's own: a payload
+/// refusal reaches the client only as `invalid_credential` and the text only in a log.
+pub fn decode_session_claims(text: &str) -> Result<SessionClaims, PayloadError> {
+    let fields = match Document::read(text)? {
+        Document::Object(fields) => fields,
+        _ => return Err(PayloadError::NotObject),
+    };
+    let field = |name: &str| {
+        fields
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value)
+    };
+    let required = |name: &'static str| field(name).ok_or(PayloadError::Missing { field: name });
+    let wrong =
+        |expected: &'static str, field: &'static str| -> Result<SessionClaims, PayloadError> {
+            Err(PayloadError::Expected { expected, field })
+        };
+    match required("v")? {
+        Document::Number(value) if *value == CLAIMS_VERSION => {}
+        _ => return wrong(CLAIMS_VERSION_TEXT, "v"),
+    }
+    match required("kind")? {
+        Document::String(value) if value == SESSION_CLAIMS_KIND => {}
+        _ => return wrong("\"session\"", "kind"),
+    }
+    let sid = match required("sid")? {
+        Document::String(value) => js_trim(value).to_owned(),
+        _ => return wrong("string", "sid"),
+    };
+    if sid.is_empty() {
+        return Err(PayloadError::EmptySid);
+    }
+    let sub = match required("sub")? {
+        Document::String(value) => value.clone(),
+        _ => return wrong("string", "sub"),
+    };
+    let scopes = match required("scopes")? {
+        Document::Array(items) => items
+            .iter()
+            .map(|item| match item {
+                Document::String(value) if ENVIRONMENT_SCOPES.contains(&value.as_str()) => {
+                    Ok(value.clone())
+                }
+                _ => Err(PayloadError::Expected {
+                    expected: "an environment scope",
+                    field: "scopes",
+                }),
+            })
+            .collect::<Result<Vec<_>, PayloadError>>()?,
+        _ => return wrong("an array", "scopes"),
+    };
+    let method = match required("method")? {
+        Document::String(value) if SESSION_METHODS.contains(&value.as_str()) => value.clone(),
+        _ => return wrong("a known session method", "method"),
+    };
+    // `Schema.optionalKey`, so an absent `jkt` is legal and any other value for a present one is not.
+    let jkt = match field("jkt") {
+        None => None,
+        Some(Document::String(value)) => Some(value.clone()),
+        Some(_) => return wrong("string", "jkt"),
+    };
+    let number = |name: &'static str| -> Result<f64, PayloadError> {
+        match required(name)? {
+            Document::Number(value) => Ok(*value),
+            _ => Err(PayloadError::Expected {
+                expected: "number",
+                field: name,
+            }),
+        }
+    };
+    Ok(SessionClaims {
+        sid,
+        sub,
+        scopes,
+        method,
+        jkt,
+        iat: number("iat")?,
+        exp: number("exp")?,
+    })
+}
+
+/// Why the credential a request carried was refused. The names are `SessionStore`'s error classes
+/// (`:226-296`), which is what `isSessionCredentialInvalidError` routes to a 401; `Store` is the one that
+/// reaches a 500 instead.
+///
+/// Two of the ticket's branches are deliberately absent and both are measured absences: `verify` never looks
+/// at `row.expiresAt` (`seam.expiredRowCookie` connected on an expired row) and never consults the dev
+/// prefix (`seam.devPrefixSessionCookie` connected on a `dev-auth-` session id).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SessionDenial {
+    MalformedToken,
+    BadSignature,
+    /// The base64 throw and the schema refusal alike, as `InvalidSessionTokenPayloadError` wraps them.
+    BadPayload(String),
+    UnusableExpiration,
+    TokenExpired,
+    Store,
+    UnknownSession,
+    Revoked,
+}
+
+impl SessionDenial {
+    #[must_use]
+    pub fn error(&self) -> &'static str {
+        match self {
+            Self::MalformedToken => "MalformedSessionTokenError",
+            Self::BadSignature => "InvalidSessionTokenSignatureError",
+            Self::BadPayload(_) => "InvalidSessionTokenPayloadError",
+            Self::UnusableExpiration => "InvalidSessionExpirationClaimError",
+            Self::TokenExpired => "SessionTokenExpiredError",
+            Self::Store => "SessionCredentialVerificationError",
+            Self::UnknownSession => "UnknownSessionTokenError",
+            Self::Revoked => "SessionTokenRevokedError",
+        }
+    }
+
+    #[must_use]
+    pub fn denied(&self) -> crate::http::Denied {
+        match self {
+            Self::Store => crate::http::Denied::internal(),
+            _ => crate::http::Denied::credential("invalid_credential", None),
+        }
+    }
+}
+
+/// A session the request's credential proved: [`Verified`] plus the one field the route's guards read and
+/// the gate never does — `jkt`, i.e. `session.proofKeyThumbprint` (`SessionStore.ts:841`).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedSession {
+    pub session_id: String,
+    /// `claims.scopes`, **not** the row's (`SessionStore.ts:840`), which is the direction
+    /// `seam.claimsNarrowerThanRow` and `seam.claimsWiderThanRow` put on either side of the gate.
+    pub scopes: Vec<String>,
+    pub proof_key_thumbprint: Option<String>,
+}
+
+impl VerifiedSession {
+    /// Drop what the connection does not carry forward, once the guards have read it.
+    #[must_use]
+    pub fn verified(self) -> Verified {
+        Verified {
+            session_id: self.session_id,
+            scopes: self.scopes,
+        }
+    }
+}
+
+/// `SessionStore.verify`'s token branch (`:782-844`), in the order the shipped code reads it.
+///
+/// Not ported: the `devAuth?.matches(token)` fast path at `:749-781`, which answers from the row's scopes
+/// and *does* check the row's expiry. It needs a config carrying both `devUrl` and a dev auth token, and
+/// the oracle's `ServerConfig.makeTest` fixes `devUrl = undefined` (`:169-209`), so no branch of it is
+/// measurable at this seam — the same declared gap as the ticket's dev prefix.
+pub fn verify_session(
+    token: &str,
+    now: i64,
+    secret: &[u8],
+    mut lookup: impl FnMut(&str) -> Stored,
+) -> Result<VerifiedSession, SessionDenial> {
+    let parts: Vec<&str> = token.split(TOKEN_SEPARATOR).collect();
+    let payload = parts.first().copied().unwrap_or_default();
+    let signature = parts.get(1).copied().unwrap_or_default();
+    // The same JavaScript truthiness as the ticket path, so a token with no dot —
+    // `seam.strippedSignatureCookie` — is malformed rather than unsigned.
+    if payload.is_empty() || signature.is_empty() {
+        return Err(SessionDenial::MalformedToken);
+    }
+    if !timing_safe_equal_base64url(signature, &sign_payload(payload, secret)) {
+        return Err(SessionDenial::BadSignature);
+    }
+    let text = decode_base64url_utf8(payload)
+        .map_err(|error| SessionDenial::BadPayload(error.message()))?;
+    let claims =
+        decode_session_claims(&text).map_err(|error| SessionDenial::BadPayload(error.message()))?;
+    // `DateTime.make` first and the raw claim against the clock second, as in the ticket, against a clock
+    // read *after* the payload decoded (`:799`).
+    date_clip(claims.exp).ok_or(SessionDenial::UnusableExpiration)?;
+    if claims.exp <= now as f64 {
+        return Err(SessionDenial::TokenExpired);
+    }
+    match lookup(&claims.sid) {
+        Stored::Missing => Err(SessionDenial::UnknownSession),
+        Stored::Failed => Err(SessionDenial::Store),
+        Stored::Found(row) => {
+            // `revokedAt` is the row's only check: `seam.expiredRowCookie` connected on a row whose
+            // `expiresAt` had already passed, which is the asymmetry between the two verifiers.
+            if row.revoked {
+                return Err(SessionDenial::Revoked);
+            }
+            Ok(VerifiedSession {
+                // `sessionId: claims.sid` (`:837`) — the trimmed one, not `row.session_id`.
+                session_id: claims.sid,
+                scopes: claims.scopes,
+                proof_key_thumbprint: claims.jkt,
+            })
+        }
+    }
+}
+
+/// The names `authenticateRequest` reads credentials out of, which the server derives from its own config
+/// (`auth/utils.ts:11-64`) and the golden therefore records rather than re-derives.
+///
+/// `legacy` is `SessionStore.legacyCookieName` — `undefined` unless this is a remote web deployment, which
+/// is why `seam.legacyCookieIgnored` is a `missing_credential` here and the branch it feeds is pinned only
+/// by the source. `dev` is `devAuth.cookieName`, `None` for every configuration the oracle could build.
+#[derive(Clone, Debug, Default)]
+pub struct CredentialNames<'a> {
+    pub session: &'a str,
+    pub legacy: Option<&'a str>,
+    pub dev: Option<&'a str>,
+}
+
+/// `parseBearerToken` / `parseDpopToken` (`:555-571`), which are the same three lines twice: a
+/// case-sensitive prefix test, a fixed slice, a trim, and then *nothing* if what is left is empty. So
+/// `seam.bearerEmptyScheme`'s bare `Bearer` is a request missing a credential, not one carrying a bad it.
+fn prefixed<'a>(authorization: Option<&'a str>, prefix: &str) -> Option<&'a str> {
+    authorization
+        .and_then(|header| header.strip_prefix(prefix))
+        .map(js_trim)
+        .filter(|token| !token.is_empty())
+}
+
+/// `selectRequestCredential` (`:572-598`), in the order it reads.
+///
+/// The cookie is first and its test is `!== undefined`, so `seam.emptyCookieBeatsBearer`'s empty cookie is a
+/// credential that outranks the valid bearer token beside it. The legacy name is consulted only after both
+/// schemes have missed, and only when there is one.
+#[must_use]
+pub fn select_request_credential<'a>(
+    cookies: &'a crate::http::Cookies,
+    authorization: Option<&'a str>,
+    names: &CredentialNames<'_>,
+) -> Option<&'a str> {
+    let cookie = cookies.get(names.session);
+    if cookie.is_some() {
+        return cookie;
+    }
+    prefixed(authorization, BEARER_PREFIX)
+        .or_else(|| prefixed(authorization, DPOP_PREFIX))
+        .or(names.legacy.and_then(|legacy| cookies.get(legacy)))
+}
+
+/// Why the request's credential was refused, with the two reasons `EnvironmentAuth.ts:370-373` writes and
+/// the `dpopFailureReason` only the proof guards add.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RequestDenial {
+    /// `ServerAuthMissingCredentialError`: no credential was named, or the one that was is empty.
+    MissingCredential,
+    /// `ServerAuthInvalidCredentialError` over a credential that was presented and rejected.
+    InvalidCredential,
+    /// A proof-bound token presented outside `Authorization: DPoP `, or the mirror case — the three shapes
+    /// `seam.boundBearer`, `seam.boundCookie` and `seam.unboundDpopHeader` measured. `dpopFailureReason` is
+    /// in the body, so this is a `content-length` of 150 rather than 114.
+    InvalidProof,
+    /// Every guard passed and the shipped server would now verify the proof itself
+    /// (`auth/dpop.ts:52-119`): a compact JWS, its signature, the thumbprint against `jkt`, a replay key in
+    /// the secret store. This crate has no asymmetric verifier, so the branch **refuses** — the same 401
+    /// `seam.boundDpopMalformedProof` measured, and never a connection granted on an unchecked proof.
+    /// Verifying a proof for real is its own task, not a parity this slice may claim.
+    ProofUnverified,
+    /// The database refused to answer, which is a 500 rather than a 401.
+    Store,
+}
+
+impl From<SessionDenial> for RequestDenial {
+    fn from(denial: SessionDenial) -> Self {
+        match denial {
+            SessionDenial::Store => Self::Store,
+            _ => Self::InvalidCredential,
+        }
+    }
+}
+
+impl RequestDenial {
+    #[must_use]
+    pub fn denied(&self) -> crate::http::Denied {
+        match self {
+            Self::MissingCredential => crate::http::Denied::credential("missing_credential", None),
+            Self::InvalidCredential => crate::http::Denied::credential("invalid_credential", None),
+            Self::InvalidProof | Self::ProofUnverified => {
+                crate::http::Denied::credential("invalid_credential", Some("invalid_proof"))
+            }
+            Self::Store => crate::http::Denied::internal(),
+        }
+    }
+}
+
+/// `authenticateRequest` (`EnvironmentAuth.ts:638-689`), i.e. everything the upgrade route does with a
+/// credential once `wsTicket` has said nothing.
+///
+/// `authorization` is `request.headers.authorization`, whose *presence* matters as much as its value:
+/// `hasAuthorization` (`:651`) tests `!== undefined`, and an empty header still blocks the dev-cookie
+/// fallback. The separate `DPoP` proof header (`auth/dpop.ts:59`) is deliberately not an input, because
+/// [`RequestDenial::ProofUnverified`] is the farthest this crate can honestly go.
+pub fn authenticate_request(
+    cookies: &crate::http::Cookies,
+    authorization: Option<&str>,
+    names: &CredentialNames<'_>,
+    now: i64,
+    secret: &[u8],
+    lookup: impl FnMut(&str) -> Stored,
+) -> Result<Verified, RequestDenial> {
+    let dpop_token = prefixed(authorization, DPOP_PREFIX);
+    let credential = select_request_credential(cookies, authorization, names).or_else(|| {
+        // `!hasAuthorization && devCookieToken !== undefined` (`:652-656`), ported from the source and
+        // pinned by no case: the oracle's configuration has no reusable dev credential.
+        if authorization.is_some() {
+            return None;
+        }
+        names.dev.and_then(|cookie| cookies.get(cookie))
+    });
+    // `if (!credential?.token)`: an empty cookie and no cookie at all are the same refusal.
+    let Some(token) = credential.filter(|token| !token.is_empty()) else {
+        return Err(RequestDenial::MissingCredential);
+    };
+    let session = verify_session(token, now, secret, lookup).map_err(RequestDenial::from)?;
+    if session.proof_key_thumbprint.is_some() {
+        // `:659-667`: a bound token has to arrive as the DPoP credential *and* be that exact string, since
+        // the proof is checked against it.
+        if dpop_token != Some(token) {
+            return Err(RequestDenial::InvalidProof);
+        }
+        return Err(RequestDenial::ProofUnverified);
+    }
+    if dpop_token.is_some() {
+        return Err(RequestDenial::InvalidProof);
+    }
+    Ok(session.verified())
 }
 
 #[cfg(test)]
@@ -1188,6 +1622,447 @@ mod tests {
                 session_id: "s".to_owned(),
                 scopes: Vec::new(),
             })
+        );
+    }
+
+    /// The clock and secret `seam-golden.ts` records in its `summary`, so a literal below is the shipped
+    /// server's own text rather than something this file chose.
+    const AT: i64 = 1_700_000_000_000;
+    const LATER: f64 = 1_700_000_600_000.0;
+
+    fn secret() -> Vec<u8> {
+        (0..32u32)
+            .map(|index| ((index * 13 + 7) & 0xff) as u8)
+            .collect()
+    }
+
+    fn claims(sid: &str, scopes: &[&str]) -> SessionClaims {
+        SessionClaims {
+            sid: sid.to_owned(),
+            sub: "seam-golden".to_owned(),
+            scopes: scopes.iter().map(|scope| (*scope).to_owned()).collect(),
+            method: "browser-session-cookie".to_owned(),
+            jkt: None,
+            iat: AT as f64,
+            exp: LATER,
+        }
+    }
+
+    fn found(sid: &str, scopes: &[&str]) -> Stored {
+        Stored::Found(StoredSession {
+            session_id: sid.to_owned(),
+            expires_at: AT + 600_000,
+            revoked: false,
+            scopes: scopes.iter().map(|scope| (*scope).to_owned()).collect(),
+        })
+    }
+
+    /// The claims text and the token `seam-golden.ts` minted for `seam.cookieRead`, which pins the field
+    /// order (the signature covers the text) and the `jkt`-absent spelling against the shipped encoder.
+    #[test]
+    fn the_session_mint_is_the_measured_token() {
+        let minted = claims("seam_c_read", &["orchestration:read"]);
+        assert_eq!(
+            minted.json(),
+            r#"{"v":1,"kind":"session","sid":"seam_c_read","sub":"seam-golden","scopes":["orchestration:read"],"method":"browser-session-cookie","iat":1700000000000,"exp":1700000600000}"#
+        );
+        assert_eq!(
+            minted.mint(&secret()),
+            "eyJ2IjoxLCJraW5kIjoic2Vzc2lvbiIsInNpZCI6InNlYW1fY19yZWFkIiwic3ViIjoic2VhbS1nb2xkZW4iLCJzY29wZXMiOlsib3JjaGVzdHJhdGlvbjpyZWFkIl0sIm1ldGhvZCI6ImJyb3dzZXItc2Vzc2lvbi1jb29raWUiLCJpYXQiOjE3MDAwMDAwMDAwMDAsImV4cCI6MTcwMDAwMDYwMDAwMH0.bTAi9l6lLmEyymGFd3CM_lCH7IZv1PVwAJCJ7ggipEA"
+        );
+        let mut bound = claims("seam_c_read", &["orchestration:read"]);
+        bound.jkt = Some("thumbprint-seam".to_owned());
+        // `seam.boundCookie`'s token: the proof key sits between `method` and `iat`, because that is where
+        // the spread in `SessionStore.ts:667` puts it.
+        assert_eq!(
+            bound.mint(&secret()),
+            "eyJ2IjoxLCJraW5kIjoic2Vzc2lvbiIsInNpZCI6InNlYW1fY19yZWFkIiwic3ViIjoic2VhbS1nb2xkZW4iLCJzY29wZXMiOlsib3JjaGVzdHJhdGlvbjpyZWFkIl0sIm1ldGhvZCI6ImJyb3dzZXItc2Vzc2lvbi1jb29raWUiLCJqa3QiOiJ0aHVtYnByaW50LXNlYW0iLCJpYXQiOjE3MDAwMDAwMDAwMDAsImV4cCI6MTcwMDAwMDYwMDAwMH0.TTCAsERen0YPZiQDx_SkUt4uy6E-jQXFSkyFOE078tk"
+        );
+        assert_eq!(
+            decode_session_claims(&minted.json()).unwrap(),
+            minted,
+            "a mint the decoder cannot read back is a token the server issues and refuses"
+        );
+    }
+
+    /// `seam.ticketAsCookie` and the ticket side of the same claim: the two kinds are signed the same way
+    /// and are not accepted for each other.
+    #[test]
+    fn a_websocket_ticket_is_not_a_session_credential() {
+        let ticket = mint("seam_c_read", AT as f64, LATER, &secret());
+        assert_eq!(
+            verify_session(&ticket, AT, &secret(), |_| found("seam_c_read", &[])),
+            Err(SessionDenial::BadPayload(
+                "Expected \"session\"\n  at [\"kind\"]".to_owned()
+            )),
+        );
+        let session = claims("seam_c_read", &["orchestration:read"]).mint(&secret());
+        assert_eq!(
+            verify(&session, AT, &secret(), None, |_| found("seam_c_read", &[])),
+            Err(Denial::BadPayload(
+                "Expected \"websocket\"\n  at [\"kind\"]".to_owned()
+            )),
+        );
+    }
+
+    /// What the session verifier does *not* check, both of which are measured absences: the row's expiry
+    /// (`seam.expiredRowCookie`) and the dev prefix (`seam.devPrefixSessionCookie`).
+    #[test]
+    fn verify_session_checks_the_token_and_revocation_only() {
+        let token = claims("seam_c_expired", &["orchestration:read"]).mint(&secret());
+        assert_eq!(
+            verify_session(&token, AT, &secret(), |_| Stored::Found(StoredSession {
+                session_id: "seam_c_expired".to_owned(),
+                expires_at: AT,
+                revoked: false,
+                scopes: vec!["access:write".to_owned()],
+            })),
+            Ok(VerifiedSession {
+                // The claims' scopes, not the row's wider list.
+                session_id: "seam_c_expired".to_owned(),
+                scopes: vec!["orchestration:read".to_owned()],
+                proof_key_thumbprint: None,
+            }),
+        );
+        let token = claims(" seam_c_read ", &["orchestration:read"]).mint(&secret());
+        assert_eq!(
+            verify_session(&token, AT, &secret(), |_| Stored::Missing).unwrap_err(),
+            SessionDenial::UnknownSession,
+            "`AuthSessionId` trims, so the lookup is by the trimmed id (`seam.sidWhitespaceCookie`)"
+        );
+        assert_eq!(
+            verify_session(
+                &claims("seam_c_revoked", &["orchestration:read"]).mint(&secret()),
+                AT,
+                &secret(),
+                |_| Stored::Found(StoredSession {
+                    session_id: "seam_c_revoked".to_owned(),
+                    expires_at: AT + 600_000,
+                    revoked: true,
+                    scopes: Vec::new(),
+                }),
+            ),
+            Err(SessionDenial::Revoked),
+        );
+        assert_eq!(
+            verify_session(
+                &claims("seam_c_read", &["orchestration:read"]).mint(&[9u8; 32]),
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &[]),
+            ),
+            Err(SessionDenial::BadSignature),
+        );
+        let mut stale = claims("seam_c_read", &["orchestration:read"]);
+        stale.exp = AT as f64;
+        assert_eq!(
+            verify_session(&stale.mint(&secret()), AT, &secret(), |_| found(
+                "seam_c_read",
+                &[]
+            )),
+            Err(SessionDenial::TokenExpired),
+            "`exp <= now`, so a token expiring on this tick is already refused"
+        );
+        let mut never = claims("seam_c_read", &["orchestration:read"]);
+        never.exp = f64::INFINITY;
+        // The mint cannot spell this refusal: `JSON.stringify` writes a non-finite `exp` as `null`, so the
+        // token it mints is a payload refusal. Only the literal `1e999`, which `JSON.parse` reads as
+        // `Infinity`, reaches the clock check at all.
+        let payload = encode_base64url(
+            never
+                .json()
+                .replace("\"exp\":null", "\"exp\":1e999")
+                .as_bytes(),
+        );
+        let overflowing = format!(
+            "{payload}{}{}",
+            TOKEN_SEPARATOR,
+            sign_payload(&payload, &secret())
+        );
+        assert_eq!(
+            verify_session(&overflowing, AT, &secret(), |_| found("seam_c_read", &[])),
+            Err(SessionDenial::UnusableExpiration),
+        );
+        assert_eq!(
+            verify_session(&never.mint(&secret()), AT, &secret(), |_| found(
+                "seam_c_read",
+                &[]
+            )),
+            Err(SessionDenial::BadPayload(
+                "Expected number\n  at [\"exp\"]".to_owned()
+            )),
+            "`exp`:null is the shape a non-finite mint always writes, and it dies at the schema"
+        );
+    }
+
+    /// The `SessionClaims` whitelist, in both directions: the shapes the seam could not distinguish on the
+    /// wire are still refused here rather than accepted and handed to the gate.
+    #[test]
+    fn the_session_claims_refuse_what_the_schema_refuses() {
+        assert_eq!(
+            decode_session_claims(&claims("s", &["nope:read"]).json()).unwrap_err(),
+            PayloadError::Expected {
+                expected: "an environment scope",
+                field: "scopes",
+            },
+        );
+        assert_eq!(
+            decode_session_claims(&claims("s", &[]).json()).unwrap(),
+            claims("s", &[]),
+            "an empty scope list is a legal claim, which `seam.missingRowCookie` minted",
+        );
+        let mut method = claims("s", &["orchestration:read"]);
+        method.method = "cli-bootstrap".to_owned();
+        assert_eq!(
+            decode_session_claims(&method.json()).unwrap_err(),
+            PayloadError::Expected {
+                expected: "a known session method",
+                field: "method",
+            },
+        );
+        for (text, error) in [
+            (r#"{"v":1}"#, PayloadError::Missing { field: "kind" }),
+            (
+                r#"{"v":1,"kind":"session","sid":"  ","sub":"s","scopes":[],"method":"browser-session-cookie","iat":1,"exp":2}"#,
+                PayloadError::EmptySid,
+            ),
+            (
+                r#"{"v":1,"kind":"session","sid":"s","sub":"s","scopes":"orchestration:read","method":"browser-session-cookie","iat":1,"exp":2}"#,
+                PayloadError::Expected {
+                    expected: "an array",
+                    field: "scopes",
+                },
+            ),
+            (
+                r#"{"v":1,"kind":"session","sid":"s","sub":"s","scopes":[],"method":"browser-session-cookie","iat":1,"exp":2,"jkt":7}"#,
+                PayloadError::Expected {
+                    expected: "string",
+                    field: "jkt",
+                },
+            ),
+        ] {
+            assert_eq!(decode_session_claims(text).unwrap_err(), error);
+        }
+    }
+
+    /// `selectRequestCredential`'s order, which is the whole claim of this slice: the cookie is read
+    /// against `!== undefined`, and the schemes are case-sensitive prefixes.
+    #[test]
+    fn the_credential_is_selected_in_the_measured_order() {
+        let names = CredentialNames {
+            session: "t3_session_0_7a98a041feae",
+            legacy: None,
+            dev: None,
+        };
+        let cookies = crate::http::Cookies::parse("t3_session_0_7a98a041feae=cookie-token");
+        assert_eq!(
+            select_request_credential(&cookies, Some("Bearer bearer-token"), &names),
+            Some("cookie-token"),
+            "`seam.cookieBeatsBearer`"
+        );
+        assert_eq!(
+            select_request_credential(
+                &crate::http::Cookies::default(),
+                Some("Bearer  padded  "),
+                &names
+            ),
+            Some("padded"),
+            "`seam.bearerPadded`"
+        );
+        assert_eq!(
+            select_request_credential(
+                &crate::http::Cookies::default(),
+                Some("bearer token"),
+                &names
+            ),
+            None,
+            "`seam.bearerLowercase`: the prefix test is `startsWith`"
+        );
+        assert_eq!(
+            select_request_credential(&crate::http::Cookies::default(), Some("DPoP token"), &names),
+            Some("token"),
+            "and `DPoP ` is the third thing tried, after the bearer scheme misses"
+        );
+        assert_eq!(
+            select_request_credential(&crate::http::Cookies::default(), Some("Bearer"), &names),
+            None,
+            "`seam.bearerEmptyScheme`: a scheme with no token is no credential"
+        );
+        let empty = crate::http::Cookies::parse("t3_session_0_7a98a041feae=;");
+        assert_eq!(
+            select_request_credential(&empty, Some("Bearer bearer-token"), &names),
+            Some(""),
+            "`seam.emptyCookieBeatsBearer`: an empty cookie is still a cookie"
+        );
+        let legacy = CredentialNames {
+            legacy: Some("t3_session"),
+            ..names
+        };
+        assert_eq!(
+            select_request_credential(
+                &crate::http::Cookies::parse("t3_session=legacy-token"),
+                None,
+                &legacy,
+            ),
+            Some("legacy-token"),
+        );
+        assert_eq!(
+            select_request_credential(
+                &crate::http::Cookies::parse("t3_session=legacy-token"),
+                None,
+                &names,
+            ),
+            None,
+            "`seam.legacyCookieIgnored`: with no legacy name configured the cookie names nothing"
+        );
+    }
+
+    /// The four shapes `authenticateRequest` answers with a 401, and the one the port refuses rather than
+    /// verifies. `seam.boundDpopNoProof` and `seam.boundDpopMalformedProof` are the same refusal here,
+    /// because no proof can be checked without an asymmetric verifier.
+    #[test]
+    fn the_request_credential_guards_the_proof_binding() {
+        let names = CredentialNames {
+            session: "t3_session_0_7a98a041feae",
+            ..Default::default()
+        };
+        let unbound = claims("seam_c_read", &["orchestration:read"]).mint(&secret());
+        let bound = {
+            let mut claims = claims("seam_c_read", &["orchestration:read"]);
+            claims.jkt = Some("thumbprint-seam".to_owned());
+            claims.mint(&secret())
+        };
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::default(),
+                Some(&format!("Bearer {bound}")),
+                &names,
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+            ),
+            Err(RequestDenial::InvalidProof),
+            "`seam.boundBearer`"
+        );
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::parse(&format!("{}={bound}", names.session)),
+                None,
+                &names,
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+            ),
+            Err(RequestDenial::InvalidProof),
+            "`seam.boundCookie`"
+        );
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::default(),
+                Some(&format!("DPoP {unbound}")),
+                &names,
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+            ),
+            Err(RequestDenial::InvalidProof),
+            "`seam.unboundDpopHeader`: the mirror guard"
+        );
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::default(),
+                Some(&format!("DPoP {bound}")),
+                &names,
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+            ),
+            Err(RequestDenial::ProofUnverified),
+        );
+        for denial in [RequestDenial::InvalidProof, RequestDenial::ProofUnverified] {
+            let denied = denial.denied();
+            // 150 bytes, which is what the five recorded proof refusals count, against 114 without the
+            // field: the reason is on the wire and not only in a log.
+            assert_eq!(
+                denied.body("unavailable"),
+                r#"{"_tag":"EnvironmentAuthInvalidError","code":"auth_invalid","reason":"invalid_credential","dpopFailureReason":"invalid_proof","traceId":"unavailable"}"#
+            );
+            assert_eq!(denied.body("unavailable").len(), 150);
+        }
+        assert_eq!(
+            RequestDenial::MissingCredential
+                .denied()
+                .body("unavailable")
+                .len(),
+            114,
+        );
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::parse(&format!("{}={unbound}", names.session)),
+                None,
+                &names,
+                AT,
+                &secret(),
+                |_| Stored::Failed,
+            ),
+            Err(RequestDenial::Store),
+            "a store that will not answer is the one refusal that reaches a 500"
+        );
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::parse(&format!("{}={}", names.session, "junk")),
+                Some(&format!("Bearer {unbound}")),
+                &names,
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+            ),
+            Err(RequestDenial::InvalidCredential),
+            "`seam.duplicateCookie`-shaped: the cookie wins, and a bad one is not a missing one"
+        );
+        assert_eq!(
+            authenticate_request(
+                &crate::http::Cookies::default(),
+                None,
+                &names,
+                AT,
+                &secret(),
+                |_| found("seam_c_read", &["orchestration:read"]),
+            ),
+            Err(RequestDenial::MissingCredential),
+        );
+    }
+
+    /// The dev-cookie fallback, which the oracle could not build: `hasAuthorization` blocks it and only an
+    /// absent header lets it through. Ported from `:651-656` and pinned by no wire case.
+    #[test]
+    fn the_dev_cookie_wins_only_when_no_header_was_sent() {
+        let names = CredentialNames {
+            session: "t3_session_0_7a98a041feae",
+            legacy: None,
+            dev: Some("t3_dev_session_deadbeef"),
+        };
+        let token = claims("dev-auth-seam-session", &["orchestration:read"]).mint(&secret());
+        let cookies = crate::http::Cookies::parse(&format!("t3_dev_session_deadbeef={token}"));
+        assert_eq!(
+            authenticate_request(&cookies, None, &names, AT, &secret(), |_| {
+                found("dev-auth-seam-session", &["orchestration:read"])
+            })
+            .unwrap()
+            .session_id,
+            "dev-auth-seam-session",
+        );
+        assert_eq!(
+            authenticate_request(
+                &cookies,
+                Some("Basic anything"),
+                &names,
+                AT,
+                &secret(),
+                |_| { found("dev-auth-seam-session", &[]) }
+            ),
+            Err(RequestDenial::MissingCredential),
+            "`headers.authorization !== undefined` is enough to block the fallback"
         );
     }
 }
