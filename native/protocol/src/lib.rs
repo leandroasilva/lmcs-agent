@@ -39,7 +39,9 @@
 //! gets backwards: **a `/ws` request with no ticket is not an unauthenticated request** — the route falls
 //! through to the session cookie, `Bearer`, `DPoP` and the dev cookie, in that order
 //! ([`auth::authenticate_request`]), and it is the *credential* rather than the framing that decides
-//! whether a row records a connection. Pinned by `apps/server/scripts/seam-golden.ts`.
+//! whether a row records a connection. Pinned by `apps/server/scripts/seam-golden.ts`. A seventh belongs
+//! to the same seam: **a bound token's proof is verified rather than skipped** (`dpop`), which is why the
+//! crate carries its own ECDSA P-256 verifier — there is no asymmetric verification crate offline.
 //!
 //! *Evidence:* `apps/server/scripts/protocol-golden.ts`, `apps/server/scripts/upgrade-golden.ts`,
 //! `apps/server/scripts/auth-golden.ts` and `apps/server/scripts/seam-golden.ts`, each run twice and
@@ -48,6 +50,7 @@
 
 pub mod auth;
 pub mod coerce;
+pub mod dpop;
 pub mod deflate;
 pub mod envelope;
 pub mod frame;

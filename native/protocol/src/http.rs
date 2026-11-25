@@ -455,6 +455,52 @@ impl<'a> Request<'a> {
         }
     }
 
+    /// A header by name, first line wins — the way Node's parsed header map hands one to Effect, whose
+    /// keys are already lowercased.
+    #[must_use]
+    pub fn header(&self, name: &str) -> Option<&'a str> {
+        self.lines
+            .iter()
+            .find(|(line, _)| line.eq_ignore_ascii_case(name))
+            .map(|(_, value)| *value)
+    }
+
+    /// `HttpServerRequest.toURL` (`HttpServerRequest.ts:1027-1035`): `new URL(request.url, protocol +
+    /// "://" + (headers.host ?? "localhost"))`, with the protocol flipped by `x-forwarded-proto: https`.
+    /// The caller takes `.href`, which is what [`crate::dpop::normalize_htu`] then strips.
+    ///
+    /// This is the origin-form half of WHATWG, which is all this route can be handed: Node reports an
+    /// absolute-form target only to a proxy, and a target that is neither origin-form nor empty never
+    /// reaches `/ws` at all, so `None` here is the same answer `toURL` would have failed to build. The
+    /// parts of `new URL` that cannot move for a target the HTTP parser already accepted are not
+    /// ported — IDNA on the host, the default-port rule, and percent-encoding of path characters.
+    #[must_use]
+    pub fn url(&self) -> Option<String> {
+        let host = self.header("host").unwrap_or("localhost");
+        let scheme = if self.header("x-forwarded-proto") == Some("https") {
+            "https"
+        } else {
+            "http"
+        };
+        let authority = host.to_ascii_lowercase();
+        // An empty authority, or one holding a delimiter, is the throw the route answers with — and it
+        // carries no `dpopFailureReason`, because the guard that reaches it is before the proof.
+        if authority.is_empty()
+            || !authority.chars().all(|character| {
+                character.is_ascii_alphanumeric()
+                    || matches!(character, '-' | '.' | '_' | ':' | '[' | ']' | '%' | '~')
+            })
+        {
+            return None;
+        }
+        let path = match self.target {
+            "" => "/",
+            target if target.starts_with('/') => target,
+            _ => return None,
+        };
+        Some(format!("{scheme}://{authority}{path}"))
+    }
+
     /// Whether the router hands the request to the websocket layer at all, which needs a `GET` and an
     /// `Upgrade` header spelling the whole token `websocket`, case-insensitively. Everything [`Refusal`] can
     /// produce presupposes it.

@@ -3348,6 +3348,13 @@ const check = (): Array<string> => {
     "seam.dpopStaleEdge",
     "seam.dpopHighS",
     "seam.dpopTicketOutranksProof",
+    // Unknown members are *stripped* rather than refused, on both sides of the JWS: the `kid` a key-
+    // labelling client sends, and the `nonce` an older server used to demand. A port that decodes into a
+    // strict struct would refuse a client the shipped server admits.
+    "seam.dpopJwkHasKid",
+    "seam.dpopPayloadHasNonce",
+    // `htm.toUpperCase()` against the request method, also upper-cased (`dpop.ts:145`).
+    "seam.dpopLowercaseMethod",
   ]) {
     dpopAccepted(name);
   }

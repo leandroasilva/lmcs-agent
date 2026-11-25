@@ -1313,16 +1313,10 @@ pub enum RequestDenial {
     MissingCredential,
     /// `ServerAuthInvalidCredentialError` over a credential that was presented and rejected.
     InvalidCredential,
-    /// A proof-bound token presented outside `Authorization: DPoP `, or the mirror case — the three shapes
-    /// `seam.boundBearer`, `seam.boundCookie` and `seam.unboundDpopHeader` measured. `dpopFailureReason` is
-    /// in the body, so this is a `content-length` of 150 rather than 114.
-    InvalidProof,
-    /// Every guard passed and the shipped server would now verify the proof itself
-    /// (`auth/dpop.ts:52-119`): a compact JWS, its signature, the thumbprint against `jkt`, a replay key in
-    /// the secret store. This crate has no asymmetric verifier, so the branch **refuses** — the same 401
-    /// `seam.boundDpopMalformedProof` measured, and never a connection granted on an unchecked proof.
-    /// Verifying a proof for real is its own task, not a parity this slice may claim.
-    ProofUnverified,
+    /// A proof-bound token refused by `verifyRequestDpopProof` or by the two shape guards around it, with
+    /// the reason that lands in the body. That union is why `seam.boundBearer` and `seam.dpopTooStale` are
+    /// the same `_tag` and `code` and differ by one character of `content-length`.
+    Proof(crate::dpop::Reason),
     /// The database refused to answer, which is a 500 rather than a 401.
     Store,
 }
@@ -1342,11 +1336,68 @@ impl RequestDenial {
         match self {
             Self::MissingCredential => crate::http::Denied::credential("missing_credential", None),
             Self::InvalidCredential => crate::http::Denied::credential("invalid_credential", None),
-            Self::InvalidProof | Self::ProofUnverified => {
-                crate::http::Denied::credential("invalid_credential", Some("invalid_proof"))
+            Self::Proof(reason) => {
+                crate::http::Denied::credential("invalid_credential", Some(reason.as_str()))
             }
             Self::Store => crate::http::Denied::internal(),
         }
+    }
+}
+
+/// The three things [`verify_request_proof`] reads off the request rather than off the credential. The
+/// separate `DPoP` proof header is the first of them (`auth/dpop.ts:59`), and `url` is
+/// [`crate::http::Request::url`]'s `Option` because `toURL` failing is a refusal *before* any guard
+/// touches the proof, with no `dpopFailureReason` at all.
+#[derive(Clone, Debug)]
+pub struct ProofRequest {
+    pub header: Option<String>,
+    pub method: String,
+    pub url: Option<String>,
+}
+
+/// What the secret store answered when a verified proof tried to spend itself.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Replay {
+    /// `Effect.void`, i.e. the name was free.
+    Stored,
+    /// `isSecretAlreadyExistsError`, which `mapDpopReplayStoreError` turns into a 401 rather than a 500.
+    Replayed,
+    /// Any other store failure: `ServerAuthDpopReplayStateRecordError`, which is a 500.
+    Failed,
+}
+
+/// `verifyRequestDpopProof` (`auth/dpop.ts:53-123`): check the proof, then spend it.
+///
+/// The spend is the second half of the guard and it is not idempotent, which is why it is a failure mode
+/// of this function rather than the caller's business. Note the name is built from the thumbprint the
+/// *proof* proved and the `jti` it carried, so a replay of the same bytes collides with itself.
+fn verify_request_proof(
+    request: &ProofRequest,
+    expected_thumbprint: &str,
+    access_token: &str,
+    now: i64,
+    mut record: impl FnMut(&str, &[u8]) -> Replay,
+) -> Result<(), RequestDenial> {
+    let Some(url) = request.url.as_deref() else {
+        // `Invalid DPoP request URL.` — a `ServerAuthInvalidCredentialError` with no reason field.
+        return Err(RequestDenial::InvalidCredential);
+    };
+    let verified = crate::dpop::verify(&crate::dpop::Input {
+        proof: request.header.as_deref(),
+        method: &request.method,
+        url,
+        now_epoch_seconds: now.div_euclid(1000),
+        expected_thumbprint: Some(expected_thumbprint),
+        expected_access_token: Some(access_token),
+    })
+    .map_err(|code| RequestDenial::Proof(code.reason()))?;
+    match record(
+        &crate::dpop::replay_key(&verified),
+        crate::dpop::stored_value(&verified, now).as_bytes(),
+    ) {
+        Replay::Stored => Ok(()),
+        Replay::Replayed => Err(RequestDenial::Proof(crate::dpop::Reason::Replay)),
+        Replay::Failed => Err(RequestDenial::Store),
     }
 }
 
@@ -1355,15 +1406,18 @@ impl RequestDenial {
 ///
 /// `authorization` is `request.headers.authorization`, whose *presence* matters as much as its value:
 /// `hasAuthorization` (`:651`) tests `!== undefined`, and an empty header still blocks the dev-cookie
-/// fallback. The separate `DPoP` proof header (`auth/dpop.ts:59`) is deliberately not an input, because
-/// [`RequestDenial::ProofUnverified`] is the farthest this crate can honestly go.
+/// fallback. `proof` and `record` are what a proof-bound token needs and nothing else does: see
+/// [`ProofRequest`] and [`verify_request_proof`].
+#[allow(clippy::too_many_arguments)]
 pub fn authenticate_request(
     cookies: &crate::http::Cookies,
     authorization: Option<&str>,
     names: &CredentialNames<'_>,
+    proof: &ProofRequest,
     now: i64,
     secret: &[u8],
     lookup: impl FnMut(&str) -> Stored,
+    record: impl FnMut(&str, &[u8]) -> Replay,
 ) -> Result<Verified, RequestDenial> {
     let dpop_token = prefixed(authorization, DPOP_PREFIX);
     let credential = select_request_credential(cookies, authorization, names).or_else(|| {
@@ -1379,16 +1433,21 @@ pub fn authenticate_request(
         return Err(RequestDenial::MissingCredential);
     };
     let session = verify_session(token, now, secret, lookup).map_err(RequestDenial::from)?;
-    if session.proof_key_thumbprint.is_some() {
+    // `if (session.proofKeyThumbprint)`, and that is JavaScript *truthiness*: a token whose `jkt` is the
+    // empty string is unbound, so it lands on the branch below and a DPoP header beside it is refused.
+    if let Some(thumbprint) =
+        session.proof_key_thumbprint.filter(|thumbprint| !thumbprint.is_empty())
+    {
         // `:659-667`: a bound token has to arrive as the DPoP credential *and* be that exact string, since
         // the proof is checked against it.
         if dpop_token != Some(token) {
-            return Err(RequestDenial::InvalidProof);
+            return Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof));
         }
-        return Err(RequestDenial::ProofUnverified);
+        verify_request_proof(proof, &thumbprint, token, now, record)?;
+        return Ok(session.verified());
     }
     if dpop_token.is_some() {
-        return Err(RequestDenial::InvalidProof);
+        return Err(RequestDenial::Proof(crate::dpop::Reason::InvalidProof));
     }
     Ok(session.verified())
 }

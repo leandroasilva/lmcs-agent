@@ -23,6 +23,11 @@ flate2 = { version = "1.1.11", default-features = false, features = ["zlib-rs"] 
 # already needs is also the one the credential needs. There is no `hmac` crate in the offline registry,
 # which is why `auth::hmac_sha256` is written out over this rather than imported.
 sha2 = "0.10.9"
+# A DPoP proof is an ECDSA P-256 signature, and the offline registry carries no asymmetric verifier —
+# no `p256`, no `ecdsa`, no `ring`. So `dpop::p256_verify` is the field arithmetic, written over big
+# integers. `num-integer` would give a Euclidean inverse and is deliberately not used: both moduli are
+# prime, so Fermat's little theorem inverts with the `modpow` this crate already needs.
+num-bigint = "0.4.8"
 
 [dev-dependencies]
 # The transport golden replays a capture whose large answers are recorded as a digest rather than as

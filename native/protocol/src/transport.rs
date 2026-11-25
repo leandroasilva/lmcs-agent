@@ -463,13 +463,14 @@ impl std::fmt::Debug for Seam {
 /// Run the route's order over one request head.
 ///
 /// `lookup` is `authSessions.getById` and `now` is the clock in integer milliseconds, both for the
-/// reasons [`crate::auth::verify`] gives. `date` and `trace_id` are the caller's because Node stamps the
-/// wall clock and opens no span before the route's auth step (`"unavailable"` is the measured value), and
-/// the golden compares every other byte of the head.
+/// reasons [`crate::auth::verify`] gives. `record` is `ServerSecretStore.create`, which a verified DPoP
+/// proof spends itself through — and which is only ever reached by a token that bound a key.
+/// `date` and `trace_id` are the caller's because Node stamps the wall clock and opens no span before the
+/// route's auth step (`"unavailable"` is the measured value), and the golden compares every other byte
+/// of the head.
 ///
-/// Two boundaries this function does not cross. **Path matching** is the router's, so only the method is
-/// examined here — that half is what `seam.postWs` measured. And a **proof-bound token** is refused rather
-/// than verified, which is what [`crate::auth::RequestDenial::ProofUnverified`] explains.
+/// One boundary this function does not cross: **path matching** is the router's, so only the method is
+/// examined here — that half is what `seam.postWs` measured.
 ///
 /// `Upgrade::NoTicket` is not a refusal: the shipped server falls through to `authenticateRequest`, which
 /// reads the session cookie, then `Authorization: Bearer `, then `Authorization: DPoP `, and only answers
@@ -486,6 +487,7 @@ pub fn authenticated(
     dev_session_id: Option<&str>,
     names: &crate::auth::CredentialNames<'_>,
     mut lookup: impl FnMut(&str) -> crate::auth::Stored,
+    record: impl FnMut(&str, &[u8]) -> crate::auth::Replay,
     date: &str,
     trace_id: &str,
 ) -> Seam {
@@ -514,9 +516,15 @@ pub fn authenticated(
                 &request.cookies(),
                 request.authorization,
                 names,
+                &crate::auth::ProofRequest {
+                    header: request.header("dpop").map(str::to_owned),
+                    method: request.method.to_owned(),
+                    url: request.url(),
+                },
                 now,
                 secret,
                 &mut lookup,
+                record,
             ) {
                 Ok(verified) => verified,
                 Err(denial) => return denied(denial.denied()),
