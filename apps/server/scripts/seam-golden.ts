@@ -75,6 +75,8 @@ import {
   EnvironmentId,
   WS_METHODS,
 } from "@lmcstools/core";
+import { computeDpopAccessTokenHash, computeDpopJwkThumbprint } from "@lmcstools/core/dpop";
+import * as PlatformError from "effect/PlatformError";
 
 import * as ServerConfig from "../src/config.ts";
 import * as EnvironmentAuth from "../src/auth/EnvironmentAuth.ts";
@@ -212,10 +214,50 @@ const handlersLayerFor = (scopes: ReadonlyArray<string>) =>
 // The route, in `ws.ts:3805-3877`'s order
 // ---------------------------------------------------------------------------
 
+/**
+ * The secret store the route writes through.
+ *
+ * `get` still hands out the signing secret, but `create` is no longer a no-op: a DPoP proof is spent by
+ * *creating* `dpop-proof-<digest>` (`auth/dpop.ts:97-121`), and the refusal this file has to measure —
+ * `replay` — only exists if a duplicate create fails the way the filesystem does it. The shape matters:
+ * `isSecretAlreadyExistsError` (`ServerSecretStore.ts:135-136`) looks through `SecretStorePersistError`
+ * at a `PlatformError` whose reason is `AlreadyExists`, so a plain `Effect.die` would map to the 500
+ * branch instead of the 401. Every accepted name is recorded, which is the replay's second axis: the
+ * port has to compute the same digest over the same `thumbprint:jti`.
+ */
+const acceptedProofs = new Set<string>();
+
 const fixedSecrets = Layer.succeed(ServerSecretStore.ServerSecretStore, {
   get: () => Effect.succeed(Option.some(SECRET)),
   set: () => Effect.void,
-  create: () => Effect.void,
+  create: (name: string, value: Uint8Array) => {
+    // Recorded for the duplicate attempt too: the replay's claim is that the *name* is the same digest,
+    // which is only visible if the refused write is logged as well as the accepted one.
+    events.push({
+      case: current,
+      event: "secret",
+      detail: name,
+      bytes: value.length,
+      value: Buffer.from(value).toString("utf8"),
+    });
+    if (acceptedProofs.has(name)) {
+      // A typed failure, not a throw: `auth/dpop.ts:110` catches `isSecretStoreError`, and a defect
+      // raised inside `Effect.sync` walks past it and answers 500 instead of the 401 `replay`.
+      return Effect.fail(
+        new ServerSecretStore.SecretStorePersistError({
+          resource: `secret ${name}`,
+          cause: PlatformError.systemError({
+            _tag: "AlreadyExists",
+            module: "FileSystem",
+            method: "open",
+            pathOrDescriptor: `${name}.bin`,
+          }),
+        }),
+      );
+    }
+    acceptedProofs.add(name);
+    return Effect.void;
+  },
   getOrCreateRandom: (unusedName: string, bytes: number) => Effect.succeed(SECRET.slice(0, bytes)),
   remove: () => Effect.void,
 } satisfies ServerSecretStore.ServerSecretStore["Service"]);
@@ -469,7 +511,7 @@ type RecordedFrame = {
 
 type RecordedEvent = {
   readonly case: string;
-  readonly event: "request" | "response" | "peer" | "row" | "write" | "seed";
+  readonly event: "request" | "response" | "peer" | "row" | "write" | "seed" | "secret";
   readonly request?: string;
   readonly statusLine?: string;
   readonly headers?: Array<[string, string]>;
@@ -480,6 +522,10 @@ type RecordedEvent = {
   readonly detail?: string;
   readonly row?: Record<string, unknown>;
   readonly seed?: Record<string, unknown>;
+  /** Only for `secret`: the bytes the spent proof stored, which is what a replay must reproduce. */
+  readonly bytes?: number;
+  /** Only for `secret`: the stored text, deterministic because the clock is fixed. */
+  readonly value?: string;
 };
 
 const frames: Array<RecordedFrame> = [];
@@ -749,6 +795,14 @@ const SESSIONS = {
   cookieMissing: "seam_c_missing",
   cookieExpired: "seam_c_expired",
   cookieRevoked: "seam_c_revoked",
+  // One row for the whole DPoP block, bound to `DPOP_THUMBPRINT.a`. The cases share it because the
+  // measurement is *the same row answered differently by the proof alone*, and because `last_connected_at`
+  // is fixed at `NOW` for every accepted case, so no ordering between them can move a column.
+  dpop: "seam_dpop",
+  // `seam.dpopWrongKey` alone gets a row nothing else has connected: it is the case that proves a refused
+  // proof never reaches `recordClientConnection`, which the shared row below could not show once any
+  // accepted case had run.
+  dpopFresh: "seam_dpop_fresh",
 } as const;
 
 type Scenario = {
@@ -875,6 +929,284 @@ const closeDeflated = async (probe: Probe, name: string) => {
   await probe.write(bytes);
   await drainDeflated(probe, name);
 };
+
+// ---------------------------------------------------------------------------
+// DPoP: a P-256 key, and a signer that needs no entropy
+// ---------------------------------------------------------------------------
+
+/**
+ * ECDSA over P-256, written out rather than imported, because the artifact has to be the same twice.
+ *
+ * `NodeCrypto.sign` draws a fresh nonce per call, so a proof minted here would carry a different
+ * signature on the next run and `cmp` would report a change that is nothing but OpenSSL's random `k`.
+ * RFC 6979 derives the nonce from the key and the message instead, so one case mints one proof, always.
+ * The proof of *this* code is the route itself: `seam.dpopValid` is a `101` or the arithmetic is wrong,
+ * because the verifier on the other side is the shipped one (`packages/core/src/shared/dpop.ts`, noble's
+ * `p256.verify`, compact r‖s over `sha256("<header>.<payload>")`).
+ *
+ * Affine `bigint` coordinates, ~256 doublings per scalar, a few dozen scalars per artifact, in a script
+ * nobody ships.
+ */
+const P256_P = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;
+const P256_N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
+const P256_GX = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296n;
+const P256_GY = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5n;
+
+const pmod = (value: bigint, modulus: bigint) => ((value % modulus) + modulus) % modulus;
+
+/** Extended Euclid over `bigint`; only ever called on non-zero residues of a prime field or of `n`. */
+const inverse = (value: bigint, modulus: bigint): bigint => {
+  let oldRest = pmod(value, modulus);
+  let rest = modulus;
+  // `coefficient` tracks Bézout's multiplier of `value`, so it is the one returned when `rest` hits 0.
+  let coefficient = 1n;
+  let previous = 0n;
+  while (rest !== 0n) {
+    const quotient = oldRest / rest;
+    [oldRest, rest] = [rest, oldRest - quotient * rest];
+    [coefficient, previous] = [previous, coefficient - quotient * previous];
+  }
+  return pmod(coefficient, modulus);
+};
+
+/** A point, or `null` for the identity — the only case the addition chain has to name. */
+type Point = readonly [x: bigint, y: bigint] | null;
+
+const addPoints = (left: Point, right: Point): Point => {
+  if (left === null) return right;
+  if (right === null) return left;
+  const [x1, y1] = left;
+  const [x2, y2] = right;
+  if (x1 === x2) return pmod(y1 + y2, P256_P) === 0n ? null : doublePoint(left);
+  const slope = pmod((y2 - y1) * inverse(x2 - x1, P256_P), P256_P);
+  const x = pmod(slope * slope - x1 - x2, P256_P);
+  return [x, pmod(slope * (x1 - x) - y1, P256_P)];
+};
+
+const doublePoint = (point: NonNullable<Point>): NonNullable<Point> => {
+  const [x, y] = point;
+  if (y === 0n) return null;
+  // `a = -3`, so the tangent's slope is `(3x² - 3) / 2y`.
+  const slope = pmod((3n * x * x - 3n) * inverse(2n * y, P256_P), P256_P);
+  const x2 = pmod(slope * slope - 2n * x, P256_P);
+  return [x2, pmod(slope * (x - x2) - y, P256_P)];
+};
+
+const multiply = (scalar: bigint, point: Point): Point => {
+  let result: Point = null;
+  let addend = point;
+  let remaining = pmod(scalar, P256_N);
+  while (remaining > 0n) {
+    if ((remaining & 1n) === 1n) result = addPoints(result, addend);
+    addend = addPoints(addend, addend)!;
+    remaining >>= 1n;
+  }
+  return result;
+};
+
+const toBytes32 = (value: bigint) => {
+  const hex = value.toString(16).padStart(64, "0");
+  return Buffer.from(hex, "hex");
+};
+
+const hmac = (key: Uint8Array, ...parts: Array<Uint8Array>) => {
+  const mac = NodeCrypto.createHmac("sha256", Buffer.from(key));
+  for (const part of parts) mac.update(Buffer.from(part));
+  return new Uint8Array(mac.digest());
+};
+
+/**
+ * RFC 6979's deterministic nonce, including the loop that draws another when the candidate is out of
+ * range — unreachable for a sha256-sized draw over P-256 in practice, and cheap to carry correctly.
+ */
+const rfc6979Nonce = (messageHash: Uint8Array, privateKey: bigint): bigint => {
+  const x = toBytes32(privateKey);
+  const h = toBytes32(pmod(bytesToBig(messageHash), P256_N));
+  let v = new Uint8Array(32).fill(1);
+  let k = new Uint8Array(32);
+  k = hmac(k, v, new Uint8Array([0x00]), x, h);
+  v = hmac(k, v);
+  k = hmac(k, v, new Uint8Array([0x01]), x, h);
+  v = hmac(k, v);
+  for (;;) {
+    v = hmac(k, v);
+    const candidate = bytesToBig(v);
+    if (candidate >= 1n && candidate < P256_N) return candidate;
+    k = hmac(k, v, new Uint8Array([0x00]));
+    v = hmac(k, v);
+  }
+};
+
+const bytesToBig = (bytes: Uint8Array) =>
+  bytes.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n);
+
+/** The 64-byte compact signature the verifier reads, with `s` normalized low so it is unique. */
+const signP256 = (privateKey: bigint, message: Uint8Array): Uint8Array => {
+  const hash = new Uint8Array(
+    NodeCrypto.createHash("sha256").update(Buffer.from(message)).digest(),
+  );
+  const digest = pmod(bytesToBig(hash), P256_N);
+  for (;;) {
+    const nonce = rfc6979Nonce(hash, privateKey);
+    const point = multiply(nonce, [P256_GX, P256_GY]);
+    if (point === null) continue;
+    const r = pmod(point[0], P256_N);
+    if (r === 0n) continue;
+    let s = pmod(inverse(nonce, P256_N) * (digest + r * privateKey), P256_N);
+    if (s === 0n) continue;
+    if (s > P256_N / 2n) s = P256_N - s;
+    return Buffer.concat([toBytes32(r), toBytes32(s)]);
+  }
+};
+
+/** DER's `SEQUENCE { INTEGER r, INTEGER s }`, which is the shape `dsaEncoding: "der"` writes. */
+const derEncode = (signature: Uint8Array) => {
+  const integer = (value: Uint8Array) => {
+    const bytes =
+      value[0]! & 0x80
+        ? Buffer.concat([Buffer.from([0x00]), Buffer.from(value)])
+        : Buffer.from(value);
+    return Buffer.concat([Buffer.from([0x02, bytes.length]), bytes]);
+  };
+  const body = Buffer.concat([
+    integer(signature.subarray(0, 32)),
+    integer(signature.subarray(32, 64)),
+  ]);
+  return Buffer.concat([Buffer.from([0x30, body.length]), body]);
+};
+
+// Two fixed scalars, both below `n`, so every run authenticates the same public keys and therefore the
+// same `jkt`. `b` exists only to be the wrong one.
+const DPOP_D = {
+  a: 0x00c063ed046d120e0f1e2e5cf7c8a3d94b576a2b1c3d4e5f60718293a4b5c6d7n,
+  b: 0x00b17d0e1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5n,
+} as const;
+
+const jwkOf = (privateKey: bigint) => {
+  const point = multiply(privateKey, [P256_GX, P256_GY]);
+  if (point === null) throw new Error("a fixed P-256 key that lands on the identity");
+  return {
+    kty: "EC" as const,
+    crv: "P-256" as const,
+    x: toBytes32(point[0]).toString("base64url"),
+    y: toBytes32(point[1]).toString("base64url"),
+  };
+};
+
+const DPOP_JWK = { a: jwkOf(DPOP_D.a), b: jwkOf(DPOP_D.b) };
+const DPOP_THUMBPRINT = {
+  a: computeDpopJwkThumbprint(DPOP_JWK.a),
+  b: computeDpopJwkThumbprint(DPOP_JWK.b),
+};
+
+/**
+ * Two public keys that decode as text and die as arithmetic: `x` three bytes short, and the point (1,1),
+ * which is not on the curve. Both are reached only because the thumbprint guard reads the *strings*, so a
+ * token can be bound to a key the verifier cannot load.
+ */
+const DPOP_BAD_JWK = {
+  shortX: {
+    kty: "EC" as const,
+    crv: "P-256" as const,
+    x: Buffer.alloc(31, 7).toString("base64url"),
+    y: DPOP_JWK.a.y,
+  },
+  offCurve: { kty: "EC" as const, crv: "P-256" as const, x: "AQ", y: "AQ" },
+};
+const DPOP_BAD_THUMBPRINT = {
+  shortX: computeDpopJwkThumbprint(DPOP_BAD_JWK.shortX),
+  offCurve: computeDpopJwkThumbprint(DPOP_BAD_JWK.offCurve),
+};
+
+/**
+ * One proof, with the parts a case needs to get wrong spelled out.
+ *
+ * `ath` defaults to the hash of the token the credential carries (`EnvironmentAuth.ts:671` passes
+ * `expectedAccessToken`), `htu` to the origin-only URL the route's own `toURL` normalizes to, and `iat`
+ * to the fixed clock in **seconds**, since the verifier compares `DateTime.now / 1000`.
+ */
+const dpopProof = (input: {
+  readonly key: keyof typeof DPOP_D;
+  readonly token: string;
+  readonly htm?: string;
+  readonly htu?: string;
+  readonly jti?: string;
+  readonly iat?: number;
+  /** `null` omits the claim, which is the `access_token_hash_mismatch` branch, not a missing-proof one. */
+  readonly ath?: string | null;
+  readonly typ?: string;
+  readonly alg?: string;
+  /** Replaces the first segment wholesale, signed as-is, so only its decodability is wrong. */
+  readonly headerOverride?: string;
+  /** A public key that decodes as text and fails as arithmetic, signed by `key` anyway. */
+  readonly jwkOverride?: { kty: "EC"; crv: "P-256"; x: string; y: string };
+  /**
+   * One member the shipped struct does not declare, added to the header's JWK and to the payload. Whether
+   * `Schema.Struct` strips an unknown key or refuses it decides the proof's fate, and it is not guessable.
+   */
+  readonly extra?: "jwkKid" | "payloadNonce";
+  readonly privateJwk?: boolean;
+  /**
+   * `der` re-encodes the *same* r and s, so the octets are still a signature the key made: whether the
+   * route accepts it measures how strictly `format: "compact"` is read.
+   */
+  readonly signature?: "flip" | "highS" | "der" | "truncated" | "zeroR" | "zeroS";
+}): string => {
+  const jwk = input.jwkOverride
+    ? input.jwkOverride
+    : input.privateJwk
+      ? { ...DPOP_JWK[input.key], d: toBytes32(DPOP_D[input.key]).toString("base64url") }
+      : DPOP_JWK[input.key];
+  const header =
+    input.headerOverride ??
+    Buffer.from(
+      JSON.stringify({
+        typ: input.typ ?? "dpop+jwt",
+        alg: input.alg ?? "ES256",
+        jwk: input.extra === "jwkKid" ? { ...jwk, kid: "seam-kid" } : jwk,
+      }),
+    ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      htm: input.htm ?? "GET",
+      htu: input.htu ?? "http://127.0.0.1/ws",
+      jti: input.jti ?? "seam-proof",
+      iat: input.iat ?? Math.floor(NOW / 1000),
+      ...(input.extra === "payloadNonce" ? { nonce: "seam-nonce" } : {}),
+      ...(input.ath === null ? {} : { ath: input.ath ?? computeDpopAccessTokenHash(input.token) }),
+    }),
+  ).toString("base64url");
+  let signature = signP256(DPOP_D[input.key], Buffer.from(`${header}.${payload}`, "utf8"));
+  if (input.signature === "flip") {
+    signature = Buffer.from(signature);
+    signature[0] ^= 0x01;
+  } else if (input.signature === "highS") {
+    const low = bytesToBig(signature.subarray(32, 64));
+    signature = Buffer.concat([Buffer.from(signature.subarray(0, 32)), toBytes32(P256_N - low)]);
+  } else if (input.signature === "zeroR") {
+    signature = Buffer.concat([Buffer.alloc(32), Buffer.from(signature.subarray(32, 64))]);
+  } else if (input.signature === "zeroS") {
+    signature = Buffer.concat([Buffer.from(signature.subarray(0, 32)), Buffer.alloc(32)]);
+  } else if (input.signature === "truncated") {
+    signature = Buffer.from(signature.subarray(0, 63));
+  }
+  const encoded =
+    input.signature === "der"
+      ? Buffer.from(derEncode(signature)).toString("base64url")
+      : Buffer.from(signature).toString("base64url");
+  return `${header}.${payload}.${encoded}`;
+};
+
+/**
+ * The credential every DPoP case presents: a session token whose `jkt` names key `a`, carried in
+ * `Authorization: DPoP ` because `:660` requires the proof-bound token to be that exact string.
+ */
+const boundCredential = (
+  sid: string = SESSIONS.dpop,
+  thumbprint: string = DPOP_THUMBPRINT.a,
+): Record<string, SessionToken> => ({
+  b: { sid, scopes: ["orchestration:read"], jkt: thumbprint },
+});
 
 const scenarios: Array<Scenario> = [
   // --- the auth step runs before anything `ws` checks -----------------------
@@ -1433,6 +1765,659 @@ const scenarios: Array<Scenario> = [
       ],
     },
   },
+  // --- the DPoP proof, verified by the shipped verifier over a real socket ---
+  {
+    // `EnvironmentAuth.ts:668` hands the proof to `verifyRequestDpopProof` with the row's `jkt` as
+    // `expectedThumbprint` and the credential itself as `expectedAccessToken`; a proof that satisfies both
+    // is what a `101` costs. The exchange is the other half of the claim: the connection is live **and**
+    // gated by the bound token's own claims.
+    name: "seam.dpopValid",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-valid" })],
+      ],
+    },
+    after: async (probe) => {
+      await exchange(probe, "seam.dpopValid", 1, WS_METHODS.serverGetSettings);
+      await exchange(probe, "seam.dpopValid", 2, WS_METHODS.serverUpdateSettings);
+      await close(probe, "seam.dpopValid");
+    },
+  },
+  {
+    // The replay guard is `ServerSecretStore.create` of `dpop-proof-<digest>` (`auth/dpop.ts:97-108`) —
+    // it is a filesystem `wx`, and the already-exists failure maps to the one reason none of the
+    // verifier's own codes produces. Same key, same token, same `jti`, so the only thing that changed is
+    // that the store has seen it.
+    name: "seam.dpopReplayedJti",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-valid" })],
+      ],
+    },
+  },
+  {
+    // The thumbprint is the first guard after the two decoders (`dpop.ts:141-144`), so a proof signed by
+    // another key answers `key_mismatch` even though its claims are also wrong.
+    name: "seam.dpopWrongKey",
+    session: SESSIONS.dpopFresh,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(SESSIONS.dpopFresh),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "b", token: tok.b!, jti: "seam-dpop-wrong-key" })],
+      ],
+    },
+  },
+  {
+    // Two guards out of order would be invisible in the status and visible in the reason: a proof signed
+    // by the wrong key *and* carrying the wrong method is `key_mismatch`, never `request_mismatch`.
+    name: "seam.dpopKeyOutranksMethod",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "b",
+            token: tok.b!,
+            jti: "seam-dpop-key-order",
+            htm: "POST",
+            htu: "http://127.0.0.1/wrong",
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopMethodMismatch",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-htm", htm: "POST" })],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopUrlMismatch",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-htu",
+            htu: "http://127.0.0.1/wsx",
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    // `normalizeDpopHtu` runs on the **server's** URL only (`dpop.ts:148-149` compares the claim to it
+    // verbatim), so a client that signs the URL it asked for is refused: the query it carried survives in
+    // the claim and no longer exists in the normalized target.
+    name: "seam.dpopUrlNormalized",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws?surface=web",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-htu-normalized",
+            htu: "http://127.0.0.1/ws?surface=web#frag",
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    // The same request, signed the way the comparison allows: the stripped URL, while the wire target
+    // still carries the query. This is the case that says which side of the equality is normalized.
+    name: "seam.dpopUrlSignedStripped",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws?surface=web",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-htu-stripped" })],
+      ],
+    },
+    after: closeOnly,
+  },
+  {
+    // `ath` is required by the route because it passes `expectedAccessToken`: absent and wrong are the
+    // same `access_token_hash_mismatch`, and both are the guard that runs before the signature.
+    name: "seam.dpopMissingAth",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-no-ath", ath: null })],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopAthOfAnotherToken",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-wrong-ath",
+            ath: computeDpopAccessTokenHash("some-other-token"),
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    // Both window edges, and both are on the *accepted* side: `dpop.ts:180` allows five seconds of skew
+    // into the future and `DEFAULT_MAX_AGE_SECONDS` of age behind it.
+    name: "seam.dpopFutureEdge",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-future-edge",
+            iat: Math.floor(NOW / 1000) + 5,
+          }),
+        ],
+      ],
+    },
+    after: closeOnly,
+  },
+  {
+    name: "seam.dpopTooFuture",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-too-future",
+            iat: Math.floor(NOW / 1000) + 6,
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopStaleEdge",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-stale-edge",
+            iat: Math.floor(NOW / 1000) - 300,
+          }),
+        ],
+      ],
+    },
+    after: closeOnly,
+  },
+  {
+    name: "seam.dpopTooStale",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-too-stale",
+            iat: Math.floor(NOW / 1000) - 301,
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    // The window is checked **after** the signature (`dpop.ts:163-188`), so a proof that is both forged
+    // and stale answers `invalid_proof`: a port that reordered these two would report `time_window`.
+    name: "seam.dpopSignatureOutranksTime",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-sig-order",
+            iat: Math.floor(NOW / 1000) - 900,
+            signature: "flip",
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopFlippedSignature",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-flipped", signature: "flip" }),
+        ],
+      ],
+    },
+  },
+  {
+    // `n - s` is the same signature as far as the group law goes. Whether the verifier takes it is a
+    // claim about noble's `strict` default, not about DPoP, and it is the one a hand-rolled verifier is
+    // most likely to get backwards.
+    name: "seam.dpopHighS",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-high-s", signature: "highS" }),
+        ],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopDerSignature",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-der", signature: "der" })],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopTruncatedSignature",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-truncated",
+            signature: "truncated",
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    // Three header shapes, all dying in the same decoder: `typ`/`alg` are literals
+    // (`dpop.ts:38-44`) and a `d` member is `Schema.optionalKey(Schema.Never)` (`:33-36`), which is how
+    // a client that pasted its private JWK gets refused.
+    name: "seam.dpopWrongAlg",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-alg", alg: "RS256" })],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopPrivateJwk",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-private", privateJwk: true }),
+        ],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopWrongTyp",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-typ", typ: "at+jwt" })],
+      ],
+    },
+  },
+  {
+    // The payload's three non-empty string checks and its `Schema.Int` (`dpop.ts:47-56`) are the other
+    // half of the decoder: an absent-or-empty `jti`, and an `iat` with a fraction.
+    name: "seam.dpopEmptyJti",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "" })],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopFractionalIat",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-fraction", iat: NOW / 1000 + 0.5 }),
+        ],
+      ],
+    },
+  },
+  {
+    // A first segment that is not base64url at all dies in `Result.getOrThrow` rather than in the schema
+    // decoder (`dpop.ts:75-76`), which is the difference between `malformed_proof` and the thrown
+    // `invalid_proof` — invisible on the wire, and the reason the port needs both paths.
+    name: "seam.dpopHeaderNotBase64",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-bad-header",
+            headerOverride: "not!base64",
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    // Two signatures the arithmetic forbids, both over the real message: noble may throw instead of
+    // answering false, and a port that panics here is a dropped connection rather than a 401.
+    name: "seam.dpopZeroR",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-zero-r", signature: "zeroR" }),
+        ],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopZeroS",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-zero-s", signature: "zeroS" }),
+        ],
+      ],
+    },
+  },
+  {
+    // The thumbprint is computed from the JWK's *text*, so a key that passes the binding guard can still
+    // be one the verifier cannot load: `x` short of 32 bytes (`dpop.ts:103-105` throws) and a point off
+    // the curve (noble's `Point.fromHex` answers `false`). Both are the same 150 bytes on the wire, and
+    // both are a crash waiting to happen in a port that reaches for the field arithmetic first.
+    name: "seam.dpopShortX",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(SESSIONS.dpop, DPOP_BAD_THUMBPRINT.shortX),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-short-x",
+            jwkOverride: DPOP_BAD_JWK.shortX,
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    name: "seam.dpopOffCurveKey",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(SESSIONS.dpop, DPOP_BAD_THUMBPRINT.offCurve),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({
+            key: "a",
+            token: tok.b!,
+            jti: "seam-dpop-off-curve",
+            jwkOverride: DPOP_BAD_JWK.offCurve,
+          }),
+        ],
+      ],
+    },
+  },
+  {
+    // `Schema.Struct`'s excess-property stance, measured rather than assumed: an undeclared `kid` inside
+    // the JWK, and an undeclared `nonce` inside the payload. A refused `kid` would break every client that
+    // labels its key, and the thumbprint cannot see it either way (`dpop.ts:83-90` reads four fields).
+    name: "seam.dpopJwkHasKid",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-kid", extra: "jwkKid" })],
+      ],
+    },
+    after: closeOnly,
+  },
+  {
+    name: "seam.dpopPayloadHasNonce",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        [
+          "DPoP",
+          dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-nonce", extra: "payloadNonce" }),
+        ],
+      ],
+    },
+    after: closeOnly,
+  },
+  {
+    // Both sides of the method test are upper-cased (`dpop.ts:145`), so a client that wrote `get` is not
+    // the `request_mismatch` a case-sensitive port would answer.
+    name: "seam.dpopLowercaseMethod",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "a", token: tok.b!, jti: "seam-dpop-lower-htm", htm: "get" })],
+      ],
+    },
+    after: closeOnly,
+  },
+  {
+    name: "seam.dpopTwoSegments",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => {
+        const [header, payload] = dpopProof({
+          key: "a",
+          token: tok.b!,
+          jti: "seam-dpop-two-segments",
+        }).split(".");
+        return [
+          ["Authorization", `DPoP ${tok.b}`],
+          ["DPoP", `${header}.${payload}`],
+        ];
+      },
+    },
+  },
+  {
+    // `!input.proof?.trim()` (`dpop.ts:122`) is the only guard that reads whitespace, so a blank proof is
+    // `missing_proof` rather than `malformed_proof` — and both are the same reason on the wire.
+    name: "seam.dpopBlankProof",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    target: () => "/ws",
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", "   "],
+      ],
+    },
+  },
+  {
+    // The claim that the *other* credential path is not this one's business: an honest `wsTicket` and a
+    // proof that would be refused on its own. `authenticateWebSocketUpgrade` never falls through to
+    // `authenticateRequest`, so the proof is never read and the socket opens.
+    name: "seam.dpopTicketOutranksProof",
+    session: SESSIONS.dpop,
+    scopes: ["orchestration:read"],
+    ticket: "issued",
+    target: (ticket) => `/ws?wsTicket=${ticket}`,
+    cred: {
+      tokens: boundCredential(),
+      headers: (tok) => [
+        ["Authorization", `DPoP ${tok.b}`],
+        ["DPoP", dpopProof({ key: "b", token: tok.b!, jti: "seam-dpop-ignored" })],
+      ],
+    },
+    after: closeOnly,
+  },
   // --- where the gate's scopes actually come from ---------------------------
   {
     // `verify` returns `claims.scopes` (`SessionStore.ts:840`), not the row's, so a token narrower than
@@ -1866,9 +2851,13 @@ const rowOf = (name: string): Record<string, unknown> | undefined =>
 const main = async () => {
   const port = (await runtime.runPromise(startup as never)) as number;
   cookieNames = await runtime.runPromise(readCookieNames as never);
-  const only = process.env.SEAM_ONLY;
+  // A comma-separated list, because measuring one guard needs its neighbours in the same run to show
+  // which one the route reached first.
+  const only = process.env.SEAM_ONLY?.split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
   for (const scenario of scenarios) {
-    if (only !== undefined && scenario.name !== only) continue;
+    if (only !== undefined && !only.includes(scenario.name)) continue;
     await runCase(scenario, port);
   }
 
@@ -1901,6 +2890,10 @@ const main = async () => {
       // hash of the state directory into it, so a replay cannot derive it and must be told.
       sessionCookieName: cookieNames.cookie,
       legacyCookieName: cookieNames.legacy,
+      // The bound key, in both forms a replay needs: the `jkt` the row carries and the JWK the proof
+      // header repeats. Public values only, so recording them leaks nothing.
+      dpopThumbprint: DPOP_THUMBPRINT,
+      dpopJwk: DPOP_JWK,
     },
     frames,
     events,
@@ -1917,6 +2910,10 @@ const main = async () => {
         );
       }
       if (event.event === "peer") lines.push(`  ${event.case} ${event.detail}`);
+      // The replay store's key is a digest of `<thumbprint>:<jti>`, so printing it is what lets the port
+      // claim it computed the same name rather than merely the same outcome.
+      if (event.event === "secret")
+        lines.push(`  ${event.case} secret ${event.detail} ${JSON.stringify(event.value)}`);
       if (event.event === "row") lines.push(`  ${event.case} row ${JSON.stringify(event.row)}`);
       if (event.event === "write") lines.push(`  ${event.case} ${event.detail}`);
     }
@@ -2276,6 +3273,123 @@ const check = (): Array<string> => {
   }
   if (!/^t3_session_\d+_[0-9a-f]{12}$/.test(cookieNames.cookie)) {
     failures.push(`session cookie name is not the derived one: ${cookieNames.cookie}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // The DPoP proof, guarded in the order `verifyDpopProof` reads it
+  // ---------------------------------------------------------------------------
+
+  /** The refusal's two measurable halves: the reason field and the byte length it costs. */
+  const dpopRefusal = (name: string, reason: string, length: number, fresh = false) => {
+    const event = responseOf(name);
+    if (event?.statusLine !== "HTTP/1.1 401 Unauthorized") {
+      failures.push(`${name}: expected 401, got ${event?.statusLine ?? "nothing"}`);
+    }
+    if (!(event?.tailText ?? "").includes(`"dpopFailureReason":"${reason}"`)) {
+      failures.push(`${name}: expected ${reason}, got ${event?.tailText}`);
+    }
+    if (
+      !(event?.headers ?? []).some(
+        ([header, value]) => header.toLowerCase() === "content-length" && value === String(length),
+      )
+    ) {
+      failures.push(
+        `${name}: ${reason} did not answer with ${length} bytes (${JSON.stringify(event?.headers)})`,
+      );
+    }
+    // Every refused case leaves the row detached, and the one case on a row nothing has connected proves
+    // the refusal never reached `recordClientConnection` at all.
+    const record = rowOf(name);
+    if (record?.connected !== false) {
+      failures.push(`${name}: a refused proof left the row connected`);
+    }
+    if (fresh && record?.lastConnectedAt !== null) {
+      failures.push(`${name}: a refused proof still recorded a connection`);
+    }
+  };
+  const dpopAccepted = (name: string) => {
+    if (responseOf(name)?.statusLine !== "HTTP/1.1 101 Switching Protocols") {
+      failures.push(`${name}: expected 101, got ${responseOf(name)?.statusLine ?? "nothing"}`);
+    }
+  };
+
+  dpopRefusal("seam.dpopWrongKey", "key_mismatch", 149, true);
+  dpopRefusal("seam.dpopMethodMismatch", "request_mismatch", 153);
+  dpopRefusal("seam.dpopUrlMismatch", "request_mismatch", 153);
+  dpopRefusal("seam.dpopUrlNormalized", "request_mismatch", 153);
+  dpopRefusal("seam.dpopMissingAth", "token_mismatch", 151);
+  dpopRefusal("seam.dpopAthOfAnotherToken", "token_mismatch", 151);
+  dpopRefusal("seam.dpopTooFuture", "time_window", 148);
+  dpopRefusal("seam.dpopTooStale", "time_window", 148);
+  dpopRefusal("seam.dpopReplayedJti", "replay", 143);
+  for (const name of [
+    "seam.dpopFlippedSignature",
+    "seam.dpopDerSignature",
+    "seam.dpopTruncatedSignature",
+    "seam.dpopWrongAlg",
+    "seam.dpopWrongTyp",
+    "seam.dpopPrivateJwk",
+    "seam.dpopTwoSegments",
+    "seam.dpopBlankProof",
+    "seam.dpopEmptyJti",
+    "seam.dpopFractionalIat",
+    "seam.dpopHeaderNotBase64",
+    "seam.dpopShortX",
+    "seam.dpopOffCurveKey",
+    "seam.dpopZeroR",
+    "seam.dpopZeroS",
+  ]) {
+    dpopRefusal(name, "invalid_proof", 150);
+  }
+  for (const name of [
+    "seam.dpopValid",
+    "seam.dpopUrlSignedStripped",
+    "seam.dpopFutureEdge",
+    "seam.dpopStaleEdge",
+    "seam.dpopHighS",
+    "seam.dpopTicketOutranksProof",
+  ]) {
+    dpopAccepted(name);
+  }
+
+  // Two guards are out of the order their failure modes are usually listed, and the reason field is the
+  // only evidence: a wrong key plus a wrong method answers `key_mismatch`, and a bad signature plus an
+  // out-of-window `iat` answers `invalid_proof`.
+  if (!(responseOf("seam.dpopKeyOutranksMethod")?.tailText ?? "").includes("key_mismatch")) {
+    failures.push(`seam.dpopKeyOutranksMethod: the method guard outran the key guard`);
+  }
+  if (!(responseOf("seam.dpopSignatureOutranksTime")?.tailText ?? "").includes("invalid_proof")) {
+    failures.push(`seam.dpopSignatureOutranksTime: the window outran the signature`);
+  }
+  // The window's edges are inclusive on both sides — `seam.dpopFutureEdge` (+5) and `seam.dpopStaleEdge`
+  // (-300) above authenticate, one more second of either is refused below.
+  // An accepted proof is *spent*, and the name it is spent under is a digest the port has to reproduce.
+  const spent = events.filter((event) => event.event === "secret");
+  if (spent.length === 0) failures.push(`no DPoP proof was recorded as spent`);
+  for (const event of spent) {
+    const digest = NodeCrypto.createHash("sha256")
+      .update(`${DPOP_THUMBPRINT.a}:${event.value?.match(/jti=([^\n]+)/)?.[1] ?? ""}`, "utf8")
+      .digest("base64url");
+    if (event.detail !== `dpop-proof-${digest}`) {
+      failures.push(`${event.case}: spent under ${event.detail}, not dpop-proof-${digest}`);
+    }
+    if (event.value !== undefined && !event.value.startsWith(`thumbprint=${DPOP_THUMBPRINT.a}\n`)) {
+      failures.push(`${event.case}: the stored proof did not name the bound key`);
+    }
+  }
+  // The second use of the same proof is refused under the *same* name, which is what makes `replay` the
+  // store's answer rather than the verifier's.
+  const replayed = spent.filter((event) => event.case === "seam.dpopReplayedJti");
+  if (replayed.length !== 1) {
+    failures.push(`seam.dpopReplayedJti: expected one refused write, got ${replayed.length}`);
+  } else if (
+    replayed[0]?.detail !== spent.find((event) => event.case === "seam.dpopValid")?.detail
+  ) {
+    failures.push(`seam.dpopReplayedJti: the replay digested to a different name`);
+  }
+  // A ticket outranks the credential, so a bound token whose proof would not verify is never consulted.
+  if (spent.some((event) => event.case === "seam.dpopTicketOutranksProof")) {
+    failures.push(`seam.dpopTicketOutranksProof: the ticket path still spent a proof`);
   }
   return failures;
 };
